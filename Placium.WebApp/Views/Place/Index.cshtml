@@ -1,0 +1,12 @@
+﻿@{
+    ViewData["Title"] = "OSM";
+}
+
+<h1>OSM</h1>
+
+@using (Html.BeginForm(method: FormMethod.Post))
+{
+    @Html.TextBox("pattern")
+    <br />
+    <input type="submit" value="Выбрать" class="btn btn-primary" />
+}

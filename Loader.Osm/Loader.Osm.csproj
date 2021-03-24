@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="CreateIndeces.sql" />
+    <None Remove="CreateTables.sql" />
+    <None Remove="CreateTempTables.sql" />
+    <None Remove="InsertFromTempTables.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="CreateIndeces.sql" />
+    <EmbeddedResource Include="CreateTables.sql" />
+    <EmbeddedResource Include="CreateTempTables.sql" />
+    <EmbeddedResource Include="InsertFromTempTables.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+    <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="CreateSequence.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="CreateSequence.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NDbfReader" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+  </ItemGroup>
+
+</Project>

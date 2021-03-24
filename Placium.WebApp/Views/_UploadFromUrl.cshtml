@@ -1,0 +1,64 @@
+﻿@{
+    ViewData["Title"] = ViewBag.Title;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var session = Guid.NewGuid();
+}
+
+<h1>@ViewBag.Title</h1>
+
+@using (Html.BeginForm())
+{
+    <label>@ViewBag.Label</label>
+    <br/>
+    <input type="text" id="url" name="url"/>
+    <br/>
+    <br/>
+    <input type="hidden" id="session" name="session" value="@session"/>
+    <button type="button" class="btn btn-info" onclick="uploadForm();">Отправить</button>
+}
+<br/>
+<br/>
+<div class="progress">
+    <div id="progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+        <div id="label" class="control-label">0%</div>
+    </div>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+    function uploadForm() {
+        var formData = new FormData();
+        var url = document.getElementById("url");
+        var session = document.getElementById("session");
+        formData.append("url", url.value);
+        formData.append("session", session.value);
+
+        $.ajax(
+            {
+                url: "@ViewBag.UploadLink",
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                type: "POST",
+                success: function(data) {
+                    alert("Complete");
+                }
+            }
+        );
+    };
+
+    var hubConnection = new signalR.HubConnectionBuilder()
+        .withUrl("/progress")
+        .build();
+
+    hubConnection.on("Progress",
+        function(progress, session) {
+            if (session == '@session') {
+                $("#progress").css({ width: progress + "%" });
+                $("#label").html(progress.toFixed(1) + "%");
+            }
+        });
+
+    hubConnection.start();
+
+</script>

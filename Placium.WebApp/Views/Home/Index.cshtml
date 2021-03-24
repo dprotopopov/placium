@@ -1,0 +1,34 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+
+<a href="@Url.Action("InstallFromFile", "FiasUpload")">Установить ФИАС из файла</a>
+<br />
+<a href="@Url.Action("UpdateFromFile", "FiasUpload")">Обновить ФИАС из файла</a>
+<br />
+<a href="@Url.Action("InstallFromFile", "OsmUpload")">Установить OSM из файла</a>
+<br />
+<a href="@Url.Action("UpdateFromFile", "OsmUpload")">Обновить OSM из файла</a>
+<br />
+<a href="@Url.Action("InstallFromUrl", "FiasUpload")">Установить ФИАС по ссылке</a>
+<br />
+<a href="@Url.Action("UpdateFromUrl", "FiasUpload")">Обновить ФИАСС по ссылке</a>
+<br />
+<a href="@Url.Action("InstallFromUrl", "OsmUpload")">Установить OSM по ссылке</a>
+<br />
+<a href="@Url.Action("UpdateFromUrl", "OsmUpload")">Обновить OSM по ссылке</a>
+<br />
+<a href="@Url.Action("Update", "PlaceUpdate")">Обработка новых записей OSM</a>
+<br />
+<a href="@Url.Action("Index", "Fias")">Проверить ФИАС</a>
+<br />
+<a href="@Url.Action("Index", "Osm")">Проверить OSM</a>
+<br />
+<a href="@Url.Action("Index", "Place")">Проверить места</a>
+<br />
