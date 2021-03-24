@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using Npgsql;
 using OsmSharp;
 using OsmSharp.Tags;
-using RelationMember = Placium.Types.RelationMember;
+using Placium.Types;
 
 namespace Placium.Common
 {
@@ -201,7 +201,7 @@ namespace Placium.Common
             relation.UserName = reader.SafeGetString(5);
             relation.Visible = reader.SafeGetBoolean(6);
             relation.Tags = reader.SafeGetString(7).ToTags();
-            relation.Members = ((RelationMember[]) reader.SafeGetValue(8))
+            relation.Members = ((OsmRelationMember[]) reader.SafeGetValue(8))
                 .Select(x => new OsmSharp.RelationMember(x.Id, x.Role, (OsmGeoType) x.Type)).ToArray();
         }
     }

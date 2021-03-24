@@ -38,9 +38,9 @@ namespace Updater.Place
 
                 connection.TypeMapper.MapComposite<RelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
-                connection.TypeMapper.MapEnum<ServiceType>("service_type");
+                connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(connection, ServiceType.Node);
+                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Node);
                 var next_last_record_number = NextLastRecordNumber(connection, "node");
 
                 using (var command = new NpgsqlCommand(
@@ -95,7 +95,7 @@ namespace Updater.Place
                     command.ExecuteNonQuery();
                 }
 
-                SetLastRecordNumber(connection, ServiceType.Node, next_last_record_number);
+                SetLastRecordNumber(connection, OsmServiceType.Node, next_last_record_number);
 
                 await connection2.CloseAsync();
                 await connection.CloseAsync();
@@ -115,9 +115,9 @@ namespace Updater.Place
 
                 connection.TypeMapper.MapComposite<RelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
-                connection.TypeMapper.MapEnum<ServiceType>("service_type");
+                connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(connection, ServiceType.Way);
+                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Way);
                 var next_last_record_number = NextLastRecordNumber(connection, "way");
 
                 using (var command = new NpgsqlCommand(
@@ -214,7 +214,7 @@ namespace Updater.Place
                     command.ExecuteNonQuery();
                 }
 
-                SetLastRecordNumber(connection, ServiceType.Way, next_last_record_number);
+                SetLastRecordNumber(connection, OsmServiceType.Way, next_last_record_number);
 
                 await connection3.CloseAsync();
                 await connection2.CloseAsync();
@@ -235,9 +235,9 @@ namespace Updater.Place
 
                 connection.TypeMapper.MapComposite<RelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
-                connection.TypeMapper.MapEnum<ServiceType>("service_type");
+                connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(connection, ServiceType.Relation);
+                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Relation);
                 var next_last_record_number = NextLastRecordNumber(connection, "relation");
 
                 using (var command = new NpgsqlCommand(
@@ -365,7 +365,7 @@ namespace Updater.Place
                     command.ExecuteNonQuery();
                 }
 
-                SetLastRecordNumber(connection, ServiceType.Relation, next_last_record_number);
+                SetLastRecordNumber(connection, OsmServiceType.Relation, next_last_record_number);
 
                 await connection3.CloseAsync();
                 await connection2.CloseAsync();
@@ -419,7 +419,7 @@ namespace Updater.Place
             return false;
         }
 
-        private long GetLastRecordNumber(NpgsqlConnection connection, ServiceType service_type)
+        private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type)
         {
             using (var command = new NpgsqlCommand(
                 "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
@@ -436,7 +436,7 @@ namespace Updater.Place
             return 0;
         }
 
-        public void SetLastRecordNumber(NpgsqlConnection connection, ServiceType service_type, long last_record_number)
+        public void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, long last_record_number)
         {
             using (var command = new NpgsqlCommand(
                 "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"

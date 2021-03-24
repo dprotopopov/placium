@@ -65,7 +65,7 @@ namespace Placium.WebApi.Services
 
                 connection.TypeMapper.MapComposite<RelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
-                connection.TypeMapper.MapEnum<ServiceType>("service_type");
+                connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 switch (type)
                 {

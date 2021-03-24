@@ -2,7 +2,7 @@
 
 namespace Placium.Types
 {
-    public class RelationMember
+    public class OsmRelationMember
     {
         [PgName("id")]
         public long Id { get; set; }

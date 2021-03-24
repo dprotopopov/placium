@@ -2,7 +2,7 @@
 
 namespace Placium.Types
 {
-    public enum ServiceType
+    public enum OsmServiceType
     {
         [PgName("node")]
         Node,
