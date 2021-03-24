@@ -29,6 +29,7 @@ namespace Updater.Place
 
         public async Task UpdateFromNodeAsync(string connectionString, string session)
         {
+            long count = 0;
             using (var connection = new NpgsqlConnection(connectionString))
             using (var connection2 = new NpgsqlConnection(connectionString))
             {
@@ -103,6 +104,7 @@ namespace Updater.Place
 
         public async Task UpdateFromWayAsync(string connectionString, string session)
         {
+            long count = 0;
             using (var connection = new NpgsqlConnection(connectionString))
             using (var connection2 = new NpgsqlConnection(connectionString))
             using (var connection3 = new NpgsqlConnection(connectionString))
@@ -191,6 +193,9 @@ namespace Updater.Place
                             };
 
                             writer.WriteLine(string.Join("\t", values));
+
+                            if (count++ % 1000 == 0)
+                                await _progressHub.Progress(100f * count / (count + 1000000), session);
                         }
                     }
                 }
@@ -219,6 +224,7 @@ namespace Updater.Place
 
         public async Task UpdateFromRelationAsync(string connectionString, string session)
         {
+            long count = 0;
             using (var connection = new NpgsqlConnection(connectionString))
             using (var connection2 = new NpgsqlConnection(connectionString))
             using (var connection3 = new NpgsqlConnection(connectionString))
@@ -338,6 +344,9 @@ namespace Updater.Place
                             };
 
                             writer.WriteLine(string.Join("\t", values));
+
+                            if (count++ % 1000 == 0)
+                                await _progressHub.Progress(100f * count / (count + 1000000), session);
                         }
                     }
                 }

@@ -10,7 +10,7 @@
 {
     <label>@ViewBag.Label</label>
     <br/>
-    <input type="file" id="file" name="file"/>
+    <input type="text" id="fileName" name="fileName"/>
     <br/>
     <br/>
     <input type="hidden" id="session" name="session" value="@session"/>
@@ -28,9 +28,9 @@
 <script type="text/javascript" charset="utf-8">
     function uploadForm() {
         var formData = new FormData();
-        var file = document.getElementById("file");
+        var fileName = document.getElementById("fileName");
         var session = document.getElementById("session");
-        formData.append("file", file.files[0]);
+        formData.append("fileName", fileName.value);
         formData.append("session", session.value);
 
         $.ajax(

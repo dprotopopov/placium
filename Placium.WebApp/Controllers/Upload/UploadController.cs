@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -20,7 +19,7 @@ namespace Placium.WebApp.Controllers.Upload
             UploadService = uploadService;
         }
 
-        public async Task<IActionResult> InstallFromFile()
+        public async Task<IActionResult> InstallFromDisk()
         {
             var actionName = ControllerContext.RouteData.Values["action"].ToString();
             var controllerName = ControllerContext.RouteData.Values["controller"].ToString();
@@ -28,7 +27,7 @@ namespace Placium.WebApp.Controllers.Upload
             var info = GetInstallFormInfo();
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
-            return View("~/Views/_UploadFromFile.cshtml");
+            return View("~/Views/_UploadFromDisk.cshtml");
         }
 
         protected abstract string GetConnectionString();
@@ -37,22 +36,22 @@ namespace Placium.WebApp.Controllers.Upload
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<IActionResult> InstallFromFile(IFormFile file, string session)
+        public async Task<IActionResult> InstallFromDisk(string fileName, string session)
         {
             var connectionString = GetConnectionString();
 
             using (var connection = new NpgsqlConnection(connectionString))
-            using (var stream = file.OpenReadStream())
+            using (var stream = System.IO.File.OpenRead(fileName))
             {
                 connection.Open();
                 await UploadService.InstallAsync(stream, connection, session);
                 connection.Close();
             }
 
-            return Content(file.FileName);
+            return Content(fileName);
         }
 
-        public async Task<IActionResult> UpdateFromFile()
+        public async Task<IActionResult> UpdateFromDisk()
         {
             var actionName = ControllerContext.RouteData.Values["action"].ToString();
             var controllerName = ControllerContext.RouteData.Values["controller"].ToString();
@@ -61,27 +60,27 @@ namespace Placium.WebApp.Controllers.Upload
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
 
-            return View("~/Views/_UploadFromFile.cshtml");
+            return View("~/Views/_UploadFromDisk.cshtml");
         }
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<IActionResult> UpdateFromFile(IFormFile file, string session)
+        public async Task<IActionResult> UpdateFromDisk(string fileName, string session)
         {
             var connectionString = GetConnectionString();
 
             using (var connection = new NpgsqlConnection(connectionString))
-            using (var stream = file.OpenReadStream())
+            using (var stream = System.IO.File.OpenRead(fileName))
             {
                 connection.Open();
                 await UploadService.UpdateAsync(stream, connection, session);
                 connection.Close();
             }
 
-            return Content(file.FileName);
+            return Content(fileName);
         }
 
-        public async Task<IActionResult> InstallFromUrl()
+        public async Task<IActionResult> InstallFromWeb()
         {
             var actionName = ControllerContext.RouteData.Values["action"].ToString();
             var controllerName = ControllerContext.RouteData.Values["controller"].ToString();
@@ -89,11 +88,11 @@ namespace Placium.WebApp.Controllers.Upload
             var info = GetInstallFormInfo();
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
-            return View("~/Views/_UploadFromUrl.cshtml");
+            return View("~/Views/_UploadFromWeb.cshtml");
         }
 
         [HttpPost]
-        public async Task<IActionResult> InstallFromUrl(string url, string session)
+        public async Task<IActionResult> InstallFromWeb(string url, string session)
         {
             var connectionString = GetConnectionString();
             using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
@@ -121,7 +120,7 @@ namespace Placium.WebApp.Controllers.Upload
             return Content(url);
         }
 
-        public async Task<IActionResult> UpdateFromUrl()
+        public async Task<IActionResult> UpdateFromWeb()
         {
             var actionName = ControllerContext.RouteData.Values["action"].ToString();
             var controllerName = ControllerContext.RouteData.Values["controller"].ToString();
@@ -130,11 +129,11 @@ namespace Placium.WebApp.Controllers.Upload
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
 
-            return View("~/Views/_UploadFromUrl.cshtml");
+            return View("~/Views/_UploadFromWeb.cshtml");
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateFromUrl(string url, string session)
+        public async Task<IActionResult> UpdateFromWeb(string url, string session)
         {
             var connectionString = GetConnectionString();
             using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,

@@ -170,7 +170,7 @@ namespace Loader.Osm
                     }
 
                     if (count++ % 1000 == 0)
-                        await _progressHub.Progress(100f * count / (count + 1000), session);
+                        await _progressHub.Progress(100f * count / (count + 1000000), session);
                 }
 
                 writer?.Dispose();
@@ -286,7 +286,7 @@ namespace Loader.Osm
                     }
 
                     if (count++ % 1000 == 0)
-                        await _progressHub.Progress(100f * count / (count + 1000), session);
+                        await _progressHub.Progress(100f * count / (count + 1000000), session);
                 }
 
                 writer?.Dispose();
