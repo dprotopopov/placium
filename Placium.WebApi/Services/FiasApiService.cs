@@ -96,7 +96,7 @@ namespace Placium.WebApi.Services
         {
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 var result = new List<Element>();
 
@@ -227,7 +227,7 @@ namespace Placium.WebApi.Services
         {
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 var result = new List<Element>();
 
@@ -344,7 +344,7 @@ namespace Placium.WebApi.Services
         {
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 var result = new List<Element>();
 

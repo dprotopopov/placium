@@ -86,7 +86,7 @@ namespace Loader.Fias
                                 var reader = table.OpenReader(_encoding);
                                 var columns = table.Columns;
 
-                                var names = Enumerable.ToList<string>(columns.Select(x => x.Name.ToLower()));
+                                var names = columns.Select(x => x.Name.ToLower()).ToList();
 
                                 TextWriter writer = null;
 
@@ -107,7 +107,7 @@ namespace Loader.Fias
                                         }
 
                                         using (var command = new NpgsqlCommand(
-                                            $"CREATE TABLE {tableName} ({string.Join((string) ",", (IEnumerable<string>) columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})"
+                                            $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})"
                                             , connection))
                                         {
                                             command.ExecuteNonQuery();
@@ -119,7 +119,7 @@ namespace Loader.Fias
                                     }
                                     else
                                     {
-                                        var values = Enumerable.ToList<string>(columns.Select(x => x.ValueAsText(reader)));
+                                        var values = columns.Select(x => x.ValueAsText(reader)).ToList();
                                         writer.WriteLine(string.Join("\t", values));
                                     }
 
@@ -160,7 +160,7 @@ namespace Loader.Fias
                                     var columns = table.Columns;
 
 
-                                    var names = Enumerable.ToList<string>(columns.Select(x => x.Name.ToLower()));
+                                    var names = columns.Select(x => x.Name.ToLower()).ToList();
 
                                     TextWriter writer = null;
 
@@ -170,7 +170,7 @@ namespace Loader.Fias
                                             if (!TableIsExists(tableName, connection))
                                             {
                                                 using (var command = new NpgsqlCommand(
-                                                    $"CREATE TABLE {tableName} ({string.Join((string) ",", (IEnumerable<string>) columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
+                                                    $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
                                                     , connection))
                                                 {
                                                     command.ExecuteNonQuery();
@@ -196,7 +196,7 @@ namespace Loader.Fias
                                                 }
 
                                                 using (var command = new NpgsqlCommand(
-                                                    $"CREATE TABLE temp_{tableName} ({string.Join((string) ",", (IEnumerable<string>) columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
+                                                    $"CREATE TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
                                                     , connection))
                                                 {
                                                     command.ExecuteNonQuery();
@@ -208,7 +208,7 @@ namespace Loader.Fias
                                         }
                                         else
                                         {
-                                            var values = Enumerable.ToList<string>(columns.Select(x => x.ValueAsText(reader)));
+                                            var values = columns.Select(x => x.ValueAsText(reader)).ToList();
                                             writer.WriteLine(string.Join("\t", values));
                                         }
 
@@ -265,7 +265,7 @@ namespace Loader.Fias
             {
                 $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_number BIGINT DEFAULT nextval(''record_number_seq'');') FROM information_schema.columns WHERE table_schema = 'public' AND (CONCAT(table_name, 'id')=column_name OR column_name IN ('aoid', 'houseid', 'roomid', 'steadid', 'rmtypeid', 'fltypeid', 'housestid', 'kod_t_st', 'ndtypeid')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
                 $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (CONCAT(table_name, 'id')=column_name OR column_name IN ('aoid', 'houseid', 'roomid', 'steadid', 'rmtypeid', 'fltypeid', 'housestid', 'kod_t_st', 'ndtypeid')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                $"SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (column_name like '%guid' OR column_name like '%status' or column_name in ('previd', 'nextid', 'normdoc', 'shortname', 'normdocid', 'docimgid', 'record_number')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
+                $"SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (column_name like '%guid' OR column_name like '%status' or column_name in ('shortname', 'record_number')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
             };
 
             SelectAndExecute(sqls, conn);

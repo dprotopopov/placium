@@ -98,10 +98,6 @@ ON CONFLICT (id) DO UPDATE SET
 	members=EXCLUDED.members,
 	record_number=nextval('record_number_seq');
 
-INSERT INTO place(osm_id,osm_type,tags) SELECT id,'relation',tags FROM temp_relation WHERE tags IS NOT NULL AND array_length(akeys(tags),1)>0 ON CONFLICT (osm_id,osm_type) DO UPDATE SET tags=EXCLUDED.tags,record_number=nextval('record_number_seq');
-INSERT INTO place(osm_id,osm_type,tags) SELECT id,'way',tags FROM temp_way WHERE tags IS NOT NULL AND array_length(akeys(tags),1)>0 ON CONFLICT (osm_id,osm_type) DO UPDATE SET tags=EXCLUDED.tags,record_number=nextval('record_number_seq');
-INSERT INTO place(osm_id,osm_type,tags) SELECT id,'node',tags FROM temp_node WHERE tags IS NOT NULL AND array_length(akeys(tags),1)>0 ON CONFLICT (osm_id,osm_type) DO UPDATE SET tags=EXCLUDED.tags,record_number=nextval('record_number_seq');
-
 DROP TABLE temp_node;
 DROP TABLE temp_way;
 DROP TABLE temp_relation;

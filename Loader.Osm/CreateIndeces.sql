@@ -7,11 +7,3 @@ CREATE INDEX ON place (record_number);
 CREATE INDEX ON node (record_number);
 CREATE INDEX ON way (record_number);
 CREATE INDEX ON relation (record_number);
-
-CREATE INDEX ON place USING HASH (tags);
-CREATE INDEX ON node USING HASH (tags);
-CREATE INDEX ON way USING HASH (tags);
-CREATE INDEX ON relation USING HASH (tags);
-
-CREATE INDEX ON way USING HASH (nodes);
-CREATE INDEX ON relation USING GIN (members);

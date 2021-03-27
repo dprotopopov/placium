@@ -10,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Placium.Common;
 using Placium.WebApi.Services;
 using Updater.Place;
+using Updater.Sphinx;
 
 namespace Placium.WebApp
 {
@@ -30,6 +31,7 @@ namespace Placium.WebApp
             services.AddSingleton<FiasUploadService>();
             services.AddSingleton<OsmUploadService>();
             services.AddSingleton<PlaceUpdateService>();
+            services.AddSingleton<SphinxUpdateService>();
             services.AddSingleton<ProgressHub>();
         }
 

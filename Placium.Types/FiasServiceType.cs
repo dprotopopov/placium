@@ -4,5 +4,7 @@ namespace Placium.Types
 {
     public enum FiasServiceType
     {
+        [PgName("addrob")]
+        Addrob,
     }
 }

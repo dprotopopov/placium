@@ -35,6 +35,7 @@
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
     <ProjectReference Include="..\Placium.WebApi\Placium.WebApi.csproj" />
     <ProjectReference Include="..\Updater.Place\Updater.Place.csproj" />
+    <ProjectReference Include="..\Updater.Sphinx\Updater.Sphinx.csproj" />
   </ItemGroup>
 
 
