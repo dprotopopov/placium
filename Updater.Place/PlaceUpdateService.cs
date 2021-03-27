@@ -36,12 +36,12 @@ namespace Updater.Place
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
 
-                connection.TypeMapper.MapComposite<RelationMember>("relation_member");
+                connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Node);
-                var next_last_record_number = NextLastRecordNumber(connection, "node");
+                var next_last_record_number = NextLastRecordNumber(connection);
 
                 using (var command = new NpgsqlCommand(
                     "DROP TABLE IF EXISTS temp_place_node"
@@ -118,7 +118,7 @@ namespace Updater.Place
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Way);
-                var next_last_record_number = NextLastRecordNumber(connection, "way");
+                var next_last_record_number = NextLastRecordNumber(connection);
 
                 using (var command = new NpgsqlCommand(
                     "DROP TABLE IF EXISTS temp_place_way"
@@ -238,7 +238,7 @@ namespace Updater.Place
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Relation);
-                var next_last_record_number = NextLastRecordNumber(connection, "relation");
+                var next_last_record_number = NextLastRecordNumber(connection);
 
                 using (var command = new NpgsqlCommand(
                     "DROP TABLE IF EXISTS temp_place_relation"
@@ -448,10 +448,10 @@ namespace Updater.Place
             }
         }
 
-        private long NextLastRecordNumber(NpgsqlConnection connection, string tableName)
+        private long NextLastRecordNumber(NpgsqlConnection connection)
         {
             using (var command = new NpgsqlCommand(
-                $"SELECT MAX(record_number) FROM {tableName}"
+                $"SELECT last_value FROM record_number_seq"
                 , connection))
             {
                 using (var reader = command.ExecuteReader())

@@ -236,7 +236,7 @@ namespace Placium.WebApi.Services
                     command.Parameters.AddWithValue("p", guid);
                     using (var reader = command.ExecuteReader())
                     {
-                        if (reader.Read())
+                        while (reader.Read())
                         {
                             var list = new List<string>();
                             var flatnumber = reader.SafeGetString(1);
@@ -261,7 +261,7 @@ namespace Placium.WebApi.Services
                     command.Parameters.AddWithValue("p", guid);
                     using (var reader = command.ExecuteReader())
                     {
-                        if (reader.Read())
+                        while (reader.Read())
                         {
                             var list = new List<string>();
                             var housenum = reader.SafeGetString(1);
@@ -288,7 +288,7 @@ namespace Placium.WebApi.Services
                     command.Parameters.AddWithValue("p", guid);
                     using (var reader = command.ExecuteReader())
                     {
-                        if (reader.Read())
+                        while (reader.Read())
                         {
                             var list = new List<string>();
                             var number = reader.SafeGetString(1);
@@ -352,7 +352,7 @@ namespace Placium.WebApi.Services
                 {
                     using (var reader = command.ExecuteReader())
                     {
-                        if (reader.Read())
+                        while (reader.Read())
                         {
                             var list = new List<string>();
                             var flatnumber = reader.SafeGetString(1);
@@ -376,7 +376,7 @@ namespace Placium.WebApi.Services
                 {
                     using (var reader = command.ExecuteReader())
                     {
-                        if (reader.Read())
+                        while (reader.Read())
                         {
                             var list = new List<string>();
                             var housenum = reader.SafeGetString(1);
@@ -402,7 +402,7 @@ namespace Placium.WebApi.Services
                 {
                     using (var reader = command.ExecuteReader())
                     {
-                        if (reader.Read())
+                        while (reader.Read())
                         {
                             var list = new List<string>();
                             var number = reader.SafeGetString(1);
