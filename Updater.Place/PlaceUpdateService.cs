@@ -171,19 +171,22 @@ namespace Updater.Place
                             if (cleanNodes.Length == 0) continue;
 
                             var sb = new StringBuilder(
-                                cleanNodes.Length > 1 ? area ? "POLYGON" : "LINESTRING" : "POINT");
-                            sb.Append(cleanNodes.Length > 1 ? area ? "((" : "(" : "(");
+                                cleanNodes.Length > 1
+                                    ? area && cleanNodes.Length > 2 ? "POLYGON" : "LINESTRING"
+                                    : "POINT");
+                            sb.Append(cleanNodes.Length > 1 ? area && cleanNodes.Length > 2 ? "((" : "(" : "(");
                             sb.Append(string.Join(",",
                                 nodes.Where(id => dic.ContainsKey(id)).Select(id =>
                                     $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
 
-                            if (cleanNodes.Length > 1 && area)
+                            if (area && cleanNodes.Length > 2 &&
+                                (cleanNodes.Length < 4 || cleanNodes.First() != cleanNodes.Last()))
                             {
                                 var id = cleanNodes.First();
                                 sb.Append($",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
                             }
 
-                            sb.Append(cleanNodes.Length > 1 ? area ? "))" : ")" : ")");
+                            sb.Append(cleanNodes.Length > 1 ? area && cleanNodes.Length > 2 ? "))" : ")" : ")");
 
                             var values = new List<string>
                             {
@@ -325,8 +328,13 @@ namespace Updater.Place
                                 else sb.Append(",");
                                 sb.Append("((");
                                 sb.Append(string.Join(",",
-                                    nodes.Where(id => dic.ContainsKey(id)).Select(id =>
+                                    cleanNodes.Select(id =>
                                         $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                                if (cleanNodes.First() != cleanNodes.Last())
+                                {
+                                    var id = cleanNodes.First();
+                                    sb.Append($",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                                }
 
                                 sb.Append("))");
                                 any = true;
@@ -334,7 +342,7 @@ namespace Updater.Place
 
                             sb.Append(")");
 
-                            if(!any) continue;
+                            if (!any) continue;
 
                             var values = new List<string>
                             {
@@ -436,7 +444,8 @@ namespace Updater.Place
             return 0;
         }
 
-        public void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, long last_record_number)
+        public void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type,
+            long last_record_number)
         {
             using (var command = new NpgsqlCommand(
                 "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
@@ -451,7 +460,7 @@ namespace Updater.Place
         private long NextLastRecordNumber(NpgsqlConnection connection)
         {
             using (var command = new NpgsqlCommand(
-                $"SELECT last_value FROM record_number_seq"
+                "SELECT last_value FROM record_number_seq"
                 , connection))
             {
                 using (var reader = command.ExecuteReader())
