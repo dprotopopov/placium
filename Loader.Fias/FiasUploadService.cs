@@ -132,7 +132,7 @@ namespace Loader.Fias
                 }
             }
 
-            BuildIndeces(tableNames, connection);
+            BuildIndices(tableNames, connection);
         }
 
         public async Task UpdateAsync(Stream uploadStream, NpgsqlConnection connection, string session)
@@ -244,7 +244,7 @@ namespace Loader.Fias
                 }
             }
 
-            BuildIndeces(tableNames, connection);
+            BuildIndices(tableNames, connection);
 
             foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
         }
@@ -257,7 +257,7 @@ namespace Loader.Fias
             return null;
         }
 
-        private void BuildIndeces(List<string> tableNames, NpgsqlConnection conn)
+        private void BuildIndices(List<string> tableNames, NpgsqlConnection conn)
         {
             if (!tableNames.Any()) return;
 

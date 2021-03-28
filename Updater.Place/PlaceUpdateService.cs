@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Npgsql;
-using NpgsqlTypes;
 using Placium.Common;
 using Placium.Types;
 
@@ -77,6 +76,9 @@ namespace Updater.Place
                             };
 
                             writer.WriteLine(string.Join("\t", values));
+
+                            if (count++ % 1000 == 0)
+                                await _progressHub.Progress(100f * count / (count + 1000000), session);
                         }
                     }
                 }
@@ -113,7 +115,7 @@ namespace Updater.Place
                 await connection2.OpenAsync();
                 await connection3.OpenAsync();
 
-                connection.TypeMapper.MapComposite<RelationMember>("relation_member");
+                connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
@@ -236,7 +238,7 @@ namespace Updater.Place
                 await connection2.OpenAsync();
                 await connection3.OpenAsync();
 
-                connection.TypeMapper.MapComposite<RelationMember>("relation_member");
+                connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
@@ -269,7 +271,7 @@ namespace Updater.Place
                     {
                         while (reader.Read())
                         {
-                            var members = (RelationMember[]) reader.GetValue(2);
+                            var members = (OsmRelationMember[]) reader.GetValue(2);
                             if (members.Length == 0) continue;
                             var cleanMember = members.Where(x => x.Type == 1 && x.Role == "outer")
                                 .ToArray();
@@ -471,15 +473,6 @@ namespace Updater.Place
             }
 
             return 0;
-        }
-
-        public class RelationMember
-        {
-            [PgName("type")] public int Type { get; set; }
-
-            [PgName("id")] public long Id { get; set; }
-
-            [PgName("role")] public string Role { get; set; }
         }
 
         public class Point

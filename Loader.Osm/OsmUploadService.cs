@@ -177,7 +177,7 @@ namespace Loader.Osm
             }
 
             using (var stream = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream("Loader.Osm.CreateIndeces.sql"))
+                .GetManifestResourceStream("Loader.Osm.CreateIndices.sql"))
             using (var sr = new StreamReader(stream, Encoding.UTF8))
             using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
             {

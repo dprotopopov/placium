@@ -47,15 +47,14 @@ namespace Updater.Sphinx
                     var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob);
                     var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
 
-                    var listAddrob = new List<string>();
-                    listAddrob.Fill(
-                        @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
+                    var list = new List<string>();
+                    list.Fill(@"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
                         npgsqlConnection);
-                    var addrobSql = string.Join(" UNION ",
-                        listAddrob.Select(x =>
+                    var sql = string.Join(" UNION ",
+                        list.Select(x =>
                             $"SELECT {x}.record_number,CASE WHEN {x}.aolevel>1 THEN CONCAT (socrbase.socrname,' ', {x}.offname) ELSE {x}.offname END FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
 
-                    using (var npgsqlCommand = new NpgsqlCommand(addrobSql, npgsqlConnection))
+                    using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                     {
                         npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
                         npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
@@ -98,10 +97,10 @@ namespace Updater.Sphinx
                     var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Place);
                     var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
 
-                    var addrobSql =
+                    var sql =
                         "SELECT record_number,tags->'name' FROM place WHERE record_number>@last_record_number AND record_number<=@next_last_record_number";
 
-                    using (var npgsqlCommand = new NpgsqlCommand(addrobSql, npgsqlConnection))
+                    using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                     {
                         npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
                         npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
