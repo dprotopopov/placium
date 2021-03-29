@@ -84,6 +84,7 @@ namespace Loader.Osm
             {
                 TextWriter writer = null;
                 var lastType = ElementType.None;
+                var id = "";
 
                 foreach (var element in source)
                 {
@@ -96,6 +97,11 @@ namespace Loader.Osm
                                 writer?.Dispose();
                                 writer = connection.BeginTextImport(
                                     $"COPY Node ({string.Join(", ", nodeKeys)}) FROM STDIN WITH NULL AS '';");
+
+                                await _progressHub.Progress(100f, id, session);
+                                count = 0;
+                                id = Guid.NewGuid().ToString();
+                                await _progressHub.Init(id, session);
                             }
 
                             var nodeValues = new List<string>
@@ -122,6 +128,11 @@ namespace Loader.Osm
                                 writer?.Dispose();
                                 writer = connection.BeginTextImport(
                                     $"COPY Way ({string.Join(", ", wayKeys)}) FROM STDIN WITH NULL AS '';");
+
+                                await _progressHub.Progress(100f, id, session);
+                                count = 0;
+                                id = Guid.NewGuid().ToString();
+                                await _progressHub.Init(id, session);
                             }
 
                             var wayValues = new List<string>
@@ -147,6 +158,11 @@ namespace Loader.Osm
                                 writer?.Dispose();
                                 writer = connection.BeginTextImport(
                                     $"COPY Relation ({string.Join(", ", relationKeys)}) FROM STDIN WITH NULL AS '';");
+
+                                await _progressHub.Progress(100f, id, session);
+                                count = 0;
+                                id = Guid.NewGuid().ToString();
+                                await _progressHub.Init(id, session);
                             }
 
                             var relationValues = new List<string>
@@ -170,10 +186,11 @@ namespace Loader.Osm
                     }
 
                     if (count++ % 1000 == 0)
-                        await _progressHub.Progress(100f * count / (count + 1000000), session);
+                        await _progressHub.Progress(100f * count / (count + 1000000), id, session);
                 }
 
                 writer?.Dispose();
+                await _progressHub.Progress(100f, id, session);
             }
 
             using (var stream = Assembly.GetExecutingAssembly()
@@ -201,6 +218,8 @@ namespace Loader.Osm
                 TextWriter writer = null;
                 var lastType = ElementType.None;
 
+                var id = "";
+
                 foreach (var element in source)
                 {
                     switch (element)
@@ -212,6 +231,11 @@ namespace Loader.Osm
                                 writer?.Dispose();
                                 writer = connection.BeginTextImport(
                                     $"COPY temp_node ({string.Join(", ", nodeKeys)}) FROM STDIN WITH NULL AS '';");
+
+                                await _progressHub.Progress(100f, id, session);
+                                count = 0;
+                                id = Guid.NewGuid().ToString();
+                                await _progressHub.Init(id, session);
                             }
 
                             var nodeValues = new List<string>
@@ -238,6 +262,11 @@ namespace Loader.Osm
                                 writer?.Dispose();
                                 writer = connection.BeginTextImport(
                                     $"COPY temp_way ({string.Join(", ", wayKeys)}) FROM STDIN WITH NULL AS '';");
+
+                                await _progressHub.Progress(100f, id, session);
+                                count = 0;
+                                id = Guid.NewGuid().ToString();
+                                await _progressHub.Init(id, session);
                             }
 
                             var wayValues = new List<string>
@@ -263,6 +292,11 @@ namespace Loader.Osm
                                 writer?.Dispose();
                                 writer = connection.BeginTextImport(
                                     $"COPY temp_relation ({string.Join(", ", relationKeys)}) FROM STDIN WITH NULL AS '';");
+
+                                await _progressHub.Progress(100f, id, session);
+                                count = 0;
+                                id = Guid.NewGuid().ToString();
+                                await _progressHub.Init(id, session);
                             }
 
                             var relationValues = new List<string>
@@ -286,10 +320,11 @@ namespace Loader.Osm
                     }
 
                     if (count++ % 1000 == 0)
-                        await _progressHub.Progress(100f * count / (count + 1000000), session);
+                        await _progressHub.Progress(100f * count / (count + 1000000), id, session);
                 }
 
                 writer?.Dispose();
+                await _progressHub.Progress(100f, id, session);
             }
 
             using (var stream = Assembly.GetExecutingAssembly()

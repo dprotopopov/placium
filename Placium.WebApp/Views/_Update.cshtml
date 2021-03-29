@@ -9,17 +9,13 @@
 @using (Html.BeginForm())
 {
     <label>@ViewBag.Label</label>
-    <br/>
-    <input type="hidden" id="session" name="session" value="@session"/>
+    <br />
+    <input type="hidden" id="session" name="session" value="@session" />
     <button type="button" class="btn btn-info" onclick="uploadForm();">Отправить</button>
 }
-<br/>
-<br/>
-<div class="progress">
-    <div id="progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-        <div id="label" class="control-label">0%</div>
-    </div>
-</div>
+<br />
+<br />
+<div id="progresses"></div>
 
 <script type="text/javascript" charset="utf-8">
     function uploadForm() {
@@ -42,18 +38,30 @@
         );
     };
 
-    var hubConnection = new signalR.HubConnectionBuilder()
-        .withUrl("/progress")
-        .build();
+    (function() {
+        var hubConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/progress")
+            .build();
 
-    hubConnection.on("Progress",
-        function(progress, session) {
-            if (session == '@session') {
-                $("#progress").css({ width: progress + "%" });
-                $("#label").html(progress.toFixed(1) + "%");
-            }
-        });
+        hubConnection.on("Progress",
+            function(progress, id, session) {
+                if (session == '@session' && $('#' + id)) {
+                    $('#' + id + ' #progress').css({ width: progress + "%" });
+                    $('#' + id + ' #label').html(progress.toFixed(1) + "%");
+                }
+            });
+        hubConnection.on("Init",
+            function(id, session) {
+                if (session == '@session') {
+                    $("#progresses").append('<div id="' +
+                        id +
+                        '" class="progress"><div id="progress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 0%;"> \
+                <div id="label" class="control-label">0%</div> \
+                </div></div>');
+                }
+            });
 
-    hubConnection.start();
+        hubConnection.start();
+    })();
 
 </script>

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -39,7 +40,12 @@ namespace Updater.Sphinx
 
                 using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
                 {
-                    long count = 0;
+                    var current = 0L;
+                    var total = 0L;
+
+                    var id = Guid.NewGuid().ToString();
+                    await _progressHub.Init(id, session);
+
                     await npgsqlConnection.OpenAsync();
 
                     npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
@@ -48,8 +54,25 @@ namespace Updater.Sphinx
                     var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
 
                     var list = new List<string>();
-                    list.Fill(@"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
+                    list.Fill(
+                        @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
                         npgsqlConnection);
+
+                    var sql1 = string.Join(" UNION ",
+                        list.Select(x =>
+                            $"SELECT COUNT(*) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
+
+                    using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
+                    {
+                        npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                        npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
+
+                        using (var reader = npgsqlCommand.ExecuteReader())
+                        {
+                            while (reader.Read()) total += reader.GetInt64(0);
+                        }
+                    }
+
                     var sql = string.Join(" UNION ",
                         list.Select(x =>
                             $"SELECT {x}.record_number,CASE WHEN {x}.aolevel>1 THEN CONCAT (socrbase.socrname,' ', {x}.offname) ELSE {x}.offname END FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
@@ -75,9 +98,12 @@ namespace Updater.Sphinx
                                     {
                                         mySqlCommand.ExecuteNonQuery();
                                     }
+
+                                    current += docs.Count;
+
+                                    await _progressHub.Progress(100f * current / total, id, session);
                                 }
 
-                                await _progressHub.Progress(100f * count++ / (count + 1000000), session);
 
                                 if (docs.Count < take) break;
                             }
@@ -85,17 +111,34 @@ namespace Updater.Sphinx
                     }
 
                     SetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob, next_last_record_number);
+                    await _progressHub.Progress(100f, id, session);
                 }
 
                 using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
                 {
-                    long count = 0;
+                    var current = 0L;
+                    var total = 0L;
+
+                    var id = Guid.NewGuid().ToString();
+                    await _progressHub.Init(id, session);
+
                     await npgsqlConnection.OpenAsync();
 
                     npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                     var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Place);
                     var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
+
+                    var sql1 =
+                        "SELECT COUNT(*) FROM place WHERE record_number>@last_record_number AND record_number<=@next_last_record_number";
+
+                    using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
+                    {
+                        npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                        npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
+
+                        total = (long) npgsqlCommand.ExecuteScalar();
+                    }
 
                     var sql =
                         "SELECT record_number,tags->'name' FROM place WHERE record_number>@last_record_number AND record_number<=@next_last_record_number";
@@ -121,9 +164,11 @@ namespace Updater.Sphinx
                                     {
                                         mySqlCommand.ExecuteNonQuery();
                                     }
-                                }
 
-                                await _progressHub.Progress(100f * count++ / (count + 1000000), session);
+                                    current += docs.Count;
+
+                                    await _progressHub.Progress(100f * current / total, id, session);
+                                }
 
                                 if (docs.Count < take) break;
                             }
@@ -131,6 +176,7 @@ namespace Updater.Sphinx
                     }
 
                     SetLastRecordNumber(npgsqlConnection, OsmServiceType.Place, next_last_record_number);
+                    await _progressHub.Progress(100f, id, session);
                 }
             }
         }

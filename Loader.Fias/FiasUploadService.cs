@@ -74,6 +74,9 @@ namespace Loader.Fias
                 var current = 0;
                 var count = archive.Entries.Count;
 
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.Init(id, session);
+
                 foreach (var entry in archive.Entries)
                 {
                     if (entry.FullName.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
@@ -128,8 +131,10 @@ namespace Loader.Fias
                         }
                     }
 
-                    await _progressHub.Progress(100f * ++current / count, session);
+                    await _progressHub.Progress(100f * ++current / count, id, session);
                 }
+
+                await _progressHub.Progress(100f, id, session);
             }
 
             BuildIndices(tableNames, connection);
@@ -143,6 +148,9 @@ namespace Loader.Fias
             {
                 var current = 0;
                 var count = archive.Entries.Count;
+
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.Init(id, session);
 
                 foreach (var entry in archive.Entries)
                 {
@@ -240,8 +248,10 @@ namespace Loader.Fias
                             }
                     }
 
-                    await _progressHub.Progress(100f * ++current / count, session);
+                    await _progressHub.Progress(100f * ++current / count, id, session);
                 }
+
+                await _progressHub.Progress(100f, id, session);
             }
 
             BuildIndices(tableNames, connection);

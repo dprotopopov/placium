@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -28,7 +29,12 @@ namespace Updater.Place
 
         public async Task UpdateFromNodeAsync(string connectionString, string session)
         {
-            long count = 0;
+            var current = 0L;
+            var total = 0L;
+
+            var id = Guid.NewGuid().ToString();
+            await _progressHub.Init(id, session);
+
             using (var connection = new NpgsqlConnection(connectionString))
             using (var connection2 = new NpgsqlConnection(connectionString))
             {
@@ -41,6 +47,15 @@ namespace Updater.Place
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Node);
                 var next_last_record_number = NextLastRecordNumber(connection);
+
+                using (var command = new NpgsqlCommand(
+                    "SELECT COUNT(*) FROM node WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    , connection))
+                {
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
+                    total = (long) command.ExecuteScalar();
+                }
 
                 using (var command = new NpgsqlCommand(
                     "DROP TABLE IF EXISTS temp_place_node"
@@ -68,6 +83,8 @@ namespace Updater.Place
                     {
                         while (reader.Read())
                         {
+                            current++;
+
                             var values = new List<string>
                             {
                                 reader.GetInt64(0).ToString(),
@@ -77,10 +94,11 @@ namespace Updater.Place
 
                             writer.WriteLine(string.Join("\t", values));
 
-                            if (count++ % 1000 == 0)
-                                await _progressHub.Progress(100f * count / (count + 1000000), session);
+                            if (current % 1000 == 0)
+                                await _progressHub.Progress(100f * current / total, id, session);
                         }
                     }
+                    await _progressHub.Progress(100f, id, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -106,7 +124,12 @@ namespace Updater.Place
 
         public async Task UpdateFromWayAsync(string connectionString, string session)
         {
-            long count = 0;
+            var current = 0L;
+            var total = 0L;
+
+            var id1 = Guid.NewGuid().ToString();
+            await _progressHub.Init(id1, session);
+
             using (var connection = new NpgsqlConnection(connectionString))
             using (var connection2 = new NpgsqlConnection(connectionString))
             using (var connection3 = new NpgsqlConnection(connectionString))
@@ -121,6 +144,15 @@ namespace Updater.Place
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Way);
                 var next_last_record_number = NextLastRecordNumber(connection);
+
+                using (var command = new NpgsqlCommand(
+                    "SELECT COUNT(*) FROM way WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    , connection))
+                {
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
+                    total = (long) command.ExecuteScalar();
+                }
 
                 using (var command = new NpgsqlCommand(
                     "DROP TABLE IF EXISTS temp_place_way"
@@ -148,6 +180,8 @@ namespace Updater.Place
                     {
                         while (reader.Read())
                         {
+                            current++;
+
                             var nodes = (long[]) reader.GetValue(2);
                             if (nodes.Length == 0) continue;
                             var area = reader.GetBoolean(3);
@@ -199,10 +233,11 @@ namespace Updater.Place
 
                             writer.WriteLine(string.Join("\t", values));
 
-                            if (count++ % 1000 == 0)
-                                await _progressHub.Progress(100f * count / (count + 1000000), session);
+                            if (current % 1000 == 0)
+                                await _progressHub.Progress(100f * current / total, id1, session);
                         }
                     }
+                    await _progressHub.Progress(100f, id1, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -229,7 +264,12 @@ namespace Updater.Place
 
         public async Task UpdateFromRelationAsync(string connectionString, string session)
         {
-            long count = 0;
+            var current = 0L;
+            var total = 0L;
+
+            var id1 = Guid.NewGuid().ToString();
+            await _progressHub.Init(id1, session);
+
             using (var connection = new NpgsqlConnection(connectionString))
             using (var connection2 = new NpgsqlConnection(connectionString))
             using (var connection3 = new NpgsqlConnection(connectionString))
@@ -244,6 +284,15 @@ namespace Updater.Place
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Relation);
                 var next_last_record_number = NextLastRecordNumber(connection);
+
+                using (var command = new NpgsqlCommand(
+                    "SELECT COUNT(*) FROM relation WHERE tags?'name' AND tags->'type'='multipolygon' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    , connection))
+                {
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
+                    total = (long) command.ExecuteScalar();
+                }
 
                 using (var command = new NpgsqlCommand(
                     "DROP TABLE IF EXISTS temp_place_relation"
@@ -271,6 +320,8 @@ namespace Updater.Place
                     {
                         while (reader.Read())
                         {
+                            current++;
+
                             var members = (OsmRelationMember[]) reader.GetValue(2);
                             if (members.Length == 0) continue;
                             var cleanMember = members.Where(x => x.Type == 1 && x.Role == "outer")
@@ -355,10 +406,11 @@ namespace Updater.Place
 
                             writer.WriteLine(string.Join("\t", values));
 
-                            if (count++ % 1000 == 0)
-                                await _progressHub.Progress(100f * count / (count + 1000000), session);
+                            if (current % 1000 == 0)
+                                await _progressHub.Progress(100f * current / total, id1, session);
                         }
                     }
+                    await _progressHub.Progress(100f, id1, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -465,14 +517,8 @@ namespace Updater.Place
                 "SELECT last_value FROM record_number_seq"
                 , connection))
             {
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
+                return (long) command.ExecuteScalar();
             }
-
-            return 0;
         }
 
         public class Point
