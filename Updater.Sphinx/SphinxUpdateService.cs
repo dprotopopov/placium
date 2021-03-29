@@ -130,7 +130,7 @@ namespace Updater.Sphinx
                     var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
 
                     var sql1 =
-                        "SELECT COUNT(*) FROM place WHERE record_number>@last_record_number AND record_number<=@next_last_record_number";
+                        "SELECT COUNT(*) FROM place WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
 
                     using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                     {
@@ -141,7 +141,7 @@ namespace Updater.Sphinx
                     }
 
                     var sql =
-                        "SELECT record_number,tags->'name' FROM place WHERE record_number>@last_record_number AND record_number<=@next_last_record_number";
+                        "SELECT record_number,tags->'name' FROM place WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
 
                     using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                     {

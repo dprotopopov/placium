@@ -111,9 +111,8 @@ namespace Placium.WebApi.Services
                                 var list = new List<string>();
                                 var flatnumber = reader.SafeGetString(1);
                                 var roomnumber = reader.SafeGetString(2);
-                                if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                                 if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
-                                list.Reverse();
+                                if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                                 result.Add(new Room
                                 {
                                     guid = Guid.Parse(guid),
@@ -139,17 +138,16 @@ namespace Placium.WebApi.Services
                                 var housenum = reader.SafeGetString(1);
                                 var buildnum = reader.SafeGetString(2);
                                 var strucnum = reader.SafeGetString(3);
-                                if (!string.IsNullOrEmpty(strucnum)) list.Add($"стр. {strucnum}");
-                                if (!string.IsNullOrEmpty(buildnum)) list.Add($"корп. {buildnum}");
-                                if (!string.IsNullOrEmpty(housenum)) list.Add($"д. {housenum}");
-                                list.Reverse();
+                                if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
+                                if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
+                                if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
                                 result.Add(new House
                                 {
                                     guid = Guid.Parse(guid),
                                     housenum = housenum,
                                     buildnum = buildnum,
                                     strucnum = strucnum,
-                                    title = string.Join(", ", list)
+                                    title = string.Join(" ", list)
                                 });
                                 guid = reader.SafeGetString(0);
                             }
@@ -241,9 +239,8 @@ namespace Placium.WebApi.Services
                             var list = new List<string>();
                             var flatnumber = reader.SafeGetString(1);
                             var roomnumber = reader.SafeGetString(2);
-                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
-                            list.Reverse();
+                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             result.Add(new Room
                             {
                                 guid = Guid.Parse(reader.SafeGetString(0)),
@@ -267,17 +264,16 @@ namespace Placium.WebApi.Services
                             var housenum = reader.SafeGetString(1);
                             var buildnum = reader.SafeGetString(2);
                             var strucnum = reader.SafeGetString(3);
-                            if (!string.IsNullOrEmpty(strucnum)) list.Add($"стр. {strucnum}");
-                            if (!string.IsNullOrEmpty(buildnum)) list.Add($"корп. {buildnum}");
-                            if (!string.IsNullOrEmpty(housenum)) list.Add($"д. {housenum}");
-                            list.Reverse();
+                            if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
+                            if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
+                            if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
                             result.Add(new House
                             {
                                 guid = Guid.Parse(reader.SafeGetString(0)),
                                 housenum = housenum,
                                 buildnum = buildnum,
                                 strucnum = strucnum,
-                                title = string.Join(", ", list)
+                                title = string.Join(" ", list)
                             });
                         }
                     }
@@ -357,9 +353,8 @@ namespace Placium.WebApi.Services
                             var list = new List<string>();
                             var flatnumber = reader.SafeGetString(1);
                             var roomnumber = reader.SafeGetString(2);
-                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
-                            list.Reverse();
+                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             result.Add(new Room
                             {
                                 guid = Guid.Parse(reader.SafeGetString(0)),
@@ -382,17 +377,16 @@ namespace Placium.WebApi.Services
                             var housenum = reader.SafeGetString(1);
                             var buildnum = reader.SafeGetString(2);
                             var strucnum = reader.SafeGetString(3);
-                            if (!string.IsNullOrEmpty(strucnum)) list.Add($"стр. {strucnum}");
-                            if (!string.IsNullOrEmpty(buildnum)) list.Add($"корп. {buildnum}");
-                            if (!string.IsNullOrEmpty(housenum)) list.Add($"д. {housenum}");
-                            list.Reverse();
+                            if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
+                            if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
+                            if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
                             result.Add(new House
                             {
                                 guid = Guid.Parse(reader.SafeGetString(0)),
                                 housenum = housenum,
                                 buildnum = buildnum,
                                 strucnum = strucnum,
-                                title = string.Join(", ", list)
+                                title = string.Join(" ", list)
                             });
                         }
                     }

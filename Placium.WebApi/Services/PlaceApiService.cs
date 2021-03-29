@@ -1,8 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using Placium.Common;
 using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
@@ -10,13 +13,14 @@ namespace Placium.WebApi.Services
     public class PlaceApiService
     {
         private readonly IConfiguration _configuration;
+        private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
 
         public PlaceApiService(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        public async Task<List<Place>> GetByNameAsync(string pattern, int limit = 100)
+        public async Task<List<Place>> GetByNameAsync(string pattern, int limit = 10)
         {
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
@@ -26,7 +30,7 @@ namespace Placium.WebApi.Services
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT tags->'name',tags,location FROM place WHERE tags->'name' SIMILAR TO @pattern LIMIT @limit",
+                        "SELECT id,tags,location FROM place WHERE tags->'name' SIMILAR TO @pattern LIMIT @limit",
                         connection))
                 {
                     command.Parameters.AddWithValue("pattern", pattern);
@@ -36,7 +40,44 @@ namespace Placium.WebApi.Services
                         while (reader.Read())
                             result.Add(new Place
                             {
-                                title = reader.GetString(0),
+                                id = reader.GetInt64(0),
+                                tags = (Dictionary<string, string>) reader.GetValue(1),
+                                location = (GeoJSONObject) reader.GetValue(2)
+                            });
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        public async Task<List<Place>> GetByPointAsync(double latitude, double longitude, int limit = 1)
+        {
+            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            {
+                connection.Open();
+                connection.TypeMapper.UseGeoJson();
+
+                var keys = new List<string>();
+
+                keys.Fill(
+                    "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM place) AS keys WHERE key LIKE 'addr%'"
+                    , connection);
+
+                var result = new List<Place>(limit);
+
+                using (var command =
+                    new NpgsqlCommand(
+                        $"SELECT id,tags,location FROM place WHERE tags?|ARRAY[{string.Join(",", keys.Select(x => $"'{x}'"))}] ORDER BY ST_Distance(location,'POINT({longitude.ToString(_nfi)} {latitude.ToString(_nfi)})'::geography) LIMIT @limit",
+                        connection))
+                {
+                    command.Parameters.AddWithValue("limit", limit);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            result.Add(new Place
+                            {
+                                id = reader.GetInt64(0),
                                 tags = (Dictionary<string, string>) reader.GetValue(1),
                                 location = (GeoJSONObject) reader.GetValue(2)
                             });

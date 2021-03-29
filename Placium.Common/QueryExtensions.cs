@@ -10,9 +10,14 @@ namespace Placium.Common
             using (var command = new NpgsqlCommand(sql, connection))
             using (var reader = command.ExecuteReader())
             {
-                while (reader.Read())
-                    list.Add(reader.GetString(0));
+                list.Fill(reader);
             }
+        }
+
+        public static void Fill(this List<string> list, NpgsqlDataReader reader)
+        {
+            while (reader.Read())
+                list.Add(reader.GetString(0));
         }
     }
 }
