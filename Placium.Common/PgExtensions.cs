@@ -163,6 +163,12 @@ namespace Placium.Common
             foreach (var pair in dictionary) result.AddOrReplace(pair.Key, pair.Value);
             return result;
         }
+        public static TagsCollection ToTags(this Dictionary<string, string> dictionary)
+        {
+            var result = new TagsCollection();
+            foreach (var pair in dictionary) result.AddOrReplace(pair.Key, pair.Value);
+            return result;
+        }
 
         public static void Fill(this Node node, NpgsqlDataReader reader)
         {
@@ -175,7 +181,7 @@ namespace Placium.Common
             node.UserId = reader.SafeGetInt64(6);
             node.UserName = reader.SafeGetString(7);
             node.Visible = reader.SafeGetBoolean(8);
-            node.Tags = reader.SafeGetString(9).ToTags();
+            node.Tags = ((Dictionary<string, string>)reader.SafeGetValue(9)).ToTags();
         }
 
         public static void Fill(this Way way, NpgsqlDataReader reader)
@@ -187,7 +193,7 @@ namespace Placium.Common
             way.UserId = reader.SafeGetInt64(4);
             way.UserName = reader.SafeGetString(5);
             way.Visible = reader.SafeGetBoolean(6);
-            way.Tags = reader.SafeGetString(7).ToTags();
+            way.Tags = ((Dictionary<string, string>)reader.SafeGetValue(7)).ToTags();
             way.Nodes = (long[]) reader.SafeGetValue(8);
         }
 
@@ -200,7 +206,7 @@ namespace Placium.Common
             relation.UserId = reader.SafeGetInt64(4);
             relation.UserName = reader.SafeGetString(5);
             relation.Visible = reader.SafeGetBoolean(6);
-            relation.Tags = reader.SafeGetString(7).ToTags();
+            relation.Tags = ((Dictionary<string, string>)reader.SafeGetValue(7)).ToTags();
             relation.Members = ((OsmRelationMember[]) reader.SafeGetValue(8))
                 .Select(x => new OsmSharp.RelationMember(x.Id, x.Role, (OsmGeoType) x.Type)).ToArray();
         }

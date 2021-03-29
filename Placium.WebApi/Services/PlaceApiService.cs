@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Threading.Tasks;
 using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using Placium.Common;
 using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
@@ -12,7 +10,6 @@ namespace Placium.WebApi.Services
     public class PlaceApiService
     {
         private readonly IConfiguration _configuration;
-        private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
 
         public PlaceApiService(IConfiguration configuration)
         {
@@ -57,20 +54,13 @@ namespace Placium.WebApi.Services
                 connection.Open();
                 connection.TypeMapper.UseGeoJson();
 
-                var keys = new List<string>();
-
-                keys.Fill(
-                    "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM place) AS keys WHERE key LIKE 'addr%'"
-                    , connection);
-
                 var result = new List<Place>(limit);
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT id,tags,location FROM place WHERE tags?|@keys ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) LIMIT @limit",
+                        "SELECT id,tags,location FROM place WHERE tags?'addr:housenumber' ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) LIMIT @limit",
                         connection))
                 {
-                    command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("longitude", (float) longitude);
                     command.Parameters.AddWithValue("latitude", (float) latitude);
                     command.Parameters.AddWithValue("limit", limit);

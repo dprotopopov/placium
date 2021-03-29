@@ -4,7 +4,6 @@ using Npgsql;
 using OsmSharp;
 using Placium.Common;
 using Placium.Types;
-using RelationMember = OsmSharp.RelationMember;
 
 namespace Placium.WebApi.Services
 {
@@ -22,7 +21,7 @@ namespace Placium.WebApi.Services
         user_id,
         user_name,
         visible,
-        hstore_to_json(tags)
+        tags
         FROM node
         WHERE id=@p";
 
@@ -34,7 +33,7 @@ namespace Placium.WebApi.Services
         user_id,
         user_name,
         visible,
-        hstore_to_json(tags),
+        tags,
         members
         FROM relation
         WHERE id=@p";
@@ -47,7 +46,7 @@ namespace Placium.WebApi.Services
         user_id,
         user_name,
         visible,
-        hstore_to_json(tags),
+        tags,
         nodes
         FROM way
         WHERE id=@p";
@@ -63,7 +62,7 @@ namespace Placium.WebApi.Services
             {
                 connection.Open();
 
-                connection.TypeMapper.MapComposite<RelationMember>("relation_member");
+                connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 

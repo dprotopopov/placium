@@ -205,7 +205,7 @@ namespace Updater.Place
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_place_way (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
                 using (var command = new NpgsqlCommand(
-                    "SELECT id,cast(tags as text),nodes,tags?'area' FROM way WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT id,cast(tags as text),nodes,tags?|ARRAY['area','building'] FROM way WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
