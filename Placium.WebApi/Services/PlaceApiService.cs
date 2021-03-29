@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
 using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
@@ -68,9 +67,12 @@ namespace Placium.WebApi.Services
 
                 using (var command =
                     new NpgsqlCommand(
-                        $"SELECT id,tags,location FROM place WHERE tags?|ARRAY[{string.Join(",", keys.Select(x => $"'{x}'"))}] ORDER BY ST_Distance(location,'POINT({longitude.ToString(_nfi)} {latitude.ToString(_nfi)})'::geography) LIMIT @limit",
+                        "SELECT id,tags,location FROM place WHERE tags?|@keys ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) LIMIT @limit",
                         connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
+                    command.Parameters.AddWithValue("longitude", (float) longitude);
+                    command.Parameters.AddWithValue("latitude", (float) latitude);
                     command.Parameters.AddWithValue("limit", limit);
                     using (var reader = command.ExecuteReader())
                     {

@@ -64,9 +64,10 @@ namespace Updater.Place
 
 
                 using (var command = new NpgsqlCommand(
-                    $"SELECT COUNT(*) FROM node WHERE tags?|ARRAY[{string.Join(", ", keys.Select(x => $"'{x}'"))}] AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
                     command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
                     total = (long) command.ExecuteScalar();
@@ -89,9 +90,10 @@ namespace Updater.Place
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_place_node (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
                 using (var command = new NpgsqlCommand(
-                    $"SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|ARRAY[{string.Join(",", keys.Select(x => $"'{x}'"))}] AND record_number>@last_record_number AND record_number<=@next_last_record_number",
+                    "SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number",
                     connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
                     command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
                     using (var reader = command.ExecuteReader())
@@ -161,7 +163,7 @@ namespace Updater.Place
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Way);
                 var next_last_record_number = NextLastRecordNumber(connection);
 
-                var keys = new List<string> { "name" };
+                var keys = new List<string> {"name"};
 
                 using (var command = new NpgsqlCommand(
                     "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM way WHERE record_number>@last_record_number AND record_number<=@next_last_record_number) AS keys WHERE key LIKE 'addr%'"
@@ -176,9 +178,10 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    $"SELECT COUNT(*) FROM way WHERE tags?|ARRAY[{string.Join(",", keys.Select(x => $"'{x}'"))}] AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
                     command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
                     total = (long) command.ExecuteScalar();
@@ -198,15 +201,14 @@ namespace Updater.Place
                     command.ExecuteNonQuery();
                 }
 
-                var sql =
-                    "SELECT id,cast(tags as text),nodes,tags?'area' FROM way WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
 
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_place_way (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
                 using (var command = new NpgsqlCommand(
-                    $"SELECT id,cast(tags as text),nodes,tags?'area' FROM way WHERE tags?|ARRAY[{string.Join(",", keys.Select(x => $"'{x}'"))}] AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT id,cast(tags as text),nodes,tags?'area' FROM way WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
                     command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
                     using (var reader = command.ExecuteReader())
@@ -319,7 +321,7 @@ namespace Updater.Place
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Relation);
                 var next_last_record_number = NextLastRecordNumber(connection);
 
-                var keys = new List<string> { "name" };
+                var keys = new List<string> {"name"};
 
                 using (var command = new NpgsqlCommand(
                     "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM relation WHERE record_number>@last_record_number AND record_number<=@next_last_record_number) AS keys WHERE key LIKE 'addr%'"
@@ -334,9 +336,10 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    $"SELECT COUNT(*) FROM relation WHERE tags?|ARRAY[{string.Join(",", keys.Select(x => $"'{x}'"))}] AND tags->'type'='multipolygon' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
                     command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
                     total = (long) command.ExecuteScalar();
@@ -359,9 +362,10 @@ namespace Updater.Place
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_place_relation (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
                 using (var command = new NpgsqlCommand(
-                    $"SELECT id,cast(tags as text),members FROM relation WHERE tags?|ARRAY[{string.Join(",", keys.Select(x => $"'{x}'"))}] AND tags->'type'='multipolygon' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
                     command.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
                     using (var reader = command.ExecuteReader())
