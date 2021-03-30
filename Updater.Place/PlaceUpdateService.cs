@@ -13,18 +13,14 @@ namespace Updater.Place
 {
     public class PlaceUpdateService : IUpdateService
     {
+        private readonly IConfiguration _configuration;
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly ProgressHub _progressHub;
-        private readonly IConfiguration _configuration;
 
         public PlaceUpdateService(ProgressHub progressHub, IConfiguration configuration)
         {
             _progressHub = progressHub;
             _configuration = configuration;
-        }
-        private string GetConnectionString()
-        {
-            return _configuration.GetConnectionString("OsmConnection");
         }
 
         public async Task UpdateAsync(string session)
@@ -32,6 +28,11 @@ namespace Updater.Place
             await UpdateFromNodeAsync(session);
             await UpdateFromWayAsync(session);
             await UpdateFromRelationAsync(session);
+        }
+
+        private string GetConnectionString()
+        {
+            return _configuration.GetConnectionString("OsmConnection");
         }
 
         public async Task UpdateFromNodeAsync(string session)
@@ -81,16 +82,11 @@ namespace Updater.Place
                     total = (long) command.ExecuteScalar();
                 }
 
-                using (var command = new NpgsqlCommand(
-                    "DROP TABLE IF EXISTS temp_place_node"
-                    , connection))
-                {
-                    command.ExecuteNonQuery();
-                }
-
-                using (var command = new NpgsqlCommand(
-                    "CREATE TEMP TABLE temp_place_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
-                    , connection))
+                using (var command =
+                    new NpgsqlCommand(
+                        string.Join(";", "DROP TABLE IF EXISTS temp_place_node",
+                            "CREATE TEMP TABLE temp_place_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                        connection2))
                 {
                     command.ExecuteNonQuery();
                 }
@@ -128,15 +124,9 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'node',tags,location FROM temp_place_node ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number"
-                    , connection))
-                {
-                    command.ExecuteNonQuery();
-                }
-
-                using (var command = new NpgsqlCommand(
-                    "DROP TABLE temp_place_node"
-                    , connection))
+                    string.Join(";",
+                        "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'node',tags,location FROM temp_place_node ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
+                        "DROP TABLE temp_place_node"), connection2))
                 {
                     command.ExecuteNonQuery();
                 }
@@ -196,16 +186,11 @@ namespace Updater.Place
                     total = (long) command.ExecuteScalar();
                 }
 
-                using (var command = new NpgsqlCommand(
-                    "DROP TABLE IF EXISTS temp_place_way"
-                    , connection))
-                {
-                    command.ExecuteNonQuery();
-                }
-
-                using (var command = new NpgsqlCommand(
-                    "CREATE TEMP TABLE temp_place_way (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
-                    , connection))
+                using (var command =
+                    new NpgsqlCommand(
+                        string.Join(";", "DROP TABLE IF EXISTS temp_place_way",
+                            "CREATE TEMP TABLE temp_place_way (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                        connection2))
                 {
                     command.ExecuteNonQuery();
                 }
@@ -286,15 +271,9 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'way',tags,location FROM temp_place_way ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number"
-                    , connection))
-                {
-                    command.ExecuteNonQuery();
-                }
-
-                using (var command = new NpgsqlCommand(
-                    "DROP TABLE temp_place_way"
-                    , connection))
+                    string.Join(";",
+                        "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'way',tags,location FROM temp_place_way ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
+                        "DROP TABLE temp_place_way"), connection2))
                 {
                     command.ExecuteNonQuery();
                 }
@@ -355,16 +334,11 @@ namespace Updater.Place
                     total = (long) command.ExecuteScalar();
                 }
 
-                using (var command = new NpgsqlCommand(
-                    "DROP TABLE IF EXISTS temp_place_relation"
-                    , connection))
-                {
-                    command.ExecuteNonQuery();
-                }
-
-                using (var command = new NpgsqlCommand(
-                    "CREATE TEMP TABLE temp_place_relation (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
-                    , connection))
+                using (var command =
+                    new NpgsqlCommand(
+                        string.Join(";", "DROP TABLE IF EXISTS temp_place_relation",
+                            "CREATE TEMP TABLE temp_place_relation (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                        connection2))
                 {
                     command.ExecuteNonQuery();
                 }
@@ -476,16 +450,11 @@ namespace Updater.Place
                     await _progressHub.ProgressAsync(100f, id1, session);
                 }
 
-                using (var command = new NpgsqlCommand(
-                    "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'relation',tags,location FROM temp_place_relation ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number"
-                    , connection))
-                {
-                    command.ExecuteNonQuery();
-                }
 
                 using (var command = new NpgsqlCommand(
-                    "DROP TABLE temp_place_relation"
-                    , connection))
+                    string.Join(";",
+                        "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'relation',tags,location FROM temp_place_relation ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
+                        "DROP TABLE temp_place_relation"), connection2))
                 {
                     command.ExecuteNonQuery();
                 }
