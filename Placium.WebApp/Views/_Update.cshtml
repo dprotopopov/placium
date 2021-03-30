@@ -33,7 +33,10 @@
                 type: "POST",
                 success: function(data) {
                     alert("Complete");
-                }
+                },
+                error: function (jqXHR, exception) {
+                    alert("Error");
+                },
             }
         );
     };

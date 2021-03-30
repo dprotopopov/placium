@@ -50,43 +50,43 @@ namespace Placium.WebApi.Services
                     @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
                     connection);
 
-                _parentRoomSql = string.Join(" UNION ",
+                _parentRoomSql = string.Join("\nUNION\n",
                     _listRoom.Select(x =>
                         $"SELECT houseguid,flatnumber,roomnumber FROM {x} WHERE roomguid=@p"));
-                _parentHouseSql = string.Join(" UNION ",
+                _parentHouseSql = string.Join("\nUNION\n",
                     _listHouse.Select(x =>
                         $"SELECT aoguid,housenum,buildnum,strucnum FROM {x} WHERE houseguid=@p"));
-                _parentSteadSql = string.Join(" UNION ",
+                _parentSteadSql = string.Join("\nUNION\n",
                     _listStead.Select(x =>
                         $"SELECT parentguid,number FROM {x} WHERE steadguid=@p"));
-                _parentAddrobSql = string.Join(" UNION ",
+                _parentAddrobSql = string.Join("\nUNION\n",
                     _listAddrob.Select(x =>
                         $"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE aoguid=@p AND actstatus=1"));
 
 
-                _childrenRoomSql = string.Join(" UNION ",
+                _childrenRoomSql = string.Join("\nUNION\n",
                     _listRoom.Select(x =>
                         $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid=@p"));
-                _childrenHouseSql = string.Join(" UNION ",
+                _childrenHouseSql = string.Join("\nUNION\n",
                     _listHouse.Select(x =>
                         $"SELECT houseguid,housenum,buildnum,strucnum FROM {x} WHERE aoguid=@p"));
-                _childrenSteadSql = string.Join(" UNION ",
+                _childrenSteadSql = string.Join("\nUNION\n",
                     _listStead.Select(x =>
                         $"SELECT steadguid,number FROM {x} WHERE parentguid=@p"));
-                _childrenAddrobSql = string.Join(" UNION ",
+                _childrenAddrobSql = string.Join("\nUNION\n",
                     _listAddrob.Select(x =>
                         $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid=@p AND actstatus=1"));
 
-                _rootRoomSql = string.Join(" UNION ",
+                _rootRoomSql = string.Join("\nUNION\n",
                     _listRoom.Select(x =>
                         $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid IS NULL"));
-                _rootHouseSql = string.Join(" UNION ",
+                _rootHouseSql = string.Join("\nUNION\n",
                     _listHouse.Select(x =>
                         $"SELECT houseguid,housenum,buildnum,strucnum FROM {x} WHERE aoguid IS NULL"));
-                _rootSteadSql = string.Join(" UNION ",
+                _rootSteadSql = string.Join("\nUNION\n",
                     _listStead.Select(x =>
                         $"SELECT steadguid,number FROM {x} WHERE parentguid IS NULL"));
-                _rootAddrobSql = string.Join(" UNION ",
+                _rootAddrobSql = string.Join("\nUNION\n",
                     _listAddrob.Select(x =>
                         $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid IS NULL AND actstatus=1"));
             }
@@ -97,6 +97,8 @@ namespace Placium.WebApi.Services
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
                 await connection.OpenAsync();
+
+                connection.ReloadTypes();
 
                 var result = new List<Element>();
 
@@ -229,6 +231,8 @@ namespace Placium.WebApi.Services
             {
                 await connection.OpenAsync();
 
+                connection.ReloadTypes();
+
                 var result = new List<Element>();
 
                 using (var command = new NpgsqlCommand(_childrenRoomSql, connection))
@@ -345,6 +349,8 @@ namespace Placium.WebApi.Services
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
                 await connection.OpenAsync();
+
+                connection.ReloadTypes();
 
                 var result = new List<Element>();
 

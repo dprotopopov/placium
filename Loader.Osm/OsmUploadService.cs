@@ -104,7 +104,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Node;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY Node ({string.Join(", ", nodeKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY Node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS '';");
 
                                     await _progressHub.ProgressAsync(100f, id, session);
                                     count = 0;
@@ -123,7 +123,7 @@ namespace Loader.Osm
                                     node.UserId.ToString(),
                                     node.UserName.ValueAsText(),
                                     node.Visible.ToString(),
-                                    $"{string.Join(", ", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\" => \"{t.Value.TextEscape(2)}\""))}"
+                                    $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                                 };
 
                                 writer.WriteLine(string.Join("\t", nodeValues));
@@ -135,7 +135,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Way;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY Way ({string.Join(", ", wayKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY Way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS '';");
 
                                     await _progressHub.ProgressAsync(100f, id, session);
                                     count = 0;
@@ -152,7 +152,7 @@ namespace Loader.Osm
                                     way.UserId.ToString(),
                                     way.UserName.ValueAsText(),
                                     way.Visible.ToString(),
-                                    $"{string.Join(", ", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\" => \"{t.Value.TextEscape(2)}\""))}",
+                                    $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", way.Nodes.Select(t => $"{t.ToString()}"))}}}"
                                 };
 
@@ -165,7 +165,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Relation;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY Relation ({string.Join(", ", relationKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY Relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS '';");
 
                                     await _progressHub.ProgressAsync(100f, id, session);
                                     count = 0;
@@ -182,7 +182,7 @@ namespace Loader.Osm
                                     relation.UserId.ToString(),
                                     relation.UserName.ValueAsText(),
                                     relation.Visible.ToString(),
-                                    $"{string.Join(", ", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\" => \"{t.Value.TextEscape(2)}\""))}",
+                                    $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id.ToString()},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{((int) t.Type).ToString()})\\\""))}}}"
                                 };
 
@@ -245,7 +245,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Node;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_node ({string.Join(", ", nodeKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY temp_node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS '';");
 
                                     await _progressHub.ProgressAsync(100f, id, session);
                                     count = 0;
@@ -264,7 +264,7 @@ namespace Loader.Osm
                                     node.UserId.ToString(),
                                     node.UserName.ValueAsText(),
                                     node.Visible.ToString(),
-                                    $"{string.Join(", ", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\" => \"{t.Value.TextEscape(2)}\""))}"
+                                    $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                                 };
 
                                 writer.WriteLine(string.Join("\t", nodeValues));
@@ -276,7 +276,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Way;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_way ({string.Join(", ", wayKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY temp_way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS '';");
 
                                     await _progressHub.ProgressAsync(100f, id, session);
                                     count = 0;
@@ -293,7 +293,7 @@ namespace Loader.Osm
                                     way.UserId.ToString(),
                                     way.UserName.ValueAsText(),
                                     way.Visible.ToString(),
-                                    $"{string.Join(", ", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\" => \"{t.Value.TextEscape(2)}\""))}",
+                                    $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", way.Nodes.Select(t => $"{t.ToString()}"))}}}"
                                 };
 
@@ -306,7 +306,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Relation;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_relation ({string.Join(", ", relationKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY temp_relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS '';");
 
                                     await _progressHub.ProgressAsync(100f, id, session);
                                     count = 0;
@@ -323,7 +323,7 @@ namespace Loader.Osm
                                     relation.UserId.ToString(),
                                     relation.UserName.ValueAsText(),
                                     relation.Visible.ToString(),
-                                    $"{string.Join(", ", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\" => \"{t.Value.TextEscape(2)}\""))}",
+                                    $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id.ToString()},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{((int) t.Type).ToString()})\\\""))}}}"
                                 };
 

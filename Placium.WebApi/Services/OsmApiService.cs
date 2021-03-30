@@ -62,6 +62,7 @@ namespace Placium.WebApi.Services
             {
                 await connection.OpenAsync();
 
+                connection.ReloadTypes();
                 connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");

@@ -48,6 +48,7 @@ namespace Updater.Place
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
 
+                connection.ReloadTypes();
                 connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
@@ -88,7 +89,7 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    "CREATE TABLE temp_place_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
+                    "CREATE TEMP TABLE temp_place_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
                     , connection))
                 {
                     command.ExecuteNonQuery();
@@ -163,6 +164,7 @@ namespace Updater.Place
                 await connection2.OpenAsync();
                 await connection3.OpenAsync();
 
+                connection.ReloadTypes();
                 connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
@@ -202,7 +204,7 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    "CREATE TABLE temp_place_way (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
+                    "CREATE TEMP TABLE temp_place_way (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
                     , connection))
                 {
                     command.ExecuteNonQuery();
@@ -321,6 +323,7 @@ namespace Updater.Place
                 await connection2.OpenAsync();
                 await connection3.OpenAsync();
 
+                connection.ReloadTypes();
                 connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
@@ -360,7 +363,7 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    "CREATE TABLE temp_place_relation (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
+                    "CREATE TEMP TABLE temp_place_relation (osm_id BIGINT,tags hstore,location GEOGRAPHY)"
                     , connection))
                 {
                     command.ExecuteNonQuery();

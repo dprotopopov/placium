@@ -2,7 +2,7 @@
 DROP TABLE IF EXISTS temp_way;
 DROP TABLE IF EXISTS temp_relation;
 
-CREATE TABLE temp_node (
+CREATE TEMP TABLE temp_node (
 	id BIGINT, 
 	version INTEGER, 
 	latitude DOUBLE PRECISION, 
@@ -15,7 +15,7 @@ CREATE TABLE temp_node (
 	tags hstore
 );
 
-CREATE TABLE temp_way (
+CREATE TEMP TABLE temp_way (
 	id BIGINT, 
 	version INTEGER, 
 	change_set_id BIGINT, 
@@ -27,7 +27,7 @@ CREATE TABLE temp_way (
 	nodes BIGINT[]
 );
 
-CREATE TABLE temp_relation (
+CREATE TEMP TABLE temp_relation (
 	id BIGINT, 
 	version INTEGER, 
 	change_set_id BIGINT, 

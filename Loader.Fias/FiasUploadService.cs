@@ -125,7 +125,7 @@ namespace Loader.Fias
                                             }
 
                                             writer = connection.BeginTextImport(
-                                                $"COPY {tableName} ({string.Join(", ", names)}) FROM STDIN WITH NULL AS ''");
+                                                $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
                                         }
                                         else
                                         {
@@ -204,7 +204,7 @@ namespace Loader.Fias
                                                     }
 
                                                     writer = connection.BeginTextImport(
-                                                        $"COPY {tableName} ({string.Join(", ", names)}) FROM STDIN WITH NULL AS '';");
+                                                        $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
                                                 }
                                                 else
                                                 {
@@ -222,14 +222,14 @@ namespace Loader.Fias
                                                     }
 
                                                     using (var command = new NpgsqlCommand(
-                                                        $"CREATE TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
+                                                        $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
                                                         , connection))
                                                     {
                                                         command.ExecuteNonQuery();
                                                     }
 
                                                     writer = connection.BeginTextImport(
-                                                        $"COPY temp_{tableName} ({string.Join(", ", names)}) FROM STDIN WITH NULL AS '';");
+                                                        $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
                                                 }
                                             }
                                             else
@@ -243,7 +243,7 @@ namespace Loader.Fias
                                         if (TableIsExists($"temp_{tableName}", connection))
                                         {
                                             using (var command = new NpgsqlCommand(
-                                                $"INSERT INTO {tableName} ({string.Join(", ", names)}) SELECT {string.Join(", ", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(", ", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq');"
+                                                $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq');"
                                                 , connection))
                                             {
                                                 command.ExecuteNonQuery();
@@ -305,16 +305,9 @@ namespace Loader.Fias
         private void SelectAndExecute(string[] sqls, NpgsqlConnection conn)
         {
             var cmds = new List<string>();
-
-            using (var command = new NpgsqlCommand(string.Join("\nUNION\n", sqls), conn))
-            {
-                using (var reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                        cmds.Add(reader.GetString(0));
-                }
-            }
-
+ 
+            cmds.Fill(string.Join("\nUNION\n", sqls), conn);
+ 
             using (var command = new NpgsqlCommand(string.Join(";\n", cmds), conn))
             {
                 command.ExecuteNonQuery();
@@ -327,14 +320,8 @@ namespace Loader.Fias
                 $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='{tableName}');"
                 , conn))
             {
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetBoolean(0);
-                }
+                return (bool) command.ExecuteScalar();
             }
-
-            throw new NotImplementedException();
         }
 
         private void ExcludeDeleted(string tableName, string key, NpgsqlConnection conn)

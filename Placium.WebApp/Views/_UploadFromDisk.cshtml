@@ -38,9 +38,12 @@
                 contentType: false,
                 processData: false,
                 type: "POST",
-                success: function(data) {
+                success: function (data) {
                     alert("Complete");
-                }
+                },
+                error: function (jqXHR, exception) {
+                    alert("Error");
+                },
             }
         );
     };

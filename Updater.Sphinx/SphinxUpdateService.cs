@@ -72,6 +72,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.OpenAsync();
 
+                npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob);
@@ -82,7 +83,7 @@ namespace Updater.Sphinx
                     @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
                     npgsqlConnection);
 
-                var sql1 = string.Join(" UNION ",
+                var sql1 = string.Join("\nUNION\n",
                     list.Select(x =>
                         $"SELECT COUNT(*) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
 
@@ -97,7 +98,7 @@ namespace Updater.Sphinx
                     }
                 }
 
-                var sql = string.Join(" UNION ",
+                var sql = string.Join("\nUNION\n",
                     list.Select(x =>
                         $"SELECT {x}.record_number,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
 
@@ -171,6 +172,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.OpenAsync();
 
+                npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.House);
@@ -181,7 +183,7 @@ namespace Updater.Sphinx
                     @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'house\d+'",
                     npgsqlConnection);
 
-                var sql1 = string.Join(" UNION ",
+                var sql1 = string.Join("\nUNION\n",
                     list.Select(x =>
                         $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
@@ -196,7 +198,7 @@ namespace Updater.Sphinx
                     }
                 }
 
-                var sql = string.Join(" UNION ",
+                var sql = string.Join("\nUNION\n",
                     list.Select(x =>
                         $"SELECT record_number,housenum,buildnum,strucnum FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
@@ -266,6 +268,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.OpenAsync();
 
+                npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead);
@@ -276,7 +279,7 @@ namespace Updater.Sphinx
                     @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
                     npgsqlConnection);
 
-                var sql1 = string.Join(" UNION ",
+                var sql1 = string.Join("\nUNION\n",
                     list.Select(x =>
                         $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
@@ -291,7 +294,7 @@ namespace Updater.Sphinx
                     }
                 }
 
-                var sql = string.Join(" UNION ",
+                var sql = string.Join("\nUNION\n",
                     list.Select(x =>
                         $"SELECT record_number,number FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
@@ -345,6 +348,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.OpenAsync();
 
+                npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Place);

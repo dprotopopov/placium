@@ -22,7 +22,9 @@ namespace Placium.WebApi.Services
             {
                 await connection.OpenAsync();
 
+                connection.ReloadTypes();
                 connection.TypeMapper.UseGeoJson();
+
                 var result = new List<Place>(limit);
 
                 using (var command =
@@ -56,6 +58,7 @@ namespace Placium.WebApi.Services
             {
                 await connection.OpenAsync();
 
+                connection.ReloadTypes();
                 connection.TypeMapper.UseGeoJson();
 
                 var result = new List<Place>(limit);
