@@ -6,7 +6,7 @@ namespace Placium.Common
 {
     public interface IUploadService
     {
-        Task InstallAsync(Stream uploadStream, NpgsqlConnection connection, string session);
-        Task UpdateAsync(Stream uploadStream, NpgsqlConnection connection, string session);
+        Task InstallAsync(Stream uploadStream, string session);
+        Task UpdateAsync(Stream uploadStream, string session);
     }
 }

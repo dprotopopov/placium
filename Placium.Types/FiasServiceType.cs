@@ -6,5 +6,9 @@ namespace Placium.Types
     {
         [PgName("addrob")]
         Addrob,
+        [PgName("house")] 
+        House,
+        [PgName("stead")]
+        Stead,
     }
 }

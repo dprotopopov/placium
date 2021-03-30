@@ -5,6 +5,6 @@ namespace Placium.Common
 {
     public interface IUpdateService
     {
-        Task UpdateAsync(string connectionString, string session);
+        Task UpdateAsync(string session);
     }
 }

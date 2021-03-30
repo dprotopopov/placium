@@ -20,7 +20,8 @@ namespace Placium.WebApi.Services
         {
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
-                connection.Open();
+                await connection.OpenAsync();
+
                 connection.TypeMapper.UseGeoJson();
                 var result = new List<Place>(limit);
 
@@ -43,6 +44,8 @@ namespace Placium.WebApi.Services
                     }
                 }
 
+                await connection.CloseAsync();
+
                 return result;
             }
         }
@@ -51,7 +54,8 @@ namespace Placium.WebApi.Services
         {
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
-                connection.Open();
+                await connection.OpenAsync();
+
                 connection.TypeMapper.UseGeoJson();
 
                 var result = new List<Place>(limit);
@@ -75,6 +79,8 @@ namespace Placium.WebApi.Services
                             });
                     }
                 }
+
+                await connection.CloseAsync();
 
                 return result;
             }

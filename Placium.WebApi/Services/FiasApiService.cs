@@ -217,6 +217,8 @@ namespace Placium.WebApi.Services
 
                 result.Reverse();
 
+                await connection.CloseAsync();
+
                 return result;
             }
         }
@@ -332,6 +334,8 @@ namespace Placium.WebApi.Services
                     }
                 }
 
+                await connection.CloseAsync();
+
                 return result;
             }
         }
@@ -442,6 +446,8 @@ namespace Placium.WebApi.Services
                         }
                     }
                 }
+
+                await connection.CloseAsync();
 
                 return result;
             }

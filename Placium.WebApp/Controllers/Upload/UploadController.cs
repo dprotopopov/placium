@@ -3,7 +3,6 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Npgsql;
 using Placium.Common;
 
 namespace Placium.WebApp.Controllers.Upload
@@ -30,7 +29,6 @@ namespace Placium.WebApp.Controllers.Upload
             return View("~/Views/_UploadFromDisk.cshtml");
         }
 
-        protected abstract string GetConnectionString();
         protected abstract UploadFormInfo GetInstallFormInfo();
         protected abstract UploadFormInfo GetUpdateFormInfo();
 
@@ -38,14 +36,9 @@ namespace Placium.WebApp.Controllers.Upload
         [DisableRequestSizeLimit]
         public async Task<IActionResult> InstallFromDisk(string fileName, string session)
         {
-            var connectionString = GetConnectionString();
-
-            using (var connection = new NpgsqlConnection(connectionString))
             using (var stream = System.IO.File.OpenRead(fileName))
             {
-                connection.Open();
-                await UploadService.InstallAsync(stream, connection, session);
-                connection.Close();
+                await UploadService.InstallAsync(stream, session);
             }
 
             return Content(fileName);
@@ -67,14 +60,9 @@ namespace Placium.WebApp.Controllers.Upload
         [DisableRequestSizeLimit]
         public async Task<IActionResult> UpdateFromDisk(string fileName, string session)
         {
-            var connectionString = GetConnectionString();
-
-            using (var connection = new NpgsqlConnection(connectionString))
             using (var stream = System.IO.File.OpenRead(fileName))
             {
-                connection.Open();
-                await UploadService.UpdateAsync(stream, connection, session);
-                connection.Close();
+                await UploadService.UpdateAsync(stream, session);
             }
 
             return Content(fileName);
@@ -94,7 +82,6 @@ namespace Placium.WebApp.Controllers.Upload
         [HttpPost]
         public async Task<IActionResult> InstallFromWeb(string url, string session)
         {
-            var connectionString = GetConnectionString();
             using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
                 FileAccess.ReadWrite, FileShare.None,
                 4096, FileOptions.DeleteOnClose))
@@ -109,12 +96,7 @@ namespace Placium.WebApp.Controllers.Upload
 
                 tempFileStream.Position = 0;
 
-                using (var connection = new NpgsqlConnection(connectionString))
-                {
-                    connection.Open();
-                    await UploadService.InstallAsync(tempFileStream, connection, session);
-                    connection.Close();
-                }
+                await UploadService.InstallAsync(tempFileStream, session);
             }
 
             return Content(url);
@@ -135,7 +117,6 @@ namespace Placium.WebApp.Controllers.Upload
         [HttpPost]
         public async Task<IActionResult> UpdateFromWeb(string url, string session)
         {
-            var connectionString = GetConnectionString();
             using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
                 FileAccess.ReadWrite, FileShare.None,
                 4096, FileOptions.DeleteOnClose))
@@ -150,12 +131,7 @@ namespace Placium.WebApp.Controllers.Upload
 
                 tempFileStream.Position = 0;
 
-                using (var connection = new NpgsqlConnection(connectionString))
-                {
-                    connection.Open();
-                    await UploadService.UpdateAsync(tempFileStream, connection, session);
-                    connection.Close();
-                }
+                await UploadService.UpdateAsync(tempFileStream, session);
             }
 
             return Content(url);

@@ -16,7 +16,6 @@ namespace Placium.WebApp.Controllers.Update
             UpdateService = updateService;
         }
 
-        protected abstract string GetConnectionString();
         protected abstract UpdateFormInfo GetUpdateFormInfo();
 
         public async Task<IActionResult> Update()
@@ -35,11 +34,9 @@ namespace Placium.WebApp.Controllers.Update
         [DisableRequestSizeLimit]
         public async Task<IActionResult> Update(string session)
         {
-            var connectionString = GetConnectionString();
+            await UpdateService.UpdateAsync(session);
 
-            await UpdateService.UpdateAsync(connectionString, session);
-
-            return Content("comlite");
+            return Content("complete");
         }
 
         public class UpdateFormInfo

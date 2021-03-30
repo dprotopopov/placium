@@ -20,6 +20,12 @@ CREATE SEQUENCE record_number_seq;
 
 CREATE TYPE osm_type AS ENUM ('node', 'way', 'relation');
 CREATE TYPE service_type AS ENUM ('node', 'way', 'relation', 'place');
+CREATE TYPE relation_member AS (
+	id BIGINT, 
+    role VARCHAR(255),
+    type INTEGER
+);
+
 
 CREATE TABLE service_history(
 	service_type service_type PRIMARY KEY,
@@ -60,12 +66,6 @@ CREATE TABLE way (
 	tags hstore,
 	nodes BIGINT[],
 	record_number BIGINT DEFAULT nextval('record_number_seq')
-);
-
-CREATE TYPE relation_member AS (
-	id BIGINT, 
-    role VARCHAR(255),
-    type INTEGER
 );
 
 CREATE TABLE relation (

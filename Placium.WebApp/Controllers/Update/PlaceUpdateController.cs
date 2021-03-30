@@ -10,11 +10,6 @@ namespace Placium.WebApp.Controllers.Update
         {
         }
 
-        protected override string GetConnectionString()
-        {
-            return Configuration.GetConnectionString("OsmConnection");
-        }
-
         protected override UpdateFormInfo GetUpdateFormInfo()
         {
             return new UpdateFormInfo

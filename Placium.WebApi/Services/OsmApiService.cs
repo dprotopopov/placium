@@ -60,7 +60,7 @@ namespace Placium.WebApi.Services
         {
             using (var connection = new NpgsqlConnection(GetConnectionString()))
             {
-                connection.Open();
+                await connection.OpenAsync();
 
                 connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");

@@ -16,13 +16,13 @@ namespace Placium.WebApp.Controllers
             _osmApiService = osmApiService;
         }
 
-        public IActionResult Index()
+        public IActionResult ById()
         {
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> Index(string osm_id, string osm_type)
+        public async Task<IActionResult> ById(string osm_id, string osm_type)
         {
             long.TryParse(osm_id, out var id);
 

@@ -5,11 +5,11 @@ namespace Placium.Common
 {
     public class ProgressHub : Hub
     {
-        public async Task Progress(float progress, string id, string session)
+        public async Task ProgressAsync(float progress, string id, string session)
         {
             await Clients.All.SendAsync("Progress", progress, id, session);
         }
-        public async Task Init(string id, string session)
+        public async Task InitAsync(string id, string session)
         {
             await Clients.All.SendAsync("Init", id, session);
         }

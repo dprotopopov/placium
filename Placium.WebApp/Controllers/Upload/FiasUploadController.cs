@@ -10,11 +10,6 @@ namespace Placium.WebApp.Controllers.Upload
         {
         }
 
-        protected override string GetConnectionString()
-        {
-            return Configuration.GetConnectionString("FiasConnection");
-        }
-
         protected override UploadFormInfo GetInstallFormInfo()
         {
             return new UploadFormInfo

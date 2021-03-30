@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Placium.Common;
 using Placium.Types;
@@ -14,29 +15,35 @@ namespace Updater.Place
     {
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly ProgressHub _progressHub;
+        private readonly IConfiguration _configuration;
 
-        public PlaceUpdateService(ProgressHub progressHub)
+        public PlaceUpdateService(ProgressHub progressHub, IConfiguration configuration)
         {
             _progressHub = progressHub;
+            _configuration = configuration;
         }
-
-        public async Task UpdateAsync(string connectionString, string session)
+        private string GetConnectionString()
         {
-            await UpdateFromNodeAsync(connectionString, session);
-            await UpdateFromWayAsync(connectionString, session);
-            await UpdateFromRelationAsync(connectionString, session);
+            return _configuration.GetConnectionString("OsmConnection");
         }
 
-        public async Task UpdateFromNodeAsync(string connectionString, string session)
+        public async Task UpdateAsync(string session)
+        {
+            await UpdateFromNodeAsync(session);
+            await UpdateFromWayAsync(session);
+            await UpdateFromRelationAsync(session);
+        }
+
+        public async Task UpdateFromNodeAsync(string session)
         {
             var current = 0L;
             var total = 0L;
 
             var id = Guid.NewGuid().ToString();
-            await _progressHub.Init(id, session);
+            await _progressHub.InitAsync(id, session);
 
-            using (var connection = new NpgsqlConnection(connectionString))
-            using (var connection2 = new NpgsqlConnection(connectionString))
+            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection2 = new NpgsqlConnection(GetConnectionString()))
             {
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
@@ -112,11 +119,11 @@ namespace Updater.Place
                             writer.WriteLine(string.Join("\t", values));
 
                             if (current % 1000 == 0)
-                                await _progressHub.Progress(100f * current / total, id, session);
+                                await _progressHub.ProgressAsync(100f * current / total, id, session);
                         }
                     }
 
-                    await _progressHub.Progress(100f, id, session);
+                    await _progressHub.ProgressAsync(100f, id, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -140,17 +147,17 @@ namespace Updater.Place
             }
         }
 
-        public async Task UpdateFromWayAsync(string connectionString, string session)
+        public async Task UpdateFromWayAsync(string session)
         {
             var current = 0L;
             var total = 0L;
 
             var id1 = Guid.NewGuid().ToString();
-            await _progressHub.Init(id1, session);
+            await _progressHub.InitAsync(id1, session);
 
-            using (var connection = new NpgsqlConnection(connectionString))
-            using (var connection2 = new NpgsqlConnection(connectionString))
-            using (var connection3 = new NpgsqlConnection(connectionString))
+            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection2 = new NpgsqlConnection(GetConnectionString()))
+            using (var connection3 = new NpgsqlConnection(GetConnectionString()))
             {
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
@@ -269,11 +276,11 @@ namespace Updater.Place
                             writer.WriteLine(string.Join("\t", values));
 
                             if (current % 1000 == 0)
-                                await _progressHub.Progress(100f * current / total, id1, session);
+                                await _progressHub.ProgressAsync(100f * current / total, id1, session);
                         }
                     }
 
-                    await _progressHub.Progress(100f, id1, session);
+                    await _progressHub.ProgressAsync(100f, id1, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -298,17 +305,17 @@ namespace Updater.Place
             }
         }
 
-        public async Task UpdateFromRelationAsync(string connectionString, string session)
+        public async Task UpdateFromRelationAsync(string session)
         {
             var current = 0L;
             var total = 0L;
 
             var id1 = Guid.NewGuid().ToString();
-            await _progressHub.Init(id1, session);
+            await _progressHub.InitAsync(id1, session);
 
-            using (var connection = new NpgsqlConnection(connectionString))
-            using (var connection2 = new NpgsqlConnection(connectionString))
-            using (var connection3 = new NpgsqlConnection(connectionString))
+            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection2 = new NpgsqlConnection(GetConnectionString()))
+            using (var connection3 = new NpgsqlConnection(GetConnectionString()))
             {
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
@@ -459,11 +466,11 @@ namespace Updater.Place
                             writer.WriteLine(string.Join("\t", values));
 
                             if (current % 1000 == 0)
-                                await _progressHub.Progress(100f * current / total, id1, session);
+                                await _progressHub.ProgressAsync(100f * current / total, id1, session);
                         }
                     }
 
-                    await _progressHub.Progress(100f, id1, session);
+                    await _progressHub.ProgressAsync(100f, id1, session);
                 }
 
                 using (var command = new NpgsqlCommand(
