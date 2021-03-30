@@ -24,11 +24,11 @@ namespace Updater.Sphinx
 
         public async Task UpdateAsync(string session)
         {
-            using (var connection = new MySqlConnection(GetConnectionString()))
+            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
                 connection.TryOpen();
 
-                TryExecuteQueries(new[]
+                TryExecuteNonQueries(new[]
                 {
                     "CREATE TABLE addrob(text field)",
                     "CREATE TABLE house(text field)",
@@ -43,12 +43,12 @@ namespace Updater.Sphinx
             }
         }
 
-        private string GetConnectionString()
+        private string GetSphinxConnectionString()
         {
             return _configuration.GetConnectionString("SphinxConnection");
         }
 
-        private void TryExecuteQueries(string[] sqls, MySqlConnection connection)
+        private void TryExecuteNonQueries(string[] sqls, MySqlConnection connection)
         {
             foreach (var sql in sqls)
                 using (var command = new MySqlCommand(sql, connection))

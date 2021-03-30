@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using MySql.Data.MySqlClient;
 using Npgsql;
 
 namespace Placium.Common
@@ -18,6 +19,19 @@ namespace Placium.Common
         {
             while (reader.Read())
                 list.Add(reader.GetString(0));
+        }
+        public static void Fill(this List<long> list, string sql, MySqlConnection connection)
+        {
+            using (var command = new MySqlCommand(sql, connection))
+            using (var reader = command.ExecuteReader())
+            {
+                list.Fill(reader);
+            }
+        }
+        public static void Fill(this List<long> list, MySqlDataReader reader)
+        {
+            while (reader.Read())
+                list.Add(reader.GetInt64(0));
         }
     }
 }

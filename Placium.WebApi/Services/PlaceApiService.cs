@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using Placium.Seeker;
 using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
@@ -10,15 +11,17 @@ namespace Placium.WebApi.Services
     public class PlaceApiService
     {
         private readonly IConfiguration _configuration;
+        private readonly DefaultSeeker _seeker;
 
-        public PlaceApiService(IConfiguration configuration)
+        public PlaceApiService(IConfiguration configuration, DefaultSeeker seeker)
         {
             _configuration = configuration;
+            _seeker = seeker;
         }
 
         public async Task<List<Place>> GetByNameAsync(string pattern, int limit = 10)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
 
@@ -48,13 +51,15 @@ namespace Placium.WebApi.Services
 
                 await connection.CloseAsync();
 
+                result.ForEach(async x => { x.guids = await _seeker.AddrToFias(x.tags);});
+                
                 return result;
             }
         }
 
-        public async Task<List<Place>> GetByPointAsync(double latitude, double longitude, int limit = 1)
+        public async Task<List<Place>> GetByCoordsAsync(double latitude, double longitude, int limit = 1)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
 
@@ -85,11 +90,13 @@ namespace Placium.WebApi.Services
 
                 await connection.CloseAsync();
 
+                result.ForEach(async x => { x.guids = await _seeker.AddrToFias(x.tags); });
+
                 return result;
             }
         }
 
-        private string GetConnectionString()
+        private string GetOsmConnectionString()
         {
             return _configuration.GetConnectionString("OsmConnection");
         }

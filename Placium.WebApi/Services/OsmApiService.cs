@@ -58,7 +58,7 @@ namespace Placium.WebApi.Services
 
         public async Task<OsmGeo> GetByIdAsync(long osm_id, OsmType type)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
 
@@ -124,7 +124,7 @@ namespace Placium.WebApi.Services
         }
 
 
-        private string GetConnectionString()
+        private string GetOsmConnectionString()
         {
             return _configuration.GetConnectionString("OsmConnection");
         }

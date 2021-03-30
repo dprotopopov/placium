@@ -33,7 +33,7 @@ namespace Placium.WebApi.Services
         {
             _configuration = configuration;
 
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 connection.Open();
 
@@ -94,7 +94,7 @@ namespace Placium.WebApi.Services
 
         public async Task<List<Element>> GetDetailsAsync(string guid, bool formal = false, bool socr = false)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 await connection.OpenAsync();
 
@@ -227,7 +227,7 @@ namespace Placium.WebApi.Services
 
         public async Task<List<Element>> GetChildrenAsync(string guid, bool formal = false, bool socr = false)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 await connection.OpenAsync();
 
@@ -346,7 +346,7 @@ namespace Placium.WebApi.Services
 
         public async Task<List<Element>> GetRootsAsync(bool formal = false, bool socr = false)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 await connection.OpenAsync();
 
@@ -459,7 +459,7 @@ namespace Placium.WebApi.Services
             }
         }
 
-        private string GetConnectionString()
+        private string GetFiasConnectionString()
         {
             return _configuration.GetConnectionString("FiasConnection");
         }

@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Placium.Common;
+using Placium.Seeker;
 using Placium.WebApi.Services;
 using Updater.Place;
 using Updater.Sphinx;
@@ -25,6 +26,7 @@ namespace Placium.WebApp
 
         private void RegisterServices(IServiceCollection services)
         {
+            services.AddTransient<DefaultSeeker>();
             services.AddTransient<PlaceApiService>();
             services.AddTransient<OsmApiService>();
             services.AddTransient<FiasApiService>();

@@ -1,7 +1,7 @@
 ﻿using System;
 using MySql.Data.MySqlClient;
 
-namespace Updater.Sphinx
+namespace Placium.Common
 {
     public static class MySqlExtensions
     {

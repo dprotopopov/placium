@@ -25,18 +25,18 @@ namespace Placium.WebApp.Controllers
         {
             return Content(JsonConvert.SerializeObject(await _placeApiService.GetByNameAsync(pattern)));
         }
-        public IActionResult ByPoint()
+        public IActionResult ByCoords()
         {
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> ByPoint(string coords)
+        public async Task<IActionResult> ByCoords(string coords)
         {
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Content(JsonConvert.SerializeObject(await _placeApiService.GetByPointAsync(latitude, longitude)));
+            return Content(JsonConvert.SerializeObject(await _placeApiService.GetByCoordsAsync(latitude, longitude)));
         }
     }
 }

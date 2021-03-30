@@ -25,14 +25,14 @@ namespace Placium.WebApi.Controllers
             return Ok(await _placeApiService.GetByNameAsync(pattern));
         }
 
-        [HttpGet("by_point")]
+        [HttpGet("by_coords")]
         [ProducesResponseType(200, Type = typeof(List<Place>))]
-        public async Task<IActionResult> GetByPointAsync(string coords)
+        public async Task<IActionResult> GetByCoordsAsync(string coords)
         {
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Ok(await _placeApiService.GetByPointAsync(latitude, longitude));
+            return Ok(await _placeApiService.GetByCoordsAsync(latitude, longitude));
         }
     }
 }

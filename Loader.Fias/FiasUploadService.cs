@@ -63,17 +63,13 @@ namespace Loader.Fias
 
         public async Task InstallAsync(Stream uploadStream, string session)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 await connection.OpenAsync();
 
-                using (var stream = Assembly.GetExecutingAssembly()
-                    .GetManifestResourceStream("Loader.Fias.CreateSequence.sql"))
-                using (var sr = new StreamReader(stream, Encoding.UTF8))
-                using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-                {
-                    command.ExecuteNonQuery();
-                }
+                DropTables(connection);
+
+                await ExecuteResourceAsync("Loader.Fias.CreateSequence.sql", connection);
 
                 var tableNames = new List<string>();
 
@@ -155,7 +151,7 @@ namespace Loader.Fias
         {
             var tableNames = new List<string>();
 
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 await connection.OpenAsync();
 
@@ -277,7 +273,17 @@ namespace Loader.Fias
             }
         }
 
-        private string GetConnectionString()
+        private void DropTables(NpgsqlConnection conn)
+        {
+            var sqls = new[]
+            {
+                "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public'"
+            };
+
+            SelectAndExecute(sqls, conn);
+        }
+
+        private string GetFiasConnectionString()
         {
             return _configuration.GetConnectionString("FiasConnection");
         }
@@ -304,6 +310,17 @@ namespace Loader.Fias
             SelectAndExecute(sqls, conn);
         }
 
+        private async Task ExecuteResourceAsync(string resource, NpgsqlConnection connection)
+        {
+            using (var stream = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream(resource))
+            using (var sr = new StreamReader(stream, Encoding.UTF8))
+            using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
+            {
+                command.ExecuteNonQuery();
+            }
+        }
+
         private void SelectAndExecute(string[] sqls, NpgsqlConnection conn)
         {
             foreach (var sql in sqls)
@@ -314,13 +331,15 @@ namespace Loader.Fias
 
                 Parallel.ForEach(cmds, new ParallelOptions {MaxDegreeOfParallelism = 24}, cmd =>
                 {
-                    using (var connection = new NpgsqlConnection(GetConnectionString()))
+                    using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
                     {
                         connection.Open();
                         using (var command = new NpgsqlCommand(cmd, connection))
                         {
                             command.ExecuteNonQuery();
                         }
+
+                        connection.Close();
                     }
                 });
             }

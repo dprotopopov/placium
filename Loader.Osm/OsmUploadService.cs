@@ -79,13 +79,9 @@ namespace Loader.Osm
             {
                 await connection.OpenAsync();
 
-                using (var stream = Assembly.GetExecutingAssembly()
-                    .GetManifestResourceStream("Loader.Osm.CreateTables.sql"))
-                using (var sr = new StreamReader(stream, Encoding.UTF8))
-                using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-                {
-                    command.ExecuteNonQuery();
-                }
+                DropTables(connection);
+
+                await ExecuteResourceAsync("Loader.Osm.CreateTables.sql", connection);
 
                 long count = 0;
                 using (var source = new PBFOsmStreamSource(uploadStream))
@@ -201,13 +197,7 @@ namespace Loader.Osm
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
 
-                using (var stream = Assembly.GetExecutingAssembly()
-                    .GetManifestResourceStream("Loader.Osm.CreateIndices.sql"))
-                using (var sr = new StreamReader(stream, Encoding.UTF8))
-                using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-                {
-                    command.ExecuteNonQuery();
-                }
+                await ExecuteResourceAsync("Loader.Osm.CreateIndices.sql", connection);
 
                 await connection.CloseAsync();
             }
@@ -219,13 +209,7 @@ namespace Loader.Osm
             {
                 await connection.OpenAsync();
 
-                using (var stream = Assembly.GetExecutingAssembly()
-                    .GetManifestResourceStream("Loader.Osm.CreateTempTables.sql"))
-                using (var sr = new StreamReader(stream, Encoding.UTF8))
-                using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-                {
-                    command.ExecuteNonQuery();
-                }
+                await ExecuteResourceAsync("Loader.Osm.CreateTempTables.sql", connection);
 
                 long count = 0;
                 using (var source = new PBFOsmStreamSource(uploadStream))
@@ -342,15 +326,53 @@ namespace Loader.Osm
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
 
-                using (var stream = Assembly.GetExecutingAssembly()
-                    .GetManifestResourceStream("Loader.Osm.InsertFromTempTables.sql"))
-                using (var sr = new StreamReader(stream, Encoding.UTF8))
-                using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-                {
-                    command.ExecuteNonQuery();
-                }
+                await ExecuteResourceAsync("Loader.Osm.InsertFromTempTables.sql", connection);
 
                 await connection.CloseAsync();
+            }
+        }
+
+        private async Task ExecuteResourceAsync(string resource, NpgsqlConnection connection)
+        {
+            using (var stream = Assembly.GetExecutingAssembly()
+                .GetManifestResourceStream(resource))
+            using (var sr = new StreamReader(stream, Encoding.UTF8))
+            using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
+            {
+                command.ExecuteNonQuery();
+            }
+        }
+
+        private void DropTables(NpgsqlConnection conn)
+        {
+            var sqls = new[]
+            {
+                "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public'"
+            };
+
+            SelectAndExecute(sqls, conn);
+        }
+
+        private void SelectAndExecute(string[] sqls, NpgsqlConnection conn)
+        {
+            foreach (var sql in sqls)
+            {
+                var cmds = new List<string>();
+
+                cmds.Fill(sql, conn);
+
+                Parallel.ForEach(cmds, new ParallelOptions {MaxDegreeOfParallelism = 24}, cmd =>
+                {
+                    using (var connection = new NpgsqlConnection(GetConnectionString()))
+                    {
+                        connection.Open();
+                        using (var command = new NpgsqlCommand(cmd, connection))
+                        {
+                            command.ExecuteNonQuery();
+                        }
+                        connection.Close();
+                    }
+                });
             }
         }
 
