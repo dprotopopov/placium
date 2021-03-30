@@ -17,6 +17,7 @@ namespace Loader.Fias
     public class FiasUploadService : IUploadService
     {
         private readonly IConfiguration _configuration;
+
         private readonly Dictionary<string, string> _deleted = new Dictionary<string, string>
         {
             {"addrob", "aoid"},
@@ -149,10 +150,6 @@ namespace Loader.Fias
                 await connection.CloseAsync();
             }
         }
-        private string GetConnectionString()
-        {
-            return _configuration.GetConnectionString("FiasConnection");
-        }
 
         public async Task UpdateAsync(Stream uploadStream, string session)
         {
@@ -280,6 +277,11 @@ namespace Loader.Fias
             }
         }
 
+        private string GetConnectionString()
+        {
+            return _configuration.GetConnectionString("FiasConnection");
+        }
+
         private string FindKey(string tableName)
         {
             foreach (var mask in _masks)
@@ -304,13 +306,23 @@ namespace Loader.Fias
 
         private void SelectAndExecute(string[] sqls, NpgsqlConnection conn)
         {
-            var cmds = new List<string>();
- 
-            cmds.Fill(string.Join("\nUNION\n", sqls), conn);
- 
-            using (var command = new NpgsqlCommand(string.Join(";\n", cmds), conn))
+            foreach (var sql in sqls)
             {
-                command.ExecuteNonQuery();
+                var cmds = new List<string>();
+
+                cmds.Fill(sql, conn);
+
+                Parallel.ForEach(cmds, new ParallelOptions {MaxDegreeOfParallelism = 24}, cmd =>
+                {
+                    using (var connection = new NpgsqlConnection(GetConnectionString()))
+                    {
+                        connection.Open();
+                        using (var command = new NpgsqlCommand(cmd, connection))
+                        {
+                            command.ExecuteNonQuery();
+                        }
+                    }
+                });
             }
         }
 
