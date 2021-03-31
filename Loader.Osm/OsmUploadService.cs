@@ -181,7 +181,7 @@ namespace Loader.Osm
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateIndices.sql", connection);
+                BuildIndices(connection);
 
                 await connection.CloseAsync();
             }
@@ -305,6 +305,20 @@ namespace Loader.Osm
             }
         }
 
+        private void BuildIndices(NpgsqlConnection conn)
+        {
+            var sqls = new[]
+            {
+                new[]
+                {
+                    "SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (id);') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('node','way','relation')",
+                    "SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id') AND table_name IN ('place','node','way','relation')",
+                    "SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (osm_id,osm_type);') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('place')"
+                }
+            };
+
+            SelectAndExecute(sqls, conn, GetOsmConnectionString());
+        }
 
         private void DropTables(NpgsqlConnection conn)
         {

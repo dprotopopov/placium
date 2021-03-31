@@ -5,14 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="CreateIndices.sql" />
     <None Remove="CreateTables.sql" />
     <None Remove="CreateTempTables.sql" />
     <None Remove="InsertFromTempTables.sql" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="CreateIndices.sql" />
     <EmbeddedResource Include="CreateTables.sql" />
     <EmbeddedResource Include="CreateTempTables.sql" />
     <EmbeddedResource Include="InsertFromTempTables.sql" />
