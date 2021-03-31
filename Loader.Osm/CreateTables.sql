@@ -15,8 +15,10 @@ DROP TYPE IF EXISTS osm_type;
 DROP TYPE IF EXISTS service_type;
 
 DROP SEQUENCE IF EXISTS record_number_seq;
+DROP SEQUENCE IF EXISTS record_id_seq;
 
 CREATE SEQUENCE record_number_seq;
+CREATE SEQUENCE record_id_seq;
 
 CREATE TYPE osm_type AS ENUM ('node', 'way', 'relation');
 CREATE TYPE service_type AS ENUM ('node', 'way', 'relation', 'place');
@@ -38,7 +40,8 @@ CREATE TABLE place (
 	osm_type osm_type,
 	tags hstore,
 	location GEOGRAPHY,
-	record_number BIGINT DEFAULT nextval('record_number_seq')
+	record_number BIGINT DEFAULT nextval('record_number_seq'),
+	record_id BIGINT DEFAULT nextval('record_id_seq')
 );
 
 CREATE TABLE node (
@@ -52,7 +55,8 @@ CREATE TABLE node (
 	user_name VARCHAR(255), 
 	visible BOOLEAN, 
 	tags hstore,
-	record_number BIGINT DEFAULT nextval('record_number_seq')
+	record_number BIGINT DEFAULT nextval('record_number_seq'),
+	record_id BIGINT DEFAULT nextval('record_id_seq')
 );
 
 CREATE TABLE way (
@@ -65,7 +69,8 @@ CREATE TABLE way (
 	visible BOOLEAN, 
 	tags hstore,
 	nodes BIGINT[],
-	record_number BIGINT DEFAULT nextval('record_number_seq')
+	record_number BIGINT DEFAULT nextval('record_number_seq'),
+	record_id BIGINT DEFAULT nextval('record_id_seq')
 );
 
 CREATE TABLE relation (
@@ -78,6 +83,7 @@ CREATE TABLE relation (
 	visible BOOLEAN, 
 	tags hstore,
 	members relation_member[],
-	record_number BIGINT DEFAULT nextval('record_number_seq')
+	record_number BIGINT DEFAULT nextval('record_number_seq'),
+	record_id BIGINT DEFAULT nextval('record_id_seq')
 );
 

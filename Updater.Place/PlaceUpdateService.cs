@@ -73,7 +73,7 @@ namespace Updater.Place
 
 
                 using (var command = new NpgsqlCommand(
-                    "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT COUNT(1) FROM node WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
@@ -177,7 +177,7 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT COUNT(1) FROM way WHERE tags?|@keys AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
@@ -325,7 +325,7 @@ namespace Updater.Place
                 }
 
                 using (var command = new NpgsqlCommand(
-                    "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
+                    "SELECT COUNT(1) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number AND record_number<=@next_last_record_number"
                     , connection))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());

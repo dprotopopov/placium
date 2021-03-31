@@ -50,43 +50,43 @@ namespace Placium.WebApi.Services
                     @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
                     connection);
 
-                _parentRoomSql = string.Join("\nUNION\n",
+                _parentRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
                         $"SELECT houseguid,flatnumber,roomnumber FROM {x} WHERE roomguid=@p"));
-                _parentHouseSql = string.Join("\nUNION\n",
+                _parentHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
                         $"SELECT aoguid,housenum,buildnum,strucnum FROM {x} WHERE houseguid=@p"));
-                _parentSteadSql = string.Join("\nUNION\n",
+                _parentSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
                         $"SELECT parentguid,number FROM {x} WHERE steadguid=@p"));
-                _parentAddrobSql = string.Join("\nUNION\n",
+                _parentAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
                         $"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE aoguid=@p AND actstatus=1"));
 
 
-                _childrenRoomSql = string.Join("\nUNION\n",
+                _childrenRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
                         $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid=@p"));
-                _childrenHouseSql = string.Join("\nUNION\n",
+                _childrenHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
                         $"SELECT houseguid,housenum,buildnum,strucnum FROM {x} WHERE aoguid=@p"));
-                _childrenSteadSql = string.Join("\nUNION\n",
+                _childrenSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
                         $"SELECT steadguid,number FROM {x} WHERE parentguid=@p"));
-                _childrenAddrobSql = string.Join("\nUNION\n",
+                _childrenAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
                         $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid=@p AND actstatus=1"));
 
-                _rootRoomSql = string.Join("\nUNION\n",
+                _rootRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
                         $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid IS NULL"));
-                _rootHouseSql = string.Join("\nUNION\n",
+                _rootHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
                         $"SELECT houseguid,housenum,buildnum,strucnum FROM {x} WHERE aoguid IS NULL"));
-                _rootSteadSql = string.Join("\nUNION\n",
+                _rootSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
                         $"SELECT steadguid,number FROM {x} WHERE parentguid IS NULL"));
-                _rootAddrobSql = string.Join("\nUNION\n",
+                _rootAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
                         $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid IS NULL AND actstatus=1"));
             }

@@ -1,7 +1,11 @@
 ﻿DROP TABLE IF EXISTS service_history;
 DROP TYPE IF EXISTS service_type;
 
-CREATE SEQUENCE IF NOT EXISTS record_number_seq;
+DROP SEQUENCE IF EXISTS record_number_seq;
+DROP SEQUENCE IF EXISTS record_id_seq;
+
+CREATE SEQUENCE record_number_seq;
+CREATE SEQUENCE record_id_seq;
 
 CREATE TYPE service_type AS ENUM ('addrob', 'house', 'stead');
 

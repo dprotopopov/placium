@@ -62,13 +62,18 @@ namespace Placium.Seeker
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
                 connection.TryOpen();
-
                 stead.Fill($"SELECT id FROM stead WHERE MATCH('{housenumber.TextEscape()}')", connection);
+
+                connection.TryOpen();
                 house.Fill($"SELECT id FROM house WHERE MATCH('{housenumber.TextEscape()}')", connection);
+
                 foreach (var row in addr)
                 {
                     var list = new List<long>();
+
+                    connection.TryOpen();
                     list.Fill($"SELECT id FROM addrob WHERE MATCH('{row.TextEscape()}')", connection);
+
                     if (list.Any()) addrob.Add(list);
                 }
             }
@@ -83,12 +88,12 @@ namespace Placium.Seeker
                 var parent = new Dictionary<string, string>();
 
                 if (stead.Any())
-                    using (var command = new NpgsqlCommand(string.Join("\nUNION\n",
+                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                             _listStead.Select(x =>
-                                $"SELECT steadguid,parentguid FROM {x} WHERE record_number=ANY(@record_numbers)")),
+                                $"SELECT steadguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
                         connection))
                     {
-                        command.Parameters.AddWithValue("record_numbers", stead.ToArray());
+                        command.Parameters.AddWithValue("ids", stead.ToArray());
                         using (var reader = command.ExecuteReader())
                         {
                             while (reader.Read())
@@ -102,12 +107,12 @@ namespace Placium.Seeker
                     }
 
                 if (house.Any())
-                    using (var command = new NpgsqlCommand(string.Join("\nUNION\n",
+                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                             _listHouse.Select(x =>
-                                $"SELECT houseguid,aoguid FROM {x} WHERE record_number=ANY(@record_numbers)")),
+                                $"SELECT houseguid,aoguid FROM {x} WHERE record_id=ANY(@ids)")),
                         connection))
                     {
-                        command.Parameters.AddWithValue("record_numbers", house.ToArray());
+                        command.Parameters.AddWithValue("ids", house.ToArray());
                         using (var reader = command.ExecuteReader())
                         {
                             while (reader.Read())
@@ -121,12 +126,12 @@ namespace Placium.Seeker
                     }
 
                 foreach (var list in addrob)
-                    using (var command = new NpgsqlCommand(string.Join("\nUNION\n",
+                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                             _listAddrob.Select(x =>
-                                $"SELECT aoguid,parentguid FROM {x} WHERE record_number=ANY(@record_numbers)")),
+                                $"SELECT aoguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
                         connection))
                     {
-                        command.Parameters.AddWithValue("record_numbers", list.ToArray());
+                        command.Parameters.AddWithValue("ids", list.ToArray());
                         using (var reader = command.ExecuteReader())
                         {
                             var guidlist = new List<string>();
