@@ -66,7 +66,8 @@ namespace Loader.Fias
 
                 DropTables(connection);
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql",
+                    connection);
 
                 var tableNames = new List<string>();
 
@@ -93,8 +94,10 @@ namespace Loader.Fias
                                     var names = columns.Select(x => x.Name.ToLower()).ToList();
 
                                     TextWriter writer = null;
+                                    var needBuildIndices = false;
 
                                     while (reader.Read())
+                                    {
                                         if (writer == null)
                                         {
                                             try
@@ -116,18 +119,21 @@ namespace Loader.Fias
                                             {
                                                 command.ExecuteNonQuery();
                                                 tableNames.Add(tableName);
+                                                needBuildIndices = true;
                                             }
 
                                             writer = connection.BeginTextImport(
                                                 $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
                                         }
-                                        else
-                                        {
-                                            var values = columns.Select(x => x.ValueAsText(reader)).ToList();
-                                            writer.WriteLine(string.Join("\t", values));
-                                        }
+
+                                        var values = columns.Select(x => x.ValueAsText(reader)).ToList();
+                                        writer.WriteLine(string.Join("\t", values));
+                                    }
 
                                     writer?.Dispose();
+
+                                    if (needBuildIndices)
+                                        BuildIndices(new List<string> {tableName}, connection);
                                 }
                             }
                         }
@@ -137,8 +143,6 @@ namespace Loader.Fias
 
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
-
-                BuildIndices(tableNames, connection);
 
                 await connection.CloseAsync();
             }
@@ -179,8 +183,10 @@ namespace Loader.Fias
                                         var names = columns.Select(x => x.Name.ToLower()).ToList();
 
                                         TextWriter writer = null;
+                                        var needBuildIndices = false;
 
                                         while (reader.Read())
+                                        {
                                             if (writer == null)
                                             {
                                                 if (!TableIsExists(tableName, connection))
@@ -191,6 +197,7 @@ namespace Loader.Fias
                                                     {
                                                         command.ExecuteNonQuery();
                                                         tableNames.Add(tableName);
+                                                        needBuildIndices = true;
                                                     }
 
                                                     writer = connection.BeginTextImport(
@@ -222,11 +229,10 @@ namespace Loader.Fias
                                                         $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
                                                 }
                                             }
-                                            else
-                                            {
-                                                var values = columns.Select(x => x.ValueAsText(reader)).ToList();
-                                                writer.WriteLine(string.Join("\t", values));
-                                            }
+
+                                            var values = columns.Select(x => x.ValueAsText(reader)).ToList();
+                                            writer.WriteLine(string.Join("\t", values));
+                                        }
 
                                         writer?.Dispose();
 
@@ -252,6 +258,9 @@ namespace Loader.Fias
                                             {
                                             }
                                         }
+
+                                        if (needBuildIndices)
+                                            BuildIndices(new List<string> {tableName}, connection);
                                     }
                                 }
                         }
@@ -261,8 +270,6 @@ namespace Loader.Fias
 
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
-
-                BuildIndices(tableNames, connection);
 
                 foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
 
