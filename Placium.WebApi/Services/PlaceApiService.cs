@@ -3,19 +3,18 @@ using System.Threading.Tasks;
 using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using Placium.Common;
 using Placium.Seeker;
 using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
 {
-    public class PlaceApiService
+    public class PlaceApiService : BaseService
     {
-        private readonly IConfiguration _configuration;
         private readonly DefaultSeeker _seeker;
 
-        public PlaceApiService(IConfiguration configuration, DefaultSeeker seeker)
+        public PlaceApiService(IConfiguration configuration, DefaultSeeker seeker) : base(configuration)
         {
-            _configuration = configuration;
             _seeker = seeker;
         }
 
@@ -51,8 +50,8 @@ namespace Placium.WebApi.Services
 
                 await connection.CloseAsync();
 
-                result.ForEach(async x => { x.guids = await _seeker.AddrToFias(x.tags);});
-                
+                result.ForEach(async x => { x.guids = await _seeker.AddrToFias(x.tags); });
+
                 return result;
             }
         }
@@ -94,11 +93,6 @@ namespace Placium.WebApi.Services
 
                 return result;
             }
-        }
-
-        private string GetOsmConnectionString()
-        {
-            return _configuration.GetConnectionString("OsmConnection");
         }
     }
 }

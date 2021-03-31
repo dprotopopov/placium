@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -13,7 +12,7 @@ using Placium.Common;
 
 namespace Loader.Osm
 {
-    public class OsmUploadService : IUploadService
+    public class OsmUploadService : BaseService, IUploadService
     {
         public enum ElementType
         {
@@ -22,8 +21,6 @@ namespace Loader.Osm
             Way,
             Relation
         }
-
-        private readonly IConfiguration _configuration;
 
         private readonly ProgressHub _progressHub;
 
@@ -67,21 +64,20 @@ namespace Loader.Osm
             "nodes"
         };
 
-        public OsmUploadService(ProgressHub progressHub, IConfiguration configuration)
+        public OsmUploadService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
-            _configuration = configuration;
         }
 
         public async Task InstallAsync(Stream uploadStream, string session)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
 
                 DropTables(connection);
 
-                await ExecuteResourceAsync("Loader.Osm.CreateTables.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTables.sql", connection);
 
                 long count = 0;
                 using (var source = new PBFOsmStreamSource(uploadStream))
@@ -197,7 +193,7 @@ namespace Loader.Osm
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
 
-                await ExecuteResourceAsync("Loader.Osm.CreateIndices.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateIndices.sql", connection);
 
                 await connection.CloseAsync();
             }
@@ -205,11 +201,11 @@ namespace Loader.Osm
 
         public async Task UpdateAsync(Stream uploadStream, string session)
         {
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
 
-                await ExecuteResourceAsync("Loader.Osm.CreateTempTables.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.sql", connection);
 
                 long count = 0;
                 using (var source = new PBFOsmStreamSource(uploadStream))
@@ -326,59 +322,24 @@ namespace Loader.Osm
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
 
-                await ExecuteResourceAsync("Loader.Osm.InsertFromTempTables.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql", connection);
 
                 await connection.CloseAsync();
             }
         }
 
-        private async Task ExecuteResourceAsync(string resource, NpgsqlConnection connection)
-        {
-            using (var stream = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream(resource))
-            using (var sr = new StreamReader(stream, Encoding.UTF8))
-            using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-            {
-                command.ExecuteNonQuery();
-            }
-        }
 
         private void DropTables(NpgsqlConnection conn)
         {
             var sqls = new[]
             {
-                "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public'"
+                new[]
+                {
+                    "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('place','node','way','relation')"
+                }
             };
 
-            SelectAndExecute(sqls, conn);
-        }
-
-        private void SelectAndExecute(string[] sqls, NpgsqlConnection conn)
-        {
-            foreach (var sql in sqls)
-            {
-                var cmds = new List<string>();
-
-                cmds.Fill(sql, conn);
-
-                Parallel.ForEach(cmds, new ParallelOptions {MaxDegreeOfParallelism = 24}, cmd =>
-                {
-                    using (var connection = new NpgsqlConnection(GetConnectionString()))
-                    {
-                        connection.Open();
-                        using (var command = new NpgsqlCommand(cmd, connection))
-                        {
-                            command.ExecuteNonQuery();
-                        }
-                        connection.Close();
-                    }
-                });
-            }
-        }
-
-        private string GetConnectionString()
-        {
-            return _configuration.GetConnectionString("OsmConnection");
+            SelectAndExecute(sqls, conn, GetOsmConnectionString());
         }
     }
 }

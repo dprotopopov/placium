@@ -7,10 +7,8 @@ using Placium.Types;
 
 namespace Placium.WebApi.Services
 {
-    public class OsmApiService
+    public class OsmApiService : BaseService
     {
-        private readonly IConfiguration _configuration;
-
         private readonly string _selectNodeById = @"SELECT 
         id,
         version,
@@ -51,9 +49,8 @@ namespace Placium.WebApi.Services
         FROM way
         WHERE id=@p";
 
-        public OsmApiService(IConfiguration configuration)
+        public OsmApiService(IConfiguration configuration) : base(configuration)
         {
-            _configuration = configuration;
         }
 
         public async Task<OsmGeo> GetByIdAsync(long osm_id, OsmType type)
@@ -121,12 +118,6 @@ namespace Placium.WebApi.Services
             }
 
             return null;
-        }
-
-
-        private string GetOsmConnectionString()
-        {
-            return _configuration.GetConnectionString("OsmConnection");
         }
     }
 }

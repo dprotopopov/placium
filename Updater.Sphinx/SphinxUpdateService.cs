@@ -11,15 +11,13 @@ using Placium.Types;
 
 namespace Updater.Sphinx
 {
-    public class SphinxUpdateService : IUpdateService
+    public class SphinxUpdateService : BaseService, IUpdateService
     {
-        private readonly IConfiguration _configuration;
         private readonly ProgressHub _progressHub;
 
-        public SphinxUpdateService(ProgressHub progressHub, IConfiguration configuration)
+        public SphinxUpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
-            _configuration = configuration;
         }
 
         public async Task UpdateAsync(string session)
@@ -43,10 +41,6 @@ namespace Updater.Sphinx
             }
         }
 
-        private string GetSphinxConnectionString()
-        {
-            return _configuration.GetConnectionString("SphinxConnection");
-        }
 
         private void TryExecuteNonQueries(string[] sqls, MySqlConnection connection)
         {
@@ -407,16 +401,6 @@ namespace Updater.Sphinx
                 SetLastRecordNumber(npgsqlConnection, OsmServiceType.Place, next_last_record_number);
                 await _progressHub.ProgressAsync(100f, id, session);
             }
-        }
-
-        private string GetFiasConnectionString()
-        {
-            return _configuration.GetConnectionString("FiasConnection");
-        }
-
-        private string GetOsmConnectionString()
-        {
-            return _configuration.GetConnectionString("OsmConnection");
         }
 
         private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type)

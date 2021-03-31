@@ -8,10 +8,8 @@ using Placium.Common;
 
 namespace Placium.Seeker
 {
-    public class DefaultSeeker
+    public class DefaultSeeker : BaseService
     {
-        private readonly IConfiguration _configuration;
-
         private readonly List<string> _keys = new List<string>
         {
             "addr:district",
@@ -27,9 +25,8 @@ namespace Placium.Seeker
         private readonly List<string> _listHouse = new List<string>();
         private readonly List<string> _listStead = new List<string>();
 
-        public DefaultSeeker(IConfiguration configuration)
+        public DefaultSeeker(IConfiguration configuration) : base(configuration)
         {
-            _configuration = configuration;
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 connection.Open();
@@ -171,16 +168,6 @@ namespace Placium.Seeker
                 result.AddRange(guidaddrob.Last());
                 return result;
             }
-        }
-
-        private string GetFiasConnectionString()
-        {
-            return _configuration.GetConnectionString("FiasConnection");
-        }
-
-        private string GetSphinxConnectionString()
-        {
-            return _configuration.GetConnectionString("SphinxConnection");
         }
     }
 }

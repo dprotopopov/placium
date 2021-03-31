@@ -14,10 +14,8 @@ using Placium.Common;
 
 namespace Loader.Fias
 {
-    public class FiasUploadService : IUploadService
+    public class FiasUploadService : BaseService, IUploadService
     {
-        private readonly IConfiguration _configuration;
-
         private readonly Dictionary<string, string> _deleted = new Dictionary<string, string>
         {
             {"addrob", "aoid"},
@@ -55,10 +53,9 @@ namespace Loader.Fias
 
         private readonly ProgressHub _progressHub;
 
-        public FiasUploadService(ProgressHub progressHub, IConfiguration configuration)
+        public FiasUploadService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
-            _configuration = configuration;
         }
 
         public async Task InstallAsync(Stream uploadStream, string session)
@@ -69,7 +66,7 @@ namespace Loader.Fias
 
                 DropTables(connection);
 
-                await ExecuteResourceAsync("Loader.Fias.CreateSequence.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql", connection);
 
                 var tableNames = new List<string>();
 
@@ -277,15 +274,13 @@ namespace Loader.Fias
         {
             var sqls = new[]
             {
-                "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public'"
+                new[]
+                {
+                    "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public'"
+                }
             };
 
-            SelectAndExecute(sqls, conn);
-        }
-
-        private string GetFiasConnectionString()
-        {
-            return _configuration.GetConnectionString("FiasConnection");
+            SelectAndExecute(sqls, conn, GetFiasConnectionString());
         }
 
         private string FindKey(string tableName)
@@ -302,60 +297,22 @@ namespace Loader.Fias
 
             var sqls = new[]
             {
-                $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_number BIGINT DEFAULT nextval(''record_number_seq'');') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_id BIGINT DEFAULT nextval(''record_id_seq'');') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (CONCAT(table_name, 'id')=column_name OR column_name IN ('aoid', 'houseid', 'roomid', 'steadid', 'rmtypeid', 'fltypeid', 'housestid', 'kod_t_st', 'ndtypeid')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                $"SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (column_name like '%guid' OR column_name like '%status' or column_name in ('shortname')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                $"SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id') AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
+                new[]
+                {
+                    $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_number BIGINT DEFAULT nextval(''record_number_seq'');') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
+                    $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_id BIGINT DEFAULT nextval(''record_id_seq'');') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
+                    $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (CONCAT(table_name, 'id')=column_name OR column_name IN ('aoid', 'houseid', 'roomid', 'steadid', 'rmtypeid', 'fltypeid', 'housestid', 'kod_t_st', 'ndtypeid')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
+                },
+                new[]
+                {
+                    $"SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (column_name like '%guid' OR column_name like '%status' or column_name in ('shortname')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
+                    $"SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id') AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
+                }
             };
 
-            SelectAndExecute(sqls, conn);
+            SelectAndExecute(sqls, conn, GetFiasConnectionString());
         }
 
-        private async Task ExecuteResourceAsync(string resource, NpgsqlConnection connection)
-        {
-            using (var stream = Assembly.GetExecutingAssembly()
-                .GetManifestResourceStream(resource))
-            using (var sr = new StreamReader(stream, Encoding.UTF8))
-            using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-            {
-                command.ExecuteNonQuery();
-            }
-        }
-
-        private void SelectAndExecute(string[] sqls, NpgsqlConnection conn)
-        {
-            foreach (var sql in sqls)
-            {
-                var cmds = new List<string>();
-
-                cmds.Fill(sql, conn);
-
-                Parallel.ForEach(cmds, new ParallelOptions {MaxDegreeOfParallelism = 24}, cmd =>
-                {
-                    using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
-                    {
-                        connection.Open();
-                        using (var command = new NpgsqlCommand(cmd, connection))
-                        {
-                            command.ExecuteNonQuery();
-                        }
-
-                        connection.Close();
-                    }
-                });
-            }
-        }
-
-        private bool TableIsExists(string tableName, NpgsqlConnection conn)
-        {
-            using (var command = new NpgsqlCommand(
-                $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='{tableName}');"
-                , conn))
-            {
-                return (bool) command.ExecuteScalar();
-            }
-        }
 
         private void ExcludeDeleted(string tableName, string key, NpgsqlConnection conn)
         {
@@ -363,10 +320,13 @@ namespace Loader.Fias
 
             var sqls = new[]
             {
-                $"SELECT CONCAT('DELETE FROM ', table_name, ' USING d{tableName} WHERE d{tableName}.{key}=', table_name, '.{key}') FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE '{tableName}%'"
+                new[]
+                {
+                    $"SELECT CONCAT('DELETE FROM ', table_name, ' USING d{tableName} WHERE d{tableName}.{key}=', table_name, '.{key}') FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE '{tableName}%'"
+                }
             };
 
-            SelectAndExecute(sqls, conn);
+            SelectAndExecute(sqls, conn, GetFiasConnectionString());
         }
     }
 }

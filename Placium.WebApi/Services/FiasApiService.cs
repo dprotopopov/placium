@@ -9,7 +9,7 @@ using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
 {
-    public class FiasApiService
+    public class FiasApiService : BaseService
     {
         private readonly string _childrenAddrobSql;
         private readonly string _childrenHouseSql;
@@ -27,12 +27,9 @@ namespace Placium.WebApi.Services
         private readonly string _rootHouseSql;
         private readonly string _rootRoomSql;
         private readonly string _rootSteadSql;
-        private readonly IConfiguration _configuration;
 
-        public FiasApiService(IConfiguration configuration)
+        public FiasApiService(IConfiguration configuration) : base(configuration)
         {
-            _configuration = configuration;
-
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 connection.Open();
@@ -195,8 +192,7 @@ namespace Placium.WebApi.Services
                                 var socrname = reader.SafeGetString(4);
                                 var aolevel = reader.GetInt32(5);
                                 var title = aolevel > 1
-                                    ?
-                                    $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                                    ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
                                     : formal
                                         ? formalname
                                         : offname;
@@ -319,8 +315,7 @@ namespace Placium.WebApi.Services
                             var socrname = reader.SafeGetString(4);
                             var aolevel = reader.GetInt32(5);
                             var title = aolevel > 1
-                                ?
-                                $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                                ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
                                 : formal
                                     ? formalname
                                     : offname;
@@ -434,8 +429,7 @@ namespace Placium.WebApi.Services
                             var socrname = reader.SafeGetString(4);
                             var aolevel = reader.GetInt32(5);
                             var title = aolevel > 1
-                                ?
-                                $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                                ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
                                 : formal
                                     ? formalname
                                     : offname;
@@ -457,11 +451,6 @@ namespace Placium.WebApi.Services
 
                 return result;
             }
-        }
-
-        private string GetFiasConnectionString()
-        {
-            return _configuration.GetConnectionString("FiasConnection");
         }
     }
 }
