@@ -12,12 +12,12 @@ namespace Placium.Seeker
     {
         private readonly List<string> _keys = new List<string>
         {
+            "addr:region",
             "addr:district",
             "addr:subdistrict",
+            "addr:city",
             "addr:suburb",
             "addr:hamlet",
-            "addr:city",
-            "addr:place",
             "addr:street"
         };
 
@@ -46,10 +46,14 @@ namespace Placium.Seeker
         public async Task<List<string>> AddrToFias(Dictionary<string, string> dictionary)
         {
             var addr = new List<string>();
+            var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
+                           dictionary["addr:region"] == dictionary["addr:city"];
             foreach (var key in _keys)
-                if (dictionary.ContainsKey(key))
+                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
                     addr.Add(dictionary[key]);
-            var housenumber = dictionary["addr:housenumber"];
+            var housenumber = dictionary.ContainsKey("addr:housenumber")
+                ? dictionary["addr:housenumber"]
+                : string.Empty;
 
 
             var addrob = new List<List<long>>();
@@ -58,17 +62,14 @@ namespace Placium.Seeker
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                connection.TryOpen();
                 stead.Fill($"SELECT id FROM stead WHERE MATCH('{housenumber.TextEscape()}')", connection);
 
-                connection.TryOpen();
                 house.Fill($"SELECT id FROM house WHERE MATCH('{housenumber.TextEscape()}')", connection);
 
                 foreach (var row in addr)
                 {
                     var list = new List<long>();
 
-                    connection.TryOpen();
                     list.Fill($"SELECT id FROM addrob WHERE MATCH('{row.TextEscape()}')", connection);
 
                     if (list.Any()) addrob.Add(list);

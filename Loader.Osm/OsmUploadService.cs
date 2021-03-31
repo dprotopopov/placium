@@ -84,7 +84,9 @@ namespace Loader.Osm
                 {
                     TextWriter writer = null;
                     var lastType = ElementType.None;
-                    var id = "";
+
+                    var id = Guid.NewGuid().ToString();
+                    await _progressHub.InitAsync(id, session);
 
                     foreach (var element in source)
                     {
@@ -97,11 +99,6 @@ namespace Loader.Osm
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
                                         $"COPY Node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS '';");
-
-                                    await _progressHub.ProgressAsync(100f, id, session);
-                                    count = 0;
-                                    id = Guid.NewGuid().ToString();
-                                    await _progressHub.InitAsync(id, session);
                                 }
 
                                 var nodeValues = new List<string>
@@ -128,11 +125,6 @@ namespace Loader.Osm
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
                                         $"COPY Way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS '';");
-
-                                    await _progressHub.ProgressAsync(100f, id, session);
-                                    count = 0;
-                                    id = Guid.NewGuid().ToString();
-                                    await _progressHub.InitAsync(id, session);
                                 }
 
                                 var wayValues = new List<string>
@@ -158,11 +150,6 @@ namespace Loader.Osm
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
                                         $"COPY Relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS '';");
-
-                                    await _progressHub.ProgressAsync(100f, id, session);
-                                    count = 0;
-                                    id = Guid.NewGuid().ToString();
-                                    await _progressHub.InitAsync(id, session);
                                 }
 
                                 var relationValues = new List<string>
@@ -186,7 +173,8 @@ namespace Loader.Osm
                         }
 
                         if (count++ % 1000 == 0)
-                            await _progressHub.ProgressAsync(100f * count / (count + 1000000), id, session);
+                            await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                                session);
                     }
 
                     writer?.Dispose();
@@ -205,7 +193,8 @@ namespace Loader.Osm
             {
                 await connection.OpenAsync();
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.sql",
+                    connection);
 
                 long count = 0;
                 using (var source = new PBFOsmStreamSource(uploadStream))
@@ -213,7 +202,8 @@ namespace Loader.Osm
                     TextWriter writer = null;
                     var lastType = ElementType.None;
 
-                    var id = "";
+                    var id = Guid.NewGuid().ToString();
+                    await _progressHub.InitAsync(id, session);
 
                     foreach (var element in source)
                     {
@@ -226,11 +216,6 @@ namespace Loader.Osm
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
                                         $"COPY temp_node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS '';");
-
-                                    await _progressHub.ProgressAsync(100f, id, session);
-                                    count = 0;
-                                    id = Guid.NewGuid().ToString();
-                                    await _progressHub.InitAsync(id, session);
                                 }
 
                                 var nodeValues = new List<string>
@@ -257,11 +242,6 @@ namespace Loader.Osm
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
                                         $"COPY temp_way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS '';");
-
-                                    await _progressHub.ProgressAsync(100f, id, session);
-                                    count = 0;
-                                    id = Guid.NewGuid().ToString();
-                                    await _progressHub.InitAsync(id, session);
                                 }
 
                                 var wayValues = new List<string>
@@ -287,11 +267,6 @@ namespace Loader.Osm
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
                                         $"COPY temp_relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS '';");
-
-                                    await _progressHub.ProgressAsync(100f, id, session);
-                                    count = 0;
-                                    id = Guid.NewGuid().ToString();
-                                    await _progressHub.InitAsync(id, session);
                                 }
 
                                 var relationValues = new List<string>
@@ -315,14 +290,16 @@ namespace Loader.Osm
                         }
 
                         if (count++ % 1000 == 0)
-                            await _progressHub.ProgressAsync(100f * count / (count + 1000000), id, session);
+                            await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                                session);
                     }
 
                     writer?.Dispose();
                     await _progressHub.ProgressAsync(100f, id, session);
                 }
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql", connection);
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql",
+                    connection);
 
                 await connection.CloseAsync();
             }

@@ -73,9 +73,6 @@ namespace Loader.Fias
 
                 using (var archive = new ZipArchive(uploadStream))
                 {
-                    var current = 0;
-                    var count = archive.Entries.Count;
-
                     var id = Guid.NewGuid().ToString();
                     await _progressHub.InitAsync(id, session);
 
@@ -138,7 +135,7 @@ namespace Loader.Fias
                             }
                         }
 
-                        await _progressHub.ProgressAsync(100f * ++current / count, id, session);
+                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id, session);
                     }
 
                     await _progressHub.ProgressAsync(100f, id, session);
@@ -158,9 +155,6 @@ namespace Loader.Fias
 
                 using (var archive = new ZipArchive(uploadStream))
                 {
-                    var current = 0;
-                    var count = archive.Entries.Count;
-
                     var id = Guid.NewGuid().ToString();
                     await _progressHub.InitAsync(id, session);
 
@@ -265,7 +259,7 @@ namespace Loader.Fias
                                 }
                         }
 
-                        await _progressHub.ProgressAsync(100f * ++current / count, id, session);
+                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id, session);
                     }
 
                     await _progressHub.ProgressAsync(100f, id, session);

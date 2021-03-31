@@ -22,6 +22,7 @@ namespace Placium.Common
         }
         public static void Fill(this List<long> list, string sql, MySqlConnection connection)
         {
+            connection.TryOpen();
             using (var command = new MySqlCommand(sql, connection))
             using (var reader = command.ExecuteReader())
             {
