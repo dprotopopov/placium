@@ -24,8 +24,6 @@ namespace Updater.Sphinx
         {
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                connection.TryOpen();
-
                 TryExecuteNonQueries(new[]
                 {
                     "CREATE TABLE addrob(text field)",
@@ -44,6 +42,7 @@ namespace Updater.Sphinx
 
         private void TryExecuteNonQueries(string[] sqls, MySqlConnection connection)
         {
+            connection.TryOpen();
             foreach (var sql in sqls)
                 using (var command = new MySqlCommand(sql, connection))
                 {
@@ -101,7 +100,7 @@ namespace Updater.Sphinx
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
                     npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
-                    var take = 1000;
+                    var take = 10000;
 
                     using (var reader = npgsqlCommand.ExecuteReader())
                     {
@@ -202,7 +201,7 @@ namespace Updater.Sphinx
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
                     npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
-                    var take = 1000;
+                    var take = 10000;
 
                     using (var reader = npgsqlCommand.ExecuteReader())
                     {
@@ -299,7 +298,7 @@ namespace Updater.Sphinx
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
                     npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
-                    var take = 1000;
+                    var take = 10000;
 
                     using (var reader = npgsqlCommand.ExecuteReader())
                     {
@@ -370,7 +369,7 @@ namespace Updater.Sphinx
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
                     npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
-                    var take = 1000;
+                    var take = 10000;
 
                     using (var reader = npgsqlCommand.ExecuteReader())
                     {
