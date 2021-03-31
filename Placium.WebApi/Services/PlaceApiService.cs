@@ -11,11 +11,8 @@ namespace Placium.WebApi.Services
 {
     public class PlaceApiService : BaseService
     {
-        private readonly DefaultSeeker _seeker;
-
-        public PlaceApiService(IConfiguration configuration, DefaultSeeker seeker) : base(configuration)
+        public PlaceApiService(IConfiguration configuration) : base(configuration)
         {
-            _seeker = seeker;
         }
 
         public async Task<List<Place>> GetByNameAsync(string pattern, int limit = 10)
@@ -49,8 +46,6 @@ namespace Placium.WebApi.Services
                 }
 
                 await connection.CloseAsync();
-
-                result.ForEach(async x => { x.guids = await _seeker.AddrToFias(x.tags); });
 
                 return result;
             }
@@ -89,10 +84,9 @@ namespace Placium.WebApi.Services
 
                 await connection.CloseAsync();
 
-                result.ForEach(async x => { x.guids = await _seeker.AddrToFias(x.tags); });
-
                 return result;
             }
         }
+
     }
 }

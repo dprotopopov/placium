@@ -8,6 +8,5 @@ namespace Placium.WebApi.Models
         public long id { get; set; }
         public Dictionary<string, string> tags { get; set; }
         public GeoJSONObject location { get; set; }
-        public List<string> guids { get; set; }
     }
 }

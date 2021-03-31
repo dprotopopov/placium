@@ -10,17 +10,6 @@ namespace Placium.Seeker
 {
     public class DefaultSeeker : BaseService
     {
-        private readonly List<string> _keys = new List<string>
-        {
-            "addr:region",
-            "addr:district",
-            "addr:subdistrict",
-            "addr:city",
-            "addr:suburb",
-            "addr:hamlet",
-            "addr:street"
-        };
-
         private readonly List<string> _listAddrob = new List<string>();
         private readonly List<string> _listHouse = new List<string>();
         private readonly List<string> _listStead = new List<string>();
@@ -43,12 +32,22 @@ namespace Placium.Seeker
             }
         }
 
-        public async Task<List<string>> AddrToFias(Dictionary<string, string> dictionary)
+        public async Task<List<string>> GetFiasByAddrAsync(Dictionary<string, string> dictionary)
         {
+            var keys = new[]
+            {
+                "addr:region",
+                "addr:district",
+                "addr:subdistrict",
+                "addr:city",
+                "addr:suburb",
+                "addr:hamlet",
+                "addr:street"
+            };
             var addr = new List<string>();
             var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
                            dictionary["addr:region"] == dictionary["addr:city"];
-            foreach (var key in _keys)
+            foreach (var key in keys)
                 if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
                     addr.Add(dictionary[key]);
             var housenumber = dictionary.ContainsKey("addr:housenumber")
@@ -167,6 +166,49 @@ namespace Placium.Seeker
                 }
 
                 result.AddRange(guidaddrob.Last());
+                return result;
+            }
+        }
+
+        public async Task<Dictionary<string, string>> GetAddrByCoordsAsync(double latitude, double longitude,
+            double tolerance = 100.0)
+        {
+            var keys = new[]
+            {
+                "addr:region",
+                "addr:district",
+                "addr:subdistrict",
+                "addr:city",
+                "addr:suburb",
+                "addr:hamlet",
+                "addr:street",
+                "addr:housenumber"
+            };
+
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+            {
+                await connection.OpenAsync();
+
+                var result = new Dictionary<string, string>();
+
+                foreach (var key in keys)
+                    using (var command =
+                        new NpgsqlCommand(
+                            "SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance FROM place WHERE tags?@key) AS query WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
+                            connection))
+                    {
+                        command.Parameters.AddWithValue("longitude", (float) longitude);
+                        command.Parameters.AddWithValue("latitude", (float) latitude);
+                        command.Parameters.AddWithValue("key", key);
+                        command.Parameters.AddWithValue("tolerance", tolerance);
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read()) result.Add(key, reader.GetString(0));
+                        }
+                    }
+
+                await connection.CloseAsync();
+
                 return result;
             }
         }
