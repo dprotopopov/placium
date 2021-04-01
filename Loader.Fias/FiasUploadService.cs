@@ -89,31 +89,19 @@ namespace Loader.Fias
                                     var names = columns.Select(x => x.Name.ToLower()).ToList();
 
                                     TextWriter writer = null;
-                                    var needBuildIndices = false;
+                                    var buildIndices = false;
 
                                     while (reader.Read())
                                     {
                                         if (writer == null)
                                         {
-                                            try
-                                            {
-                                                using (var command = new NpgsqlCommand(
-                                                    $"DROP TABLE IF EXISTS {tableName}"
-                                                    , connection))
-                                                {
-                                                    command.ExecuteNonQuery();
-                                                }
-                                            }
-                                            catch
-                                            {
-                                            }
-
-                                            using (var command = new NpgsqlCommand(
-                                                $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})"
+                                            using (var command = new NpgsqlCommand(string.Join(";",
+                                                    $"DROP TABLE IF EXISTS {tableName}",
+                                                    $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
                                                 , connection))
                                             {
                                                 command.ExecuteNonQuery();
-                                                needBuildIndices = true;
+                                                buildIndices = true;
                                             }
 
                                             writer = connection.BeginTextImport(
@@ -126,7 +114,7 @@ namespace Loader.Fias
 
                                     writer?.Dispose();
 
-                                    if (needBuildIndices)
+                                    if (buildIndices)
                                         BuildIndices(new[] {tableName}, connection);
                                 }
                             }
@@ -173,7 +161,8 @@ namespace Loader.Fias
                                         var names = columns.Select(x => x.Name.ToLower()).ToList();
 
                                         TextWriter writer = null;
-                                        var needBuildIndices = false;
+                                        var buildIndices = false;
+                                        var insertFromTemp = false;
 
                                         while (reader.Read())
                                         {
@@ -186,29 +175,18 @@ namespace Loader.Fias
                                                         , connection))
                                                     {
                                                         command.ExecuteNonQuery();
-                                                        needBuildIndices = true;
                                                     }
 
                                                     writer = connection.BeginTextImport(
                                                         $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
+
+                                                    buildIndices = true;
                                                 }
                                                 else
                                                 {
-                                                    try
-                                                    {
-                                                        using (var command = new NpgsqlCommand(
-                                                            $"DROP TABLE IF EXISTS temp_{tableName};"
-                                                            , connection))
-                                                        {
-                                                            command.ExecuteNonQuery();
-                                                        }
-                                                    }
-                                                    catch
-                                                    {
-                                                    }
-
-                                                    using (var command = new NpgsqlCommand(
-                                                        $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
+                                                    using (var command = new NpgsqlCommand(string.Join(";",
+                                                            $"DROP TABLE IF EXISTS temp_{tableName};",
+                                                            $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});")
                                                         , connection))
                                                     {
                                                         command.ExecuteNonQuery();
@@ -216,6 +194,8 @@ namespace Loader.Fias
 
                                                     writer = connection.BeginTextImport(
                                                         $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
+                                                    
+                                                    insertFromTemp = true;
                                                 }
                                             }
 
@@ -225,30 +205,16 @@ namespace Loader.Fias
 
                                         writer?.Dispose();
 
-                                        if (TableIsExists($"temp_{tableName}", connection))
-                                        {
-                                            using (var command = new NpgsqlCommand(
-                                                $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq');"
+                                        if (insertFromTemp)
+                                            using (var command = new NpgsqlCommand(string.Join(";",
+                                                    $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq');",
+                                                    $"DROP TABLE temp_{tableName};")
                                                 , connection))
                                             {
                                                 command.ExecuteNonQuery();
                                             }
 
-                                            try
-                                            {
-                                                using (var command = new NpgsqlCommand(
-                                                    $"DROP TABLE temp_{tableName};"
-                                                    , connection))
-                                                {
-                                                    command.ExecuteNonQuery();
-                                                }
-                                            }
-                                            catch
-                                            {
-                                            }
-                                        }
-
-                                        if (needBuildIndices)
+                                        if (buildIndices)
                                             BuildIndices(new[] {tableName}, connection);
                                     }
                                 }
