@@ -26,7 +26,13 @@ namespace Placium.WebApp.Controllers
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Content(JsonConvert.SerializeObject(await _seeker.GetAddrByCoordsAsync(latitude, longitude)));
+            var addr = await _seeker.GetAddrByCoordsAsync(latitude, longitude);
+            var fias = await _seeker.GetFiasByAddrAsync(addr);
+            return Content(JsonConvert.SerializeObject(new
+            {
+                addr,
+                fias
+            }));
         }
     }
 }
