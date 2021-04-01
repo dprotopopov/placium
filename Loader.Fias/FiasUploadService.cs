@@ -69,8 +69,6 @@ namespace Loader.Fias
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql",
                     connection);
 
-                var tableNames = new List<string>();
-
                 using (var archive = new ZipArchive(uploadStream))
                 {
                     var id = Guid.NewGuid().ToString();
@@ -115,7 +113,6 @@ namespace Loader.Fias
                                                 , connection))
                                             {
                                                 command.ExecuteNonQuery();
-                                                tableNames.Add(tableName);
                                                 needBuildIndices = true;
                                             }
 
@@ -130,12 +127,13 @@ namespace Loader.Fias
                                     writer?.Dispose();
 
                                     if (needBuildIndices)
-                                        BuildIndices(new List<string> {tableName}, connection);
+                                        BuildIndices(new[] {tableName}, connection);
                                 }
                             }
                         }
 
-                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id, session);
+                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                            session);
                     }
 
                     await _progressHub.ProgressAsync(100f, id, session);
@@ -147,8 +145,6 @@ namespace Loader.Fias
 
         public async Task UpdateAsync(Stream uploadStream, string session)
         {
-            var tableNames = new List<string>();
-
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 await connection.OpenAsync();
@@ -190,7 +186,6 @@ namespace Loader.Fias
                                                         , connection))
                                                     {
                                                         command.ExecuteNonQuery();
-                                                        tableNames.Add(tableName);
                                                         needBuildIndices = true;
                                                     }
 
@@ -254,12 +249,13 @@ namespace Loader.Fias
                                         }
 
                                         if (needBuildIndices)
-                                            BuildIndices(new List<string> {tableName}, connection);
+                                            BuildIndices(new[] {tableName}, connection);
                                     }
                                 }
                         }
 
-                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id, session);
+                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                            session);
                     }
 
                     await _progressHub.ProgressAsync(100f, id, session);
@@ -292,7 +288,7 @@ namespace Loader.Fias
             return null;
         }
 
-        private void BuildIndices(List<string> tableNames, NpgsqlConnection conn)
+        private void BuildIndices(string[] tableNames, NpgsqlConnection conn)
         {
             if (!tableNames.Any()) return;
 

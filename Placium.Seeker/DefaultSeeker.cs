@@ -10,26 +10,8 @@ namespace Placium.Seeker
 {
     public class DefaultSeeker : BaseService
     {
-        private readonly List<string> _listAddrob = new List<string>();
-        private readonly List<string> _listHouse = new List<string>();
-        private readonly List<string> _listStead = new List<string>();
-
         public DefaultSeeker(IConfiguration configuration) : base(configuration)
         {
-            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
-            {
-                connection.Open();
-
-                _listAddrob.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
-                    connection);
-                _listHouse.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'house\d+'",
-                    connection);
-                _listStead.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
-                    connection);
-            }
         }
 
         public async Task<List<string>> GetFiasByAddrAsync(Dictionary<string, string> dictionary)
@@ -44,16 +26,17 @@ namespace Placium.Seeker
                 "addr:hamlet",
                 "addr:street"
             };
+
             var addr = new List<string>();
             var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
                            dictionary["addr:region"] == dictionary["addr:city"];
             foreach (var key in keys)
                 if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
                     addr.Add(dictionary[key]);
+            
             var housenumber = dictionary.ContainsKey("addr:housenumber")
                 ? dictionary["addr:housenumber"]
                 : string.Empty;
-
 
             var addrob = new List<List<long>>();
             var house = new List<long>();
@@ -61,9 +44,12 @@ namespace Placium.Seeker
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                stead.Fill($"SELECT id FROM stead WHERE MATCH('{housenumber.TextEscape()}')", connection);
+                if (!string.IsNullOrWhiteSpace(housenumber))
+                {
+                    stead.Fill($"SELECT id FROM stead WHERE MATCH('{housenumber.TextEscape()}')", connection);
 
-                house.Fill($"SELECT id FROM house WHERE MATCH('{housenumber.TextEscape()}')", connection);
+                    house.Fill($"SELECT id FROM house WHERE MATCH('{housenumber.TextEscape()}')", connection);
+                }
 
                 foreach (var row in addr)
                 {
@@ -79,6 +65,20 @@ namespace Placium.Seeker
             {
                 connection.Open();
 
+                var listAddrob = new List<string>();
+                var listHouse = new List<string>();
+                var listStead = new List<string>();
+
+                listAddrob.Fill(
+                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
+                    connection);
+                listHouse.Fill(
+                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'house\d+'",
+                    connection);
+                listStead.Fill(
+                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
+                    connection);
+
                 var guidaddrob = new List<List<string>>();
                 var guidhouse = new List<string>();
                 var guidstead = new List<string>();
@@ -86,7 +86,7 @@ namespace Placium.Seeker
 
                 if (stead.Any())
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            _listStead.Select(x =>
+                            listStead.Select(x =>
                                 $"SELECT steadguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
                         connection))
                     {
@@ -105,7 +105,7 @@ namespace Placium.Seeker
 
                 if (house.Any())
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            _listHouse.Select(x =>
+                            listHouse.Select(x =>
                                 $"SELECT houseguid,aoguid FROM {x} WHERE record_id=ANY(@ids)")),
                         connection))
                     {
@@ -124,7 +124,7 @@ namespace Placium.Seeker
 
                 foreach (var list in addrob)
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            _listAddrob.Select(x =>
+                            listAddrob.Select(x =>
                                 $"SELECT aoguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
                         connection))
                     {
