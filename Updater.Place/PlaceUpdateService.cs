@@ -11,16 +11,14 @@ using Placium.Types;
 
 namespace Updater.Place
 {
-    public class PlaceUpdateService : IUpdateService
+    public class PlaceUpdateService : BaseService, IUpdateService
     {
-        private readonly IConfiguration _configuration;
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly ProgressHub _progressHub;
 
-        public PlaceUpdateService(ProgressHub progressHub, IConfiguration configuration)
+        public PlaceUpdateService(ProgressHub progressHub, IConfiguration configuration):base(configuration)
         {
             _progressHub = progressHub;
-            _configuration = configuration;
         }
 
         public async Task UpdateAsync(string session)
@@ -28,11 +26,6 @@ namespace Updater.Place
             await UpdateFromNodeAsync(session);
             await UpdateFromWayAsync(session);
             await UpdateFromRelationAsync(session);
-        }
-
-        private string GetConnectionString()
-        {
-            return _configuration.GetConnectionString("OsmConnection");
         }
 
         public async Task UpdateFromNodeAsync(string session)
@@ -43,8 +36,8 @@ namespace Updater.Place
             var id = Guid.NewGuid().ToString();
             await _progressHub.InitAsync(id, session);
 
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
-            using (var connection2 = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
@@ -146,9 +139,9 @@ namespace Updater.Place
             var id1 = Guid.NewGuid().ToString();
             await _progressHub.InitAsync(id1, session);
 
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
-            using (var connection2 = new NpgsqlConnection(GetConnectionString()))
-            using (var connection3 = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
@@ -294,9 +287,9 @@ namespace Updater.Place
             var id1 = Guid.NewGuid().ToString();
             await _progressHub.InitAsync(id1, session);
 
-            using (var connection = new NpgsqlConnection(GetConnectionString()))
-            using (var connection2 = new NpgsqlConnection(GetConnectionString()))
-            using (var connection3 = new NpgsqlConnection(GetConnectionString()))
+            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
                 await connection2.OpenAsync();
