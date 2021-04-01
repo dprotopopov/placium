@@ -11,18 +11,18 @@ namespace Placium.WebApi.Controllers
     [Route("api/[controller]")]
     public class PlaceController : ControllerBase
     {
-        private readonly PlaceApiService _placeApiService;
+        private readonly PlaceService _placeService;
 
-        public PlaceController(PlaceApiService placeApiService)
+        public PlaceController(PlaceService placeService)
         {
-            _placeApiService = placeApiService;
+            _placeService = placeService;
         }
 
         [HttpGet("by_name")]
         [ProducesResponseType(200, Type = typeof(List<Place>))]
         public async Task<IActionResult> GetByNameAsync(string pattern)
         {
-            return Ok(await _placeApiService.GetByNameAsync(pattern));
+            return Ok(await _placeService.GetByNameAsync(pattern));
         }
 
         [HttpGet("by_coords")]
@@ -32,7 +32,7 @@ namespace Placium.WebApi.Controllers
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Ok(await _placeApiService.GetByCoordsAsync(latitude, longitude));
+            return Ok(await _placeService.GetByCoordsAsync(latitude, longitude));
         }
     }
 }

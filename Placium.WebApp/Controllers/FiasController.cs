@@ -10,11 +10,11 @@ namespace Placium.WebApp.Controllers
 {
     public class FiasController : Controller
     {
-        private readonly FiasApiService _fiasApiService;
+        private readonly FiasService _fiasService;
 
-        public FiasController(FiasApiService fiasApiService)
+        public FiasController(FiasService fiasService)
         {
-            _fiasApiService = fiasApiService;
+            _fiasService = fiasService;
         }
 
 
@@ -27,7 +27,7 @@ namespace Placium.WebApp.Controllers
             {
                 model.PreviousItems = new List<SelectListItem>();
 
-                model.NextItems = (await _fiasApiService.GetRootsAsync(socr: true)).Select(x => new SelectListItem
+                model.NextItems = (await _fiasService.GetRootsAsync(socr: true)).Select(x => new SelectListItem
                 {
                     Text = x.title,
                     Value = x.guid.ToString()
@@ -35,14 +35,14 @@ namespace Placium.WebApp.Controllers
             }
             else
             {
-                model.PreviousItems = (await _fiasApiService.GetDetailsAsync(guid, socr: true)).Select(x =>
+                model.PreviousItems = (await _fiasService.GetDetailsAsync(guid, socr: true)).Select(x =>
                     new SelectListItem
                     {
                         Text = x.title,
                         Value = x.guid.ToString()
                     }).ToList();
 
-                model.NextItems = (await _fiasApiService.GetChildrenAsync(guid, socr: true)).Select(x => new SelectListItem
+                model.NextItems = (await _fiasService.GetChildrenAsync(guid, socr: true)).Select(x => new SelectListItem
                 {
                     Text = x.title,
                     Value = x.guid.ToString()

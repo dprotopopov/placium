@@ -27,9 +27,9 @@ namespace Placium.WebApp
         private void RegisterServices(IServiceCollection services)
         {
             services.AddTransient<DefaultSeeker>();
-            services.AddTransient<PlaceApiService>();
-            services.AddTransient<OsmApiService>();
-            services.AddTransient<FiasApiService>();
+            services.AddTransient<PlaceService>();
+            services.AddTransient<OsmService>();
+            services.AddTransient<FiasService>();
             services.AddSingleton<FiasUploadService>();
             services.AddSingleton<OsmUploadService>();
             services.AddSingleton<PlaceUpdateService>();

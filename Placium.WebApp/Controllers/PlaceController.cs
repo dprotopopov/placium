@@ -8,11 +8,11 @@ namespace Placium.WebApp.Controllers
 {
     public class PlaceController : Controller
     {
-        private readonly PlaceApiService _placeApiService;
+        private readonly PlaceService _placeService;
 
-        public PlaceController(PlaceApiService placeApiService)
+        public PlaceController(PlaceService placeService)
         {
-            _placeApiService = placeApiService;
+            _placeService = placeService;
         }
 
         public IActionResult ByName()
@@ -23,7 +23,7 @@ namespace Placium.WebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> ByName(string pattern)
         {
-            return Content(JsonConvert.SerializeObject(await _placeApiService.GetByNameAsync(pattern)));
+            return Content(JsonConvert.SerializeObject(await _placeService.GetByNameAsync(pattern)));
         }
         public IActionResult ByCoords()
         {
@@ -36,7 +36,7 @@ namespace Placium.WebApp.Controllers
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Content(JsonConvert.SerializeObject(await _placeApiService.GetByCoordsAsync(latitude, longitude)));
+            return Content(JsonConvert.SerializeObject(await _placeService.GetByCoordsAsync(latitude, longitude)));
         }
     }
 }

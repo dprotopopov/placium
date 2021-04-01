@@ -9,7 +9,7 @@ using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
 {
-    public class FiasApiService : BaseService
+    public class FiasService : BaseService
     {
         private readonly string _childrenAddrobSql;
         private readonly string _childrenHouseSql;
@@ -28,7 +28,7 @@ namespace Placium.WebApi.Services
         private readonly string _rootRoomSql;
         private readonly string _rootSteadSql;
 
-        public FiasApiService(IConfiguration configuration) : base(configuration)
+        public FiasService(IConfiguration configuration) : base(configuration)
         {
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {

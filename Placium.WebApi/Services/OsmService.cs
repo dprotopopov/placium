@@ -7,7 +7,7 @@ using Placium.Types;
 
 namespace Placium.WebApi.Services
 {
-    public class OsmApiService : BaseService
+    public class OsmService : BaseService
     {
         private readonly string _selectNodeById = @"SELECT 
         id,
@@ -49,7 +49,7 @@ namespace Placium.WebApi.Services
         FROM way
         WHERE id=@p";
 
-        public OsmApiService(IConfiguration configuration) : base(configuration)
+        public OsmService(IConfiguration configuration) : base(configuration)
         {
         }
 

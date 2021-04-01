@@ -9,11 +9,11 @@ namespace Placium.WebApp.Controllers
 {
     public class OsmController : Controller
     {
-        private readonly OsmApiService _osmApiService;
+        private readonly OsmService _osmService;
 
-        public OsmController(OsmApiService osmApiService)
+        public OsmController(OsmService osmService)
         {
-            _osmApiService = osmApiService;
+            _osmService = osmService;
         }
 
         public IActionResult ById()
@@ -28,7 +28,7 @@ namespace Placium.WebApp.Controllers
 
             var type = (OsmType) Enum.Parse(typeof(OsmType), osm_type, true);
 
-            return Content(JsonConvert.SerializeObject(await _osmApiService.GetByIdAsync(id, type)));
+            return Content(JsonConvert.SerializeObject(await _osmService.GetByIdAsync(id, type)));
         }
     }
 }

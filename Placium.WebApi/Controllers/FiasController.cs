@@ -11,11 +11,11 @@ namespace Placium.WebApi.Controllers
     [Route("api/[controller]")]
     public class FiasController : ControllerBase
     {
-        private readonly FiasApiService _fiasApiService;
+        private readonly FiasService _fiasService;
 
-        public FiasController(FiasApiService fiasApiService)
+        public FiasController(FiasService fiasService)
         {
-            _fiasApiService = fiasApiService;
+            _fiasService = fiasService;
         }
 
         [HttpGet("{guid}/details")]
@@ -23,7 +23,7 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetDetails(string guid, bool formal = false, bool socr = false)
         {
-            return Ok(await _fiasApiService.GetDetailsAsync(guid, formal, socr));
+            return Ok(await _fiasService.GetDetailsAsync(guid, formal, socr));
         }
 
         [HttpGet("{guid}/text")]
@@ -31,7 +31,7 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetText(string guid, bool formal = false, bool socr = false)
         {
-            return Ok(string.Join(", ", (await _fiasApiService.GetDetailsAsync(guid, formal, socr)).Select(x => x.title)));
+            return Ok(string.Join(", ", (await _fiasService.GetDetailsAsync(guid, formal, socr)).Select(x => x.title)));
         }
 
         [HttpGet("{guid}/children")]
@@ -39,7 +39,7 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetChildren(string guid, bool formal = false, bool socr = false)
         {
-            return Ok(await _fiasApiService.GetChildrenAsync(guid, formal, socr));
+            return Ok(await _fiasService.GetChildrenAsync(guid, formal, socr));
         }
 
 
@@ -48,7 +48,7 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetRoots(bool formal = false, bool socr = false)
         {
-            return Ok(await _fiasApiService.GetRootsAsync(formal, socr));
+            return Ok(await _fiasService.GetRootsAsync(formal, socr));
         }
     }
 }

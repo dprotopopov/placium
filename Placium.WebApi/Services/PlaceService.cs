@@ -8,9 +8,9 @@ using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
 {
-    public class PlaceApiService : BaseService
+    public class PlaceService : BaseService
     {
-        public PlaceApiService(IConfiguration configuration) : base(configuration)
+        public PlaceService(IConfiguration configuration) : base(configuration)
         {
         }
 
