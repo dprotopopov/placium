@@ -48,7 +48,7 @@ namespace Updater.Place
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Node);
-                var next_last_record_number = NextLastRecordNumber(connection);
+                var next_last_record_number = GetNextLastRecordNumber(connection);
 
                 var keys = new List<string> {"name"};
 
@@ -153,7 +153,7 @@ namespace Updater.Place
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Way);
-                var next_last_record_number = NextLastRecordNumber(connection);
+                var next_last_record_number = GetNextLastRecordNumber(connection);
 
                 var keys = new List<string> {"name"};
 
@@ -301,7 +301,7 @@ namespace Updater.Place
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Relation);
-                var next_last_record_number = NextLastRecordNumber(connection);
+                var next_last_record_number = GetNextLastRecordNumber(connection);
 
                 var keys = new List<string> {"name"};
 
@@ -536,7 +536,7 @@ namespace Updater.Place
             }
         }
 
-        private long NextLastRecordNumber(NpgsqlConnection connection)
+        private long GetNextLastRecordNumber(NpgsqlConnection connection)
         {
             using (var command = new NpgsqlCommand(
                 "SELECT last_value FROM record_number_seq"

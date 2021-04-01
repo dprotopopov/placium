@@ -69,7 +69,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob);
-                var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
+                var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list = new List<string>();
                 list.Fill(
@@ -170,7 +170,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.House);
-                var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
+                var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list = new List<string>();
                 list.Fill(
@@ -267,7 +267,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead);
-                var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
+                var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list = new List<string>();
                 list.Fill(
@@ -348,7 +348,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Place);
-                var next_last_record_number = NextLastRecordNumber(npgsqlConnection);
+                var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
                     "SELECT COUNT(1) FROM place WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
@@ -462,20 +462,14 @@ namespace Updater.Sphinx
             return 0;
         }
 
-        private long NextLastRecordNumber(NpgsqlConnection connection)
+        private long GetNextLastRecordNumber(NpgsqlConnection connection)
         {
             using (var command = new NpgsqlCommand(
                 "SELECT last_value FROM record_number_seq"
                 , connection))
             {
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
+                return (long)command.ExecuteScalar();
             }
-
-            return 0;
         }
     }
 }
