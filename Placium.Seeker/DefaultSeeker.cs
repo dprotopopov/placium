@@ -49,11 +49,11 @@ namespace Placium.Seeker
                     if (!string.IsNullOrWhiteSpace(housenumber))
                     {
                         stead.FillAll(
-                            $"SELECT id FROM stead WHERE MATCH('{row.TextEscape()} STEAD{housenumber.TextEscape()}')",
+                            $"SELECT id FROM stead WHERE MATCH('{row.TextEscape()} #{housenumber.TextEscape()}')",
                             connection);
 
                         house.FillAll(
-                            $"SELECT id FROM house WHERE MATCH('{row.TextEscape()} HOUSE{housenumber.TextEscape()}')",
+                            $"SELECT id FROM house WHERE MATCH('{row.TextEscape()} #{housenumber.TextEscape()}')",
                             connection);
                     }
 

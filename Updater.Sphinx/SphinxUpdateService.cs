@@ -242,7 +242,7 @@ namespace Updater.Sphinx
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new {doc1.id, text = $"{doc2.text} HOUSE{doc1.text}"};
+                                    select new {doc1.id, text = $"{doc2.text} #{doc1.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
@@ -341,7 +341,7 @@ namespace Updater.Sphinx
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new {doc1.id, text = $"{doc2.text} STEAD{doc1.text}"};
+                                    select new {doc1.id, text = $"{doc2.text} #{doc1.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO stead(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
