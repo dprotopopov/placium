@@ -78,12 +78,11 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     using (var reader = npgsqlCommand.ExecuteReader())
                     {
@@ -93,12 +92,11 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
+                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     var take = 10000;
 
@@ -190,12 +188,11 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     using (var reader = npgsqlCommand.ExecuteReader())
                     {
@@ -205,12 +202,11 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT record_id,housenum,buildnum,strucnum,aoguid FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT record_id,housenum,buildnum,strucnum,aoguid FROM {x} WHERE record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     var take = 10000;
 
@@ -309,12 +305,11 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     using (var reader = npgsqlCommand.ExecuteReader())
                     {
@@ -324,12 +319,11 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     var take = 10000;
 
@@ -393,23 +387,21 @@ namespace Updater.Sphinx
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
-                    "SELECT COUNT(*) FROM place WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
+                    "SELECT COUNT(*) FROM place WHERE tags?'name' AND record_number>@last_record_number";
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     total = (long) npgsqlCommand.ExecuteScalar();
                 }
 
                 var sql =
-                    "SELECT record_id,tags->'name' FROM place WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
+                    "SELECT record_id,tags->'name' FROM place WHERE tags?'name' AND record_number>@last_record_number";
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
-                    npgsqlCommand.Parameters.AddWithValue("next_last_record_number", next_last_record_number);
 
                     var take = 10000;
 
