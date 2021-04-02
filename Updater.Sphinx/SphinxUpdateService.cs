@@ -156,9 +156,6 @@ namespace Updater.Sphinx
 
         private async Task UpdateHouseAsync(MySqlConnection connection, string session)
         {
-            var socr = true;
-            var formal = false;
-
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -221,7 +218,7 @@ namespace Updater.Sphinx
                     {
                         while (true)
                         {
-                            var docs = new List<Doc1>(take);
+                            var docs1 = new List<Doc1>(take);
 
                             for (var i = 0; i < take && reader.Read(); i++)
                             {
@@ -233,7 +230,7 @@ namespace Updater.Sphinx
                                 if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
                                 if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
-                                docs.Add(new Doc1
+                                docs1.Add(new Doc1
                                 {
                                     id = reader.GetInt64(0),
                                     text = string.Join(" ", list1),
@@ -241,54 +238,28 @@ namespace Updater.Sphinx
                                 });
                             }
 
-                            if (docs.Any())
+                            if (docs1.Any())
                             {
-                                var guids = docs.Select(x => x.parentguid).ToArray();
+                                var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = new List<Doc2>();
-                                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
-                                {
-                                    npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2);
 
-                                    using (var reader2 = npgsqlCommand2.ExecuteReader())
-                                    {
-                                        while (reader2.Read())
-                                        {
-                                            var offname = reader2.SafeGetString(1);
-                                            var formalname = reader2.SafeGetString(2);
-                                            var shortname = reader2.SafeGetString(3);
-                                            var socrname = reader2.SafeGetString(4);
-                                            var aolevel = reader2.GetInt32(5);
-                                            var title = aolevel > 1
-                                                ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
-                                                : formal
-                                                    ? formalname
-                                                    : offname;
-                                            docs2.Add(new Doc2
-                                            {
-                                                guid = reader2.SafeGetString(0),
-                                                text = title
-                                            });
-                                        }
-                                    }
-                                }
-
-                                var q = from doc1 in docs
+                                var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new { doc1.id, text = $"{doc2.text} HOUSE{doc1.text}" };
+                                    select new {doc1.id, text = $"{doc2.text} HOUSE{doc1.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
-                                current += docs.Count;
+                                current += docs1.Count;
 
                                 await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
 
 
-                            if (docs.Count < take) break;
+                            if (docs1.Count < take) break;
                         }
                     }
                 }
@@ -302,11 +273,44 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdateSteadAsync(MySqlConnection connection, string session)
+        private List<Doc2> GetDocs2(string[] guids, string sql2, NpgsqlConnection npgsqlConnection2)
         {
             var socr = true;
             var formal = false;
 
+            var docs2 = new List<Doc2>();
+            using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
+            {
+                npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+
+                using (var reader2 = npgsqlCommand2.ExecuteReader())
+                {
+                    while (reader2.Read())
+                    {
+                        var offname = reader2.SafeGetString(1);
+                        var formalname = reader2.SafeGetString(2);
+                        var shortname = reader2.SafeGetString(3);
+                        var socrname = reader2.SafeGetString(4);
+                        var aolevel = reader2.GetInt32(5);
+                        var title = aolevel > 1
+                            ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                            : formal
+                                ? formalname
+                                : offname;
+                        docs2.Add(new Doc2
+                        {
+                            guid = reader2.SafeGetString(0),
+                            text = title
+                        });
+                    }
+                }
+            }
+
+            return docs2;
+        }
+
+        private async Task UpdateSteadAsync(MySqlConnection connection, string session)
+        {
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -369,56 +373,30 @@ namespace Updater.Sphinx
                     {
                         while (true)
                         {
-                            var docs = reader.ReadDocs1(take);
+                            var docs1 = reader.ReadDocs1(take);
 
-                            if (docs.Any())
+                            if (docs1.Any())
                             {
-                                var guids = docs.Select(x => x.parentguid).ToArray();
+                                var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = new List<Doc2>();
-                                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
-                                {
-                                    npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2);
 
-                                    using (var reader2 = npgsqlCommand2.ExecuteReader())
-                                    {
-                                        while (reader2.Read())
-                                        {
-                                            var offname = reader2.SafeGetString(1);
-                                            var formalname = reader2.SafeGetString(2);
-                                            var shortname = reader2.SafeGetString(3);
-                                            var socrname = reader2.SafeGetString(4);
-                                            var aolevel = reader2.GetInt32(5);
-                                            var title = aolevel > 1
-                                                ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
-                                                : formal
-                                                    ? formalname
-                                                    : offname;
-                                            docs2.Add(new Doc2
-                                            {
-                                                guid = reader2.SafeGetString(0),
-                                                text = title
-                                            });
-                                        }
-                                    }
-                                }
-
-                                var q = from doc1 in docs
+                                var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                     select new {doc1.id, text = $"{doc2.text} STEAD{doc1.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO stead(id,text) VALUES ");
-                                sb.Append(string.Join(",",q.Select(x =>$"({x.id},'{x.text.TextEscape()}')")));
+                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
-                                current += docs.Count;
+                                current += docs1.Count;
 
                                 await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
 
 
-                            if (docs.Count < take) break;
+                            if (docs1.Count < take) break;
                         }
                     }
                 }
