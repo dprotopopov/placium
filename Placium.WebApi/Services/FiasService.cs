@@ -175,12 +175,12 @@ namespace Placium.WebApi.Services
                         }
                     }
 
-                for (var run = !string.IsNullOrEmpty(guid); run;)
+                using (var command = new NpgsqlCommand(_parentAddrobSql, connection))
                 {
-                    run = false;
-
-                    using (var command = new NpgsqlCommand(_parentAddrobSql, connection))
+                    for (var run = !string.IsNullOrEmpty(guid); run;)
                     {
+                        run = false;
+
                         command.Parameters.AddWithValue("p", guid);
                         using (var reader = command.ExecuteReader())
                         {

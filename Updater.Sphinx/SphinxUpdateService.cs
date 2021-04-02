@@ -205,6 +205,7 @@ namespace Updater.Sphinx
                         $"SELECT record_id,housenum,buildnum,strucnum,aoguid FROM {x} WHERE record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
 
@@ -238,7 +239,7 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2, take);
+                                var docs2 = GetDocs2(guids, sql2, npgsqlCommand2, take);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
@@ -322,6 +323,7 @@ namespace Updater.Sphinx
                         $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
 
@@ -337,7 +339,7 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2, take);
+                                var docs2 = GetDocs2(guids, sql2, npgsqlCommand2, take);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
@@ -436,36 +438,34 @@ namespace Updater.Sphinx
             }
         }
 
-        private List<Doc2> GetDocs2(string[] guids, string sql2, NpgsqlConnection npgsqlConnection2, int take)
+        private List<Doc2> GetDocs2(string[] guids, string sql2, NpgsqlCommand npgsqlCommand2, int take)
         {
             var socr = true;
             var formal = false;
 
             var docs2 = new List<Doc2>(take);
-            using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
-            {
-                npgsqlCommand2.Parameters.AddWithValue("guids", guids);
 
-                using (var reader2 = npgsqlCommand2.ExecuteReader())
+            npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+
+            using (var reader2 = npgsqlCommand2.ExecuteReader())
+            {
+                while (reader2.Read())
                 {
-                    while (reader2.Read())
+                    var offname = reader2.SafeGetString(1);
+                    var formalname = reader2.SafeGetString(2);
+                    var shortname = reader2.SafeGetString(3);
+                    var socrname = reader2.SafeGetString(4);
+                    var aolevel = reader2.GetInt32(5);
+                    var title = aolevel > 1
+                        ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                        : formal
+                            ? formalname
+                            : offname;
+                    docs2.Add(new Doc2
                     {
-                        var offname = reader2.SafeGetString(1);
-                        var formalname = reader2.SafeGetString(2);
-                        var shortname = reader2.SafeGetString(3);
-                        var socrname = reader2.SafeGetString(4);
-                        var aolevel = reader2.GetInt32(5);
-                        var title = aolevel > 1
-                            ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
-                            : formal
-                                ? formalname
-                                : offname;
-                        docs2.Add(new Doc2
-                        {
-                            guid = reader2.SafeGetString(0),
-                            text = title
-                        });
-                    }
+                        guid = reader2.SafeGetString(0),
+                        text = title
+                    });
                 }
             }
 
