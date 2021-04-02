@@ -78,7 +78,7 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(1) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number AND {x}.record_number<=@next_last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
@@ -190,7 +190,7 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(1) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
@@ -309,7 +309,7 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(1) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
@@ -393,7 +393,7 @@ namespace Updater.Sphinx
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
-                    "SELECT COUNT(1) FROM place WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
+                    "SELECT COUNT(*) FROM place WHERE tags?'name' AND record_number>@last_record_number AND record_number<=@next_last_record_number";
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
