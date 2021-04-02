@@ -34,5 +34,21 @@ namespace Placium.WebApp.Controllers
                 fias
             }));
         }
+
+        public IActionResult FiasByAddr()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> FiasByAddr(string addr, string housenumber)
+        {
+            var arr = addr.Split(",");
+            var fias = await _seeker.GetFiasByAddrAsync(arr, housenumber);
+            return Content(JsonConvert.SerializeObject(new
+            {
+                fias
+            }));
+        }
     }
 }

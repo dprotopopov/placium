@@ -28,8 +28,10 @@ namespace Placium.Seeker
             };
 
             var addr = new List<string>();
+
             var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
                            dictionary["addr:region"] == dictionary["addr:city"];
+
             foreach (var key in keys)
                 if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
                     addr.Add(dictionary[key]);
@@ -38,6 +40,11 @@ namespace Placium.Seeker
                 ? dictionary["addr:housenumber"]
                 : string.Empty;
 
+            return await GetFiasByAddrAsync(addr.ToArray(), housenumber);
+        }
+
+        public async Task<List<string>> GetFiasByAddrAsync(string[] addr, string housenumber)
+        {
             var addrob = new List<List<long>>();
             var house = new List<long>();
             var stead = new List<long>();
@@ -166,10 +173,12 @@ namespace Placium.Seeker
                 {
                     result.AddRange(guidhouse);
                     result.AddRange(guidstead);
+
                     return result;
                 }
 
                 result.AddRange(guidaddrob.Last());
+
                 return result;
             }
         }
