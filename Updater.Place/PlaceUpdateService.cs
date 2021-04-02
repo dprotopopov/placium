@@ -536,16 +536,6 @@ namespace Updater.Place
             }
         }
 
-        private long GetNextLastRecordNumber(NpgsqlConnection connection)
-        {
-            using (var command = new NpgsqlCommand(
-                "SELECT last_value FROM record_number_seq"
-                , connection))
-            {
-                return (long) command.ExecuteScalar();
-            }
-        }
-
         public class Point
         {
             public double latitude { get; set; }

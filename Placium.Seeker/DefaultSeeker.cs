@@ -33,7 +33,7 @@ namespace Placium.Seeker
             foreach (var key in keys)
                 if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
                     addr.Add(dictionary[key]);
-            
+
             var housenumber = dictionary.ContainsKey("addr:housenumber")
                 ? dictionary["addr:housenumber"]
                 : string.Empty;
@@ -44,18 +44,22 @@ namespace Placium.Seeker
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                if (!string.IsNullOrWhiteSpace(housenumber))
-                {
-                    stead.Fill($"SELECT id FROM stead WHERE MATCH('{housenumber.TextEscape()}')", connection);
-
-                    house.Fill($"SELECT id FROM house WHERE MATCH('{housenumber.TextEscape()}')", connection);
-                }
-
                 foreach (var row in addr)
                 {
+                    if (!string.IsNullOrWhiteSpace(housenumber))
+                    {
+                        stead.FillAll(
+                            $"SELECT id FROM stead WHERE MATCH('{row.TextEscape()} STEAD{housenumber.TextEscape()}')",
+                            connection);
+
+                        house.FillAll(
+                            $"SELECT id FROM house WHERE MATCH('{row.TextEscape()} HOUSE{housenumber.TextEscape()}')",
+                            connection);
+                    }
+
                     var list = new List<long>();
 
-                    list.Fill($"SELECT id FROM addrob WHERE MATCH('{row.TextEscape()}')", connection);
+                    list.FillAll($"SELECT id FROM addrob WHERE MATCH('{row.TextEscape()}')", connection);
 
                     if (list.Any()) addrob.Add(list);
                 }

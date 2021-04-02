@@ -52,6 +52,8 @@ namespace Placium.Common
 
         public static string TextEscape(this string s, int mode = 0)
         {
+            if (s == null) return string.Empty;
+
             switch (mode)
             {
                 case 0:
@@ -163,6 +165,7 @@ namespace Placium.Common
             foreach (var pair in dictionary) result.AddOrReplace(pair.Key, pair.Value);
             return result;
         }
+
         public static TagsCollection ToTags(this Dictionary<string, string> dictionary)
         {
             var result = new TagsCollection();
@@ -181,7 +184,7 @@ namespace Placium.Common
             node.UserId = reader.SafeGetInt64(6);
             node.UserName = reader.SafeGetString(7);
             node.Visible = reader.SafeGetBoolean(8);
-            node.Tags = ((Dictionary<string, string>)reader.SafeGetValue(9)).ToTags();
+            node.Tags = ((Dictionary<string, string>) reader.SafeGetValue(9)).ToTags();
         }
 
         public static void Fill(this Way way, NpgsqlDataReader reader)
@@ -193,7 +196,7 @@ namespace Placium.Common
             way.UserId = reader.SafeGetInt64(4);
             way.UserName = reader.SafeGetString(5);
             way.Visible = reader.SafeGetBoolean(6);
-            way.Tags = ((Dictionary<string, string>)reader.SafeGetValue(7)).ToTags();
+            way.Tags = ((Dictionary<string, string>) reader.SafeGetValue(7)).ToTags();
             way.Nodes = (long[]) reader.SafeGetValue(8);
         }
 
@@ -206,9 +209,9 @@ namespace Placium.Common
             relation.UserId = reader.SafeGetInt64(4);
             relation.UserName = reader.SafeGetString(5);
             relation.Visible = reader.SafeGetBoolean(6);
-            relation.Tags = ((Dictionary<string, string>)reader.SafeGetValue(7)).ToTags();
+            relation.Tags = ((Dictionary<string, string>) reader.SafeGetValue(7)).ToTags();
             relation.Members = ((OsmRelationMember[]) reader.SafeGetValue(8))
-                .Select(x => new OsmSharp.RelationMember(x.Id, x.Role, (OsmGeoType) x.Type)).ToArray();
+                .Select(x => new RelationMember(x.Id, x.Role, (OsmGeoType) x.Type)).ToArray();
         }
     }
 }

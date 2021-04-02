@@ -14,8 +14,8 @@ namespace Placium.WebApp.Controllers.Upload
         {
             return new UploadFormInfo
             {
-                Title = "Установка OSM",
-                Label = "Полная БД OSM"
+                Title = "Загрузка полной базы OSM",
+                Label = "База данных OSM"
             };
         }
 
@@ -23,8 +23,8 @@ namespace Placium.WebApp.Controllers.Upload
         {
             return new UploadFormInfo
             {
-                Title = "Установка OSM",
-                Label = "Обновление БД OSM"
+                Title = "Загрузка добавления базы OSM",
+                Label = "База данных OSM"
             };
         }
     }

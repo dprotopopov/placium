@@ -14,8 +14,8 @@ namespace Placium.WebApp.Controllers.Update
         {
             return new UpdateFormInfo
             {
-                Title = "Обработка Sphinx",
-                Label = "Обработка новых записей Sphinx"
+                Title = "Наполнение Sphinx",
+                Label = "Добавление новых записей в Sphinx"
             };
         }
     }

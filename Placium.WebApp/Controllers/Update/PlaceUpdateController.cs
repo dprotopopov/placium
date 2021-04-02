@@ -14,8 +14,8 @@ namespace Placium.WebApp.Controllers.Update
         {
             return new UpdateFormInfo
             {
-                Title = "Обработка OSM",
-                Label = "Обработка новых записей OSM"
+                Title = "Наполнение Place",
+                Label = "Добавление новых записей OSM в Place"
             };
         }
     }

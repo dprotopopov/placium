@@ -132,11 +132,8 @@ namespace Updater.Sphinx
                             {
                                 var sb = new StringBuilder("REPLACE INTO addrob(id,text) VALUES ");
                                 sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
-                                connection.TryOpen();
-                                using (var mySqlCommand = new MySqlCommand(sb.ToString(), connection))
-                                {
-                                    mySqlCommand.ExecuteNonQuery();
-                                }
+
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
                                 current += docs.Count;
 
@@ -150,13 +147,20 @@ namespace Updater.Sphinx
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob, next_last_record_number);
+
+                await npgsqlConnection.CloseAsync();
+
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
 
         private async Task UpdateHouseAsync(MySqlConnection connection, string session)
         {
+            var socr = true;
+            var formal = false;
+
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
+            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 var current = 0L;
                 var total = 0L;
@@ -165,12 +169,22 @@ namespace Updater.Sphinx
                 await _progressHub.InitAsync(id, session);
 
                 await npgsqlConnection.OpenAsync();
+                await npgsqlConnection2.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.House);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
+
+                var list2 = new List<string>();
+                list2.Fill(
+                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
+                    npgsqlConnection);
+
+                var sql2 = string.Join("\nUNION ALL\n",
+                    list2.Select(x =>
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.actstatus=1"));
 
                 var list = new List<string>();
                 list.Fill(
@@ -194,7 +208,7 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT record_id,housenum,buildnum,strucnum FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT record_id,housenum,buildnum,strucnum,aoguid FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                 {
@@ -207,7 +221,7 @@ namespace Updater.Sphinx
                     {
                         while (true)
                         {
-                            var docs = new List<Doc>(take);
+                            var docs = new List<Doc1>(take);
 
                             for (var i = 0; i < take && reader.Read(); i++)
                             {
@@ -215,25 +229,58 @@ namespace Updater.Sphinx
                                 var housenum = reader.SafeGetString(1);
                                 var buildnum = reader.SafeGetString(2);
                                 var strucnum = reader.SafeGetString(3);
+                                var parentguid = reader.SafeGetString(4);
                                 if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
                                 if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
-                                docs.Add(new Doc
+                                docs.Add(new Doc1
                                 {
                                     id = reader.GetInt64(0),
-                                    text = string.Join(" ", list1)
+                                    text = string.Join(" ", list1),
+                                    parentguid = parentguid
                                 });
                             }
 
                             if (docs.Any())
                             {
-                                var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
-                                sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
-                                connection.TryOpen();
-                                using (var mySqlCommand = new MySqlCommand(sb.ToString(), connection))
+                                var guids = docs.Select(x => x.parentguid).ToArray();
+
+                                var docs2 = new List<Doc2>();
+                                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                                 {
-                                    mySqlCommand.ExecuteNonQuery();
+                                    npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+
+                                    using (var reader2 = npgsqlCommand2.ExecuteReader())
+                                    {
+                                        while (reader2.Read())
+                                        {
+                                            var offname = reader2.SafeGetString(1);
+                                            var formalname = reader2.SafeGetString(2);
+                                            var shortname = reader2.SafeGetString(3);
+                                            var socrname = reader2.SafeGetString(4);
+                                            var aolevel = reader2.GetInt32(5);
+                                            var title = aolevel > 1
+                                                ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                                                : formal
+                                                    ? formalname
+                                                    : offname;
+                                            docs2.Add(new Doc2
+                                            {
+                                                guid = reader2.SafeGetString(0),
+                                                text = title
+                                            });
+                                        }
+                                    }
                                 }
+
+                                var q = from doc1 in docs
+                                    join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                                    select new { doc1.id, text = $"{doc2.text} HOUSE{doc1.text}" };
+
+                                var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
+                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
+
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
                                 current += docs.Count;
 
@@ -247,13 +294,21 @@ namespace Updater.Sphinx
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType.House, next_last_record_number);
+
+                await npgsqlConnection2.CloseAsync();
+                await npgsqlConnection.CloseAsync();
+
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
 
         private async Task UpdateSteadAsync(MySqlConnection connection, string session)
         {
+            var socr = true;
+            var formal = false;
+
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
+            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 var current = 0L;
                 var total = 0L;
@@ -262,12 +317,22 @@ namespace Updater.Sphinx
                 await _progressHub.InitAsync(id, session);
 
                 await npgsqlConnection.OpenAsync();
+                await npgsqlConnection2.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
+
+                var list2 = new List<string>();
+                list2.Fill(
+                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
+                    npgsqlConnection);
+
+                var sql2 = string.Join("\nUNION ALL\n",
+                    list2.Select(x =>
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.actstatus=1"));
 
                 var list = new List<string>();
                 list.Fill(
@@ -291,7 +356,7 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT record_id,number FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
+                        $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number AND record_number<=@next_last_record_number"));
 
                 using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
                 {
@@ -304,17 +369,48 @@ namespace Updater.Sphinx
                     {
                         while (true)
                         {
-                            var docs = reader.ReadDocs(take);
+                            var docs = reader.ReadDocs1(take);
 
                             if (docs.Any())
                             {
-                                var sb = new StringBuilder("REPLACE INTO addrob(id,text) VALUES ");
-                                sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
-                                connection.TryOpen();
-                                using (var mySqlCommand = new MySqlCommand(sb.ToString(), connection))
+                                var guids = docs.Select(x => x.parentguid).ToArray();
+
+                                var docs2 = new List<Doc2>();
+                                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                                 {
-                                    mySqlCommand.ExecuteNonQuery();
+                                    npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+
+                                    using (var reader2 = npgsqlCommand2.ExecuteReader())
+                                    {
+                                        while (reader2.Read())
+                                        {
+                                            var offname = reader2.SafeGetString(1);
+                                            var formalname = reader2.SafeGetString(2);
+                                            var shortname = reader2.SafeGetString(3);
+                                            var socrname = reader2.SafeGetString(4);
+                                            var aolevel = reader2.GetInt32(5);
+                                            var title = aolevel > 1
+                                                ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                                                : formal
+                                                    ? formalname
+                                                    : offname;
+                                            docs2.Add(new Doc2
+                                            {
+                                                guid = reader2.SafeGetString(0),
+                                                text = title
+                                            });
+                                        }
+                                    }
                                 }
+
+                                var q = from doc1 in docs
+                                    join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                                    select new {doc1.id, text = $"{doc2.text} STEAD{doc1.text}"};
+
+                                var sb = new StringBuilder("REPLACE INTO stead(id,text) VALUES ");
+                                sb.Append(string.Join(",",q.Select(x =>$"({x.id},'{x.text.TextEscape()}')")));
+
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
                                 current += docs.Count;
 
@@ -328,6 +424,10 @@ namespace Updater.Sphinx
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead, next_last_record_number);
+
+                await npgsqlConnection2.CloseAsync();
+                await npgsqlConnection.CloseAsync();
+
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
@@ -381,11 +481,8 @@ namespace Updater.Sphinx
                             {
                                 var sb = new StringBuilder("REPLACE INTO placex(id,text) VALUES ");
                                 sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
-                                connection.TryOpen();
-                                using (var mySqlCommand = new MySqlCommand(sb.ToString(), connection))
-                                {
-                                    mySqlCommand.ExecuteNonQuery();
-                                }
+
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
                                 current += docs.Count;
 
@@ -398,6 +495,9 @@ namespace Updater.Sphinx
                 }
 
                 SetLastRecordNumber(npgsqlConnection, OsmServiceType.Place, next_last_record_number);
+
+                await npgsqlConnection.CloseAsync();
+
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
@@ -462,14 +562,21 @@ namespace Updater.Sphinx
             return 0;
         }
 
-        private long GetNextLastRecordNumber(NpgsqlConnection connection)
+
+        private int ExecuteNonQueryWithRepeatOnError(string sql, MySqlConnection connection)
         {
-            using (var command = new NpgsqlCommand(
-                "SELECT last_value FROM record_number_seq"
-                , connection))
-            {
-                return (long)command.ExecuteScalar();
-            }
+            while (true)
+                try
+                {
+                    connection.TryOpen();
+                    using (var mySqlCommand = new MySqlCommand(sql, connection))
+                    {
+                        return mySqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception)
+                {
+                }
         }
     }
 }

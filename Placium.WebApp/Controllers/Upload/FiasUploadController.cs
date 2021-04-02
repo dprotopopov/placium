@@ -14,8 +14,8 @@ namespace Placium.WebApp.Controllers.Upload
         {
             return new UploadFormInfo
             {
-                Title = "Установка ФИАС",
-                Label = "Полная БД ФИАС (zip-архив dbf-файлов)"
+                Title = "Загрузка полной базы ФИАС",
+                Label = "Полная БД ФИАС (fias_dbf.zip)"
             };
         }
 
@@ -23,8 +23,8 @@ namespace Placium.WebApp.Controllers.Upload
         {
             return new UploadFormInfo
             {
-                Title = "Установка ФИАС",
-                Label = "Обновление БД ФИАС (zip-архив dbf-файлов)"
+                Title = "Загрузка обновления базы ФИАС",
+                Label = "Обновление БД ФИАС (fias_delta_dbf.zip)"
             };
         }
     }
