@@ -33,6 +33,9 @@ namespace Placium.WebApi.Services
                     command.Parameters.AddWithValue("pattern", pattern);
                     command.Parameters.AddWithValue("key", key);
                     command.Parameters.AddWithValue("limit", limit);
+
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -72,6 +75,9 @@ namespace Placium.WebApi.Services
                     command.Parameters.AddWithValue("latitude", (float) latitude);
                     command.Parameters.AddWithValue("key", key);
                     command.Parameters.AddWithValue("limit", limit);
+
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())

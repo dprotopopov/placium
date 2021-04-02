@@ -100,12 +100,15 @@ namespace Loader.Fias
                                                     $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
                                                 , connection))
                                             {
+                                                command.Prepare();
+
                                                 command.ExecuteNonQuery();
-                                                buildIndices = true;
                                             }
 
                                             writer = connection.BeginTextImport(
                                                 $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
+
+                                            buildIndices = true;
                                         }
 
                                         var values = columns.Select(x => x.ValueAsText(reader)).ToList();
@@ -174,6 +177,8 @@ namespace Loader.Fias
                                                         $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
                                                         , connection))
                                                     {
+                                                        command.Prepare();
+
                                                         command.ExecuteNonQuery();
                                                     }
 
@@ -189,12 +194,14 @@ namespace Loader.Fias
                                                             $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});")
                                                         , connection))
                                                     {
+                                                        command.Prepare();
+
                                                         command.ExecuteNonQuery();
                                                     }
 
                                                     writer = connection.BeginTextImport(
                                                         $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
-                                                    
+
                                                     insertFromTemp = true;
                                                 }
                                             }
@@ -211,6 +218,8 @@ namespace Loader.Fias
                                                     $"DROP TABLE temp_{tableName};")
                                                 , connection))
                                             {
+                                                command.Prepare();
+
                                                 command.ExecuteNonQuery();
                                             }
 

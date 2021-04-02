@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Npgsql;
+using NpgsqlTypes;
 using Placium.Common;
 
 namespace Placium.Seeker
@@ -102,6 +103,9 @@ namespace Placium.Seeker
                         connection))
                     {
                         command.Parameters.AddWithValue("ids", stead.ToArray());
+
+                        command.Prepare();
+
                         using (var reader = command.ExecuteReader())
                         {
                             while (reader.Read())
@@ -121,6 +125,9 @@ namespace Placium.Seeker
                         connection))
                     {
                         command.Parameters.AddWithValue("ids", house.ToArray());
+
+                        command.Prepare();
+
                         using (var reader = command.ExecuteReader())
                         {
                             while (reader.Read())
@@ -133,13 +140,19 @@ namespace Placium.Seeker
                         }
                     }
 
-                foreach (var list in addrob)
-                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            listAddrob.Select(x =>
-                                $"SELECT aoguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
-                        connection))
+                using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
+                        listAddrob.Select(x =>
+                            $"SELECT aoguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
+                    connection))
+                {
+                    command.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+
+                    command.Prepare();
+
+                    foreach (var list in addrob)
                     {
-                        command.Parameters.AddWithValue("ids", list.ToArray());
+                        command.Parameters["ids"].Value = list.ToArray();
+
                         using (var reader = command.ExecuteReader())
                         {
                             var guidlist = new List<string>();
@@ -154,6 +167,7 @@ namespace Placium.Seeker
                             if (guidlist.Any()) guidaddrob.Add(guidlist);
                         }
                     }
+                }
 
                 for (var index = 1; index < guidaddrob.Count; index++)
                     guidaddrob[index] = guidaddrob[index].Where(x => guidaddrob[index - 1].Any(y => parent[x] == y))
@@ -204,21 +218,31 @@ namespace Placium.Seeker
 
                 var result = new Dictionary<string, string>();
 
-                foreach (var key in keys)
-                    using (var command =
-                        new NpgsqlCommand(
-                            "SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance FROM place WHERE tags?@key) AS query WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
-                            connection))
+                using (var command =
+                    new NpgsqlCommand(
+                        "SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance FROM place WHERE tags?@key) AS query WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
+                        connection))
+                {
+                    command.Parameters.Add("longitude", NpgsqlDbType.Double);
+                    command.Parameters.Add("latitude", NpgsqlDbType.Double);
+                    command.Parameters.Add("key", NpgsqlDbType.Varchar);
+                    command.Parameters.Add("tolerance", NpgsqlDbType.Double);
+
+                    command.Prepare();
+
+                    foreach (var key in keys)
                     {
-                        command.Parameters.AddWithValue("longitude", (float) longitude);
-                        command.Parameters.AddWithValue("latitude", (float) latitude);
-                        command.Parameters.AddWithValue("key", key);
-                        command.Parameters.AddWithValue("tolerance", tolerance);
+                        command.Parameters["longitude"].Value = longitude;
+                        command.Parameters["latitude"].Value = latitude;
+                        command.Parameters["key"].Value = key;
+                        command.Parameters["tolerance"].Value = tolerance;
+
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read()) result.Add(key, reader.GetString(0));
                         }
                     }
+                }
 
                 await connection.CloseAsync();
 

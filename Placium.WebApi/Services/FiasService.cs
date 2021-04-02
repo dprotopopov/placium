@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using NpgsqlTypes;
 using Placium.Common;
 using Placium.WebApi.Models;
 
@@ -103,6 +104,9 @@ namespace Placium.WebApi.Services
                     using (var command = new NpgsqlCommand(_parentRoomSql, connection))
                     {
                         command.Parameters.AddWithValue("p", guid);
+
+                        command.Prepare();
+
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read())
@@ -129,6 +133,9 @@ namespace Placium.WebApi.Services
                     using (var command = new NpgsqlCommand(_parentHouseSql, connection))
                     {
                         command.Parameters.AddWithValue("p", guid);
+
+                        command.Prepare();
+
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read())
@@ -157,6 +164,9 @@ namespace Placium.WebApi.Services
                     using (var command = new NpgsqlCommand(_parentSteadSql, connection))
                     {
                         command.Parameters.AddWithValue("p", guid);
+
+                        command.Prepare();
+
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read())
@@ -177,11 +187,16 @@ namespace Placium.WebApi.Services
 
                 using (var command = new NpgsqlCommand(_parentAddrobSql, connection))
                 {
+                    command.Parameters.Add("p", NpgsqlDbType.Varchar);
+
+                    command.Prepare();
+
                     for (var run = !string.IsNullOrEmpty(guid); run;)
                     {
                         run = false;
 
-                        command.Parameters.AddWithValue("p", guid);
+                        command.Parameters["p"].Value = guid;
+
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.Read())
@@ -234,6 +249,9 @@ namespace Placium.WebApi.Services
                 using (var command = new NpgsqlCommand(_childrenRoomSql, connection))
                 {
                     command.Parameters.AddWithValue("p", guid);
+
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -258,6 +276,9 @@ namespace Placium.WebApi.Services
                 using (var command = new NpgsqlCommand(_childrenHouseSql, connection))
                 {
                     command.Parameters.AddWithValue("p", guid);
+
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -284,6 +305,9 @@ namespace Placium.WebApi.Services
                 using (var command = new NpgsqlCommand(_childrenSteadSql, connection))
                 {
                     command.Parameters.AddWithValue("p", guid);
+
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -305,6 +329,9 @@ namespace Placium.WebApi.Services
                 using (var command = new NpgsqlCommand(_childrenAddrobSql, connection))
                 {
                     command.Parameters.AddWithValue("p", guid);
+
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -351,6 +378,8 @@ namespace Placium.WebApi.Services
 
                 using (var command = new NpgsqlCommand(_rootRoomSql, connection))
                 {
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -374,6 +403,8 @@ namespace Placium.WebApi.Services
 
                 using (var command = new NpgsqlCommand(_rootHouseSql, connection))
                 {
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -399,6 +430,8 @@ namespace Placium.WebApi.Services
 
                 using (var command = new NpgsqlCommand(_rootSteadSql, connection))
                 {
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
@@ -419,6 +452,8 @@ namespace Placium.WebApi.Services
 
                 using (var command = new NpgsqlCommand(_rootAddrobSql, connection))
                 {
+                    command.Prepare();
+
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())

@@ -47,6 +47,8 @@ namespace Placium.Common
                         connection.Open();
                         using (var command = new NpgsqlCommand(cmd, connection))
                         {
+                            command.Prepare();
+
                             command.ExecuteNonQuery();
                         }
 
@@ -62,6 +64,8 @@ namespace Placium.Common
             using (var sr = new StreamReader(stream, Encoding.UTF8))
             using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
             {
+                command.Prepare();
+
                 command.ExecuteNonQuery();
             }
         }
@@ -72,6 +76,8 @@ namespace Placium.Common
                 $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='{tableName}');"
                 , conn))
             {
+                command.Prepare();
+
                 return (bool) command.ExecuteScalar();
             }
         }
@@ -82,6 +88,8 @@ namespace Placium.Common
                 "SELECT last_value FROM record_number_seq"
                 , connection))
             {
+                command.Prepare();
+
                 return (long)command.ExecuteScalar();
             }
         }

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Npgsql;
+using NpgsqlTypes;
 using Placium.Common;
 using Placium.Types;
 
@@ -80,11 +81,13 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $"SELECT COUNT(*) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number"));
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
+                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                    using (var reader = npgsqlCommand.ExecuteReader())
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
                     }
@@ -94,13 +97,15 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number"));
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                    command.Prepare();
 
                     var take = 10000;
 
-                    using (var reader = npgsqlCommand.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
                     {
                         while (true)
                         {
@@ -190,11 +195,13 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number"));
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
+                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                    using (var reader = npgsqlCommand.ExecuteReader())
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
                     }
@@ -204,14 +211,20 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $"SELECT record_id,housenum,buildnum,strucnum,aoguid FROM {x} WHERE record_number>@last_record_number"));
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
-                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
+                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                    command.Prepare();
+
+                    command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+
+                    command2.Prepare();
 
                     var take = 10000;
 
-                    using (var reader = npgsqlCommand.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
                     {
                         while (true)
                         {
@@ -239,7 +252,7 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, npgsqlCommand2, take);
+                                var docs2 = GetDocs2(guids, sql2, command2, take);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
@@ -308,11 +321,13 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number"));
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
+                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                    using (var reader = npgsqlCommand.ExecuteReader())
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
                     }
@@ -322,14 +337,20 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number"));
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
-                using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
+                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                    command.Prepare();
+
+                    command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+
+                    command2.Prepare();
 
                     var take = 10000;
 
-                    using (var reader = npgsqlCommand.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
                     {
                         while (true)
                         {
@@ -339,7 +360,7 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, npgsqlCommand2, take);
+                                var docs2 = GetDocs2(guids, sql2, command2, take);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
@@ -391,23 +412,27 @@ namespace Updater.Sphinx
                 var sql1 =
                     "SELECT COUNT(*) FROM place WHERE tags?'name' AND record_number>@last_record_number";
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql1, npgsqlConnection))
+                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                    total = (long) npgsqlCommand.ExecuteScalar();
+                    command.Prepare();
+
+                    total = (long) command.ExecuteScalar();
                 }
 
                 var sql =
                     "SELECT record_id,tags->'name' FROM place WHERE tags?'name' AND record_number>@last_record_number";
 
-                using (var npgsqlCommand = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
                 {
-                    npgsqlCommand.Parameters.AddWithValue("last_record_number", last_record_number);
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                    command.Prepare();
 
                     var take = 10000;
 
-                    using (var reader = npgsqlCommand.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
                     {
                         while (true)
                         {
@@ -445,7 +470,7 @@ namespace Updater.Sphinx
 
             var docs2 = new List<Doc2>(take);
 
-            npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+            npgsqlCommand2.Parameters["guids"].Value = guids;
 
             using (var reader2 = npgsqlCommand2.ExecuteReader())
             {
@@ -479,6 +504,9 @@ namespace Updater.Sphinx
                 , connection))
             {
                 command.Parameters.AddWithValue("service_type", service_type);
+
+                command.Prepare();
+
                 using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())
@@ -498,6 +526,9 @@ namespace Updater.Sphinx
             {
                 command.Parameters.AddWithValue("service_type", service_type);
                 command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                command.Prepare();
+
                 command.ExecuteNonQuery();
             }
         }
@@ -511,6 +542,9 @@ namespace Updater.Sphinx
             {
                 command.Parameters.AddWithValue("service_type", service_type);
                 command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                command.Prepare();
+
                 command.ExecuteNonQuery();
             }
         }
@@ -522,6 +556,9 @@ namespace Updater.Sphinx
                 , connection))
             {
                 command.Parameters.AddWithValue("service_type", service_type);
+
+                command.Prepare();
+
                 using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())

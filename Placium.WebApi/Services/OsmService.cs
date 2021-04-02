@@ -70,6 +70,9 @@ namespace Placium.WebApi.Services
                         using (var command = new NpgsqlCommand(_selectNodeById, connection))
                         {
                             command.Parameters.AddWithValue("p", osm_id);
+
+                            command.Prepare();
+
                             using (var reader = command.ExecuteReader())
                             {
                                 if (reader.Read())
@@ -86,6 +89,9 @@ namespace Placium.WebApi.Services
                         using (var command = new NpgsqlCommand(_selectWayById, connection))
                         {
                             command.Parameters.AddWithValue("p", osm_id);
+
+                            command.Prepare();
+
                             using (var reader = command.ExecuteReader())
                             {
                                 if (reader.Read())
@@ -102,6 +108,9 @@ namespace Placium.WebApi.Services
                         using (var command = new NpgsqlCommand(_selectRelationById, connection))
                         {
                             command.Parameters.AddWithValue("p", osm_id);
+
+                            command.Prepare();
+
                             using (var reader = command.ExecuteReader())
                             {
                                 if (reader.Read())

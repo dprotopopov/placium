@@ -10,9 +10,13 @@ namespace Placium.Common
         public static int Fill(this List<string> list, string sql, NpgsqlConnection connection)
         {
             using (var command = new NpgsqlCommand(sql, connection))
-            using (var reader = command.ExecuteReader())
             {
-                return list.Fill(reader);
+                command.Prepare();
+
+                using (var reader = command.ExecuteReader())
+                {
+                    return list.Fill(reader);
+                }
             }
         }
 
@@ -51,9 +55,11 @@ namespace Placium.Common
         {
             connection.TryOpen();
             using (var command = new MySqlCommand(sql, connection))
-            using (var reader = command.ExecuteReader())
             {
-                return list.Fill(reader);
+                using (var reader = command.ExecuteReader())
+                {
+                    return list.Fill(reader);
+                }
             }
         }
 
@@ -62,8 +68,8 @@ namespace Placium.Common
             var count = 0;
             while (reader.Read())
             {
-                count++;
                 list.Add(reader.GetInt64(0));
+                count++;
             }
 
             return count;
