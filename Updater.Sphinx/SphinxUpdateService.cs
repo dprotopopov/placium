@@ -242,7 +242,7 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2);
+                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2, take);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
@@ -271,42 +271,6 @@ namespace Updater.Sphinx
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
-        }
-
-        private List<Doc2> GetDocs2(string[] guids, string sql2, NpgsqlConnection npgsqlConnection2)
-        {
-            var socr = true;
-            var formal = false;
-
-            var docs2 = new List<Doc2>();
-            using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
-            {
-                npgsqlCommand2.Parameters.AddWithValue("guids", guids);
-
-                using (var reader2 = npgsqlCommand2.ExecuteReader())
-                {
-                    while (reader2.Read())
-                    {
-                        var offname = reader2.SafeGetString(1);
-                        var formalname = reader2.SafeGetString(2);
-                        var shortname = reader2.SafeGetString(3);
-                        var socrname = reader2.SafeGetString(4);
-                        var aolevel = reader2.GetInt32(5);
-                        var title = aolevel > 1
-                            ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
-                            : formal
-                                ? formalname
-                                : offname;
-                        docs2.Add(new Doc2
-                        {
-                            guid = reader2.SafeGetString(0),
-                            text = title
-                        });
-                    }
-                }
-            }
-
-            return docs2;
         }
 
         private async Task UpdateSteadAsync(MySqlConnection connection, string session)
@@ -379,7 +343,7 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2);
+                                var docs2 = GetDocs2(guids, sql2, npgsqlConnection2, take);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
@@ -478,6 +442,42 @@ namespace Updater.Sphinx
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
+        }
+
+        private List<Doc2> GetDocs2(string[] guids, string sql2, NpgsqlConnection npgsqlConnection2, int take)
+        {
+            var socr = true;
+            var formal = false;
+
+            var docs2 = new List<Doc2>(take);
+            using (var npgsqlCommand2 = new NpgsqlCommand(sql2, npgsqlConnection2))
+            {
+                npgsqlCommand2.Parameters.AddWithValue("guids", guids);
+
+                using (var reader2 = npgsqlCommand2.ExecuteReader())
+                {
+                    while (reader2.Read())
+                    {
+                        var offname = reader2.SafeGetString(1);
+                        var formalname = reader2.SafeGetString(2);
+                        var shortname = reader2.SafeGetString(3);
+                        var socrname = reader2.SafeGetString(4);
+                        var aolevel = reader2.GetInt32(5);
+                        var title = aolevel > 1
+                            ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                            : formal
+                                ? formalname
+                                : offname;
+                        docs2.Add(new Doc2
+                        {
+                            guid = reader2.SafeGetString(0),
+                            text = title
+                        });
+                    }
+                }
+            }
+
+            return docs2;
         }
 
         private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type)
