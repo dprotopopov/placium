@@ -86,6 +86,8 @@ namespace Updater.Place
                             "CREATE TEMP TABLE temp_place_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
                         connection2))
                 {
+                    command.Prepare();
+
                     command.ExecuteNonQuery();
                 }
 
@@ -128,6 +130,8 @@ namespace Updater.Place
                         "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'node',tags,location FROM temp_place_node ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
                         "DROP TABLE temp_place_node"), connection2))
                 {
+                    command.Prepare();
+
                     command.ExecuteNonQuery();
                 }
 
