@@ -50,6 +50,14 @@ namespace Placium.Common
                 : string.Empty;
         }
 
+        public static string Yo(this string s)
+        {
+            if (s == null) return string.Empty;
+
+            return s.Replace("ё", "е")
+                .Replace("Ё", "Е");
+        }
+
         public static string TextEscape(this string s, int mode = 0)
         {
             if (s == null) return string.Empty;

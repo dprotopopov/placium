@@ -81,7 +81,7 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -140,7 +140,7 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, command2, take);
+                                var docs2 = GetDocs2(guids, command2, take);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid into ps
@@ -211,7 +211,7 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -268,11 +268,17 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, command2, take);
+                                var docs2 = GetDocs2(guids, command2, guids.Length);
+
+                                var guids2 = docs2.Select(x => x.parentguid).ToArray();
+
+                                var docs3 = GetDocs2(guids2, command2, guids2.Length);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text}"};
+                                    join doc3 in docs3 on doc2.parentguid equals doc3.guid into ps
+                                    from doc in ps.DefaultIfEmpty()
+                                    select new { doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}" };
 
                                 var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
@@ -338,7 +344,7 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -375,11 +381,17 @@ namespace Updater.Sphinx
                             {
                                 var guids = docs1.Select(x => x.parentguid).ToArray();
 
-                                var docs2 = GetDocs2(guids, sql2, command2, take);
+                                var docs2 = GetDocs2(guids, command2, guids.Length);
+
+                                var guids2 = docs2.Select(x => x.parentguid).ToArray();
+
+                                var docs3 = GetDocs2(guids2, command2, guids2.Length);
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text}"};
+                                    join doc3 in docs3 on doc2.parentguid equals doc3.guid into ps
+                                    from doc in ps.DefaultIfEmpty()
+                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO stead(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
@@ -473,7 +485,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private List<Doc2> GetDocs2(string[] guids, string sql2, NpgsqlCommand npgsqlCommand2, int take)
+        private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)
         {
             var socr = true;
             var formal = false;
@@ -491,6 +503,7 @@ namespace Updater.Sphinx
                     var shortname = reader2.SafeGetString(3);
                     var socrname = reader2.SafeGetString(4);
                     var aolevel = reader2.GetInt32(5);
+                    var parentguid = reader2.SafeGetString(6);
                     var title = aolevel > 1
                         ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
                         : formal
@@ -500,7 +513,8 @@ namespace Updater.Sphinx
                     docs2.Add(new Doc2
                     {
                         guid = reader2.SafeGetString(0),
-                        text = title
+                        text = title,
+                        parentguid = parentguid
                     });
                 }
             }
