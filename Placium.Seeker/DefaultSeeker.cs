@@ -56,6 +56,8 @@ namespace Placium.Seeker
 
                 foreach (var row in addr)
                 {
+                    var list = new List<long>();
+
                     for (var index2 = 0; index2 <= index; index2++)
                     {
                         var row2 = addr[index2];
@@ -71,14 +73,12 @@ namespace Placium.Seeker
                                 connection);
                         }
 
-                        var list = new List<long>();
-
                         list.FillAll(
                             $"SELECT id FROM addrob WHERE MATCH('({row.Yo().TextEscape(-1)})<<({row2.Yo().TextEscape(-1)})')",
                             connection);
-
-                        if (list.Any()) addrob.Add(list);
                     }
+
+                    if (list.Any()) addrob.Add(list);
 
                     index++;
                 }
