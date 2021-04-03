@@ -58,11 +58,11 @@ namespace Placium.Seeker
                     if (!string.IsNullOrWhiteSpace(housenumber))
                     {
                         stead.FillAll(
-                            $"SELECT id FROM stead WHERE MATCH('#{housenumber.TextEscape()} @{row.TextEscape()}')",
+                            $"SELECT id FROM stead WHERE MATCH('#{housenumber.TextEscape()} {row.TextEscape()}')",
                             connection);
 
                         house.FillAll(
-                            $"SELECT id FROM house WHERE MATCH('#{housenumber.TextEscape()} @{row.TextEscape()}')",
+                            $"SELECT id FROM house WHERE MATCH('#{housenumber.TextEscape()} {row.TextEscape()}')",
                             connection);
                     }
 
@@ -70,7 +70,7 @@ namespace Placium.Seeker
 
                     for (var index2 = 0; index2 <= index; index2++)
                         list.FillAll(
-                            $"SELECT id FROM addrob WHERE MATCH('#{row.TextEscape()} @{addr[index2].TextEscape()}')",
+                            $"SELECT id FROM addrob WHERE MATCH('{row.TextEscape()} {addr[index2].TextEscape()}')",
                             connection);
 
                     if (list.Any()) addrob.Add(list);
