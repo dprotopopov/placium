@@ -81,15 +81,22 @@ namespace Placium.Seeker
                 var listHouse = new List<string>();
                 var listStead = new List<string>();
 
-                listAddrob.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
-                    connection);
-                listHouse.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'house\d+'",
-                    connection);
-                listStead.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
-                    connection);
+                using (var command = new NpgsqlCommand(
+                    string.Join(";", new[] {@"addrob\d+", @"house\d+", @"stead\d+"}.Select(x =>
+                        $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                    connection))
+                {
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        listAddrob.Fill(reader);
+                        reader.NextResult();
+                        listHouse.Fill(reader);
+                        reader.NextResult();
+                        listStead.Fill(reader);
+                    }
+                }
 
                 var guidaddrob = new List<List<string>>();
                 var guidhouse = new List<string>();
@@ -99,7 +106,7 @@ namespace Placium.Seeker
                 if (stead.Any())
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                             listStead.Select(x =>
-                                $"SELECT steadguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
+                                $"SELECT steadguid,parentguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1")),
                         connection))
                     {
                         command.Parameters.AddWithValue("ids", stead.ToArray());
@@ -121,7 +128,7 @@ namespace Placium.Seeker
                 if (house.Any())
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                             listHouse.Select(x =>
-                                $"SELECT houseguid,aoguid FROM {x} WHERE record_id=ANY(@ids)")),
+                                $"SELECT houseguid,aoguid FROM {x} WHERE record_id=ANY(@ids) AND startdate<=now() AND now()<enddate")),
                         connection))
                     {
                         command.Parameters.AddWithValue("ids", house.ToArray());
@@ -142,7 +149,7 @@ namespace Placium.Seeker
 
                 using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                         listAddrob.Select(x =>
-                            $"SELECT aoguid,parentguid FROM {x} WHERE record_id=ANY(@ids)")),
+                            $"SELECT aoguid,parentguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1")),
                     connection))
                 {
                     command.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);

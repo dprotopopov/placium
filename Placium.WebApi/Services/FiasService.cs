@@ -35,58 +35,63 @@ namespace Placium.WebApi.Services
             {
                 connection.Open();
 
-                _listAddrob.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
-                    connection);
-                _listHouse.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'house\d+'",
-                    connection);
-                _listRoom.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'room\d+'",
-                    connection);
-                _listStead.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
-                    connection);
+                using (var command = new NpgsqlCommand(
+                    string.Join(";", new[] {@"addrob\d+", @"house\d+", @"room\d+", @"stead\d+"}.Select(x =>
+                        $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                    connection))
+                {
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        _listAddrob.Fill(reader);
+                        reader.NextResult();
+                        _listHouse.Fill(reader);
+                        reader.NextResult();
+                        _listRoom.Fill(reader);
+                        reader.NextResult();
+                        _listStead.Fill(reader);
+                    }
+                }
 
                 _parentRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
-                        $"SELECT houseguid,flatnumber,roomnumber FROM {x} WHERE roomguid=@p"));
+                        $"SELECT houseguid,flatnumber,roomnumber FROM {x} WHERE roomguid=@p AND livestatus=1"));
                 _parentHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
-                        $"SELECT aoguid,housenum,buildnum,strucnum FROM {x} WHERE houseguid=@p"));
+                        $"SELECT aoguid,housenum,buildnum,strucnum,eststat.name FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE houseguid=@p AND startdate<=now() AND now()<enddate"));
                 _parentSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
-                        $"SELECT parentguid,number FROM {x} WHERE steadguid=@p"));
+                        $"SELECT parentguid,number FROM {x} WHERE steadguid=@p AND livestatus=1"));
                 _parentAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
-                        $"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE aoguid=@p AND actstatus=1"));
-
+                        $"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE aoguid=@p AND livestatus=1"));
 
                 _childrenRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
-                        $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid=@p"));
+                        $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid=@p AND livestatus=1"));
                 _childrenHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
-                        $"SELECT houseguid,housenum,buildnum,strucnum FROM {x} WHERE aoguid=@p"));
+                        $"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE aoguid=@p AND startdate<=now() AND now()<enddate"));
                 _childrenSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
-                        $"SELECT steadguid,number FROM {x} WHERE parentguid=@p"));
+                        $"SELECT steadguid,number FROM {x} WHERE parentguid=@p AND livestatus=1"));
                 _childrenAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
-                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid=@p AND actstatus=1"));
+                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid=@p AND livestatus=1"));
 
                 _rootRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
-                        $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid IS NULL"));
+                        $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid IS NULL AND livestatus=1"));
                 _rootHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
-                        $"SELECT houseguid,housenum,buildnum,strucnum FROM {x} WHERE aoguid IS NULL"));
+                        $"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE aoguid IS NULL AND startdate<=now() AND now()<enddate"));
                 _rootSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
-                        $"SELECT steadguid,number FROM {x} WHERE parentguid IS NULL"));
+                        $"SELECT steadguid,number FROM {x} WHERE parentguid IS NULL AND livestatus=1"));
                 _rootAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
-                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid IS NULL AND actstatus=1"));
+                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid IS NULL AND livestatus=1"));
             }
         }
 
@@ -111,9 +116,9 @@ namespace Placium.WebApi.Services
                         {
                             if (reader.Read())
                             {
-                                var list = new List<string>();
                                 var flatnumber = reader.SafeGetString(1);
                                 var roomnumber = reader.SafeGetString(2);
+                                var list = new List<string>();
                                 if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
                                 if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                                 result.Add(new Room
@@ -140,10 +145,11 @@ namespace Placium.WebApi.Services
                         {
                             if (reader.Read())
                             {
-                                var list = new List<string>();
                                 var housenum = reader.SafeGetString(1);
                                 var buildnum = reader.SafeGetString(2);
                                 var strucnum = reader.SafeGetString(3);
+                                var name = reader.SafeGetString(4);
+                                var list = new List<string>(){name};
                                 if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
                                 if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
@@ -153,6 +159,7 @@ namespace Placium.WebApi.Services
                                     housenum = housenum,
                                     buildnum = buildnum,
                                     strucnum = strucnum,
+                                    name = name,
                                     title = string.Join(" ", list)
                                 });
                                 guid = reader.SafeGetString(0);
@@ -171,8 +178,8 @@ namespace Placium.WebApi.Services
                         {
                             if (reader.Read())
                             {
-                                var list = new List<string>();
                                 var number = reader.SafeGetString(1);
+                                var list = new List<string>();
                                 if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
                                 result.Add(new Stead
                                 {
@@ -246,7 +253,8 @@ namespace Placium.WebApi.Services
 
                 var result = new List<Element>();
 
-                using (var command = new NpgsqlCommand(_childrenRoomSql, connection))
+                using (var command = new NpgsqlCommand(string.Join(";",
+                    _childrenRoomSql, _childrenHouseSql, _childrenSteadSql, _childrenAddrobSql), connection))
                 {
                     command.Parameters.AddWithValue("p", guid);
 
@@ -256,9 +264,9 @@ namespace Placium.WebApi.Services
                     {
                         while (reader.Read())
                         {
-                            var list = new List<string>();
                             var flatnumber = reader.SafeGetString(1);
                             var roomnumber = reader.SafeGetString(2);
+                            var list = new List<string>();
                             if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
                             if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             result.Add(new Room
@@ -269,24 +277,16 @@ namespace Placium.WebApi.Services
                                 title = string.Join(", ", list)
                             });
                         }
-                    }
-                }
 
+                        reader.NextResult();
 
-                using (var command = new NpgsqlCommand(_childrenHouseSql, connection))
-                {
-                    command.Parameters.AddWithValue("p", guid);
-
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
                         while (reader.Read())
                         {
-                            var list = new List<string>();
                             var housenum = reader.SafeGetString(1);
                             var buildnum = reader.SafeGetString(2);
                             var strucnum = reader.SafeGetString(3);
+                            var name = reader.SafeGetString(4);
+                            var list = new List<string>() { name };
                             if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
                             if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                             if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
@@ -296,24 +296,17 @@ namespace Placium.WebApi.Services
                                 housenum = housenum,
                                 buildnum = buildnum,
                                 strucnum = strucnum,
+                                name = name,
                                 title = string.Join(" ", list)
                             });
                         }
-                    }
-                }
 
-                using (var command = new NpgsqlCommand(_childrenSteadSql, connection))
-                {
-                    command.Parameters.AddWithValue("p", guid);
+                        reader.NextResult();
 
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
                         while (reader.Read())
                         {
-                            var list = new List<string>();
                             var number = reader.SafeGetString(1);
+                            var list = new List<string>();
                             if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
                             result.Add(new Stead
                             {
@@ -322,18 +315,9 @@ namespace Placium.WebApi.Services
                                 title = string.Join(", ", list)
                             });
                         }
-                    }
-                }
 
+                        reader.NextResult();
 
-                using (var command = new NpgsqlCommand(_childrenAddrobSql, connection))
-                {
-                    command.Parameters.AddWithValue("p", guid);
-
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
                         while (reader.Read())
                         {
                             var offname = reader.SafeGetString(1);
@@ -376,7 +360,8 @@ namespace Placium.WebApi.Services
 
                 var result = new List<Element>();
 
-                using (var command = new NpgsqlCommand(_rootRoomSql, connection))
+                using (var command = new NpgsqlCommand(string.Join(";",
+                    _rootRoomSql, _rootHouseSql, _rootSteadSql, _rootAddrobSql), connection))
                 {
                     command.Prepare();
 
@@ -384,9 +369,9 @@ namespace Placium.WebApi.Services
                     {
                         while (reader.Read())
                         {
-                            var list = new List<string>();
                             var flatnumber = reader.SafeGetString(1);
                             var roomnumber = reader.SafeGetString(2);
+                            var list = new List<string>();
                             if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
                             if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             result.Add(new Room
@@ -397,22 +382,16 @@ namespace Placium.WebApi.Services
                                 title = string.Join(", ", list)
                             });
                         }
-                    }
-                }
 
+                        reader.NextResult();
 
-                using (var command = new NpgsqlCommand(_rootHouseSql, connection))
-                {
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
                         while (reader.Read())
                         {
-                            var list = new List<string>();
                             var housenum = reader.SafeGetString(1);
                             var buildnum = reader.SafeGetString(2);
                             var strucnum = reader.SafeGetString(3);
+                            var name = reader.SafeGetString(4);
+                            var list = new List<string>() { name };
                             if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
                             if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                             if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
@@ -422,22 +401,17 @@ namespace Placium.WebApi.Services
                                 housenum = housenum,
                                 buildnum = buildnum,
                                 strucnum = strucnum,
+                                name = name,
                                 title = string.Join(" ", list)
                             });
                         }
-                    }
-                }
 
-                using (var command = new NpgsqlCommand(_rootSteadSql, connection))
-                {
-                    command.Prepare();
+                        reader.NextResult();
 
-                    using (var reader = command.ExecuteReader())
-                    {
                         while (reader.Read())
                         {
-                            var list = new List<string>();
                             var number = reader.SafeGetString(1);
+                            var list = new List<string>();
                             if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
                             result.Add(new Stead
                             {
@@ -446,16 +420,9 @@ namespace Placium.WebApi.Services
                                 title = string.Join(", ", list)
                             });
                         }
-                    }
-                }
 
+                        reader.NextResult();
 
-                using (var command = new NpgsqlCommand(_rootAddrobSql, connection))
-                {
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
                         while (reader.Read())
                         {
                             var offname = reader.SafeGetString(1);

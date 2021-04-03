@@ -79,9 +79,13 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
 
-                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
+                var sql = string.Join("\nUNION ALL\n",
+                    list.Select(x =>
+                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
+
+                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
@@ -90,23 +94,11 @@ namespace Updater.Sphinx
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
-                    }
-                }
 
-                var sql = string.Join("\nUNION ALL\n",
-                    list.Select(x =>
-                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.actstatus=1 AND {x}.record_number>@last_record_number"));
+                        var take = 10000;
 
-                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
-                {
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+                        reader.NextResult();
 
-                    command.Prepare();
-
-                    var take = 10000;
-
-                    using (var reader = command.ExecuteReader())
-                    {
                         while (true)
                         {
                             var docs = new List<Doc>(take);
@@ -143,7 +135,6 @@ namespace Updater.Sphinx
                                 await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
 
-
                             if (docs.Count < take) break;
                         }
                     }
@@ -178,40 +169,36 @@ namespace Updater.Sphinx
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list2 = new List<string>();
-                list2.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
-                    npgsqlConnection);
-
-                var sql2 = string.Join("\nUNION ALL\n",
-                    list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.actstatus=1"));
-
                 var list = new List<string>();
-                list.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'house\d+'",
-                    npgsqlConnection);
 
-                var sql1 = string.Join("\nUNION ALL\n",
-                    list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number"));
-
-                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
+                using (var command = new NpgsqlCommand(
+                    string.Join(";", new[] {@"addrob\d+", @"house\d+"}.Select(x =>
+                        $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                    npgsqlConnection))
                 {
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
-
                     command.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
-                        while (reader.Read()) total += reader.GetInt64(0);
+                        list2.Fill(reader);
+                        reader.NextResult();
+                        list.Fill(reader);
                     }
                 }
 
+                var sql2 = string.Join("\nUNION ALL\n",
+                    list2.Select(x =>
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+
+                var sql1 = string.Join("\nUNION ALL\n",
+                    list.Select(x =>
+                        $"SELECT COUNT(*) FROM {x} WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
+
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT record_id,housenum,buildnum,strucnum,aoguid FROM {x} WHERE record_number>@last_record_number"));
+                        $"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
 
-                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
@@ -222,10 +209,14 @@ namespace Updater.Sphinx
 
                     command2.Prepare();
 
-                    var take = 10000;
-
                     using (var reader = command.ExecuteReader())
                     {
+                        while (reader.Read()) total += reader.GetInt64(0);
+
+                        var take = 10000;
+
+                        reader.NextResult();
+
                         while (true)
                         {
                             var docs1 = new List<Doc1>(take);
@@ -236,10 +227,12 @@ namespace Updater.Sphinx
                                 var housenum = reader.SafeGetString(1);
                                 var buildnum = reader.SafeGetString(2);
                                 var strucnum = reader.SafeGetString(3);
-                                var parentguid = reader.SafeGetString(4);
+                                var name = reader.SafeGetString(4);
+                                var parentguid = reader.SafeGetString(5);
                                 if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
                                 if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
+                                list1.Add(name);
                                 docs1.Add(new Doc1
                                 {
                                     id = reader.GetInt64(0),
@@ -267,7 +260,6 @@ namespace Updater.Sphinx
 
                                 await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
-
 
                             if (docs1.Count < take) break;
                         }
@@ -304,40 +296,36 @@ namespace Updater.Sphinx
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list2 = new List<string>();
-                list2.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
-                    npgsqlConnection);
-
-                var sql2 = string.Join("\nUNION ALL\n",
-                    list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.actstatus=1"));
-
                 var list = new List<string>();
-                list.Fill(
-                    @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'stead\d+'",
-                    npgsqlConnection);
 
-                var sql1 = string.Join("\nUNION ALL\n",
-                    list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number"));
-
-                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
+                using (var command = new NpgsqlCommand(
+                    string.Join(";", new[] {@"addrob\d+", @"stead\d+"}.Select(x =>
+                        $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                    npgsqlConnection))
                 {
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
-
                     command.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
-                        while (reader.Read()) total += reader.GetInt64(0);
+                        list2.Fill(reader);
+                        reader.NextResult();
+                        list.Fill(reader);
                     }
                 }
 
+                var sql2 = string.Join("\nUNION ALL\n",
+                    list2.Select(x =>
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+
+                var sql1 = string.Join("\nUNION ALL\n",
+                    list.Select(x =>
+                        $"SELECT COUNT(*) FROM {x} WHERE {x}.record_number>@last_record_number AND livestatus=1"));
+
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number"));
+                        $"SELECT {x}.record_id,number,parentguid FROM {x} WHERE {x}.record_number>@last_record_number AND livestatus=1"));
 
-                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
@@ -348,10 +336,14 @@ namespace Updater.Sphinx
 
                     command2.Prepare();
 
-                    var take = 10000;
-
                     using (var reader = command.ExecuteReader())
                     {
+                        while (reader.Read()) total += reader.GetInt64(0);
+
+                        var take = 10000;
+
+                        reader.NextResult();
+
                         while (true)
                         {
                             var docs1 = reader.ReadDocs1(take);
@@ -375,7 +367,6 @@ namespace Updater.Sphinx
 
                                 await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
-
 
                             if (docs1.Count < take) break;
                         }
@@ -412,28 +403,24 @@ namespace Updater.Sphinx
                 var sql1 =
                     "SELECT COUNT(*) FROM place WHERE tags?'name' AND record_number>@last_record_number";
 
-                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
-                {
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                    command.Prepare();
-
-                    total = (long) command.ExecuteScalar();
-                }
-
                 var sql =
                     "SELECT record_id,tags->'name' FROM place WHERE tags?'name' AND record_number>@last_record_number";
 
-                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
+                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
                     command.Prepare();
 
-                    var take = 10000;
-
                     using (var reader = command.ExecuteReader())
                     {
+                        if (reader.Read())
+                            total = reader.GetInt64(0);
+
+                        var take = 10000;
+
+                        reader.NextResult();
+
                         while (true)
                         {
                             var docs = reader.ReadDocs(take);
@@ -486,6 +473,7 @@ namespace Updater.Sphinx
                         : formal
                             ? formalname
                             : offname;
+
                     docs2.Add(new Doc2
                     {
                         guid = reader2.SafeGetString(0),

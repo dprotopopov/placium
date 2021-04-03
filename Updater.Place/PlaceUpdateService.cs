@@ -67,19 +67,6 @@ namespace Updater.Place
                     }
                 }
 
-
-                using (var command = new NpgsqlCommand(
-                    "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number"
-                    , connection))
-                {
-                    command.Parameters.AddWithValue("keys", keys.ToArray());
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                    command.Prepare();
-
-                    total = (long) command.ExecuteScalar();
-                }
-
                 using (var command =
                     new NpgsqlCommand(
                         string.Join(";", "DROP TABLE IF EXISTS temp_place_node",
@@ -93,9 +80,10 @@ namespace Updater.Place
 
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_place_node (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
-                using (var command = new NpgsqlCommand(
+                using (var command = new NpgsqlCommand(string.Join(";",
+                    "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number",
                     "SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|@keys AND record_number>@last_record_number",
-                    connection))
+                    connection)))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
@@ -104,6 +92,11 @@ namespace Updater.Place
 
                     using (var reader = command.ExecuteReader())
                     {
+                        if (reader.Read())
+                            total = reader.GetInt64(0);
+
+                        reader.NextResult();
+
                         while (reader.Read())
                         {
                             current++;
@@ -182,18 +175,6 @@ namespace Updater.Place
                     }
                 }
 
-                using (var command = new NpgsqlCommand(
-                    "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number"
-                    , connection))
-                {
-                    command.Parameters.AddWithValue("keys", keys.ToArray());
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                    command.Prepare();
-
-                    total = (long) command.ExecuteScalar();
-                }
-
                 using (var command =
                     new NpgsqlCommand(
                         string.Join(";", "DROP TABLE IF EXISTS temp_place_way",
@@ -205,14 +186,14 @@ namespace Updater.Place
                     command.ExecuteNonQuery();
                 }
 
-
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_place_way (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
-                using (var command = new NpgsqlCommand(
+                using (var command = new NpgsqlCommand(string.Join(";",
+                    "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number",
                     "SELECT id,cast(tags as text),nodes,tags?|ARRAY['area','building'] FROM way WHERE tags?|@keys AND record_number>@last_record_number"
-                    , connection))
+                    , connection)))
                 using (var command3 = new NpgsqlCommand(
-                    "SELECT id,longitude,latitude FROM node WHERE id=ANY(@nodes)"
+                    "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
                     , connection3))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
@@ -220,12 +201,17 @@ namespace Updater.Place
 
                     command.Prepare();
 
-                    command3.Parameters.Add("nodes", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                    command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
                     command3.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
+                        if (reader.Read())
+                            total = reader.GetInt64(0);
+
+                        reader.NextResult();
+
                         while (reader.Read())
                         {
                             current++;
@@ -236,7 +222,7 @@ namespace Updater.Place
 
                             var dic = new Dictionary<long, Point>(nodes.Length);
 
-                            command3.Parameters["nodes"].Value = nodes;
+                            command3.Parameters["ids"].Value = nodes;
 
                             using (var reader3 = command3.ExecuteReader())
                             {
@@ -348,18 +334,6 @@ namespace Updater.Place
                     }
                 }
 
-                using (var command = new NpgsqlCommand(
-                    "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
-                    , connection))
-                {
-                    command.Parameters.AddWithValue("keys", keys.ToArray());
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                    command.Prepare();
-
-                    total = (long) command.ExecuteScalar();
-                }
-
                 using (var command =
                     new NpgsqlCommand(
                         string.Join(";", "DROP TABLE IF EXISTS temp_place_relation",
@@ -373,14 +347,15 @@ namespace Updater.Place
 
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_place_relation (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
-                using (var command = new NpgsqlCommand(
-                    "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
-                    , connection))
+                using (var command = new NpgsqlCommand(string.Join(";",
+                    "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
+                    , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
+                    , connection)))
                 using (var command3 = new NpgsqlCommand(
                     "SELECT id,nodes FROM way WHERE id=ANY(@ids)"
                     , connection3))
                 using (var command4 = new NpgsqlCommand(
-                    "SELECT id,longitude,latitude FROM node WHERE id=ANY(@nodes)"
+                    "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
                     , connection4))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
@@ -392,12 +367,17 @@ namespace Updater.Place
 
                     command3.Prepare();
 
-                    command4.Parameters.Add("nodes", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                    command4.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
                     command4.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
+                        if (reader.Read())
+                            total = reader.GetInt64(0);
+
+                        reader.NextResult();
+
                         while (reader.Read())
                         {
                             current++;
@@ -438,7 +418,7 @@ namespace Updater.Place
 
                                     var dic = new Dictionary<long, Point>(nodes.Length);
 
-                                    command4.Parameters["nodes"].Value = nodes;
+                                    command4.Parameters["ids"].Value = nodes;
 
                                     using (var reader4 = command4.ExecuteReader())
                                     {
