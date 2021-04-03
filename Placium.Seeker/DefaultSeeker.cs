@@ -53,6 +53,7 @@ namespace Placium.Seeker
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
                 var index = 0;
+
                 foreach (var row in addr)
                 {
                     if (!string.IsNullOrWhiteSpace(housenumber))
@@ -74,7 +75,7 @@ namespace Placium.Seeker
                             connection);
 
                     if (list.Any()) addrob.Add(list);
-                    
+
                     index++;
                 }
             }
@@ -105,53 +106,7 @@ namespace Placium.Seeker
                 }
 
                 var guidaddrob = new List<List<string>>();
-                var guidhouse = new List<string>();
-                var guidstead = new List<string>();
-                var parent = new Dictionary<string, string>();
-
-                if (stead.Any())
-                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            listStead.Select(x =>
-                                $"SELECT steadguid,parentguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1")),
-                        connection))
-                    {
-                        command.Parameters.AddWithValue("ids", stead.ToArray());
-
-                        command.Prepare();
-
-                        using (var reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var steadguid = reader.SafeGetString(0);
-                                var parentguid = reader.SafeGetString(1);
-                                guidstead.Add(steadguid);
-                                parent[steadguid] = parentguid;
-                            }
-                        }
-                    }
-
-                if (house.Any())
-                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            listHouse.Select(x =>
-                                $"SELECT houseguid,aoguid FROM {x} WHERE record_id=ANY(@ids) AND startdate<=now() AND now()<enddate")),
-                        connection))
-                    {
-                        command.Parameters.AddWithValue("ids", house.ToArray());
-
-                        command.Prepare();
-
-                        using (var reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                var houseguid = reader.SafeGetString(0);
-                                var aoguid = reader.SafeGetString(1);
-                                guidhouse.Add(houseguid);
-                                parent[houseguid] = aoguid;
-                            }
-                        }
-                    }
+                var parentaddrob = new Dictionary<string, string>();
 
                 using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                         listAddrob.Select(x =>
@@ -174,7 +129,7 @@ namespace Placium.Seeker
                                 var aoguid = reader.SafeGetString(0);
                                 var parentguid = reader.SafeGetString(1);
                                 guidlist.Add(aoguid);
-                                parent[aoguid] = parentguid;
+                                parentaddrob[aoguid] = parentguid;
                             }
 
                             if (guidlist.Any()) guidaddrob.Add(guidlist);
@@ -183,18 +138,69 @@ namespace Placium.Seeker
                 }
 
                 for (var index = 1; index < guidaddrob.Count; index++)
-                    guidaddrob[index] = guidaddrob[index].Where(x => guidaddrob[index - 1].Any(y => parent[x] == y))
-                        .ToList();
+                    guidaddrob[index] = (from guid in guidaddrob[index].Distinct()
+                        join pair in parentaddrob on guid equals pair.Key
+                        join parentguid in guidaddrob[index - 1].Distinct() on pair.Value equals parentguid
+                        select guid).ToList();
 
                 guidaddrob = guidaddrob.Where(x => x.Any()).ToList();
 
                 var result = new List<string>();
                 if (!guidaddrob.Any()) return result;
 
-                guidhouse = guidhouse.Where(x => guidaddrob.Last().Any(y => parent[x] == y))
-                    .ToList();
-                guidstead = guidstead.Where(x => guidaddrob.Last().Any(y => parent[x] == y))
-                    .ToList();
+                var guidaddrob_last = guidaddrob.Last().Distinct().ToList();
+                var parenthouse = new Dictionary<string, string>();
+                var parentstead = new Dictionary<string, string>();
+
+                if (stead.Any())
+                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
+                            listStead.Select(x =>
+                                $"SELECT steadguid,parentguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1")),
+                        connection))
+                    {
+                        command.Parameters.AddWithValue("ids", stead.ToArray());
+
+                        command.Prepare();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var steadguid = reader.SafeGetString(0);
+                                var parentguid = reader.SafeGetString(1);
+                                parentstead[steadguid] = parentguid;
+                            }
+                        }
+                    }
+
+                if (house.Any())
+                    using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
+                            listHouse.Select(x =>
+                                $"SELECT houseguid,aoguid FROM {x} WHERE record_id=ANY(@ids) AND startdate<=now() AND now()<enddate")),
+                        connection))
+                    {
+                        command.Parameters.AddWithValue("ids", house.ToArray());
+
+                        command.Prepare();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var houseguid = reader.SafeGetString(0);
+                                var aoguid = reader.SafeGetString(1);
+                                parenthouse[houseguid] = aoguid;
+                            }
+                        }
+                    }
+
+                var guidhouse = (from pair in parenthouse
+                    join parentguid in guidaddrob_last on pair.Value equals parentguid
+                    select pair.Key).ToList();
+
+                var guidstead = (from pair in parentstead
+                    join parentguid in guidaddrob_last on pair.Value equals parentguid
+                    select pair.Key).ToList();
 
                 if (guidhouse.Any() || guidstead.Any())
                 {
@@ -204,7 +210,7 @@ namespace Placium.Seeker
                     return result;
                 }
 
-                result.AddRange(guidaddrob.Last());
+                result.AddRange(guidaddrob_last);
 
                 return result;
             }
