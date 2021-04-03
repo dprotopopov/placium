@@ -57,6 +57,7 @@ namespace Updater.Sphinx
             var formal = false;
 
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
+            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 var current = 0L;
                 var total = 0L;
@@ -65,6 +66,7 @@ namespace Updater.Sphinx
                 await _progressHub.InitAsync(id, session);
 
                 await npgsqlConnection.OpenAsync();
+                await npgsqlConnection2.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
@@ -77,19 +79,28 @@ namespace Updater.Sphinx
                     @"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to 'addrob\d+'",
                     npgsqlConnection);
 
+                var sql2 = string.Join("\nUNION ALL\n",
+                    list.Select(x =>
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
                         $"SELECT COUNT(*) FROM {x} WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
+                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+                using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
                     command.Prepare();
+
+                    command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+
+                    command2.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -101,7 +112,7 @@ namespace Updater.Sphinx
 
                         while (true)
                         {
-                            var docs = new List<Doc>(take);
+                            var docs1 = new List<Doc1>(take);
 
                             for (var i = 0; i < take && reader.Read(); i++)
                             {
@@ -110,38 +121,50 @@ namespace Updater.Sphinx
                                 var shortname = reader.SafeGetString(3);
                                 var socrname = reader.SafeGetString(4);
                                 var aolevel = reader.GetInt32(5);
+                                var parentguid = reader.SafeGetString(6);
                                 var title = aolevel > 1
                                     ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
                                     : formal
                                         ? formalname
                                         : offname;
-                                docs.Add(new Doc
+                                docs1.Add(new Doc1
                                 {
                                     id = reader.GetInt64(0),
-                                    text = title
+                                    text = title,
+                                    parentguid = parentguid
                                 });
                             }
 
 
-                            if (docs.Any())
+                            if (docs1.Any())
                             {
+                                var guids = docs1.Select(x => x.parentguid).ToArray();
+
+                                var docs2 = GetDocs2(guids, sql2, command2, take);
+
+                                var q = from doc1 in docs1
+                                    join doc2 in docs2 on doc1.parentguid equals doc2.guid into ps
+                                    from doc in ps.DefaultIfEmpty()
+                                    select new {doc1.id, text = $"#{doc1.text} @{doc?.text ?? doc1.text}"};
+
                                 var sb = new StringBuilder("REPLACE INTO addrob(id,text) VALUES ");
-                                sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
+                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
-                                current += docs.Count;
+                                current += docs1.Count;
 
                                 await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
 
-                            if (docs.Count < take) break;
+                            if (docs1.Count < take) break;
                         }
                     }
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob, next_last_record_number);
 
+                await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
 
                 await _progressHub.ProgressAsync(100f, id, session);
@@ -249,7 +272,7 @@ namespace Updater.Sphinx
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new {doc1.id, text = $"{doc2.text} #{doc1.text}"};
+                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
@@ -356,7 +379,7 @@ namespace Updater.Sphinx
 
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new {doc1.id, text = $"{doc2.text} #{doc1.text}"};
+                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO stead(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));

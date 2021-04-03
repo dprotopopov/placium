@@ -52,24 +52,30 @@ namespace Placium.Seeker
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
+                var index = 0;
                 foreach (var row in addr)
                 {
                     if (!string.IsNullOrWhiteSpace(housenumber))
                     {
                         stead.FillAll(
-                            $"SELECT id FROM stead WHERE MATCH('{row.TextEscape()} #{housenumber.TextEscape()}')",
+                            $"SELECT id FROM stead WHERE MATCH('#{housenumber.TextEscape()} @{row.TextEscape()}')",
                             connection);
 
                         house.FillAll(
-                            $"SELECT id FROM house WHERE MATCH('{row.TextEscape()} #{housenumber.TextEscape()}')",
+                            $"SELECT id FROM house WHERE MATCH('#{housenumber.TextEscape()} @{row.TextEscape()}')",
                             connection);
                     }
 
                     var list = new List<long>();
 
-                    list.FillAll($"SELECT id FROM addrob WHERE MATCH('{row.TextEscape()}')", connection);
+                    for (var index2 = 0; index2 <= index; index2++)
+                        list.FillAll(
+                            $"SELECT id FROM addrob WHERE MATCH('#{row.TextEscape()} @{addr[index2].TextEscape()}')",
+                            connection);
 
                     if (list.Any()) addrob.Add(list);
+                    
+                    index++;
                 }
             }
 
