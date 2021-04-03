@@ -79,11 +79,11 @@ namespace Updater.Place
                 }
 
                 using (var writer = connection2.BeginTextImport(
-                    "COPY temp_place_node (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
+                    "COPY temp_place_node (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
                 using (var command = new NpgsqlCommand(string.Join(";",
-                    "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number",
-                    "SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|@keys AND record_number>@last_record_number",
-                    connection)))
+                        "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number",
+                        "SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|@keys AND record_number>@last_record_number"),
+                    connection))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
@@ -187,11 +187,11 @@ namespace Updater.Place
                 }
 
                 using (var writer = connection2.BeginTextImport(
-                    "COPY temp_place_way (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
+                    "COPY temp_place_way (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
                 using (var command = new NpgsqlCommand(string.Join(";",
-                    "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number",
-                    "SELECT id,cast(tags as text),nodes,tags?|ARRAY['area','building'] FROM way WHERE tags?|@keys AND record_number>@last_record_number"
-                    , connection)))
+                        "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number",
+                        "SELECT id,cast(tags as text),nodes,tags?|ARRAY['area','building'] FROM way WHERE tags?|@keys AND record_number>@last_record_number")
+                    , connection))
                 using (var command3 = new NpgsqlCommand(
                     "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
                     , connection3))
@@ -346,11 +346,11 @@ namespace Updater.Place
                 }
 
                 using (var writer = connection2.BeginTextImport(
-                    "COPY temp_place_relation (osm_id,tags,location) FROM STDIN WITH NULL AS '';"))
+                    "COPY temp_place_relation (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
                 using (var command = new NpgsqlCommand(string.Join(";",
                     "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
-                    , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
-                    , connection)))
+                    , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number")
+                    , connection))
                 using (var command3 = new NpgsqlCommand(
                     "SELECT id,nodes FROM way WHERE id=ANY(@ids)"
                     , connection3))

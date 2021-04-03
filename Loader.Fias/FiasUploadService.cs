@@ -206,15 +206,15 @@ namespace Loader.Fias
                                                         }
 
                                                         writer = connection.BeginTextImport(
-                                                            $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
+                                                            $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
 
                                                         buildIndices = true;
                                                     }
                                                     else
                                                     {
                                                         using (var command = new NpgsqlCommand(string.Join(";",
-                                                                $"DROP TABLE IF EXISTS temp_{tableName};",
-                                                                $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});")
+                                                                $"DROP TABLE IF EXISTS temp_{tableName}",
+                                                                $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
                                                             , connection))
                                                         {
                                                             command.Prepare();
@@ -223,7 +223,7 @@ namespace Loader.Fias
                                                         }
 
                                                         writer = connection.BeginTextImport(
-                                                            $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS '';");
+                                                            $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
 
                                                         insertFromTemp = true;
                                                     }
@@ -237,8 +237,8 @@ namespace Loader.Fias
 
                                             if (insertFromTemp)
                                                 using (var command = new NpgsqlCommand(string.Join(";",
-                                                        $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq');",
-                                                        $"DROP TABLE temp_{tableName};")
+                                                        $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq')",
+                                                        $"DROP TABLE temp_{tableName}")
                                                     , connection))
                                                 {
                                                     command.Prepare();

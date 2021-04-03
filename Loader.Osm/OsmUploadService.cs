@@ -98,7 +98,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Node;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var nodeValues = new List<string>
@@ -124,7 +124,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Way;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var wayValues = new List<string>
@@ -149,7 +149,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Relation;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var relationValues = new List<string>
@@ -215,7 +215,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Node;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY temp_node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var nodeValues = new List<string>
@@ -241,7 +241,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Way;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY temp_way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var wayValues = new List<string>
@@ -266,7 +266,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Relation;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS '';");
+                                        $"COPY temp_relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var relationValues = new List<string>
@@ -313,6 +313,7 @@ namespace Loader.Osm
                 {
                     "SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (id);') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('node','way','relation')",
                     "SELECT CONCAT('CREATE INDEX ON ', table_name, ' USING HASH (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('tags') AND table_name IN ('place')",
+                    "SELECT CONCAT('CREATE INDEX ON ', table_name, ' USING GIST (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('location') AND table_name IN ('place','node','way','relation')",
                     "SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id') AND table_name IN ('place','node','way','relation')",
                     "SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (osm_id,osm_type);') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('place')"
                 }
