@@ -69,7 +69,7 @@ namespace Loader.Osm
             _progressHub = progressHub;
         }
 
-        public async Task InstallAsync(Stream uploadStream, string session)
+        public async Task InstallAsync(Stream uploadStream, Dictionary<string, string> options, string session)
         {
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
@@ -187,7 +187,7 @@ namespace Loader.Osm
             }
         }
 
-        public async Task UpdateAsync(Stream uploadStream, string session)
+        public async Task UpdateAsync(Stream uploadStream, Dictionary<string, string> options, string session)
         {
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {

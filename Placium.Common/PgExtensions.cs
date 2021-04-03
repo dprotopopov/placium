@@ -64,6 +64,19 @@ namespace Placium.Common
 
             switch (mode)
             {
+                case -1:
+                    return s.Replace("\\", @"\\")
+                        .Replace("\'", @"\'")
+                        .Replace("\r", @"\r")
+                        .Replace("\n", @"\n")
+                        .Replace("\t", @"\t")
+                        .Replace("\a", @"\a")
+                        .Replace("\b", @"\b")
+                        .Replace("\f", @"\f")
+                        .Replace("\v", @"\v")
+                        .Replace("\0", @"\0")
+                        .Replace("(", @"\(")
+                        .Replace(")", @"\)");
                 case 0:
                     return s.Replace("\\", @"\\")
                         .Replace("\'", @"\'")

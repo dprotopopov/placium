@@ -95,7 +95,7 @@ namespace Placium.WebApi.Services
             }
         }
 
-        public async Task<List<Element>> GetDetailsAsync(string guid, bool formal = false, bool socr = false)
+        public async Task<List<Element>> GetDetailsAsync(string guid, bool formal = false, bool socr = true)
         {
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -243,7 +243,7 @@ namespace Placium.WebApi.Services
             }
         }
 
-        public async Task<List<Element>> GetChildrenAsync(string guid, bool formal = false, bool socr = false)
+        public async Task<List<Element>> GetChildrenAsync(string guid, bool formal = false, bool socr = true)
         {
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -350,7 +350,7 @@ namespace Placium.WebApi.Services
             }
         }
 
-        public async Task<List<Element>> GetRootsAsync(bool formal = false, bool socr = false)
+        public async Task<List<Element>> GetRootsAsync(bool formal = false, bool socr = true)
         {
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {

@@ -9,15 +9,19 @@
 @using (Html.BeginForm())
 {
     <label>@ViewBag.Label</label>
-    <br />
-    <input type="text" id="url" name="url" />
-    <br />
-    <br />
-    <input type="hidden" id="session" name="session" value="@session" />
+    <br/>
+    <label>Ссылка</label>
+    <input type="text" id="url" name="url"/>
+    <br/>
+    <label>Регион</label>
+    <input type="text" id="region" name="region"/>
+    <br/>
+    <br/>
+    <input type="hidden" id="session" name="session" value="@session"/>
     <button type="button" class="btn btn-info" onclick="uploadForm();">Отправить</button>
 }
-<br />
-<br />
+<br/>
+<br/>
 <div id="progresses"></div>
 
 <script type="text/javascript" charset="utf-8">
@@ -25,8 +29,10 @@
         var formData = new FormData();
         var url = document.getElementById("url");
         var session = document.getElementById("session");
+        var region = document.getElementById("region");
         formData.append("url", url.value);
         formData.append("session", session.value);
+        formData.append("region", region.value);
 
         $.ajax(
             {
@@ -36,10 +42,10 @@
                 contentType: false,
                 processData: false,
                 type: "POST",
-                success: function (data) {
+                success: function(data) {
                     alert("Complete");
                 },
-                error: function (jqXHR, exception) {
+                error: function(jqXHR, exception) {
                     alert("Error");
                 },
             }

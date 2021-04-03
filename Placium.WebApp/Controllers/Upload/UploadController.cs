@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -34,11 +35,14 @@ namespace Placium.WebApp.Controllers.Upload
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<IActionResult> InstallFromDisk(string fileName, string session)
+        public async Task<IActionResult> InstallFromDisk(string fileName, string region, string session)
         {
             using (var stream = System.IO.File.OpenRead(fileName))
             {
-                await UploadService.InstallAsync(stream, session);
+                await UploadService.InstallAsync(stream, new Dictionary<string, string>
+                {
+                    {"region", region}
+                }, session);
             }
 
             return Content(fileName);
@@ -58,11 +62,14 @@ namespace Placium.WebApp.Controllers.Upload
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<IActionResult> UpdateFromDisk(string fileName, string session)
+        public async Task<IActionResult> UpdateFromDisk(string fileName, string region, string session)
         {
             using (var stream = System.IO.File.OpenRead(fileName))
             {
-                await UploadService.UpdateAsync(stream, session);
+                await UploadService.UpdateAsync(stream, new Dictionary<string, string>
+                {
+                    {"region", region}
+                }, session);
             }
 
             return Content(fileName);
@@ -96,7 +103,7 @@ namespace Placium.WebApp.Controllers.Upload
 
                 tempFileStream.Position = 0;
 
-                await UploadService.InstallAsync(tempFileStream, session);
+                await UploadService.InstallAsync(tempFileStream, new Dictionary<string, string>(), session);
             }
 
             return Content(url);
@@ -131,7 +138,7 @@ namespace Placium.WebApp.Controllers.Upload
 
                 tempFileStream.Position = 0;
 
-                await UploadService.UpdateAsync(tempFileStream, session);
+                await UploadService.UpdateAsync(tempFileStream, new Dictionary<string, string>(), session);
             }
 
             return Content(url);

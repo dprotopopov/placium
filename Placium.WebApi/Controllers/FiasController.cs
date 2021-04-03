@@ -21,7 +21,7 @@ namespace Placium.WebApi.Controllers
         [HttpGet("{guid}/details")]
         [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetDetails(string guid, bool formal = false, bool socr = false)
+        public async Task<IActionResult> GetDetails(string guid, bool formal = false, bool socr = true)
         {
             return Ok(await _fiasService.GetDetailsAsync(guid, formal, socr));
         }
@@ -29,7 +29,7 @@ namespace Placium.WebApi.Controllers
         [HttpGet("{guid}/text")]
         [ProducesResponseType(200, Type = typeof(string))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetText(string guid, bool formal = false, bool socr = false)
+        public async Task<IActionResult> GetText(string guid, bool formal = false, bool socr = true)
         {
             return Ok(string.Join(", ", (await _fiasService.GetDetailsAsync(guid, formal, socr)).Select(x => x.title)));
         }
@@ -37,7 +37,7 @@ namespace Placium.WebApi.Controllers
         [HttpGet("{guid}/children")]
         [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetChildren(string guid, bool formal = false, bool socr = false)
+        public async Task<IActionResult> GetChildren(string guid, bool formal = false, bool socr = true)
         {
             return Ok(await _fiasService.GetChildrenAsync(guid, formal, socr));
         }
@@ -46,7 +46,7 @@ namespace Placium.WebApi.Controllers
         [HttpGet("roots")]
         [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetRoots(bool formal = false, bool socr = false)
+        public async Task<IActionResult> GetRoots(bool formal = false, bool socr = true)
         {
             return Ok(await _fiasService.GetRootsAsync(formal, socr));
         }
