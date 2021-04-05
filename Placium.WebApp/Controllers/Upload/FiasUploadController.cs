@@ -1,12 +1,13 @@
 ﻿using Loader.Fias;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Placium.WebApp.Controllers.Upload
 {
     public class FiasUploadController : UploadController<FiasUploadService>
     {
-        public FiasUploadController(IConfiguration configuration, FiasUploadService uploadService) : base(configuration,
-            uploadService)
+        public FiasUploadController(IConfiguration configuration, FiasUploadService uploadService,
+            IOptions<UploadConfig> uploadConfig) : base(configuration, uploadService, uploadConfig)
         {
         }
 

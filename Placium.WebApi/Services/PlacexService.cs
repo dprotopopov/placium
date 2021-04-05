@@ -8,13 +8,13 @@ using Placium.WebApi.Models;
 
 namespace Placium.WebApi.Services
 {
-    public class PlaceService : BaseService
+    public class PlacexService : BaseService
     {
-        public PlaceService(IConfiguration configuration) : base(configuration)
+        public PlacexService(IConfiguration configuration) : base(configuration)
         {
         }
 
-        public async Task<List<Place>> GetByNameAsync(string pattern, string key = "name", int limit = 10)
+        public async Task<List<Placex>> GetByNameAsync(string pattern, string key = "name", int limit = 10)
         {
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
@@ -23,11 +23,11 @@ namespace Placium.WebApi.Services
                 connection.ReloadTypes();
                 connection.TypeMapper.UseGeoJson();
 
-                var result = new List<Place>(limit);
+                var result = new List<Placex>(limit);
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT id,tags,location FROM place WHERE tags->@key SIMILAR TO @pattern LIMIT @limit",
+                        "SELECT id,tags,location FROM placex WHERE tags->@key SIMILAR TO @pattern LIMIT @limit",
                         connection))
                 {
                     command.Parameters.AddWithValue("pattern", pattern);
@@ -39,7 +39,7 @@ namespace Placium.WebApi.Services
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
-                            result.Add(new Place
+                            result.Add(new Placex
                             {
                                 id = reader.GetInt64(0),
                                 tags = (Dictionary<string, string>) reader.GetValue(1),
@@ -54,7 +54,7 @@ namespace Placium.WebApi.Services
             }
         }
 
-        public async Task<List<Place>> GetByCoordsAsync(double latitude, double longitude,
+        public async Task<List<Placex>> GetByCoordsAsync(double latitude, double longitude,
             string key = "addr:housenumber", int limit = 1)
         {
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
@@ -64,11 +64,11 @@ namespace Placium.WebApi.Services
                 connection.ReloadTypes();
                 connection.TypeMapper.UseGeoJson();
 
-                var result = new List<Place>(limit);
+                var result = new List<Placex>(limit);
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT id,tags,location FROM place WHERE tags?@key ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) LIMIT @limit",
+                        "SELECT id,tags,location FROM placex WHERE tags?@key ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) LIMIT @limit",
                         connection))
                 {
                     command.Parameters.AddWithValue("longitude", (float) longitude);
@@ -81,7 +81,7 @@ namespace Placium.WebApi.Services
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
-                            result.Add(new Place
+                            result.Add(new Placex
                             {
                                 id = reader.GetInt64(0),
                                 tags = (Dictionary<string, string>) reader.GetValue(1),

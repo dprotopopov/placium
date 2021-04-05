@@ -1,12 +1,13 @@
 ﻿using Loader.Osm;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Placium.WebApp.Controllers.Upload
 {
     public class OsmUploadController : UploadController<OsmUploadService>
     {
-        public OsmUploadController(IConfiguration configuration, OsmUploadService uploadService) : base(configuration,
-            uploadService)
+        public OsmUploadController(IConfiguration configuration, OsmUploadService uploadService,
+            IOptions<UploadConfig> uploadConfig) : base(configuration, uploadService, uploadConfig)
         {
         }
 

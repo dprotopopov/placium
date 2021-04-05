@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Placium.Common;
 
 namespace Placium.WebApp.Controllers.Upload
@@ -11,12 +13,14 @@ namespace Placium.WebApp.Controllers.Upload
     public abstract class UploadController<TService> : Controller where TService : IUploadService
     {
         protected readonly IConfiguration Configuration;
+        protected readonly UploadConfig UploadConfig;
         protected readonly TService UploadService;
 
-        public UploadController(IConfiguration configuration, TService uploadService)
+        public UploadController(IConfiguration configuration, TService uploadService, IOptions<UploadConfig> uploadConfig)
         {
             Configuration = configuration;
             UploadService = uploadService;
+            UploadConfig = uploadConfig.Value;
         }
 
         public async Task<IActionResult> InstallFromDisk()
@@ -27,6 +31,7 @@ namespace Placium.WebApp.Controllers.Upload
             var info = GetInstallFormInfo();
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
+            ViewBag.Files = Directory.GetFiles(UploadConfig.Path).Select(x=> Path.GetFileName(x)).ToArray();
             return View("~/Views/_UploadFromDisk.cshtml");
         }
 
@@ -37,7 +42,7 @@ namespace Placium.WebApp.Controllers.Upload
         [DisableRequestSizeLimit]
         public async Task<IActionResult> InstallFromDisk(string fileName, string region, string session)
         {
-            using (var stream = System.IO.File.OpenRead(fileName))
+            using (var stream = System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
             {
                 await UploadService.InstallAsync(stream, new Dictionary<string, string>
                 {
@@ -56,7 +61,7 @@ namespace Placium.WebApp.Controllers.Upload
             var info = GetUpdateFormInfo();
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
-
+            ViewBag.Files = Directory.GetFiles(UploadConfig.Path).Select(x => Path.GetFileName(x)).ToArray();
             return View("~/Views/_UploadFromDisk.cshtml");
         }
 
@@ -64,7 +69,7 @@ namespace Placium.WebApp.Controllers.Upload
         [DisableRequestSizeLimit]
         public async Task<IActionResult> UpdateFromDisk(string fileName, string region, string session)
         {
-            using (var stream = System.IO.File.OpenRead(fileName))
+            using (var stream = System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
             {
                 await UploadService.UpdateAsync(stream, new Dictionary<string, string>
                 {

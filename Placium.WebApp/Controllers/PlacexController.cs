@@ -6,13 +6,13 @@ using Placium.WebApi.Services;
 
 namespace Placium.WebApp.Controllers
 {
-    public class PlaceController : Controller
+    public class PlacexController : Controller
     {
-        private readonly PlaceService _placeService;
+        private readonly PlacexService _placexService;
 
-        public PlaceController(PlaceService placeService)
+        public PlacexController(PlacexService placexService)
         {
-            _placeService = placeService;
+            _placexService = placexService;
         }
 
         public IActionResult ByName()
@@ -23,7 +23,7 @@ namespace Placium.WebApp.Controllers
         [HttpPost]
         public async Task<IActionResult> ByName(string pattern)
         {
-            return Content(JsonConvert.SerializeObject(await _placeService.GetByNameAsync(pattern)));
+            return Content(JsonConvert.SerializeObject(await _placexService.GetByNameAsync(pattern)));
         }
         public IActionResult ByCoords()
         {
@@ -36,7 +36,7 @@ namespace Placium.WebApp.Controllers
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Content(JsonConvert.SerializeObject(await _placeService.GetByCoordsAsync(latitude, longitude)));
+            return Content(JsonConvert.SerializeObject(await _placexService.GetByCoordsAsync(latitude, longitude)));
         }
     }
 }

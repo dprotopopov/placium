@@ -110,7 +110,7 @@ namespace Placium.Seeker
                 }
 
                 var guidaddrob = new List<List<string>>();
-                var parentaddrob = new Dictionary<string, string>();
+                var guidaddrobdic = new List<Dictionary<string, string>>();
 
                 using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                         listAddrob.Select(x =>
@@ -127,29 +127,31 @@ namespace Placium.Seeker
 
                         using (var reader = command.ExecuteReader())
                         {
-                            var guidlist = new List<string>();
+                            var parentaddrob = new Dictionary<string, string>();
                             while (reader.Read())
                             {
                                 var aoguid = reader.SafeGetString(0);
                                 var parentguid = reader.SafeGetString(1);
-                                guidlist.Add(aoguid);
                                 parentaddrob[aoguid] = parentguid;
                             }
 
-                            if (guidlist.Any()) guidaddrob.Add(guidlist);
+                            if (parentaddrob.Any()) guidaddrobdic.Add(parentaddrob);
                         }
                     }
                 }
 
-                for (var index = 1; index < guidaddrob.Count; index++)
-                    guidaddrob[index] = (from guid in guidaddrob[index].Distinct()
-                        join pair in parentaddrob on guid equals pair.Key
-                        join parentguid in guidaddrob[index - 1].Distinct() on pair.Value equals parentguid
-                        select guid).ToList();
+                var result = new List<string>();
+                
+                if (!guidaddrobdic.Any()) return result;
+
+                guidaddrob.Add(guidaddrobdic[0].Keys.ToList());
+                for (var index = 1; index < guidaddrobdic.Count; index++)
+                    guidaddrob.Add((from pair in guidaddrobdic[index]
+                        join parentguid in guidaddrob[index - 1] on pair.Value equals parentguid
+                        select pair.Key).ToList());
 
                 guidaddrob = guidaddrob.Where(x => x.Any()).ToList();
 
-                var result = new List<string>();
                 if (!guidaddrob.Any()) return result;
 
                 var guidaddrob_last = guidaddrob.Last().Distinct().ToList();
@@ -243,7 +245,7 @@ namespace Placium.Seeker
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance FROM place WHERE tags?@key) AS query WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
+                        "SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance FROM placex WHERE tags?@key AND ST_DWithin(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,@tolerance,false)) AS query WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
                         connection))
                 {
                     command.Parameters.Add("longitude", NpgsqlDbType.Double);

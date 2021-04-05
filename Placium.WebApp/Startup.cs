@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Placium.Common;
 using Placium.Seeker;
 using Placium.WebApi.Services;
-using Updater.Place;
+using Updater.Placex;
 using Updater.Sphinx;
 
 namespace Placium.WebApp
@@ -26,13 +26,15 @@ namespace Placium.WebApp
 
         private void RegisterServices(IServiceCollection services)
         {
+            services.Configure<UploadConfig>(Configuration.GetSection(nameof(UploadConfig)));
+
             services.AddTransient<DefaultSeeker>();
-            services.AddTransient<PlaceService>();
+            services.AddTransient<PlacexService>();
             services.AddTransient<OsmService>();
             services.AddTransient<FiasService>();
             services.AddSingleton<FiasUploadService>();
             services.AddSingleton<OsmUploadService>();
-            services.AddSingleton<PlaceUpdateService>();
+            services.AddSingleton<PlacexUpdateService>();
             services.AddSingleton<SphinxUpdateService>();
             services.AddSingleton<ProgressHub>();
         }

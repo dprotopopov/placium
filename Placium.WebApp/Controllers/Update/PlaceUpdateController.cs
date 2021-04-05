@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Updater.Place;
+using Updater.Placex;
 
 namespace Placium.WebApp.Controllers.Update
 {
-    public class PlaceUpdateController : UpdateController<PlaceUpdateService>
+    public class PlaceUpdateController : UpdateController<PlacexUpdateService>
     {
-        public PlaceUpdateController(IConfiguration configuration, PlaceUpdateService updateService) : base(configuration,
+        public PlaceUpdateController(IConfiguration configuration, PlacexUpdateService updateService) : base(configuration,
             updateService)
         {
         }
@@ -14,8 +14,8 @@ namespace Placium.WebApp.Controllers.Update
         {
             return new UpdateFormInfo
             {
-                Title = "Наполнение Place",
-                Label = "Добавление новых записей OSM в Place"
+                Title = "Наполнение Placex",
+                Label = "Добавление новых записей OSM в Placex"
             };
         }
     }

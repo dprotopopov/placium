@@ -10,14 +10,14 @@ using NpgsqlTypes;
 using Placium.Common;
 using Placium.Types;
 
-namespace Updater.Place
+namespace Updater.Placex
 {
-    public class PlaceUpdateService : BaseService, IUpdateService
+    public class PlacexUpdateService : BaseService, IUpdateService
     {
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly ProgressHub _progressHub;
 
-        public PlaceUpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
+        public PlacexUpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
         }
@@ -69,8 +69,8 @@ namespace Updater.Place
 
                 using (var command =
                     new NpgsqlCommand(
-                        string.Join(";", "DROP TABLE IF EXISTS temp_place_node",
-                            "CREATE TEMP TABLE temp_place_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                        string.Join(";", "DROP TABLE IF EXISTS temp_placex_node",
+                            "CREATE TEMP TABLE temp_placex_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
                         connection2))
                 {
                     command.Prepare();
@@ -79,7 +79,7 @@ namespace Updater.Place
                 }
 
                 using (var writer = connection2.BeginTextImport(
-                    "COPY temp_place_node (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
+                    "COPY temp_placex_node (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
                 using (var command = new NpgsqlCommand(string.Join(";",
                         "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number",
                         "SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|@keys AND record_number>@last_record_number"),
@@ -120,8 +120,8 @@ namespace Updater.Place
 
                 using (var command = new NpgsqlCommand(
                     string.Join(";",
-                        "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'node',tags,location FROM temp_place_node ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
-                        "DROP TABLE temp_place_node"), connection2))
+                        "INSERT INTO placex(osm_id,osm_type,tags,location) SELECT osm_id,'node',tags,location FROM temp_placex_node ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
+                        "DROP TABLE temp_placex_node"), connection2))
                 {
                     command.Prepare();
 
@@ -177,8 +177,8 @@ namespace Updater.Place
 
                 using (var command =
                     new NpgsqlCommand(
-                        string.Join(";", "DROP TABLE IF EXISTS temp_place_way",
-                            "CREATE TEMP TABLE temp_place_way (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                        string.Join(";", "DROP TABLE IF EXISTS temp_placex_way",
+                            "CREATE TEMP TABLE temp_placex_way (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
                         connection2))
                 {
                     command.Prepare();
@@ -187,7 +187,7 @@ namespace Updater.Place
                 }
 
                 using (var writer = connection2.BeginTextImport(
-                    "COPY temp_place_way (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
+                    "COPY temp_placex_way (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
                 using (var command = new NpgsqlCommand(string.Join(";",
                         "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number",
                         "SELECT id,cast(tags as text),nodes,tags?|ARRAY['area','building'] FROM way WHERE tags?|@keys AND record_number>@last_record_number")
@@ -276,8 +276,8 @@ namespace Updater.Place
 
                 using (var command = new NpgsqlCommand(
                     string.Join(";",
-                        "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'way',tags,location FROM temp_place_way ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
-                        "DROP TABLE temp_place_way"), connection2))
+                        "INSERT INTO placex(osm_id,osm_type,tags,location) SELECT osm_id,'way',tags,location FROM temp_placex_way ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
+                        "DROP TABLE temp_placex_way"), connection2))
                 {
                     command.Prepare();
 
@@ -336,8 +336,8 @@ namespace Updater.Place
 
                 using (var command =
                     new NpgsqlCommand(
-                        string.Join(";", "DROP TABLE IF EXISTS temp_place_relation",
-                            "CREATE TEMP TABLE temp_place_relation (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                        string.Join(";", "DROP TABLE IF EXISTS temp_placex_relation",
+                            "CREATE TEMP TABLE temp_placex_relation (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
                         connection2))
                 {
                     command.Prepare();
@@ -346,7 +346,7 @@ namespace Updater.Place
                 }
 
                 using (var writer = connection2.BeginTextImport(
-                    "COPY temp_place_relation (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
+                    "COPY temp_placex_relation (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
                 using (var command = new NpgsqlCommand(string.Join(";",
                     "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
                     , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number")
@@ -475,8 +475,8 @@ namespace Updater.Place
 
                 using (var command = new NpgsqlCommand(
                     string.Join(";",
-                        "INSERT INTO place(osm_id,osm_type,tags,location) SELECT osm_id,'relation',tags,location FROM temp_place_relation ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
-                        "DROP TABLE temp_place_relation"), connection2))
+                        "INSERT INTO placex(osm_id,osm_type,tags,location) SELECT osm_id,'relation',tags,location FROM temp_placex_relation ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
+                        "DROP TABLE temp_placex_relation"), connection2))
                 {
                     command.Prepare();
 

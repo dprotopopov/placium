@@ -11,7 +11,12 @@
     <label>@ViewBag.Label</label>
     <br/>
     <label>Файл</label>
-    <input type="text" id="fileName" name="fileName"/>
+    <select id="fileName" name="fileName">
+        @foreach (var fileName in ViewBag.Files)
+        {
+            <option value="@fileName">@fileName</option>
+        }
+    </select>
     <br/>
     <label>Регион</label>
     <input type="text" id="region" name="region"/>

@@ -10,7 +10,7 @@ namespace Placium.Types
         Way,
         [PgName("relation")]
         Relation,
-        [PgName("place")]
-        Place,
+        [PgName("placex")]
+        Placex,
     }
 }

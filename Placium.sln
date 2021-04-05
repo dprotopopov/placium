@@ -15,16 +15,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Types", "Placium.Ty
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.WebApi", "Placium.WebApi\Placium.WebApi.csproj", "{9B88E6AD-B247-4442-89CC-89DE3CD8F9A1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Place", "Updater.Place\Updater.Place.csproj", "{FB94DD7D-24A9-4101-8AB2-1BEDBDA23D5D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Placex", "Updater.Placex\Updater.Placex.csproj", "{FB94DD7D-24A9-4101-8AB2-1BEDBDA23D5D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater.Sphinx", "Updater.Sphinx\Updater.Sphinx.csproj", "{3EBF9A30-7538-440B-A77C-7138F2FA16FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Sphinx", "Updater.Sphinx\Updater.Sphinx.csproj", "{3EBF9A30-7538-440B-A77C-7138F2FA16FB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{77EF9329-7C3A-410F-BB20-AED059AE7C54}"
 	ProjectSection(SolutionItems) = preProject
+		.env = .env
+		docker-compose.yml = docker-compose.yml
 		README.txt = README.txt
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Placium.Seeker", "Placium.Seeker\Placium.Seeker.csproj", "{876DD837-54A8-4804-B773-4ED280E65E3B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Seeker", "Placium.Seeker\Placium.Seeker.csproj", "{876DD837-54A8-4804-B773-4ED280E65E3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

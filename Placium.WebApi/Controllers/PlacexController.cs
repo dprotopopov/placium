@@ -9,30 +9,30 @@ namespace Placium.WebApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PlaceController : ControllerBase
+    public class PlacexController : ControllerBase
     {
-        private readonly PlaceService _placeService;
+        private readonly PlacexService _placexService;
 
-        public PlaceController(PlaceService placeService)
+        public PlacexController(PlacexService placexService)
         {
-            _placeService = placeService;
+            _placexService = placexService;
         }
 
         [HttpGet("by_name")]
-        [ProducesResponseType(200, Type = typeof(List<Place>))]
+        [ProducesResponseType(200, Type = typeof(List<Placex>))]
         public async Task<IActionResult> GetByNameAsync(string pattern)
         {
-            return Ok(await _placeService.GetByNameAsync(pattern));
+            return Ok(await _placexService.GetByNameAsync(pattern));
         }
 
         [HttpGet("by_coords")]
-        [ProducesResponseType(200, Type = typeof(List<Place>))]
+        [ProducesResponseType(200, Type = typeof(List<Placex>))]
         public async Task<IActionResult> GetByCoordsAsync(string coords)
         {
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Ok(await _placeService.GetByCoordsAsync(latitude, longitude));
+            return Ok(await _placexService.GetByCoordsAsync(latitude, longitude));
         }
     }
 }

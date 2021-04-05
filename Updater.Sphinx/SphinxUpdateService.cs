@@ -432,14 +432,14 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Place);
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
-                    "SELECT COUNT(*) FROM place WHERE tags?'name' AND record_number>@last_record_number";
+                    "SELECT COUNT(*) FROM placex WHERE tags?'name' AND record_number>@last_record_number";
 
                 var sql =
-                    "SELECT record_id,tags->'name' FROM place WHERE tags?'name' AND record_number>@last_record_number";
+                    "SELECT record_id,tags->'name' FROM placex WHERE tags?'name' AND record_number>@last_record_number";
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 {
@@ -477,7 +477,7 @@ namespace Updater.Sphinx
                     }
                 }
 
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Place, next_last_record_number);
+                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, next_last_record_number);
 
                 await npgsqlConnection.CloseAsync();
 
