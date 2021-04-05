@@ -59,7 +59,7 @@ namespace Updater.Addr
                         reader.NextResult();
 
                         var current = 0L;
-                        var take = 1000;
+                        var take = 10000;
 
                         while (true)
                         {
