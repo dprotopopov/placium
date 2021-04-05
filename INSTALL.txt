@@ -29,4 +29,4 @@ mkdir sphinx/conf
 mkdir sphinx/data
 git clone https://github.com/dprotopopov/placium.git
 cd placium
-docker-compose up
+sudo docker-compose up
