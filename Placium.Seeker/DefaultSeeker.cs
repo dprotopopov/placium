@@ -65,16 +65,16 @@ namespace Placium.Seeker
                         if (!string.IsNullOrWhiteSpace(housenumber))
                         {
                             stead.FillAll(
-                                $"SELECT id FROM stead WHERE MATCH('({housenumber.Yo().TextEscape(-1)})<<({row.Yo().TextEscape(-1)})<<({row2.Yo().TextEscape(-1)})')",
+                                $"SELECT id FROM stead WHERE MATCH('({housenumber.Yo().Escape()})<<({row.Yo().Escape()})<<({row2.Yo().Escape()})')",
                                 connection);
 
                             house.FillAll(
-                                $"SELECT id FROM house WHERE MATCH('({housenumber.Yo().TextEscape(-1)})<<({row.Yo().TextEscape(-1)})<<({row2.Yo().TextEscape(-1)})')",
+                                $"SELECT id FROM house WHERE MATCH('({housenumber.Yo().Escape()})<<({row.Yo().Escape()})<<({row2.Yo().Escape()})')",
                                 connection);
                         }
 
                         list.FillAll(
-                            $"SELECT id FROM addrob WHERE MATCH('({row.Yo().TextEscape(-1)})<<({row2.Yo().TextEscape(-1)})')",
+                            $"SELECT id FROM addrob WHERE MATCH('({row.Yo().Escape()})<<({row2.Yo().Escape()})')",
                             connection);
                     }
 

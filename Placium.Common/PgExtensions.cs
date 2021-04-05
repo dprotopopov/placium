@@ -58,25 +58,31 @@ namespace Placium.Common
                 .Replace("Ё", "Е");
         }
 
+        public static string Escape(this string s)
+        {
+            if (s == null) return string.Empty;
+
+            return s.Replace("\\", @"\\")
+                .Replace("\'", @"\'")
+                .Replace("\r", @"\r")
+                .Replace("\n", @"\n")
+                .Replace("\t", @"\t")
+                .Replace("\a", @"\a")
+                .Replace("\b", @"\b")
+                .Replace("\f", @"\f")
+                .Replace("\v", @"\v")
+                .Replace("\0", @"\0")
+                .Replace("(", @"\(")
+                .Replace(")", @"\)")
+                .Replace("\"", @"\""");
+        }
+
         public static string TextEscape(this string s, int mode = 0)
         {
             if (s == null) return string.Empty;
 
             switch (mode)
             {
-                case -1:
-                    return s.Replace("\\", @"\\")
-                        .Replace("\'", @"\'")
-                        .Replace("\r", @"\r")
-                        .Replace("\n", @"\n")
-                        .Replace("\t", @"\t")
-                        .Replace("\a", @"\a")
-                        .Replace("\b", @"\b")
-                        .Replace("\f", @"\f")
-                        .Replace("\v", @"\v")
-                        .Replace("\0", @"\0")
-                        .Replace("(", @"\(")
-                        .Replace(")", @"\)");
                 case 0:
                     return s.Replace("\\", @"\\")
                         .Replace("\'", @"\'")
