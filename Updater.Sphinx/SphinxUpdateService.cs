@@ -81,7 +81,9 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}" +
+                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
+                        $" WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -89,7 +91,9 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
+                        $"SELECT {x}.record_id,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}" +
+                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
+                        $" WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
@@ -211,7 +215,9 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}" +
+                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
+                        $" WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -219,7 +225,9 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
+                        $"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}" +
+                        $" JOIN eststat ON {x}.eststatus=eststat.eststatid" +
+                        $" WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
@@ -278,7 +286,7 @@ namespace Updater.Sphinx
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                     join doc3 in docs3 on doc2.parentguid equals doc3.guid into ps
                                     from doc in ps.DefaultIfEmpty()
-                                    select new { doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}" };
+                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}"};
 
                                 var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
@@ -344,7 +352,9 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}" +
+                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
+                        $" WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>

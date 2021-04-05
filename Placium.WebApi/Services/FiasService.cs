@@ -37,7 +37,8 @@ namespace Placium.WebApi.Services
 
                 using (var command = new NpgsqlCommand(
                     string.Join(";", new[] {@"addrob\d+", @"house\d+", @"room\d+", @"stead\d+"}.Select(x =>
-                        $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                        "SELECT table_name FROM information_schema.tables" +
+                        $" WHERE table_schema = 'public' and table_name similar to '{x}'")),
                     connection))
                 {
                     command.Prepare();
@@ -56,42 +57,58 @@ namespace Placium.WebApi.Services
 
                 _parentRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
-                        $"SELECT houseguid,flatnumber,roomnumber FROM {x} WHERE roomguid=@p AND livestatus=1"));
+                        $"SELECT houseguid,flatnumber,roomnumber FROM {x}" +
+                        " WHERE roomguid=@p AND livestatus=1"));
                 _parentHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
-                        $"SELECT aoguid,housenum,buildnum,strucnum,eststat.name FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE houseguid=@p AND startdate<=now() AND now()<enddate"));
+                        $"SELECT aoguid,housenum,buildnum,strucnum,eststat.name FROM {x}" +
+                        $" JOIN eststat ON {x}.eststatus=eststat.eststatid" +
+                        " WHERE houseguid=@p AND startdate<=now() AND now()<enddate"));
                 _parentSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
                         $"SELECT parentguid,number FROM {x} WHERE steadguid=@p AND livestatus=1"));
                 _parentAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
-                        $"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE aoguid=@p AND livestatus=1"));
+                        $"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x}" +
+                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
+                        " WHERE aoguid=@p AND livestatus=1"));
 
                 _childrenRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
-                        $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid=@p AND livestatus=1"));
+                        $"SELECT roomguid,flatnumber,roomnumber FROM {x}" +
+                        " WHERE houseguid=@p AND livestatus=1"));
                 _childrenHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
-                        $"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE aoguid=@p AND startdate<=now() AND now()<enddate"));
+                        $"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x}" +
+                        $" JOIN eststat ON {x}.eststatus=eststat.eststatid" +
+                        " WHERE aoguid=@p AND startdate<=now() AND now()<enddate"));
                 _childrenSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
                         $"SELECT steadguid,number FROM {x} WHERE parentguid=@p AND livestatus=1"));
                 _childrenAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
-                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid=@p AND livestatus=1"));
+                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x}" +
+                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
+                        " WHERE parentguid=@p AND livestatus=1"));
 
                 _rootRoomSql = string.Join("\nUNION ALL\n",
                     _listRoom.Select(x =>
-                        $"SELECT roomguid,flatnumber,roomnumber FROM {x} WHERE houseguid IS NULL AND livestatus=1"));
+                        $"SELECT roomguid,flatnumber,roomnumber FROM {x}" +
+                        " WHERE houseguid IS NULL AND livestatus=1"));
                 _rootHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
-                        $"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x} JOIN eststat ON {x}.eststatus=eststat.eststatid WHERE aoguid IS NULL AND startdate<=now() AND now()<enddate"));
+                        $"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x}" +
+                        $" JOIN eststat ON {x}.eststatus=eststat.eststatid" +
+                        " WHERE aoguid IS NULL AND startdate<=now() AND now()<enddate"));
                 _rootSteadSql = string.Join("\nUNION ALL\n",
                     _listStead.Select(x =>
-                        $"SELECT steadguid,number FROM {x} WHERE parentguid IS NULL AND livestatus=1"));
+                        $"SELECT steadguid,number FROM {x}" +
+                        " WHERE parentguid IS NULL AND livestatus=1"));
                 _rootAddrobSql = string.Join("\nUNION ALL\n",
                     _listAddrob.Select(x =>
-                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x} JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level WHERE parentguid IS NULL AND livestatus=1"));
+                        $"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x}" +
+                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
+                        " WHERE parentguid IS NULL AND livestatus=1"));
             }
         }
 
@@ -149,7 +166,7 @@ namespace Placium.WebApi.Services
                                 var buildnum = reader.SafeGetString(2);
                                 var strucnum = reader.SafeGetString(3);
                                 var name = reader.SafeGetString(4);
-                                var list = new List<string>(){name};
+                                var list = new List<string> {name};
                                 if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
                                 if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
@@ -286,7 +303,7 @@ namespace Placium.WebApi.Services
                             var buildnum = reader.SafeGetString(2);
                             var strucnum = reader.SafeGetString(3);
                             var name = reader.SafeGetString(4);
-                            var list = new List<string>() { name };
+                            var list = new List<string> {name};
                             if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
                             if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                             if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
@@ -391,7 +408,7 @@ namespace Placium.WebApi.Services
                             var buildnum = reader.SafeGetString(2);
                             var strucnum = reader.SafeGetString(3);
                             var name = reader.SafeGetString(4);
-                            var list = new List<string>() { name };
+                            var list = new List<string> {name};
                             if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
                             if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                             if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
