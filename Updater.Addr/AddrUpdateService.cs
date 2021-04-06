@@ -61,7 +61,7 @@ namespace Updater.Addr
                                     using (var command2 = new NpgsqlCommand(@"INSERT INTO addr(id,tags)
                                         SELECT c.id, hstore(array_agg(p.key), array_agg(p.val)) as tags
                                         FROM placex c, (SELECT id, unnest(akeys(tags)) as key, unnest(avals(tags)) as val, location FROM placex) as p
-                                        WHERE c.id=ANY(@ids) AND key like 'addr%' AND ST_CoveredBy(c.location, p.location)
+                                        WHERE c.id=ANY(@ids) AND key like 'addr%' AND (c.id=p.id OR ST_CoveredBy(c.location, p.location))
                                         GROUP BY c.id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                         connection2))
