@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
+using Placium.Models;
 
 namespace Placium.Seeker
 {
@@ -15,6 +17,11 @@ namespace Placium.Seeker
         {
         }
 
+        /// <summary>
+        ///     Получение списка кодов ФИАС для заданного словаря с элементами адреса
+        /// </summary>
+        /// <param name="dictionary">Словарь с элементами адреса</param>
+        /// <returns>Список кодов ФИАС</returns>
         public async Task<List<string>> GetFiasByAddrAsync(Dictionary<string, string> dictionary)
         {
             var keys = new[]
@@ -44,6 +51,12 @@ namespace Placium.Seeker
             return await GetFiasByAddrAsync(addr.ToArray(), housenumber);
         }
 
+        /// <summary>
+        ///     Получение списка кодов ФИАС для заданного адреса
+        /// </summary>
+        /// <param name="addr">Массив с элементами адреса (от старшего к младшему)</param>
+        /// <param name="housenumber">Номер дома/участка</param>
+        /// <returns>Список кодов ФИАС</returns>
         public async Task<List<string>> GetFiasByAddrAsync(string[] addr, string housenumber)
         {
             var addrob = new List<List<long>>();
@@ -222,6 +235,13 @@ namespace Placium.Seeker
             }
         }
 
+        /// <summary>
+        ///     Получение словаря элементов адреса по координатам точки
+        /// </summary>
+        /// <param name="latitude">Широта</param>
+        /// <param name="longitude">Долгота</param>
+        /// <param name="tolerance">Точность (в метрах)</param>
+        /// <returns></returns>
         public async Task<Dictionary<string, string>> GetAddrByCoordsAsync(double latitude, double longitude,
             double tolerance = 100.0)
         {
@@ -272,6 +292,102 @@ namespace Placium.Seeker
                 }
 
                 await connection.CloseAsync();
+
+                return result;
+            }
+        }
+
+        /// <summary>
+        ///     Получение списка мест с координатами для заданного словаря с элементами адреса
+        /// </summary>
+        /// <param name="dictionary">Словарь с элементами адреса</param>
+        /// <returns>Список мест с координатами</returns>
+        public async Task<List<Placex>> GetOsmByAddrAsync(Dictionary<string, string> dictionary)
+        {
+            var keys = new[]
+            {
+                "addr:region",
+                "addr:district",
+                "addr:subdistrict",
+                "addr:city",
+                "addr:suburb",
+                "addr:hamlet",
+                "addr:street"
+            };
+
+            var addr = new List<string>();
+
+            var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
+                           dictionary["addr:region"] == dictionary["addr:city"];
+
+            foreach (var key in keys)
+                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
+                    addr.Add(dictionary[key]);
+
+            var housenumber = dictionary.ContainsKey("addr:housenumber")
+                ? dictionary["addr:housenumber"]
+                : string.Empty;
+
+            return await GetOsmByAddrAsync(addr.ToArray(), housenumber);
+        }
+
+        /// <summary>
+        ///     Получение списка мест с координатами для заданного адреса
+        /// </summary>
+        /// <param name="addr">Массив с элементами адреса (от старшего к младшему)</param>
+        /// <param name="housenumber">Номер дома/участка</param>
+        /// <returns>Список мест с координатами</returns>
+        public async Task<List<Placex>> GetOsmByAddrAsync(string[] addr, string housenumber)
+        {
+            var result = new List<Placex>();
+
+            var list = new List<string>(addr.Length + 1);
+            if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
+            list.AddRange(addr.Reverse());
+            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+
+            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                await npgsqlConnection.OpenAsync();
+
+                npgsqlConnection.ReloadTypes();
+                npgsqlConnection.TypeMapper.UseGeoJson();
+
+                for (var priority = 0; priority < 10; priority++)
+                {
+                    var ids = new List<long>();
+                    ids.FillAll(
+                        $"SELECT id FROM addr WHERE MATCH('{match}') AND priority={priority}",
+                        connection);
+
+                    if (!ids.Any()) continue;
+
+                    using (var command =
+                        new NpgsqlCommand(
+                            @"SELECT id,tags,location FROM placex WHERE id=ANY(@ids)",
+                            npgsqlConnection))
+                    {
+                        command.Parameters.AddWithValue("ids", ids.ToArray());
+
+                        command.Prepare();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                                result.Add(new Placex
+                                {
+                                    id = reader.GetInt64(0),
+                                    tags = (Dictionary<string, string>) reader.GetValue(1),
+                                    location = (GeoJSONObject) reader.GetValue(2)
+                                });
+                        }
+                    }
+
+                    if (result.Any()) break;
+                }
+
+                await npgsqlConnection.CloseAsync();
 
                 return result;
             }

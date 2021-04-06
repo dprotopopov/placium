@@ -6,7 +6,10 @@
 
 @using (Html.BeginForm(method: FormMethod.Post))
 {
-    @Html.TextBox("coords")
+    <label>Элементы адреса (через запятую)</label>
+    @Html.TextBox("addr")
+    <label>Номер дома/участка</label>
+    @Html.TextBox("housenumber")
     <br />
     <input type="submit" value="Выбрать" class="btn btn-primary" />
 }

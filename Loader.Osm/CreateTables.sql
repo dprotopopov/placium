@@ -2,6 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS postgis;
 
 DROP TABLE IF EXISTS service_history;
+DROP TABLE IF EXISTS addr;
 DROP TABLE IF EXISTS placex;
 DROP TABLE IF EXISTS node;
 DROP TABLE IF EXISTS way;
@@ -21,7 +22,7 @@ CREATE SEQUENCE record_number_seq;
 CREATE SEQUENCE record_id_seq;
 
 CREATE TYPE osm_type AS ENUM ('node', 'way', 'relation');
-CREATE TYPE service_type AS ENUM ('node', 'way', 'relation', 'placex');
+CREATE TYPE service_type AS ENUM ('node', 'way', 'relation', 'placex', 'addr');
 CREATE TYPE relation_member AS (
 	id BIGINT, 
     role VARCHAR(255),

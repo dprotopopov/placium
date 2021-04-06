@@ -12,5 +12,7 @@ namespace Placium.Types
         Relation,
         [PgName("placex")]
         Placex,
+        [PgName("addr")]
+        Addr,
     }
 }

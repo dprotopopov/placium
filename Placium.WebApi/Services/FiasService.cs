@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
-using Placium.WebApi.Models;
+using Placium.Models;
 
 namespace Placium.WebApi.Services
 {

@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Placium.WebApi.Models;
+using Placium.Models;
 using Placium.WebApi.Services;
 
 namespace Placium.WebApi.Controllers

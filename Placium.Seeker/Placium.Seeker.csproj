@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+    <ProjectReference Include="..\Placium.Models\Placium.Models.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
   </ItemGroup>
 

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Placium.WebApi.Models
+namespace Placium.Models
 {
     public abstract class Element
     {

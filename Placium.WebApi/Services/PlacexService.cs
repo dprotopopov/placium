@@ -4,7 +4,7 @@ using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Placium.Common;
-using Placium.WebApi.Models;
+using Placium.Models;
 
 namespace Placium.WebApi.Services
 {

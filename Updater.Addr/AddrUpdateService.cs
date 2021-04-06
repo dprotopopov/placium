@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using NpgsqlTypes;
 using Placium.Common;
 
 namespace Updater.Addr
@@ -48,19 +49,11 @@ namespace Updater.Addr
                         var take = 1000;
 
                         var obj = new object();
+                        var reader_is_empty = false;
 
-                        Parallel.For(0, (total + take - 1) / take, new ParallelOptions
-                            {
-                                MaxDegreeOfParallelism = 4
-                            },
+                        Parallel.For(0, 6,
                             i =>
                             {
-                                List<long> list;
-                                lock (obj)
-                                {
-                                    list = GetLongs(reader, take);
-                                }
-
                                 using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
                                 {
                                     connection2.Open();
@@ -73,18 +66,34 @@ namespace Updater.Addr
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                         connection2))
                                     {
-                                        command2.Parameters.AddWithValue("ids", list.ToArray());
+                                        command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
                                         command2.Prepare();
 
-                                        command2.ExecuteNonQuery();
-
-                                        lock (obj)
+                                        while (true)
                                         {
-                                            current += list.Count();
-                                        }
+                                            List<long> list;
+                                            lock (obj)
+                                            {
+                                                if (reader_is_empty) break;
+                                                list = GetLongs(reader, take);
+                                                reader_is_empty = list.Count() < take;
+                                                if (!list.Any()) break;
+                                            }
 
-                                        _progressHub.ProgressAsync(100f * current / total, id, session).GetAwaiter().GetResult();
+                                            command2.Parameters["ids"].Value = list.ToArray();
+
+                                            command2.ExecuteNonQuery();
+
+                                            lock (obj)
+                                            {
+                                                current += list.Count();
+
+                                                _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                    .GetAwaiter()
+                                                    .GetResult();
+                                            }
+                                        }
                                     }
 
                                     connection2.Close();

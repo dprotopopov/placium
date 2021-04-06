@@ -1,4 +1,4 @@
-﻿namespace Placium.WebApi.Models
+﻿namespace Placium.Models
 {
     public class Stead : Element
     {

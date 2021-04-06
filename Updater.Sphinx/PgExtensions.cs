@@ -30,5 +30,41 @@ namespace Updater.Sphinx
                 });
             return result;
         }
+
+        public static List<Doc3> ReadDocs3(this NpgsqlDataReader reader, int take)
+        {
+            var keys = new[]
+            {
+                "addr:region",
+                "addr:district",
+                "addr:subdistrict",
+                "addr:city",
+                "addr:suburb",
+                "addr:hamlet",
+                "addr:street",
+                "addr:housenumber"
+            };
+
+            var result = new List<Doc3>(take);
+            for (var i = 0; i < take && reader.Read(); i++)
+            {
+                var tags = (Dictionary<string, string>) reader.GetValue(1);
+                var priority = keys.Length;
+                for (; priority > 0 && !tags.ContainsKey(keys[priority - 1]); priority--) ;
+                var list = new List<string>(priority);
+                for (var k = priority; k > 0; k--)
+                    if (tags.ContainsKey(keys[k - 1]))
+                        list.Add(tags[keys[k - 1]].Yo());
+
+                result.Add(new Doc3
+                {
+                    id = reader.GetInt64(0),
+                    text = string.Join(" @", list),
+                    priority = priority
+                });
+            }
+
+            return result;
+        }
     }
 }

@@ -29,7 +29,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Seeker", "Placium.Seeker\Placium.Seeker.csproj", "{876DD837-54A8-4804-B773-4ED280E65E3B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater.Addr", "Updater.Addr\Updater.Addr.csproj", "{74011989-E61F-4D83-A9ED-B26FFE8F36D2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addr", "Updater.Addr\Updater.Addr.csproj", "{74011989-E61F-4D83-A9ED-B26FFE8F36D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Placium.Models", "Placium.Models\Placium.Models.csproj", "{1B378E87-E009-4D62-8E84-EA7F076EF70E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -77,6 +79,10 @@ Global
 		{74011989-E61F-4D83-A9ED-B26FFE8F36D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74011989-E61F-4D83-A9ED-B26FFE8F36D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74011989-E61F-4D83-A9ED-B26FFE8F36D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B378E87-E009-4D62-8E84-EA7F076EF70E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B378E87-E009-4D62-8E84-EA7F076EF70E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B378E87-E009-4D62-8E84-EA7F076EF70E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B378E87-E009-4D62-8E84-EA7F076EF70E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

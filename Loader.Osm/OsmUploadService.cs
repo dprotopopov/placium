@@ -328,7 +328,7 @@ namespace Loader.Osm
             {
                 new[]
                 {
-                    "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('placex','node','way','relation')"
+                    "SELECT CONCAT('DROP TABLE ', table_name) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('addr','placex','node','way','relation')"
                 }
             };
 

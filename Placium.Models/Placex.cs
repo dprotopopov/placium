@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using GeoJSON.Net;
 
-namespace Placium.WebApi.Models
+namespace Placium.Models
 {
     public class Placex
     {

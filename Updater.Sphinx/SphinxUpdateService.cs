@@ -30,13 +30,15 @@ namespace Updater.Sphinx
                     "CREATE TABLE addrob(text field)",
                     "CREATE TABLE house(text field)",
                     "CREATE TABLE stead(text field)",
-                    "CREATE TABLE placex(text field)"
+                    "CREATE TABLE placex(text field)",
+                    "CREATE TABLE addr(text field,priority int)"
                 }, connection);
 
                 await UpdateAddrobAsync(connection, session);
                 await UpdateHouseAsync(connection, session);
                 await UpdateSteadAsync(connection, session);
                 await UpdatePlacexAsync(connection, session);
+                await UpdateAddrAsync(connection, session);
             }
         }
 
@@ -488,6 +490,74 @@ namespace Updater.Sphinx
                 }
 
                 SetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, next_last_record_number);
+
+                await npgsqlConnection.CloseAsync();
+
+                await _progressHub.ProgressAsync(100f, id, session);
+            }
+        }
+
+        private async Task UpdateAddrAsync(MySqlConnection connection, string session)
+        {
+            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+            {
+                var current = 0L;
+                var total = 0L;
+
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
+
+                await npgsqlConnection.OpenAsync();
+
+                npgsqlConnection.ReloadTypes();
+                npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addr);
+                var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
+
+                var sql1 =
+                    "SELECT COUNT(*) FROM addr WHERE record_number>@last_record_number";
+
+                var sql =
+                    "SELECT id,tags FROM addr WHERE record_number>@last_record_number";
+
+                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+                {
+                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            total = reader.GetInt64(0);
+
+                        var take = 10000;
+
+                        reader.NextResult();
+
+                        while (true)
+                        {
+                            var docs = reader.ReadDocs3(take);
+
+                            if (docs.Any())
+                            {
+                                var sb = new StringBuilder("REPLACE INTO addr(id,text,priority) VALUES ");
+                                sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority})")));
+
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
+
+                                current += docs.Count;
+
+                                await _progressHub.ProgressAsync(100f * current / total, id, session);
+                            }
+
+                            if (docs.Count < take) break;
+                        }
+                    }
+                }
+
+                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addr, next_last_record_number);
 
                 await npgsqlConnection.CloseAsync();
 

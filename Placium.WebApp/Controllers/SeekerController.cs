@@ -15,13 +15,13 @@ namespace Placium.WebApp.Controllers
             _seeker = seeker;
         }
 
-        public IActionResult AddrByCoords()
+        public IActionResult ByCoords()
         {
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddrByCoords(string coords)
+        public async Task<IActionResult> ByCoords(string coords)
         {
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
@@ -35,20 +35,23 @@ namespace Placium.WebApp.Controllers
             }));
         }
 
-        public IActionResult FiasByAddr()
+        public IActionResult ByAddr()
         {
             return View();
         }
 
         [HttpPost]
-        public async Task<IActionResult> FiasByAddr(string addr, string housenumber)
+        public async Task<IActionResult> ByAddr(string addr, string housenumber)
         {
             var arr = addr.Split(",");
             var fias = await _seeker.GetFiasByAddrAsync(arr, housenumber);
+            var osm = await _seeker.GetOsmByAddrAsync(arr, housenumber);
             return Content(JsonConvert.SerializeObject(new
             {
-                fias
+                fias,
+                osm
             }));
         }
+
     }
 }
