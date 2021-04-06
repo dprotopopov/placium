@@ -5,7 +5,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using NpgsqlTypes;
 using Placium.Common;
 
 namespace Updater.Addr
@@ -25,10 +24,8 @@ namespace Updater.Addr
             await _progressHub.InitAsync(id, session);
 
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
-            using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 await connection.OpenAsync();
-                await connection2.OpenAsync();
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Addr.CreateTable.sql",
                     connection);
@@ -37,19 +34,8 @@ namespace Updater.Addr
 
                 using (var command = new NpgsqlCommand(string.Join(";",
                     "SELECT COUNT(*) FROM placex", "SELECT id FROM placex"), connection))
-                using (var command2 = new NpgsqlCommand("INSERT INTO addr(id,tags)" +
-                                                        " SELECT c.id, hstore(array_agg(p.key), array_agg(p.val)) as tags" +
-                                                        " FROM placex c, (SELECT id, unnest(akeys(tags)) as key, unnest(avals(tags)) as val, location FROM placex) as p" +
-                                                        " WHERE c.id=ANY(@ids) AND key like 'addr%' AND ST_CoveredBy(c.location, p.location)" +
-                                                        " GROUP BY c.id" +
-                                                        " ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
-                    connection2))
                 {
                     command.Prepare();
-
-                    command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-
-                    command2.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -61,27 +47,52 @@ namespace Updater.Addr
                         var current = 0L;
                         var take = 1000;
 
-                        while (true)
-                        {
-                            var list = GetLongs(reader, take);
-                            
-                            if (list.Any())
+                        var obj = new object();
+
+                        Parallel.For(0, (total + take - 1) / take, new ParallelOptions
                             {
-                                command2.Parameters["ids"].Value = list.ToArray();
+                                MaxDegreeOfParallelism = 4
+                            },
+                            i =>
+                            {
+                                List<long> list;
+                                lock (obj)
+                                {
+                                    list = GetLongs(reader, take);
+                                }
 
-                                command2.ExecuteNonQuery();
+                                using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
+                                {
+                                    connection2.Open();
 
-                                current += list.Count();
+                                    using (var command2 = new NpgsqlCommand("INSERT INTO addr(id,tags)" +
+                                                                            " SELECT c.id, hstore(array_agg(p.key), array_agg(p.val)) as tags" +
+                                                                            " FROM placex c, (SELECT id, unnest(akeys(tags)) as key, unnest(avals(tags)) as val, location FROM placex) as p" +
+                                                                            " WHERE c.id=ANY(@ids) AND key like 'addr%' AND ST_CoveredBy(c.location, p.location)" +
+                                                                            " GROUP BY c.id" +
+                                                                            " ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
+                                        connection2))
+                                    {
+                                        command2.Parameters.AddWithValue("ids", list.ToArray());
 
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
-                            }
+                                        command2.Prepare();
 
-                            if (list.Count() < take) break;
-                        }
+                                        command2.ExecuteNonQuery();
+
+                                        lock (obj)
+                                        {
+                                            current += list.Count();
+                                        }
+
+                                        _progressHub.ProgressAsync(100f * current / total, id, session).GetAwaiter().GetResult();
+                                    }
+
+                                    connection2.Close();
+                                }
+                            });
                     }
                 }
 
-                await connection2.CloseAsync();
                 await connection.CloseAsync();
 
                 await _progressHub.ProgressAsync(100f, id, session);

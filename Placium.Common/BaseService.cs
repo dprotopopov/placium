@@ -40,7 +40,10 @@ namespace Placium.Common
 
                 cmds.Fill(string.Join("\nUNION ALL\n", sql), conn);
 
-                Parallel.ForEach(cmds, new ParallelOptions {MaxDegreeOfParallelism = 24}, cmd =>
+                Parallel.ForEach(cmds, new ParallelOptions
+                {
+                    MaxDegreeOfParallelism = 4
+                }, cmd =>
                 {
                     using (var connection = new NpgsqlConnection(connectionString))
                     {
