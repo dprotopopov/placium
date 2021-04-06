@@ -27,9 +27,9 @@ namespace Placium.WebApi.Services
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT id,tags,location FROM placex" +
-                        " WHERE tags->@key SIMILAR TO @pattern" +
-                        " LIMIT @limit",
+                        @"SELECT id,tags,location FROM placex
+                        WHERE tags->@key SIMILAR TO @pattern
+                        LIMIT @limit",
                         connection))
                 {
                     command.Parameters.AddWithValue("pattern", pattern);
@@ -70,10 +70,10 @@ namespace Placium.WebApi.Services
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT id,tags,location FROM placex" +
-                        " WHERE tags?@key" +
-                        " ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography)" +
-                        " LIMIT @limit",
+                        @"SELECT id,tags,location FROM placex
+                        WHERE tags?@key
+                        ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography)
+                        LIMIT @limit",
                         connection))
                 {
                     command.Parameters.AddWithValue("longitude", (float) longitude);

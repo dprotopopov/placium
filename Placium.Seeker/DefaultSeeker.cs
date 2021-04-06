@@ -245,9 +245,9 @@ namespace Placium.Seeker
 
                 using (var command =
                     new NpgsqlCommand(
-                        "SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance" +
-                        " FROM placex WHERE tags?@key AND ST_DWithin(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,@tolerance,false)) AS query" +
-                        " WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
+                        @"SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance
+                        FROM placex WHERE tags?@key AND ST_DWithin(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,@tolerance,false)) AS query
+                        WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
                         connection))
                 {
                     command.Parameters.Add("longitude", NpgsqlDbType.Double);
