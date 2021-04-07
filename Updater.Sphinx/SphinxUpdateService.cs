@@ -217,9 +217,9 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}" +
-                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
-                        $" WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
+                        JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
+                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -227,9 +227,9 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}" +
-                        $" JOIN eststat ON {x}.eststatus=eststat.eststatid" +
-                        $" WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
+                        $@"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}
+                        JOIN eststat ON {x}.eststatus=eststat.eststatid
+                        WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
@@ -354,9 +354,9 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}" +
-                        $" JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level" +
-                        $" WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
+                        JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
+                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
