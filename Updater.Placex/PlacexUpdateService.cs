@@ -208,7 +208,7 @@ namespace Updater.Placex
                         var obj = new object();
                         var reader_is_empty = false;
 
-                        Parallel.For(0, 6,
+                        Parallel.For(0, 16,
                             i =>
                             {
                                 using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
@@ -408,7 +408,7 @@ namespace Updater.Placex
                         var obj = new object();
                         var reader_is_empty = false;
 
-                        Parallel.For(0, 6,
+                        Parallel.For(0, 16,
                             i =>
                             {
                                 using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
