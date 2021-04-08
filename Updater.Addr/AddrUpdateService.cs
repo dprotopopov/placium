@@ -91,7 +91,9 @@ namespace Updater.Addr
                                         JOIN placex p ON ST_DWithin(c.location,p.location,0) AND ST_Within(c.location::geometry,p.location::geometry)
                                         WHERE c.id=ANY(@ids) AND p.tags?|@keys UNION ALL
                                         SELECT c.id, concat('addr:',p.tags->'place') as key, p.tags->'name' as val FROM placex c
-                                        JOIN placex p ON ST_DWithin(c.location,p.location,0) AND ST_Within(c.location::geometry,p.location::geometry)
+                                        JOIN placex p ON (c.location::geometry && p.location::geometry)
+                                        AND ST_DWithin(ST_SimplifyPreserveTopology(c.location::geometry,700),ST_SimplifyPreserveTopology(p.location::geometry,700),0)
+                                        AND ST_Within(c.location::geometry,p.location::geometry)
                                         WHERE c.id=ANY(@ids) AND p.tags?'place') as q WHERE key like 'addr%' GROUP BY id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                         connection2))
