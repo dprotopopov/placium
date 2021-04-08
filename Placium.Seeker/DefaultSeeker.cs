@@ -30,6 +30,9 @@ namespace Placium.Seeker
                 "addr:district",
                 "addr:subdistrict",
                 "addr:city",
+                "addr:town",
+                "addr:village",
+                "addr:place",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street"
@@ -40,8 +43,11 @@ namespace Placium.Seeker
             var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
                            dictionary["addr:region"] == dictionary["addr:city"];
 
+            var skipTown = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:town") &&
+                           dictionary["addr:city"] == dictionary["addr:town"];
+
             foreach (var key in keys)
-                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
+                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) && (key != "addr:town" || !skipTown))
                     addr.Add(dictionary[key]);
 
             var housenumber = dictionary.ContainsKey("addr:housenumber")
@@ -251,6 +257,9 @@ namespace Placium.Seeker
                 "addr:district",
                 "addr:subdistrict",
                 "addr:city",
+                "addr:town",
+                "addr:village",
+                "addr:place",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street",
@@ -265,8 +274,8 @@ namespace Placium.Seeker
 
                 using (var command =
                     new NpgsqlCommand(
-                        @"SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography) AS distance
-                        FROM placex WHERE tags?@key AND ST_DWithin(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,@tolerance,false)) AS query
+                        @"SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,location) AS distance
+                        FROM placex WHERE tags?@key AND ST_DWithin(ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,location,@tolerance,false)) AS query
                         WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
                         connection))
                 {
@@ -291,6 +300,26 @@ namespace Placium.Seeker
                     }
                 }
 
+                using (var command =
+                    new NpgsqlCommand(
+                        @"SELECT concat('addr:',tags->'place'),tags->'name' FROM placex WHERE tags?'place'
+                        AND ST_DWithin(ST_SetSRID(ST_Point(@longitude,@latitude),4326),location,0)
+                        AND ST_Within(ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geometry,location::geometry)",
+                        connection))
+                {
+                    command.Parameters.AddWithValue("longitude", longitude);
+                    command.Parameters.AddWithValue("latitude", latitude);
+
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            if (!result.ContainsKey(reader.GetString(0)))
+                                result.Add(reader.GetString(0), reader.GetString(1));
+                    }
+                }
+
                 await connection.CloseAsync();
 
                 return result;
@@ -310,6 +339,9 @@ namespace Placium.Seeker
                 "addr:district",
                 "addr:subdistrict",
                 "addr:city",
+                "addr:town",
+                "addr:village",
+                "addr:place",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street"
@@ -320,8 +352,11 @@ namespace Placium.Seeker
             var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
                            dictionary["addr:region"] == dictionary["addr:city"];
 
+            var skipTown = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:town") &&
+                           dictionary["addr:city"] == dictionary["addr:town"];
+
             foreach (var key in keys)
-                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity))
+                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) && (key != "addr:town" || !skipTown))
                     addr.Add(dictionary[key]);
 
             var housenumber = dictionary.ContainsKey("addr:housenumber")
@@ -339,6 +374,21 @@ namespace Placium.Seeker
         /// <returns>Список мест с координатами</returns>
         public async Task<List<Placex>> GetOsmByAddrAsync(string[] addr, string housenumber)
         {
+            var keys = new[]
+            {
+                "addr:region",
+                "addr:district",
+                "addr:subdistrict",
+                "addr:city",
+                "addr:town",
+                "addr:village",
+                "addr:place",
+                "addr:suburb",
+                "addr:hamlet",
+                "addr:street",
+                "addr:housenumber"
+            };
+
             var result = new List<Placex>();
 
             var list = new List<string>(addr.Length + 1);
@@ -365,9 +415,10 @@ namespace Placium.Seeker
 
                     using (var command =
                         new NpgsqlCommand(
-                            @"SELECT id,tags,location FROM placex WHERE id=ANY(@ids)",
+                            @"SELECT id,tags,location FROM placex WHERE tags?|@keys AND id=ANY(@ids)",
                             npgsqlConnection))
                     {
+                        command.Parameters.AddWithValue("keys", keys.ToArray());
                         command.Parameters.AddWithValue("ids", ids.ToArray());
 
                         command.Prepare();

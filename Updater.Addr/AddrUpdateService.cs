@@ -31,11 +31,38 @@ namespace Updater.Addr
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Addr.CreateTable.sql",
                     connection);
 
+                //var keys = new List<string>();
+
+                //using (var command = new NpgsqlCommand( "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM placex) AS keys WHERE key LIKE 'addr%'", connection))
+                //{
+                //    command.Prepare();
+
+                //    using (var reader = command.ExecuteReader())
+                //    {
+                //        keys.Fill(reader);
+                //    }
+
+                //}
+
+                var keys = new[]
+                {
+                    "addr:region",
+                    "addr:district",
+                    "addr:subdistrict",
+                    "addr:city",
+                    "addr:suburb",
+                    "addr:hamlet",
+                    "addr:street",
+                    "addr:housenumber"
+                };
+
                 var total = 0L;
 
                 using (var command = new NpgsqlCommand(string.Join(";",
-                    "SELECT COUNT(*) FROM placex", "SELECT id FROM placex"), connection))
+                    "SELECT COUNT(*) FROM placex WHERE tags?|@keys OR tags?'place'", "SELECT id FROM placex WHERE tags?|@keys OR tags?'place'"), connection))
                 {
+                    command.Parameters.AddWithValue("keys", keys.ToArray());
+
                     command.Prepare();
 
                     using (var reader = command.ExecuteReader())
@@ -46,7 +73,7 @@ namespace Updater.Addr
                         reader.NextResult();
 
                         var current = 0L;
-                        var take = 1000;
+                        var take = 10;
 
                         var obj = new object();
                         var reader_is_empty = false;
@@ -60,12 +87,16 @@ namespace Updater.Addr
 
                                     using (var command2 = new NpgsqlCommand(@"INSERT INTO addr(id,tags)
                                         SELECT id, hstore(array_agg(key), array_agg(val)) as tags
-                                        FROM (SELECT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
-                                        JOIN placex p ON c.id=p.id OR ST_CoveredBy(c.location, p.location)
-                                        WHERE c.id=ANY(@ids)) as q WHERE key like 'addr%' GROUP BY id
+                                        FROM (SELECT DISTINCT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
+                                        JOIN placex p ON ST_DWithin(c.location,p.location,0) AND ST_Within(c.location::geometry,p.location::geometry)
+                                        WHERE c.id=ANY(@ids) AND p.tags?|@keys UNION ALL
+                                        SELECT c.id, concat('addr:',p.tags->'place') as key, p.tags->'name' as val FROM placex c
+                                        JOIN placex p ON ST_DWithin(c.location,p.location,0) AND ST_Within(c.location::geometry,p.location::geometry)
+                                        WHERE c.id=ANY(@ids) AND p.tags?'place') as q WHERE key like 'addr%' GROUP BY id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                         connection2))
                                     {
+                                        command2.Parameters.AddWithValue("keys", keys.ToArray());
                                         command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
                                         command2.Prepare();
