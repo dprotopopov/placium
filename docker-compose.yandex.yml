@@ -1,0 +1,23 @@
+﻿version: "3.9"
+services:
+  webapp-placium:
+    volumes:
+      - /opt2/upload:/upload/
+
+  fias-placium:
+    volumes:
+      - /opt2/fias/data:/var/lib/postgresql/data
+
+  osm-placium:
+    volumes:
+      - /opt2/osm/data:/var/lib/postgresql/data
+
+  sphinx-placium:
+    volumes:
+      - /opt2/sphinx/conf:/etc/sphinxsearch:ro
+      - /opt2/sphinx/data:/var/lib/sphinx/data
+
+  nginx-placium:
+    volumes:
+      - /opt2/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /opt2/nginx/cache:/data/nginx/cache

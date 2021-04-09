@@ -22,8 +22,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{77EF9329-7C3A-410F-BB20-AED059AE7C54}"
 	ProjectSection(SolutionItems) = preProject
 		.env = .env
+		docker-compose.override.yml = docker-compose.override.yml
 		docker-compose.yml = docker-compose.yml
 		INSTALL.txt = INSTALL.txt
+		nginx.conf = nginx.conf
 		README.txt = README.txt
 	EndProjectSection
 EndProject
@@ -33,7 +35,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addr", "Updater.Add
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Models", "Placium.Models\Placium.Models.csproj", "{1B378E87-E009-4D62-8E84-EA7F076EF70E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Placium.Services", "Placium.Services\Placium.Services.csproj", "{1794D19A-DEC0-4E1E-833A-C0B69763A75B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Services", "Placium.Services\Placium.Services.csproj", "{1794D19A-DEC0-4E1E-833A-C0B69763A75B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

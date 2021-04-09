@@ -27,12 +27,8 @@ services:
       AccountConfig__Password: "${ADMIN_PASSWORD}"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9966
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:9977
-    volumes:
-      - //y/placium//upload:/upload/
     networks:
       - placium
-    logging:
-      driver: local 
 
   webapi-placium:
     container_name: webapi-placium
@@ -56,8 +52,6 @@ services:
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
     networks:
       - placium
-    logging:
-      driver: local 
 
   fias-placium:
     image: "postgres"
@@ -70,12 +64,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: fias_db
       PGDATA: /var/lib/postgresql/data
-    volumes:
-      - //y/placium//fias/data:/var/lib/postgresql/data
     networks:
       - placium
-    logging:
-      driver: none
 
   osm-placium:
     image: "postgis/postgis"
@@ -88,12 +78,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: osm_db
       PGDATA: /var/lib/postgresql/data
-    volumes:
-      - //y/placium//osm/data:/var/lib/postgresql/data
     networks:
       - placium
-    logging:
-      driver: none
 
   sphinx-placium:
     image: "stefobark/sphinxdocker"
@@ -101,13 +87,8 @@ services:
     ports:
       - "19306:9306"
     restart: always
-    volumes:
-      - //y/placium//sphinx/conf:/etc/sphinxsearch:ro
-      - //y/placium//sphinx/data:/var/lib/sphinx/data
     networks:
       - placium
-    logging:
-      driver: none
 
   nginx-placium:
     image: "nginx"
@@ -117,10 +98,5 @@ services:
     ports:
       - "8080:8080"
     restart: always
-    volumes:
-      - //y/placium//nginx/conf:/etc/nginx:ro
-      - //y/placium//nginx/cache:/data/nginx/cache
     networks:
       - placium
-    logging:
-      driver: none

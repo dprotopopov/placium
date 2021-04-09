@@ -23,8 +23,4 @@
 		<ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Services\" />
-	</ItemGroup>
-
 </Project>

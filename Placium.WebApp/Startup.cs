@@ -1,8 +1,12 @@
+using System;
+using System.IO;
 using Loader.Fias;
 using Loader.Osm;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
@@ -19,12 +23,14 @@ namespace Placium.WebApp
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             Configuration = configuration;
+            WebHostEnvironment = webHostEnvironment;
         }
 
         private IConfiguration Configuration { get; }
+        public IWebHostEnvironment WebHostEnvironment { get; }
 
         private void RegisterServices(IServiceCollection services)
         {
@@ -65,8 +71,14 @@ namespace Placium.WebApp
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options => //CookieAuthenticationOptions
                 {
-                    options.LoginPath = new Microsoft.AspNetCore.Http.PathString("/Account/Login");
+                    options.LoginPath = new PathString("/Account/Login");
                 });
+
+            var keysFolder = Path.Combine(WebHostEnvironment.ContentRootPath, "temp-keys");
+            services.AddDataProtection()
+                .SetApplicationName("WebApp")
+                .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
+                .SetDefaultKeyLifetime(TimeSpan.FromDays(14));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -87,8 +99,8 @@ namespace Placium.WebApp
 
             app.UseRouting();
 
-            app.UseAuthentication();    // аутентификация
-            app.UseAuthorization();     // авторизация
+            app.UseAuthentication(); // аутентификация
+            app.UseAuthorization(); // авторизация
 
             app.UseEndpoints(endpoints =>
             {
