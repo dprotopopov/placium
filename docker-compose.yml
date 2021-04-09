@@ -102,8 +102,8 @@ services:
       - "19306:9306"
     restart: always
     volumes:
-      - ../sphinx/conf:/etc/sphinxsearch/
-      - ../sphinx/data/:/var/lib/sphinx/data/
+      - ../sphinx/conf:/etc/sphinxsearch
+      - ../sphinx/data:/var/lib/sphinx/data
     networks:
       - placium
     logging:
@@ -118,8 +118,8 @@ services:
       - "6699:80"
     restart: always
     volumes:
-      - ../nginx/conf:/etc/nginx/
-      - ../nginx/cache/:/data/nginx/cache
+      - ../nginx/conf:/etc/nginx
+      - ../nginx/cache:/datanginx/cache
     networks:
       - placium
     logging:
