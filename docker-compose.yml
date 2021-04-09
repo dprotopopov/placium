@@ -108,3 +108,17 @@ services:
       - placium
     logging:
       driver: none
+
+  nginx-placium:
+    image: "nginx"
+    container_name: nginx-placium
+    ports:
+      - "6699:80"
+    restart: always
+    volumes:
+      - ../nginx/conf:/etc/nginx/
+      - ../nginx/cache/:/data/nginx/cache
+    networks:
+      - placium
+    logging:
+      driver: none

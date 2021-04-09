@@ -17,8 +17,8 @@ sudo apt install git wget
 
 mkdir upload
 cd upload
-wget https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf
-wget https://fias-file.nalog.ru/downloads/2021.04.02/fias_delta_dbf.zip
+wget -c https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf
+wget -c https://fias-file.nalog.ru/downloads/2021.04.02/fias_delta_dbf.zip
 cd
 mkdir postgres
 mkdir postgres/data
@@ -27,7 +27,12 @@ mkdir postgis/data
 mkdir sphinx
 mkdir sphinx/conf
 mkdir sphinx/data
+mkdir nginx
+mkdir nginx/conf
+mkdir nginx/cache
+
 git clone https://github.com/dprotopopov/placium.git
+cp placium/nginx.conf nginx/conf/
 cd placium
 sudo docker-compose up
 sudo docker logs --follow placium/webapp-placium
