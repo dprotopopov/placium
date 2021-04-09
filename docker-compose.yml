@@ -14,14 +14,14 @@ services:
       - "9966:9966"
       - "9967:9967"
     depends_on:
-      - postgres-placium
-      - postgis-placium
+      - fias-placium
+      - osm-placium
       - sphinx-placium
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__FiasConnection: "Host=postgres-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
-      ConnectionStrings__OsmConnection: "Host=postgis-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=sphinx-placium;Port=9306;Command Timeout=0"
       UploadConfig__Path: "/upload"
       AccountConfig__Password: "!QAZ2wsx"
@@ -43,14 +43,14 @@ services:
       - "5000:5000"
       - "5001:5001"
     depends_on:
-      - postgres-placium
-      - postgis-placium
+      - fias-placium
+      - osm-placium
       - sphinx-placium
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__FiasConnection: "Host=postgres-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
-      ConnectionStrings__OsmConnection: "Host=postgis-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=sphinx-placium;Port=9306;Command Timeout=0"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
@@ -59,9 +59,9 @@ services:
     logging:
       driver: local 
 
-  postgres-placium:
+  fias-placium:
     image: "postgres"
-    container_name: postgres-placium
+    container_name: fias-placium
     ports:
       - "15432:5432"
     restart: always
@@ -77,9 +77,9 @@ services:
     logging:
       driver: none
 
-  postgis-placium:
+  osm-placium:
     image: "postgis/postgis"
-    container_name: postgis-placium
+    container_name: osm-placium
     ports:
       - "25432:5432"
     restart: always
@@ -112,6 +112,8 @@ services:
   nginx-placium:
     image: "nginx"
     container_name: nginx-placium
+    depends_on:
+      - webapi-placium
     ports:
       - "6699:80"
     restart: always
