@@ -12,7 +12,7 @@ services:
       dockerfile: Placium.WebApp/Dockerfile
     ports:
       - "9966:9966"
-      - "9967:9967"
+      - "9977:9977"
     depends_on:
       - fias-placium
       - osm-placium
@@ -26,9 +26,9 @@ services:
       UploadConfig__Path: "/upload"
       AccountConfig__Password: "${ADMIN_PASSWORD}"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9966
-      Kestrel__Endpoints__Https__Url: http://0.0.0.0:9967
+      Kestrel__Endpoints__Https__Url: http://0.0.0.0:9977
     volumes:
-      - ../upload:/upload/
+      - //y/placium//upload:/upload/
     networks:
       - placium
     logging:
@@ -71,7 +71,7 @@ services:
       POSTGRES_DB: fias_db
       PGDATA: /var/lib/postgresql/data
     volumes:
-      - ../postgres/data:/var/lib/postgresql/data
+      - //y/placium//fias/data:/var/lib/postgresql/data
     networks:
       - placium
     logging:
@@ -89,7 +89,7 @@ services:
       POSTGRES_DB: osm_db
       PGDATA: /var/lib/postgresql/data
     volumes:
-      - ../postgis/data:/var/lib/postgresql/data
+      - //y/placium//osm/data:/var/lib/postgresql/data
     networks:
       - placium
     logging:
@@ -102,8 +102,8 @@ services:
       - "19306:9306"
     restart: always
     volumes:
-      - ../sphinx/conf:/etc/sphinxsearch
-      - ../sphinx/data:/var/lib/sphinx/data
+      - //y/placium//sphinx/conf:/etc/sphinxsearch:ro
+      - //y/placium//sphinx/data:/var/lib/sphinx/data
     networks:
       - placium
     logging:
@@ -118,8 +118,8 @@ services:
       - "8080:8080"
     restart: always
     volumes:
-      - ../nginx/conf:/etc/nginx
-      - ../nginx/cache:/datanginx/cache
+      - //y/placium//nginx/conf:/etc/nginx:ro
+      - //y/placium//nginx/cache:/data/nginx/cache
     networks:
       - placium
     logging:

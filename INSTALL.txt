@@ -20,10 +20,10 @@ cd upload
 wget -c https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf
 wget -c https://fias-file.nalog.ru/downloads/2021.04.02/fias_delta_dbf.zip
 cd
-mkdir postgres
-mkdir postgres/data
-mkdir postgis
-mkdir postgis/data
+mkdir fias
+mkdir fias/data
+mkdir osm
+mkdir osm/data
 mkdir sphinx
 mkdir sphinx/conf
 mkdir sphinx/data
