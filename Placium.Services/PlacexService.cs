@@ -6,7 +6,7 @@ using Npgsql;
 using Placium.Common;
 using Placium.Models;
 
-namespace Placium.WebApi.Services
+namespace Placium.Services
 {
     public class PlacexService : BaseService
     {
@@ -70,9 +70,8 @@ namespace Placium.WebApi.Services
 
                 using (var command =
                     new NpgsqlCommand(
-                        @"SELECT id,tags,location FROM placex
-                        WHERE tags?@key
-                        ORDER BY ST_Distance(location,ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography)
+                        @"SELECT id,tags,location FROM placex WHERE tags?@key
+                        ORDER BY ST_SetSRID(ST_Point(@longitude,@latitude),4326)<->location
                         LIMIT @limit",
                         connection))
                 {

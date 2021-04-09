@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -24,7 +25,7 @@ namespace Loader.Osm
 
         private readonly ProgressHub _progressHub;
 
-        private readonly List<string> nodeKeys = new List<string>
+        private readonly string[] nodeKeys =
         {
             "id",
             "version",
@@ -38,7 +39,7 @@ namespace Loader.Osm
             "tags"
         };
 
-        private readonly List<string> relationKeys = new List<string>
+        private readonly string[] relationKeys =
         {
             "id",
             "version",
@@ -51,7 +52,7 @@ namespace Loader.Osm
             "members"
         };
 
-        private readonly List<string> wayKeys = new List<string>
+        private readonly string[] wayKeys =
         {
             "id",
             "version",
@@ -101,7 +102,7 @@ namespace Loader.Osm
                                         $"COPY node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
-                                var nodeValues = new List<string>
+                                var nodeValues = new[]
                                 {
                                     node.Id.ToString(),
                                     node.Version.ToString(),
@@ -115,6 +116,8 @@ namespace Loader.Osm
                                     $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                                 };
 
+                                Debug.Assert(writer != null);
+
                                 writer.WriteLine(string.Join("\t", nodeValues));
 
                                 break;
@@ -127,7 +130,7 @@ namespace Loader.Osm
                                         $"COPY way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
-                                var wayValues = new List<string>
+                                var wayValues = new[]
                                 {
                                     way.Id.ToString(),
                                     way.Version.ToString(),
@@ -139,6 +142,8 @@ namespace Loader.Osm
                                     $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", way.Nodes.Select(t => $"{t.ToString()}"))}}}"
                                 };
+
+                                Debug.Assert(writer != null);
 
                                 writer.WriteLine(string.Join("\t", wayValues));
 
@@ -152,7 +157,7 @@ namespace Loader.Osm
                                         $"COPY relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
-                                var relationValues = new List<string>
+                                var relationValues = new[]
                                 {
                                     relation.Id.ToString(),
                                     relation.Version.ToString(),
@@ -164,6 +169,8 @@ namespace Loader.Osm
                                     $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id.ToString()},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{((int) t.Type).ToString()})\\\""))}}}"
                                 };
+
+                                Debug.Assert(writer != null);
 
                                 writer.WriteLine(string.Join("\t", relationValues));
 
@@ -218,7 +225,7 @@ namespace Loader.Osm
                                         $"COPY temp_node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
-                                var nodeValues = new List<string>
+                                var nodeValues = new[]
                                 {
                                     node.Id.ToString(),
                                     node.Version.ToString(),
@@ -232,6 +239,8 @@ namespace Loader.Osm
                                     $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                                 };
 
+                                Debug.Assert(writer != null);
+
                                 writer.WriteLine(string.Join("\t", nodeValues));
 
                                 break;
@@ -244,7 +253,7 @@ namespace Loader.Osm
                                         $"COPY temp_way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
-                                var wayValues = new List<string>
+                                var wayValues = new[]
                                 {
                                     way.Id.ToString(),
                                     way.Version.ToString(),
@@ -256,6 +265,8 @@ namespace Loader.Osm
                                     $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", way.Nodes.Select(t => $"{t.ToString()}"))}}}"
                                 };
+
+                                Debug.Assert(writer != null);
 
                                 writer.WriteLine(string.Join("\t", wayValues));
 
@@ -269,7 +280,7 @@ namespace Loader.Osm
                                         $"COPY temp_relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
-                                var relationValues = new List<string>
+                                var relationValues = new[]
                                 {
                                     relation.Id.ToString(),
                                     relation.Version.ToString(),
@@ -281,6 +292,8 @@ namespace Loader.Osm
                                     $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id.ToString()},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{((int) t.Type).ToString()})\\\""))}}}"
                                 };
+
+                                Debug.Assert(writer != null);
 
                                 writer.WriteLine(string.Join("\t", relationValues));
 

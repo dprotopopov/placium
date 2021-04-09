@@ -4,13 +4,14 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UserSecretsId>34c66524-7327-4080-8adc-b087488c334c</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <StartupObject>Placium.WebApp.Program</StartupObject>
   </PropertyGroup>
 
  
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.2.1" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.4" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.5" />
     <PackageReference Include="MySql.Data" Version="8.0.23" />
     <PackageReference Include="NDbfReader" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
@@ -32,8 +33,8 @@
     <ProjectReference Include="..\Loader.Fias\Loader.Fias.csproj" />
     <ProjectReference Include="..\Loader.Osm\Loader.Osm.csproj" />
     <ProjectReference Include="..\Placium.Seeker\Placium.Seeker.csproj" />
+    <ProjectReference Include="..\Placium.Services\Placium.Services.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
-    <ProjectReference Include="..\Placium.WebApi\Placium.WebApi.csproj" />
     <ProjectReference Include="..\Updater.Addr\Updater.Addr.csproj" />
     <ProjectReference Include="..\Updater.Placex\Updater.Placex.csproj" />
     <ProjectReference Include="..\Updater.Sphinx\Updater.Sphinx.csproj" />

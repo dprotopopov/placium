@@ -8,7 +8,7 @@ using NpgsqlTypes;
 using Placium.Common;
 using Placium.Models;
 
-namespace Placium.WebApi.Services
+namespace Placium.Services
 {
     public class FiasService : BaseService
     {
@@ -288,7 +288,7 @@ namespace Placium.WebApi.Services
                             if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             result.Add(new Room
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 flatnumber = flatnumber,
                                 roomnumber = roomnumber,
                                 title = string.Join(", ", list)
@@ -309,7 +309,7 @@ namespace Placium.WebApi.Services
                             if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
                             result.Add(new House
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 housenum = housenum,
                                 buildnum = buildnum,
                                 strucnum = strucnum,
@@ -327,7 +327,7 @@ namespace Placium.WebApi.Services
                             if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
                             result.Add(new Stead
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 number = number,
                                 title = string.Join(", ", list)
                             });
@@ -349,7 +349,7 @@ namespace Placium.WebApi.Services
                                     : offname;
                             result.Add(new Address
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 offname = offname,
                                 formalname = formalname,
                                 shortname = shortname,
@@ -393,7 +393,7 @@ namespace Placium.WebApi.Services
                             if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
                             result.Add(new Room
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 flatnumber = flatnumber,
                                 roomnumber = roomnumber,
                                 title = string.Join(", ", list)
@@ -414,7 +414,7 @@ namespace Placium.WebApi.Services
                             if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
                             result.Add(new House
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 housenum = housenum,
                                 buildnum = buildnum,
                                 strucnum = strucnum,
@@ -432,7 +432,7 @@ namespace Placium.WebApi.Services
                             if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
                             result.Add(new Stead
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 number = number,
                                 title = string.Join(", ", list)
                             });
@@ -454,7 +454,7 @@ namespace Placium.WebApi.Services
                                     : offname;
                             result.Add(new Address
                             {
-                                guid = Guid.Parse(reader.SafeGetString(0)),
+                                guid = Guid.Parse((string) reader.SafeGetString(0)),
                                 offname = offname,
                                 formalname = formalname,
                                 shortname = shortname,

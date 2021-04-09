@@ -3,12 +3,12 @@ using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Placium.Models;
-using Placium.WebApi.Services;
+using Placium.Services;
 
 namespace Placium.WebApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class PlacexController : ControllerBase
     {
         private readonly PlacexService _placexService;

@@ -1,22 +1,30 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	    <OutputType>Exe</OutputType>
+    <StartupObject>Placium.WebApi.Program</StartupObject>
   </PropertyGroup>
 
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Npgsql.GeoJSON" Version="5.0.3" />
-  </ItemGroup>
+	<ItemGroup>
+	      <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.2.1" />
+	    			<PackageReference Include="Npgsql.GeoJSON" Version="5.0.3" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
-    <ProjectReference Include="..\Placium.Models\Placium.Models.csproj" />
-    <ProjectReference Include="..\Placium.Seeker\Placium.Seeker.csproj" />
-    <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+		<ProjectReference Include="..\Placium.Models\Placium.Models.csproj" />
+		<ProjectReference Include="..\Placium.Seeker\Placium.Seeker.csproj" />
+		<ProjectReference Include="..\Placium.Services\Placium.Services.csproj" />
+		<ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Services\" />
+	</ItemGroup>
 
 </Project>

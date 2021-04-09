@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Placium.WebApi.Services;
+using Placium.Services;
 using Placium.WebApp.Models;
 
 namespace Placium.WebApp.Controllers
 {
+    [Authorize]
     public class FiasController : Controller
     {
         private readonly FiasService _fiasService;

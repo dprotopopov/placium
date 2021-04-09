@@ -274,9 +274,9 @@ namespace Placium.Seeker
 
                 using (var command =
                     new NpgsqlCommand(
-                        @"SELECT tag FROM (SELECT tags->@key AS tag,ST_Distance(ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,location) AS distance
-                        FROM placex WHERE tags?@key AND ST_DWithin(ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,location,@tolerance,false)) AS query
-                        WHERE distance<=@tolerance ORDER BY distance LIMIT 1",
+                        @"SELECT tags->@key AS tag  FROM placex
+                        WHERE tags?@key AND ST_DWithin(ST_SetSRID(ST_Point(@longitude,@latitude),4326),location,@tolerance)
+                        ORDER BY ST_SetSRID(ST_Point(@longitude,@latitude),4326)<->location LIMIT 1",
                         connection))
                 {
                     command.Parameters.Add("longitude", NpgsqlDbType.Double);
@@ -304,7 +304,7 @@ namespace Placium.Seeker
                     new NpgsqlCommand(
                         @"SELECT concat('addr:',tags->'place'),tags->'name' FROM placex WHERE tags?'place'
                         AND ST_DWithin(ST_SetSRID(ST_Point(@longitude,@latitude),4326),location,0)
-                        AND ST_Within(ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geometry,location::geometry)",
+                        AND ST_Within(ST_SetSRID(ST_Point(@longitude,@latitude),4326),location)",
                         connection))
                 {
                     command.Parameters.AddWithValue("longitude", longitude);

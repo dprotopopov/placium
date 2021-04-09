@@ -70,7 +70,7 @@ namespace Updater.Placex
                 using (var command =
                     new NpgsqlCommand(
                         string.Join(";", "DROP TABLE IF EXISTS temp_placex_node",
-                            "CREATE TEMP TABLE temp_placex_node (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                            "CREATE TEMP TABLE temp_placex_node (osm_id BIGINT,tags hstore,location GEOMETRY)"),
                         connection2))
                 {
                     command.Prepare();
@@ -105,7 +105,7 @@ namespace Updater.Placex
                             {
                                 reader.GetInt64(0).ToString(),
                                 reader.GetString(1).TextEscape(),
-                                $"POINT({reader.GetDouble(2).ToString(_nfi)} {reader.GetDouble(3).ToString(_nfi)})"
+                                $"SRID=4326;POINT({reader.GetDouble(2).ToString(_nfi)} {reader.GetDouble(3).ToString(_nfi)})"
                             };
 
                             writer.WriteLine(string.Join("\t", values));
@@ -178,7 +178,7 @@ namespace Updater.Placex
                 using (var command =
                     new NpgsqlCommand(
                         string.Join(";", "DROP TABLE IF EXISTS temp_placex_way",
-                            "CREATE TEMP TABLE temp_placex_way (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                            "CREATE TEMP TABLE temp_placex_way (osm_id BIGINT,tags hstore,location GEOMETRY)"),
                         connection2))
                 {
                     command.Prepare();
@@ -261,7 +261,8 @@ namespace Updater.Placex
 
                                                 if (cleanNodes.Any())
                                                 {
-                                                    var sb = new StringBuilder(
+                                                    var sb = new StringBuilder("SRID=4326;");
+                                                    sb.Append(
                                                         cleanNodes.Length > 1
                                                             ? area && cleanNodes.Length > 2 ? "POLYGON" : "LINESTRING"
                                                             : "POINT");
@@ -379,7 +380,7 @@ namespace Updater.Placex
                 using (var command =
                     new NpgsqlCommand(
                         string.Join(";", "DROP TABLE IF EXISTS temp_placex_relation",
-                            "CREATE TEMP TABLE temp_placex_relation (osm_id BIGINT,tags hstore,location GEOGRAPHY)"),
+                            "CREATE TEMP TABLE temp_placex_relation (osm_id BIGINT,tags hstore,location GEOMETRY)"),
                         connection2))
                 {
                     command.Prepare();
@@ -476,7 +477,8 @@ namespace Updater.Placex
                                                     }
 
                                                     var any = false;
-                                                    var sb = new StringBuilder("MULTIPOLYGON");
+                                                    var sb = new StringBuilder("SRID=4326;");
+                                                    sb.Append("MULTIPOLYGON");
                                                     sb.Append("(");
                                                     var first = true;
                                                     foreach (var nodes in outerRings)

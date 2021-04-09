@@ -11,8 +11,8 @@ services:
       context: .
       dockerfile: Placium.WebApp/Dockerfile
     ports:
-      - "15000:5000"
-      - "15001:5001"
+      - "9966:9966"
+      - "9967:9967"
     depends_on:
       - postgres-placium
       - postgis-placium
@@ -24,10 +24,36 @@ services:
       ConnectionStrings__OsmConnection: "Host=postgis-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=sphinx-placium;Port=9306;Command Timeout=0"
       UploadConfig__Path: "/upload"
-      Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
-      Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
+      AccountConfig__Password: "!QAZ2wsx"
+      Kestrel__Endpoints__Http__Url: http://0.0.0.0:9966
+      Kestrel__Endpoints__Https__Url: http://0.0.0.0:9967
     volumes:
       - ../upload:/upload/
+    networks:
+      - placium
+    logging:
+      driver: local 
+
+  webapi-placium:
+    container_name: webapi-placium
+    build:
+      context: .
+      dockerfile: Placium.WebApi/Dockerfile
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    depends_on:
+      - postgres-placium
+      - postgis-placium
+      - sphinx-placium
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__FiasConnection: "Host=postgres-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__OsmConnection: "Host=postgis-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__SphinxConnection: "Host=sphinx-placium;Port=9306;Command Timeout=0"
+      Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
+      Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
     networks:
       - placium
     logging:

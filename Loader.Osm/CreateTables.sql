@@ -40,7 +40,7 @@ CREATE TABLE placex (
 	osm_id BIGINT, 
 	osm_type osm_type,
 	tags hstore,
-	location GEOGRAPHY,
+	location GEOMETRY,
 	record_number BIGINT DEFAULT nextval('record_number_seq'),
 	record_id BIGINT DEFAULT nextval('record_id_seq')
 );

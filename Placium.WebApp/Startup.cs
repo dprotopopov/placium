@@ -1,5 +1,6 @@
 using Loader.Fias;
 using Loader.Osm;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Placium.Common;
 using Placium.Seeker;
-using Placium.WebApi.Services;
+using Placium.Services;
 using Updater.Addr;
 using Updater.Placex;
 using Updater.Sphinx;
@@ -28,6 +29,7 @@ namespace Placium.WebApp
         private void RegisterServices(IServiceCollection services)
         {
             services.Configure<UploadConfig>(Configuration.GetSection(nameof(UploadConfig)));
+            services.Configure<AccountConfig>(Configuration.GetSection(nameof(AccountConfig)));
 
             services.AddTransient<DefaultSeeker>();
             services.AddTransient<PlacexService>();
@@ -58,6 +60,13 @@ namespace Placium.WebApp
                 x.MultipartBodyLengthLimit = int.MaxValue; // if don't set default value is: 128 MB
                 x.MultipartHeadersLengthLimit = int.MaxValue;
             });
+
+            // установка конфигурации подключения
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+                .AddCookie(options => //CookieAuthenticationOptions
+                {
+                    options.LoginPath = new Microsoft.AspNetCore.Http.PathString("/Account/Login");
+                });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -78,7 +87,8 @@ namespace Placium.WebApp
 
             app.UseRouting();
 
-            app.UseAuthorization();
+            app.UseAuthentication();    // аутентификация
+            app.UseAuthorization();     // авторизация
 
             app.UseEndpoints(endpoints =>
             {

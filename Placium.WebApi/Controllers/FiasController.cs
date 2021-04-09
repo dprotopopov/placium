@@ -3,12 +3,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Placium.Models;
-using Placium.WebApi.Services;
+using Placium.Services;
 
 namespace Placium.WebApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     public class FiasController : ControllerBase
     {
         private readonly FiasService _fiasService;

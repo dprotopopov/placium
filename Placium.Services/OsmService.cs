@@ -5,7 +5,7 @@ using OsmSharp;
 using Placium.Common;
 using Placium.Types;
 
-namespace Placium.WebApi.Services
+namespace Placium.Services
 {
     public class OsmService : BaseService
     {

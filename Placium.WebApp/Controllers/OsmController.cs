@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Placium.Types;
-using Placium.WebApi.Services;
+using Placium.Services;
 
 namespace Placium.WebApp.Controllers
 {
+    [Authorize]
     public class OsmController : Controller
     {
         private readonly OsmService _osmService;

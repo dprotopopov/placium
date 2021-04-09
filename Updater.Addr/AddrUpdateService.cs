@@ -31,19 +31,6 @@ namespace Updater.Addr
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Addr.CreateTable.sql",
                     connection);
 
-                //var keys = new List<string>();
-
-                //using (var command = new NpgsqlCommand( "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM placex) AS keys WHERE key LIKE 'addr%'", connection))
-                //{
-                //    command.Prepare();
-
-                //    using (var reader = command.ExecuteReader())
-                //    {
-                //        keys.Fill(reader);
-                //    }
-
-                //}
-
                 var keys = new[]
                 {
                     "addr:region",
@@ -87,17 +74,17 @@ namespace Updater.Addr
 
                                     using (var command2 = new NpgsqlCommand(@"INSERT INTO addr(id,tags)
                                         SELECT id, hstore(array_agg(key), array_agg(val)) as tags
-                                        FROM (SELECT DISTINCT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
+                                        FROM (SELECT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
                                         JOIN placex p ON c.location&&p.location
-									    AND ST_DWithin(c.location,p.location,0)
-                                        AND c.location::geometry@p.location::geometry
-                                        AND ST_Within(c.location::geometry,p.location::geometry)
+									    AND ST_Intersects(c.location,p.location)
+                                        AND c.location@p.location
+                                        AND ST_Within(c.location,p.location)
                                         WHERE c.id=ANY(@ids) AND p.tags?|@keys UNION ALL
                                         SELECT c.id, concat('addr:',p.tags->'place') as key, p.tags->'name' as val FROM placex c
                                         JOIN placex p ON c.location&&p.location
-									    AND ST_DWithin(c.location,p.location,0)
-                                        AND c.location::geometry@p.location::geometry
-                                        AND ST_Within(c.location::geometry,p.location::geometry)
+									    AND ST_Intersects(c.location,p.location)
+                                        AND c.location@p.location
+                                        AND ST_Within(c.location,p.location)
                                         WHERE c.id=ANY(@ids) AND p.tags?'place') as q WHERE key like 'addr%' GROUP BY id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                         connection2))
