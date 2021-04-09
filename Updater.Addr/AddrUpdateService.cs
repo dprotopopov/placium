@@ -65,7 +65,7 @@ namespace Updater.Addr
                         var obj = new object();
                         var reader_is_empty = false;
 
-                        Parallel.For(0, 6,
+                        Parallel.For(0, 12,
                             i =>
                             {
                                 using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
