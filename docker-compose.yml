@@ -115,7 +115,7 @@ services:
     depends_on:
       - webapi-placium
     ports:
-      - "6699:80"
+      - "8080:8080"
     restart: always
     volumes:
       - ../nginx/conf:/etc/nginx
