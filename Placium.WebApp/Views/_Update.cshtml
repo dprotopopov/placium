@@ -44,6 +44,7 @@
     (function() {
         var hubConnection = new signalR.HubConnectionBuilder()
             .withUrl("/progress")
+            .withAutomaticReconnect()
             .build();
 
         hubConnection.on("Progress",
