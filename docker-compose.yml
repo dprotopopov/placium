@@ -35,9 +35,6 @@ services:
     build:
       context: .
       dockerfile: Placium.WebApi/Dockerfile
-    ports:
-      - "5000:5000"
-      - "5001:5001"
     depends_on:
       - fias-placium
       - osm-placium
@@ -56,8 +53,6 @@ services:
   fias-placium:
     image: "postgres"
     container_name: fias-placium
-    ports:
-      - "15432:5432"
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -70,8 +65,6 @@ services:
   osm-placium:
     image: "postgis/postgis"
     container_name: osm-placium
-    ports:
-      - "25432:5432"
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -84,8 +77,6 @@ services:
   sphinx-placium:
     image: "stefobark/sphinxdocker"
     container_name: sphinx-placium
-    ports:
-      - "19306:9306"
     restart: always
     networks:
       - placium
