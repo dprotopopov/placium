@@ -14,9 +14,9 @@ services:
 
   manticore-placium:
     volumes:
-      - //y/placium/manticore/log:/var/lib/manticore/log
-      - //y/placium/manticore/data:/var/lib/manticore/data
-      - //y/placium/manticore/manticore.conf:/etc/manticoresearch/manticore.conf:ro
+      - //y/placium/manticore/log:/var/manticore/log
+      - //y/placium/manticore/data:/var/manticore/data
+      - //y/placium/manticore/manticore.conf:/etc/manticoresearch/manticore.conf
  
   nginx-placium:
     volumes:
