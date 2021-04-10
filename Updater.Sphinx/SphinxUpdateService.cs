@@ -686,8 +686,9 @@ namespace Updater.Sphinx
                         return mySqlCommand.ExecuteNonQuery();
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Console.WriteLine(ex.Message);
                 }
         }
     }
