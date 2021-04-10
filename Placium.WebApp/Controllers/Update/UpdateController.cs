@@ -17,6 +17,7 @@ namespace Placium.WebApp.Controllers.Update
         }
 
         protected abstract UpdateFormInfo GetUpdateFormInfo();
+        protected abstract string GetSession();
 
         public async Task<IActionResult> Update()
         {
@@ -26,6 +27,7 @@ namespace Placium.WebApp.Controllers.Update
             var info = GetUpdateFormInfo();
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
+            ViewBag.Session = GetSession();
 
             return View("~/Views/_Update.cshtml");
         }

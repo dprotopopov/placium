@@ -95,7 +95,7 @@ services:
     depends_on:
       - webapi-placium
     ports:
-      - "8080:8080"
+      - "6699:80"
     restart: always
     networks:
       - placium

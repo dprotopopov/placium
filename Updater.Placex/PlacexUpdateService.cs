@@ -24,9 +24,18 @@ namespace Updater.Placex
 
         public async Task UpdateAsync(string session)
         {
-            await UpdateFromNodeAsync(session);
-            await UpdateFromWayAsync(session);
-            await UpdateFromRelationAsync(session);
+            try
+            {
+                await UpdateFromNodeAsync(session);
+                await UpdateFromWayAsync(session);
+                await UpdateFromRelationAsync(session);
+                await _progressHub.CompleteAsync(session);
+            }
+            catch (Exception ex)
+            {
+                await _progressHub.ErrorAsync(ex.Message, session);
+                throw;
+            }
         }
 
         public async Task UpdateFromNodeAsync(string session)

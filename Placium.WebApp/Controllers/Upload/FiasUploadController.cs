@@ -30,5 +30,7 @@ namespace Placium.WebApp.Controllers.Upload
                 Label = "Обновление БД ФИАС (fias_delta_dbf.zip)"
             };
         }
+        protected override string GetSession() => nameof(FiasUploadController);
+
     }
 }

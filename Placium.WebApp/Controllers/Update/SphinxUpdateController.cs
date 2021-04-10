@@ -20,5 +20,7 @@ namespace Placium.WebApp.Controllers.Update
                 Label = "Добавление новых записей в Sphinx"
             };
         }
+        protected override string GetSession() => nameof(SphinxUpdateController);
+
     }
 }

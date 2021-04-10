@@ -20,5 +20,7 @@ namespace Placium.WebApp.Controllers.Update
                 Label = "Добавление записей Placex в Addrx"
             };
         }
+
+        protected override string GetSession() => nameof(AddrxUpdateController);
     }
 }

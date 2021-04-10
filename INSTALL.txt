@@ -16,30 +16,25 @@ docker-compose --version
 sudo apt install git wget
 
 cd /opt2
-mkdir upload
+mkdir -p upload
+mkdir -p fias/data
+mkdir -p osm/data
+mkdir -p manticore/run
+mkdir -p manticore/log
+mkdir -p manticore/data
+mkdir -p nginx/conf
+mkdir -p nginx/cache
 cd upload
 wget -c https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf
 wget -c https://download.geofabrik.de/russia-latest.osm.pbf
 wget -c https://fias-file.nalog.ru/downloads/2021.04.02/fias_dbf.zip
-cd /opt2
-mkdir fias
-mkdir fias/data
-mkdir osm
-mkdir osm/data
-mkdir manticore
-mkdir manticore/run
-mkdir manticore/log
-mkdir manticore/data
-mkdir nginx
-mkdir nginx/conf
-mkdir nginx/cache
 
-git clone https://github.com/dprotopopov/placium.git
-cp placium/nginx.conf /opt2/nginx/conf/
-cp placium/manticore.conf /opt2/manticore/
-cd placium
-docker-compose -f docker-compose.yml -f docker-compose.yandex.yml build
-docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up -d --remove-orphans
+cd && git clone https://github.com/dprotopopov/placium.git
+cd && cp placium/nginx.conf /opt2/nginx/conf/
+cd && cp placium/manticore.conf /opt2/manticore/
+cd && cd placium
+cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.yandex.yml build
+cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up -d --remove-orphans
 docker-compose -f docker-compose.yml -f docker-compose.override.yml build
 docker-compose -f docker-compose.yml -f docker-compose.override.yml up --remove-orphans
 docker-compose down

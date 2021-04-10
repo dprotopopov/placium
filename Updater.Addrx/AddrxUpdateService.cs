@@ -21,58 +21,61 @@ namespace Updater.Addrx
 
         public async Task UpdateAsync(string session)
         {
-            var id = Guid.NewGuid().ToString();
-            await _progressHub.InitAsync(id, session);
-
-            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+            try
             {
-                await connection.OpenAsync();
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Addrx.CreateTable.sql",
-                    connection);
-
-                var keys = new[]
+                using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
                 {
-                    "addr:region",
-                    "addr:district",
-                    "addr:subdistrict",
-                    "addr:city",
-                    "addr:suburb",
-                    "addr:hamlet",
-                    "addr:street",
-                    "addr:housenumber"
-                };
+                    await connection.OpenAsync();
 
-                var total = 0L;
+                    await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Addrx.CreateTable.sql",
+                        connection);
 
-                using (var command = new NpgsqlCommand(string.Join(";",
-                    "SELECT COUNT(*) FROM placex WHERE tags?|@keys OR tags?'place'", "SELECT id FROM placex WHERE tags?|@keys OR tags?'place'"), connection))
-                {
-                    command.Parameters.AddWithValue("keys", keys.ToArray());
-
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
+                    var keys = new[]
                     {
-                        if (reader.Read())
-                            total = reader.GetInt64(0);
+                        "addr:region",
+                        "addr:district",
+                        "addr:subdistrict",
+                        "addr:city",
+                        "addr:suburb",
+                        "addr:hamlet",
+                        "addr:street",
+                        "addr:housenumber"
+                    };
 
-                        reader.NextResult();
+                    var total = 0L;
 
-                        var current = 0L;
-                        var take = 1000;
+                    using (var command = new NpgsqlCommand(string.Join(";",
+                        "SELECT COUNT(*) FROM placex WHERE tags?|@keys OR tags?'place'",
+                        "SELECT id FROM placex WHERE tags?|@keys OR tags?'place'"), connection))
+                    {
+                        command.Parameters.AddWithValue("keys", keys.ToArray());
 
-                        var obj = new object();
-                        var reader_is_empty = false;
+                        command.Prepare();
 
-                        Parallel.For(0, 12,
-                            i =>
-                            {
-                                using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                                total = reader.GetInt64(0);
+
+                            reader.NextResult();
+
+                            var current = 0L;
+                            var take = 1000;
+
+                            var obj = new object();
+                            var reader_is_empty = false;
+
+                            Parallel.For(0, 12,
+                                i =>
                                 {
-                                    connection2.Open();
+                                    using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
+                                    {
+                                        connection2.Open();
 
-                                    using (var command2 = new NpgsqlCommand(@"INSERT INTO addrx(id,tags)
+                                        using (var command2 = new NpgsqlCommand(@"INSERT INTO addrx(id,tags)
                                         SELECT id, hstore(array_agg(key), array_agg(val)) as tags
                                         FROM (SELECT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
                                         JOIN placex p ON c.location&&p.location
@@ -87,48 +90,55 @@ namespace Updater.Addrx
                                         AND ST_Within(c.location,p.location)
                                         WHERE c.id=ANY(@ids) AND p.tags?'place') as q WHERE key like 'addr%' GROUP BY id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
-                                        connection2))
-                                    {
-                                        command2.Parameters.AddWithValue("keys", keys.ToArray());
-                                        command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-
-                                        command2.Prepare();
-
-                                        while (true)
+                                            connection2))
                                         {
-                                            List<long> list;
-                                            lock (obj)
+                                            command2.Parameters.AddWithValue("keys", keys.ToArray());
+                                            command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+
+                                            command2.Prepare();
+
+                                            while (true)
                                             {
-                                                if (reader_is_empty) break;
-                                                list = GetLongs(reader, take);
-                                                reader_is_empty = list.Count() < take;
-                                                if (!list.Any()) break;
-                                            }
+                                                List<long> list;
+                                                lock (obj)
+                                                {
+                                                    if (reader_is_empty) break;
+                                                    list = GetLongs(reader, take);
+                                                    reader_is_empty = list.Count() < take;
+                                                    if (!list.Any()) break;
+                                                }
 
-                                            command2.Parameters["ids"].Value = list.ToArray();
+                                                command2.Parameters["ids"].Value = list.ToArray();
 
-                                            command2.ExecuteNonQuery();
+                                                command2.ExecuteNonQuery();
 
-                                            lock (obj)
-                                            {
-                                                current += list.Count();
+                                                lock (obj)
+                                                {
+                                                    current += list.Count();
 
-                                                _progressHub.ProgressAsync(100f * current / total, id, session)
-                                                    .GetAwaiter()
-                                                    .GetResult();
+                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                        .GetAwaiter()
+                                                        .GetResult();
+                                                }
                                             }
                                         }
+
+                                        connection2.Close();
                                     }
-
-                                    connection2.Close();
-                                }
-                            });
+                                });
+                        }
                     }
+
+                    await connection.CloseAsync();
+
+                    await _progressHub.ProgressAsync(100f, id, session);
+                    await _progressHub.CompleteAsync(session);
                 }
-
-                await connection.CloseAsync();
-
-                await _progressHub.ProgressAsync(100f, id, session);
+            }
+            catch (Exception ex)
+            {
+                await _progressHub.ErrorAsync(ex.Message, session);
+                throw;
             }
         }
 

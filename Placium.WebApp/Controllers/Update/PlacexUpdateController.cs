@@ -20,5 +20,6 @@ namespace Placium.WebApp.Controllers.Update
                 Label = "Добавление новых записей OSM в Placex"
             };
         }
+        protected override string GetSession() => nameof(PlacexUpdateController);
     }
 }

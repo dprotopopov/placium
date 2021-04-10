@@ -23,22 +23,31 @@ namespace Updater.Sphinx
 
         public async Task UpdateAsync(string session)
         {
-            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            try
             {
-                TryExecuteNonQueries(new[]
+                using (var connection = new MySqlConnection(GetSphinxConnectionString()))
                 {
-                    "CREATE TABLE addrob(title text)",
-                    "CREATE TABLE house(title text)",
-                    "CREATE TABLE stead(title text)",
-                    "CREATE TABLE placex(title text)",
-                    "CREATE TABLE addrx(title text,priority int)"
-                }, connection);
+                    TryExecuteNonQueries(new[]
+                    {
+                        "CREATE TABLE addrob(title text)",
+                        "CREATE TABLE house(title text)",
+                        "CREATE TABLE stead(title text)",
+                        "CREATE TABLE placex(title text)",
+                        "CREATE TABLE addrx(title text,priority int)"
+                    }, connection);
 
-                await UpdateAddrobAsync(connection, session);
-                await UpdateHouseAsync(connection, session);
-                await UpdateSteadAsync(connection, session);
-                await UpdatePlacexAsync(connection, session);
-                await UpdateAddrxAsync(connection, session);
+                    await UpdateAddrobAsync(connection, session);
+                    await UpdateHouseAsync(connection, session);
+                    await UpdateSteadAsync(connection, session);
+                    await UpdatePlacexAsync(connection, session);
+                    await UpdateAddrxAsync(connection, session);
+                    await _progressHub.CompleteAsync(session);
+                }
+            }
+            catch (Exception ex)
+            {
+                await _progressHub.ErrorAsync(ex.Message, session);
+                throw;
             }
         }
 

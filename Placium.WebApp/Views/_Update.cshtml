@@ -1,7 +1,7 @@
 ﻿@{
     ViewData["Title"] = ViewBag.Title;
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var session = Guid.NewGuid();
+    var session = ViewBag.Session;
 }
 
 <h1>@ViewBag.Title</h1>
@@ -31,12 +31,6 @@
                 contentType: false,
                 processData: false,
                 type: "POST",
-                success: function(data) {
-                    alert("Complete");
-                },
-                error: function(jqXHR, exception) {
-                    alert("Error");
-                },
             }
         );
     };
@@ -67,6 +61,18 @@
             function(id, session) {
                 if (session !== '@session') return;
                 if (!$('#' + id).length) appendProgress(id);
+            });
+
+        hubConnection.on("Complete",
+            function(session) {
+                if (session !== '@session') return;
+                alert("Complete");
+            });
+
+        hubConnection.on("Error",
+            function(message, session) {
+                if (session !== '@session') return;
+                alert(message);
             });
 
         hubConnection.start();

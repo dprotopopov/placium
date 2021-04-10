@@ -30,5 +30,6 @@ namespace Placium.WebApp.Controllers.Upload
                 Label = "База данных OSM"
             };
         }
+        protected override string GetSession() => nameof(OsmUploadController);
     }
 }
