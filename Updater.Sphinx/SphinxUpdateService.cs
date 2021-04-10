@@ -543,7 +543,8 @@ namespace Updater.Sphinx
                             if (docs.Any())
                             {
                                 var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority) VALUES ");
-                                sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority})")));
+                                sb.Append(string.Join(",",
+                                    docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority})")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
@@ -686,9 +687,8 @@ namespace Updater.Sphinx
                         return mySqlCommand.ExecuteNonQuery();
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine(ex.Message);
                 }
         }
     }

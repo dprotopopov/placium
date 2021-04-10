@@ -78,8 +78,6 @@ services:
     container_name: manticore-placium
     image: manticoresearch/manticore
     restart: always
-    ports:
-      - 9306:9306  
     ulimits:
       nproc: 65535
       nofile:
