@@ -12,11 +12,12 @@ services:
     volumes:
       - //y/placium/osm/data:/var/lib/postgresql/data
 
-  sphinx-placium:
+  manticore-placium:
     volumes:
-      - //y/placium/sphinx/conf:/etc/sphinxsearch:ro
-      - //y/placium/sphinx/data:/var/lib/sphinx/data
-
+      - //y/placium/manticore/log:/var/lib/manticore/log
+      - //y/placium/manticore/data:/var/lib/manticore/data
+      - //y/placium/manticore/manticore.conf:/etc/manticoresearch/manticore.conf:ro
+ 
   nginx-placium:
     volumes:
       - //y/placium/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro

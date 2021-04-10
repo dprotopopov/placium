@@ -45,7 +45,7 @@ namespace Loader.Fias
             {new Regex(@"^dhouse$", RegexOptions.IgnoreCase), "houseid"},
             {new Regex(@"^droom$", RegexOptions.IgnoreCase), "roomid"},
             {new Regex(@"^dstead$", RegexOptions.IgnoreCase), "steadid"},
-            {new Regex(@"^dnordoc$", RegexOptions.IgnoreCase), "docimgid"},
+            {new Regex(@"^dnordoc$", RegexOptions.IgnoreCase), "normdocid"},
             {new Regex(@"^addrob\d+$", RegexOptions.IgnoreCase), "aoid"},
             {new Regex(@"^house\d+$", RegexOptions.IgnoreCase), "houseid"},
             {new Regex(@"^room\d+$", RegexOptions.IgnoreCase), "roomid"},
@@ -322,14 +322,23 @@ namespace Loader.Fias
             {
                 new[]
                 {
-                    $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_number BIGINT DEFAULT nextval(''record_number_seq'');') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                    $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_id BIGINT DEFAULT nextval(''record_id_seq'');') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                    $"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND (CONCAT(table_name, 'id')=column_name OR column_name IN ('aoid', 'houseid', 'roomid', 'steadid', 'rmtypeid', 'fltypeid', 'housestid', 'kod_t_st', 'ndtypeid')) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
+                    $@"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_number BIGINT DEFAULT nextval(''record_number_seq'');')
+                    FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
+                    $@"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD COLUMN record_id BIGINT DEFAULT nextval(''record_id_seq'');')
+                    FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
+                    $@"SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (', column_name, ');')
+                    FROM information_schema.columns WHERE table_schema = 'public' AND (CONCAT(table_name, 'id')=column_name
+                    OR column_name IN ({string.Join(",", _masks.Values.Select(x => $"'{x}'"))}))
+                    AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
                 },
                 new[]
                 {
-                    $"SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name like ANY(ARRAY['%guid','%status','%level','%date','shortname','scname']) AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                    $"SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id') AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
+                    $@"SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');')
+                    FROM information_schema.columns WHERE table_schema = 'public' AND column_name like ANY(ARRAY['%guid','%status','%level','%date','shortname','scname'])
+                    AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
+                    $@"SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');')
+                    FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id')
+                    AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
                 }
             };
 
@@ -345,7 +354,8 @@ namespace Loader.Fias
             {
                 new[]
                 {
-                    $"SELECT CONCAT('DELETE FROM ', table_name, ' USING d{tableName} WHERE d{tableName}.{key}=', table_name, '.{key}') FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE '{tableName}%'"
+                    $@"SELECT CONCAT('DELETE FROM ', table_name, ' USING d{tableName} WHERE d{tableName}.{key}=', table_name, '.{key}')
+                    FROM information_schema.tables WHERE table_schema='public' AND table_name LIKE '{tableName}%'"
                 }
             };
 

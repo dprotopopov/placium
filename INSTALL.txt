@@ -21,20 +21,22 @@ cd upload
 wget -c https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf
 wget -c https://download.geofabrik.de/russia-latest.osm.pbf
 wget -c https://fias-file.nalog.ru/downloads/2021.04.02/fias_dbf.zip
-cd
+cd /opt2
 mkdir fias
 mkdir fias/data
 mkdir osm
 mkdir osm/data
-mkdir sphinx
-mkdir sphinx/conf
-mkdir sphinx/data
+mkdir manticore
+mkdir manticore/log
+mkdir manticore/data
 mkdir nginx
 mkdir nginx/conf
 mkdir nginx/cache
 
 git clone https://github.com/dprotopopov/placium.git
 cp placium/nginx.conf /opt2/nginx/conf/
+cp placium/manticore.conf /opt2/manticore/
 cd placium
+docker-compose -f docker-compose.yml -f docker-compose.yandex.yml build
 docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up
 docker logs

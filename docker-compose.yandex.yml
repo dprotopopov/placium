@@ -12,10 +12,11 @@ services:
     volumes:
       - /opt2/osm/data:/var/lib/postgresql/data
 
-  sphinx-placium:
+  manticore-placium:
     volumes:
-      - /opt2/sphinx/conf:/etc/sphinxsearch:ro
-      - /opt2/sphinx/data:/var/lib/sphinx/data
+      - /opt2/manticore/log:/var/lib/manticore/log
+      - /opt2/manticore/data:/var/lib/manticore/data
+      - /opt2/manticore/manticore.conf:/etc/manticoresearch/manticore.conf:ro
 
   nginx-placium:
     volumes:

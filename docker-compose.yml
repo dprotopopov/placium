@@ -16,13 +16,13 @@ services:
     depends_on:
       - fias-placium
       - osm-placium
-      - sphinx-placium
+      - manticore-placium
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
-      ConnectionStrings__SphinxConnection: "Host=sphinx-placium;Port=9306;Command Timeout=0"
+      ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
       UploadConfig__Path: "/upload"
       AccountConfig__Password: "${ADMIN_PASSWORD}"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9966
@@ -38,13 +38,13 @@ services:
     depends_on:
       - fias-placium
       - osm-placium
-      - sphinx-placium
+      - manticore-placium
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
-      ConnectionStrings__SphinxConnection: "Host=sphinx-placium;Port=9306;Command Timeout=0"
+      ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
     networks:
@@ -78,6 +78,21 @@ services:
     image: "stefobark/sphinxdocker"
     container_name: sphinx-placium
     restart: always
+    networks:
+      - placium
+
+  manticore-placium:
+    container_name: manticore-placium
+    image: manticoresearch/manticore
+    restart: always
+    ulimits:
+      nproc: 65535
+      nofile:
+         soft: 65535
+         hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
     networks:
       - placium
 
