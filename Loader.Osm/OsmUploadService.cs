@@ -76,6 +76,9 @@ namespace Loader.Osm
             {
                 await connection.OpenAsync();
 
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
+
                 DropTables(connection);
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTables.sql", connection);
@@ -85,9 +88,6 @@ namespace Loader.Osm
                 {
                     TextWriter writer = null;
                     var lastType = ElementType.None;
-
-                    var id = Guid.NewGuid().ToString();
-                    await _progressHub.InitAsync(id, session);
 
                     foreach (var element in source)
                     {
@@ -185,10 +185,11 @@ namespace Loader.Osm
                     }
 
                     writer?.Dispose();
-                    await _progressHub.ProgressAsync(100f, id, session);
                 }
 
                 BuildIndices(connection);
+
+                await _progressHub.ProgressAsync(100f, id, session);
 
                 await connection.CloseAsync();
             }
@@ -200,6 +201,9 @@ namespace Loader.Osm
             {
                 await connection.OpenAsync();
 
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
+
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.sql",
                     connection);
 
@@ -208,9 +212,6 @@ namespace Loader.Osm
                 {
                     TextWriter writer = null;
                     var lastType = ElementType.None;
-
-                    var id = Guid.NewGuid().ToString();
-                    await _progressHub.InitAsync(id, session);
 
                     foreach (var element in source)
                     {
@@ -308,11 +309,12 @@ namespace Loader.Osm
                     }
 
                     writer?.Dispose();
-                    await _progressHub.ProgressAsync(100f, id, session);
                 }
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql",
                     connection);
+
+                await _progressHub.ProgressAsync(100f, id, session);
 
                 await connection.CloseAsync();
             }

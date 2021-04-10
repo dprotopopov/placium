@@ -21,7 +21,7 @@ namespace Loader.Fias
             {"addrob", "aoid"},
             {"house", "houseid"},
             {"room", "roomid"},
-            {"stead", "steadid"},
+            {"stead", "steadid"}
         };
 
         private readonly Encoding _encoding = Encoding.GetEncoding("cp866");
@@ -47,7 +47,7 @@ namespace Loader.Fias
             {new Regex(@"^addrob\d+$", RegexOptions.IgnoreCase), "aoid"},
             {new Regex(@"^house\d+$", RegexOptions.IgnoreCase), "houseid"},
             {new Regex(@"^room\d+$", RegexOptions.IgnoreCase), "roomid"},
-            {new Regex(@"^stead\d+$", RegexOptions.IgnoreCase), "steadid"},
+            {new Regex(@"^stead\d+$", RegexOptions.IgnoreCase), "steadid"}
         };
 
         private readonly ProgressHub _progressHub;
@@ -67,6 +67,9 @@ namespace Loader.Fias
             {
                 await connection.OpenAsync();
 
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
+
                 DropTables(connection);
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql",
@@ -74,9 +77,6 @@ namespace Loader.Fias
 
                 using (var archive = new ZipArchive(uploadStream))
                 {
-                    var id = Guid.NewGuid().ToString();
-                    await _progressHub.InitAsync(id, session);
-
                     foreach (var entry in archive.Entries)
                     {
                         if (entry.FullName.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
@@ -88,56 +88,62 @@ namespace Loader.Fias
                                 skip = skip || pair.Key.IsMatch(tableName) && !pair.Value.IsMatch(tableName);
 
                             if (!skip)
-                                using (var stream = entry.Open())
-                                {
-                                    using (var table = Table.Open(stream, HeaderLoader.Default))
+                            {
+                                var key = FindKey(tableName);
+
+                                if (!string.IsNullOrEmpty(key))
+
+                                    using (var stream = entry.Open())
                                     {
-                                        var reader = table.OpenReader(_encoding);
-                                        var columns = table.Columns;
-
-                                        var names = columns.Select(x => x.Name.ToLower()).ToList();
-
-                                        TextWriter writer = null;
-                                        var buildIndices = false;
-
-                                        while (reader.Read())
+                                        using (var table = Table.Open(stream, HeaderLoader.Default))
                                         {
-                                            if (writer == null)
-                                            {
-                                                using (var command = new NpgsqlCommand(string.Join(";",
-                                                        $"DROP TABLE IF EXISTS {tableName}",
-                                                        $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
-                                                    , connection))
-                                                {
-                                                    command.Prepare();
+                                            var reader = table.OpenReader(_encoding);
+                                            var columns = table.Columns;
 
-                                                    command.ExecuteNonQuery();
+                                            var names = columns.Select(x => x.Name.ToLower()).ToList();
+
+                                            TextWriter writer = null;
+                                            var buildIndices = false;
+
+                                            while (reader.Read())
+                                            {
+                                                if (writer == null)
+                                                {
+                                                    using (var command = new NpgsqlCommand(string.Join(";",
+                                                            $"DROP TABLE IF EXISTS {tableName}",
+                                                            $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
+                                                        , connection))
+                                                    {
+                                                        command.Prepare();
+
+                                                        command.ExecuteNonQuery();
+                                                    }
+
+                                                    writer = connection.BeginTextImport(
+                                                        $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
+
+                                                    buildIndices = true;
                                                 }
 
-                                                writer = connection.BeginTextImport(
-                                                    $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
-
-                                                buildIndices = true;
+                                                var values = columns.Select(x => x.ValueAsText(reader)).ToList();
+                                                writer.WriteLine(string.Join("\t", values));
                                             }
 
-                                            var values = columns.Select(x => x.ValueAsText(reader)).ToList();
-                                            writer.WriteLine(string.Join("\t", values));
+                                            writer?.Dispose();
+
+                                            if (buildIndices)
+                                                BuildIndices(new[] {tableName}, connection);
                                         }
-
-                                        writer?.Dispose();
-
-                                        if (buildIndices)
-                                            BuildIndices(new[] {tableName}, connection);
                                     }
-                                }
+                            }
                         }
 
                         await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
                             session);
                     }
-
-                    await _progressHub.ProgressAsync(100f, id, session);
                 }
+
+                await _progressHub.ProgressAsync(100f, id, session);
 
                 await connection.CloseAsync();
             }
@@ -153,11 +159,11 @@ namespace Loader.Fias
             {
                 await connection.OpenAsync();
 
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
+
                 using (var archive = new ZipArchive(uploadStream))
                 {
-                    var id = Guid.NewGuid().ToString();
-                    await _progressHub.InitAsync(id, session);
-
                     foreach (var entry in archive.Entries)
                     {
                         if (entry.FullName.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
@@ -253,11 +259,11 @@ namespace Loader.Fias
                         await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
                             session);
                     }
-
-                    await _progressHub.ProgressAsync(100f, id, session);
                 }
 
                 foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
+
+                await _progressHub.ProgressAsync(100f, id, session);
 
                 await connection.CloseAsync();
             }
