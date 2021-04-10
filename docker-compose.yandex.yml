@@ -14,6 +14,7 @@ services:
 
   manticore-placium:
     volumes:
+      - /opt2/manticore/run:/var/manticore/run
       - /opt2/manticore/log:/var/manticore/log
       - /opt2/manticore/data:/var/manticore/data
       - /opt2/manticore/manticore.conf:/etc/manticoresearch/manticore.conf

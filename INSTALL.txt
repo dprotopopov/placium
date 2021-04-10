@@ -27,6 +27,7 @@ mkdir fias/data
 mkdir osm
 mkdir osm/data
 mkdir manticore
+mkdir manticore/run
 mkdir manticore/log
 mkdir manticore/data
 mkdir nginx
