@@ -3,9 +3,9 @@ using Updater.Placex;
 
 namespace Placium.WebApp.Controllers.Update
 {
-    public class PlaceUpdateController : UpdateController<PlacexUpdateService>
+    public class PlacexUpdateController : UpdateController<PlacexUpdateService>
     {
-        public PlaceUpdateController(IConfiguration configuration, PlacexUpdateService updateService) : base(configuration,
+        public PlacexUpdateController(IConfiguration configuration, PlacexUpdateService updateService) : base(configuration,
             updateService)
         {
         }

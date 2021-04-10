@@ -8,13 +8,13 @@ using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
 
-namespace Updater.Addr
+namespace Updater.Addrx
 {
-    public class AddrUpdateService : BaseService, IUpdateService
+    public class AddrxUpdateService : BaseService, IUpdateService
     {
         private readonly ProgressHub _progressHub;
 
-        public AddrUpdateService(IConfiguration configuration, ProgressHub progressHub) : base(configuration)
+        public AddrxUpdateService(IConfiguration configuration, ProgressHub progressHub) : base(configuration)
         {
             _progressHub = progressHub;
         }
@@ -28,7 +28,7 @@ namespace Updater.Addr
             {
                 await connection.OpenAsync();
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Addr.CreateTable.sql",
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Addrx.CreateTable.sql",
                     connection);
 
                 var keys = new[]
@@ -72,7 +72,7 @@ namespace Updater.Addr
                                 {
                                     connection2.Open();
 
-                                    using (var command2 = new NpgsqlCommand(@"INSERT INTO addr(id,tags)
+                                    using (var command2 = new NpgsqlCommand(@"INSERT INTO addrx(id,tags)
                                         SELECT id, hstore(array_agg(key), array_agg(val)) as tags
                                         FROM (SELECT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
                                         JOIN placex p ON c.location&&p.location

@@ -22,7 +22,7 @@ CREATE SEQUENCE record_number_seq;
 CREATE SEQUENCE record_id_seq;
 
 CREATE TYPE osm_type AS ENUM ('node', 'way', 'relation');
-CREATE TYPE service_type AS ENUM ('node', 'way', 'relation', 'placex', 'addr');
+CREATE TYPE service_type AS ENUM ('node', 'way', 'relation', 'placex', 'addrx');
 CREATE TYPE relation_member AS (
 	id BIGINT, 
     role VARCHAR(255),

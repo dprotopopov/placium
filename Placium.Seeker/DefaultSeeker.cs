@@ -408,7 +408,7 @@ namespace Placium.Seeker
                 {
                     var ids = new List<long>();
                     ids.FillAll(
-                        $"SELECT id FROM addr WHERE MATCH('{match}') AND priority={priority}",
+                        $"SELECT id FROM addrx WHERE MATCH('{match}') AND priority={priority}",
                         connection);
 
                     if (!ids.Any()) continue;

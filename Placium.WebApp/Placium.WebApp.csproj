@@ -35,7 +35,7 @@
     <ProjectReference Include="..\Placium.Seeker\Placium.Seeker.csproj" />
     <ProjectReference Include="..\Placium.Services\Placium.Services.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
-    <ProjectReference Include="..\Updater.Addr\Updater.Addr.csproj" />
+    <ProjectReference Include="..\Updater.Addrx\Updater.Addrx.csproj" />
     <ProjectReference Include="..\Updater.Placex\Updater.Placex.csproj" />
     <ProjectReference Include="..\Updater.Sphinx\Updater.Sphinx.csproj" />
   </ItemGroup>

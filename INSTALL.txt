@@ -37,4 +37,4 @@ git clone https://github.com/dprotopopov/placium.git
 cp placium/nginx.conf /opt2/nginx/conf/
 cd placium
 docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up
-docker logs --follow placium/webapp-placium
+docker logs

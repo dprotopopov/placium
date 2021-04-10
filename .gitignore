@@ -34,6 +34,7 @@ WebUI/hls/
 .postgres/
 .sphinx/
 .upload/
+temp-keys/
 
 # MSTest test Results
 [Tt]est[Rr]esult*/

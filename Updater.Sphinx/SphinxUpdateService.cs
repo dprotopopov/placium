@@ -31,14 +31,14 @@ namespace Updater.Sphinx
                     "CREATE TABLE house(text field)",
                     "CREATE TABLE stead(text field)",
                     "CREATE TABLE placex(text field)",
-                    "CREATE TABLE addr(text field,priority int)"
+                    "CREATE TABLE addrx(text field,priority int)"
                 }, connection);
 
                 await UpdateAddrobAsync(connection, session);
                 await UpdateHouseAsync(connection, session);
                 await UpdateSteadAsync(connection, session);
                 await UpdatePlacexAsync(connection, session);
-                await UpdateAddrAsync(connection, session);
+                await UpdateAddrxAsync(connection, session);
             }
         }
 
@@ -497,7 +497,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdateAddrAsync(MySqlConnection connection, string session)
+        private async Task UpdateAddrxAsync(MySqlConnection connection, string session)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             {
@@ -512,14 +512,14 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addr);
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
-                    "SELECT COUNT(*) FROM addr WHERE record_number>@last_record_number";
+                    "SELECT COUNT(*) FROM addrx WHERE record_number>@last_record_number";
 
                 var sql =
-                    "SELECT id,tags FROM addr WHERE record_number>@last_record_number";
+                    "SELECT id,tags FROM addrx WHERE record_number>@last_record_number";
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 {
@@ -542,7 +542,7 @@ namespace Updater.Sphinx
 
                             if (docs.Any())
                             {
-                                var sb = new StringBuilder("REPLACE INTO addr(id,text,priority) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO addrx(id,text,priority) VALUES ");
                                 sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority})")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
@@ -557,7 +557,7 @@ namespace Updater.Sphinx
                     }
                 }
 
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addr, next_last_record_number);
+                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, next_last_record_number);
 
                 await npgsqlConnection.CloseAsync();
 
