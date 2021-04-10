@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Configuration;
 using Updater.Addrx;
 
 namespace Placium.WebApp.Controllers.Update
 {
+    [Authorize]
     public class AddrxUpdateController : UpdateController<AddrxUpdateService>
     {
         public AddrxUpdateController(IConfiguration configuration, AddrxUpdateService updateService) : base(configuration,

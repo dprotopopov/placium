@@ -3,12 +3,14 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Placium.WebApp.Models;
 
 namespace Placium.WebApp.Controllers
 {
+    [Authorize]
     public class AccountController : Controller
     {
         private readonly AccountConfig _accountConfig;
@@ -19,6 +21,7 @@ namespace Placium.WebApp.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login()
         {
             return View();
@@ -26,6 +29,7 @@ namespace Placium.WebApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AllowAnonymous]
         public async Task<IActionResult> Login(LoginModel model)
         {
             if (ModelState.IsValid)
@@ -54,7 +58,11 @@ namespace Placium.WebApp.Controllers
             var id = new ClaimsIdentity(claims, "ApplicationCookie", ClaimsIdentity.DefaultNameClaimType,
                 ClaimsIdentity.DefaultRoleClaimType);
             // установка аутентификационных куки
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(id));
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(id),
+                new AuthenticationProperties
+                {
+                    IsPersistent = true
+                });
         }
 
         public async Task<IActionResult> Logout()

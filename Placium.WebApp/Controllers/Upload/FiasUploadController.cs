@@ -1,9 +1,11 @@
 ﻿using Loader.Fias;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Placium.WebApp.Controllers.Upload
 {
+    [Authorize]
     public class FiasUploadController : UploadController<FiasUploadService>
     {
         public FiasUploadController(IConfiguration configuration, FiasUploadService uploadService,

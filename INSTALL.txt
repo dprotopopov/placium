@@ -39,7 +39,8 @@ cp placium/nginx.conf /opt2/nginx/conf/
 cp placium/manticore.conf /opt2/manticore/
 cd placium
 docker-compose -f docker-compose.yml -f docker-compose.yandex.yml build
-docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up
+docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up -d --remove-orphans
 docker-compose -f docker-compose.yml -f docker-compose.override.yml build
-docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+docker-compose -f docker-compose.yml -f docker-compose.override.yml up --remove-orphans
+docker-compose down
 docker logs

@@ -1,9 +1,11 @@
 ﻿using Loader.Osm;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace Placium.WebApp.Controllers.Upload
 {
+    [Authorize]
     public class OsmUploadController : UploadController<OsmUploadService>
     {
         public OsmUploadController(IConfiguration configuration, OsmUploadService uploadService,
