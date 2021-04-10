@@ -22,7 +22,6 @@ namespace Loader.Fias
             {"house", "houseid"},
             {"room", "roomid"},
             {"stead", "steadid"},
-            {"nordoc", "normdocid"}
         };
 
         private readonly Encoding _encoding = Encoding.GetEncoding("cp866");
@@ -45,12 +44,10 @@ namespace Loader.Fias
             {new Regex(@"^dhouse$", RegexOptions.IgnoreCase), "houseid"},
             {new Regex(@"^droom$", RegexOptions.IgnoreCase), "roomid"},
             {new Regex(@"^dstead$", RegexOptions.IgnoreCase), "steadid"},
-            {new Regex(@"^dnordoc$", RegexOptions.IgnoreCase), "normdocid"},
             {new Regex(@"^addrob\d+$", RegexOptions.IgnoreCase), "aoid"},
             {new Regex(@"^house\d+$", RegexOptions.IgnoreCase), "houseid"},
             {new Regex(@"^room\d+$", RegexOptions.IgnoreCase), "roomid"},
             {new Regex(@"^stead\d+$", RegexOptions.IgnoreCase), "steadid"},
-            {new Regex(@"^nordoc\d+$", RegexOptions.IgnoreCase), "normdocid"}
         };
 
         private readonly ProgressHub _progressHub;
@@ -285,10 +282,6 @@ namespace Loader.Fias
                 {
                     new Regex(@"^stead\d+$", RegexOptions.IgnoreCase),
                     new Regex($@"^stead{region}\d*$", RegexOptions.IgnoreCase)
-                },
-                {
-                    new Regex(@"^nordoc\d+$", RegexOptions.IgnoreCase),
-                    new Regex($@"^nordoc{region}\d*$", RegexOptions.IgnoreCase)
                 }
             };
         }
