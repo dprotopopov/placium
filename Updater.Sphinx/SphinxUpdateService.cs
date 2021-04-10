@@ -27,11 +27,11 @@ namespace Updater.Sphinx
             {
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrob(text field)",
-                    "CREATE TABLE house(text field)",
-                    "CREATE TABLE stead(text field)",
-                    "CREATE TABLE placex(text field)",
-                    "CREATE TABLE addrx(text field,priority int)"
+                    "CREATE TABLE addrob(title text)",
+                    "CREATE TABLE house(title text)",
+                    "CREATE TABLE stead(title text)",
+                    "CREATE TABLE placex(title text)",
+                    "CREATE TABLE addrx(title text,priority int)"
                 }, connection);
 
                 await UpdateAddrobAsync(connection, session);
@@ -153,7 +153,7 @@ namespace Updater.Sphinx
                                     from doc in ps.DefaultIfEmpty()
                                     select new {doc1.id, text = $"#{doc1.text} @{doc?.text ?? doc1.text}"};
 
-                                var sb = new StringBuilder("REPLACE INTO addrob(id,text) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO addrob(id,title) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
@@ -290,7 +290,7 @@ namespace Updater.Sphinx
                                     from doc in ps.DefaultIfEmpty()
                                     select new {doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}"};
 
-                                var sb = new StringBuilder("REPLACE INTO house(id,text) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO house(id,title) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
@@ -405,7 +405,7 @@ namespace Updater.Sphinx
                                     from doc in ps.DefaultIfEmpty()
                                     select new {doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}"};
 
-                                var sb = new StringBuilder("REPLACE INTO stead(id,text) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO stead(id,title) VALUES ");
                                 sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
@@ -474,7 +474,7 @@ namespace Updater.Sphinx
 
                             if (docs.Any())
                             {
-                                var sb = new StringBuilder("REPLACE INTO placex(id,text) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO placex(id,title) VALUES ");
                                 sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
@@ -542,7 +542,7 @@ namespace Updater.Sphinx
 
                             if (docs.Any())
                             {
-                                var sb = new StringBuilder("REPLACE INTO addrx(id,text,priority) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority) VALUES ");
                                 sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority})")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
