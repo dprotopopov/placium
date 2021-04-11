@@ -350,10 +350,10 @@ namespace Loader.Fias
                 },
                 new[]
                 {
-                    $@"SELECT CONCAT('CREATE INDEX CONCURRENTLY ON ', table_name, ' (', column_name, ');')
+                    $@"SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');')
                     FROM information_schema.columns WHERE table_schema = 'public' AND column_name like ANY(ARRAY['%guid','%status','%level','%date','shortname','scname'])
                     AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})",
-                    $@"SELECT CONCAT('CREATE UNIQUE INDEX CONCURRENTLY ON ', table_name, ' (', column_name, ');')
+                    $@"SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');')
                     FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id')
                     AND table_name IN ({string.Join(",", tableNames.Select(x => $"'{x}'"))})"
                 }
