@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.OpenApi.Models;
 using Placium.Seeker;
 using Placium.Services;
 
@@ -31,6 +32,13 @@ namespace Placium.WebApi
             services.AddControllers();
             services.AddSignalR();
             services.AddHealthChecks();
+
+            services.AddMvc();
+
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = "Placium API", Version = "v1"});
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -40,6 +48,8 @@ namespace Placium.WebApi
             app.UseStaticFiles();
 
             app.UseCors();
+
+            UseSwagger(app);
 
             app.Map("/api", x =>
             {
@@ -57,6 +67,19 @@ namespace Placium.WebApi
             {
                 endpoints.MapControllers();
                 endpoints.MapHealthChecks("/health");
+            });
+        }
+
+        public void UseSwagger(IApplicationBuilder app)
+        {
+            app.UseSwagger(c =>
+                c.RouteTemplate = "api/swagger/{documentName}/swagger.json"
+            );
+
+            app.UseSwaggerUI(c =>
+            {
+                c.RoutePrefix = "api/swagger";
+                c.SwaggerEndpoint("v1/swagger.json", "Placium API");
             });
         }
     }
