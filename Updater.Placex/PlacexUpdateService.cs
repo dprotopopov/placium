@@ -130,7 +130,7 @@ namespace Updater.Placex
                 using (var command = new NpgsqlCommand(
                     string.Join(";",
                         @"INSERT INTO placex(osm_id,osm_type,tags,location)
-                        SELECT osm_id,'node',tags,location FROM temp_placex_node
+                        SELECT osm_id,'node',tags,ST_MakeValid(location) FROM temp_placex_node
                         ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
                         "DROP TABLE temp_placex_node"), connection2))
                 {
@@ -332,7 +332,7 @@ namespace Updater.Placex
                 using (var command = new NpgsqlCommand(
                     string.Join(";",
                         @"INSERT INTO placex(osm_id,osm_type,tags,location)
-                        SELECT osm_id,'way',tags,location FROM temp_placex_way
+                        SELECT osm_id,'way',tags,ST_MakeValid(location) FROM temp_placex_way
                         ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
                         "DROP TABLE temp_placex_way"), connection2))
                 {
@@ -572,7 +572,7 @@ namespace Updater.Placex
                 using (var command = new NpgsqlCommand(
                     string.Join(";",
                         @"INSERT INTO placex(osm_id,osm_type,tags,location)
-                        SELECT osm_id,'relation',tags,location FROM temp_placex_relation
+                        SELECT osm_id,'relation',tags,ST_MakeValid(location) FROM temp_placex_relation
                         ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
                         "DROP TABLE temp_placex_relation"), connection2))
                 {
