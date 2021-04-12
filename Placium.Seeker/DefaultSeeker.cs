@@ -406,7 +406,7 @@ namespace Placium.Seeker
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.UseGeoJson();
 
-                for (var priority = 0; priority < 10; priority++)
+                for (var priority = 0; priority < 20; priority++)
                 {
                     var ids = new List<long>();
                     ids.FillAll(
