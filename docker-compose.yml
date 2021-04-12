@@ -52,6 +52,7 @@ services:
 
   fias-placium:
     image: "postgres"
+    shm_size: '4gb'
     container_name: fias-placium
     restart: always
     environment:
@@ -59,14 +60,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: fias_db
       PGDATA: /var/lib/postgresql/data
-    build:
-      context: .
-      shm_size: '4gb'
     networks:
       - placium
 
   osm-placium:
     image: "postgis/postgis"
+    shm_size: '4gb'
     container_name: osm-placium
     restart: always
     environment:
@@ -74,9 +73,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: osm_db
       PGDATA: /var/lib/postgresql/data
-    build:
-      context: .
-      shm_size: '4gb'
     networks:
       - placium
 
