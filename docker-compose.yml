@@ -26,7 +26,7 @@ services:
       UploadConfig__Path: "/upload"
       AccountConfig__Password: "${ADMIN_PASSWORD}"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9966
-      Kestrel__Endpoints__Https__Url: http://0.0.0.0:9977
+      Kestrel__Endpoints__Https__Url: https://0.0.0.0:9977
     networks:
       - placium
 
@@ -46,7 +46,7 @@ services:
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
-      Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
+      Kestrel__Endpoints__Https__Url: https://0.0.0.0:5001
     networks:
       - placium
 
