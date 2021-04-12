@@ -201,7 +201,9 @@ namespace Placium.Seeker
                 if (house.Any())
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                             listHouse.Select(x =>
-                                $"SELECT houseguid,aoguid FROM {x} WHERE record_id=ANY(@ids) AND startdate<=now() AND now()<enddate")),
+                                $@"SELECT houseguid,aoguid FROM {x}
+                                JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate
+                                WHERE record_id=ANY(@ids)")),
                         connection))
                     {
                         command.Parameters.AddWithValue("ids", house.ToArray());
