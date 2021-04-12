@@ -57,7 +57,7 @@ namespace Updater.Placex
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Node);
+                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Node, full);
                 var next_last_record_number = GetNextLastRecordNumber(connection);
 
                 var keys = new List<string> {"name"};
@@ -165,7 +165,7 @@ namespace Updater.Placex
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Way);
+                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Way, full);
                 var next_last_record_number = GetNextLastRecordNumber(connection);
 
                 var keys = new List<string> {"name"};
@@ -367,7 +367,7 @@ namespace Updater.Placex
                 connection.TypeMapper.MapEnum<OsmType>("osm_type");
                 connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Relation);
+                var last_record_number = GetLastRecordNumber(connection, OsmServiceType.Relation, full);
                 var next_last_record_number = GetNextLastRecordNumber(connection);
 
                 var keys = new List<string> {"name"};
@@ -634,8 +634,10 @@ namespace Updater.Placex
             return false;
         }
 
-        private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type)
+        private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)
         {
+            if (full) return 0;
+
             using (var command = new NpgsqlCommand(
                 "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
                 , connection))
