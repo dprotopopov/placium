@@ -78,14 +78,10 @@ namespace Updater.Addrx
                                         using (var command2 = new NpgsqlCommand(@"INSERT INTO addrx(id,tags)
                                         SELECT id, hstore(array_agg(key), array_agg(val)) as tags
                                         FROM (SELECT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
-                                        JOIN placex p ON c.location&&p.location
-                                        AND c.location@p.location
-                                        AND ST_Within(c.location,p.location)
+                                        JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
                                         WHERE c.id=ANY(@ids) AND p.tags?|@keys UNION ALL
                                         SELECT c.id, concat('addr:',p.tags->'place') as key, p.tags->'name' as val FROM placex c
-                                        JOIN placex p ON c.location&&p.location
-                                        AND c.location@p.location
-                                        AND ST_Within(c.location,p.location)
+                                        JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
                                         WHERE c.id=ANY(@ids) AND p.tags?'place') as q WHERE key like 'addr%' GROUP BY id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                             connection2))
