@@ -59,6 +59,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: fias_db
       PGDATA: /var/lib/postgresql/data
+    build:
+      context: .
+      shm_size: '4gb'
     networks:
       - placium
 
@@ -71,6 +74,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: osm_db
       PGDATA: /var/lib/postgresql/data
+    build:
+      context: .
+      shm_size: '4gb'
     networks:
       - placium
 
