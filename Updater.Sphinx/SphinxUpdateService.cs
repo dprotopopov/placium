@@ -242,12 +242,12 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate WHERE {x}.record_number>@last_record_number"));
+                        $"SELECT COUNT(*) FROM {x} JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate WHERE {x}.record_number>@last_record_number"));
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
                         $@"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}
-                        JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate 
+                        JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE {x}.record_number>@last_record_number"));
 

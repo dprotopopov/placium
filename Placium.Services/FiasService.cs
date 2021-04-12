@@ -62,7 +62,7 @@ namespace Placium.Services
                 _parentHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
                         $@"SELECT aoguid,housenum,buildnum,strucnum,eststat.name FROM {x}
-                        JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate 
+                        JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE houseguid=@p"));
                 _parentSteadSql = string.Join("\nUNION ALL\n",
@@ -81,7 +81,7 @@ namespace Placium.Services
                 _childrenHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
                         $@"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x}
-                        JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate 
+                        JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE aoguid=@p"));
                 _childrenSteadSql = string.Join("\nUNION ALL\n",
@@ -100,7 +100,7 @@ namespace Placium.Services
                 _rootHouseSql = string.Join("\nUNION ALL\n",
                     _listHouse.Select(x =>
                         $@"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x}
-                        JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate 
+                        JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE aoguid IS NULL"));
                 _rootSteadSql = string.Join("\nUNION ALL\n",

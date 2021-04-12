@@ -202,7 +202,7 @@ namespace Placium.Seeker
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
                             listHouse.Select(x =>
                                 $@"SELECT houseguid,aoguid FROM {x}
-                                JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate
+                                JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate
                                 WHERE record_id=ANY(@ids)")),
                         connection))
                     {
