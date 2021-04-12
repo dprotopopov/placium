@@ -7,6 +7,6 @@ namespace Placium.Models
     {
         public long id { get; set; }
         public Dictionary<string, string> tags { get; set; }
-        public GeoJSONObject location { get; set; }
+        public object location { get; set; }
     }
 }
