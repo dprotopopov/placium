@@ -9,19 +9,24 @@
 @using (Html.BeginForm())
 {
     <label>@ViewBag.Label</label>
-    <br/>
-    <input type="hidden" id="session" name="session" value="@session"/>
+    <br />
+    <label>Полное обновление</label>
+    <input type="checkbox" id="full" name="full" />
+    <br />
+    <input type="hidden" id="session" name="session" value="@session" />
     <button type="button" class="btn btn-info" onclick="uploadForm();">Отправить</button>
 }
-<br/>
-<br/>
+<br />
+<br />
 <div id="progresses"></div>
 
 <script type="text/javascript" charset="utf-8">
     function uploadForm() {
         var formData = new FormData();
         var session = document.getElementById("session");
+        var full = document.getElementById("full");
         formData.append("session", session.value);
+        formData.append("full", !!full.value);
 
         $.ajax(
             {

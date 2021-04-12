@@ -22,13 +22,13 @@ namespace Updater.Placex
             _progressHub = progressHub;
         }
 
-        public async Task UpdateAsync(string session)
+        public async Task UpdateAsync(string session, bool full)
         {
             try
             {
-                await UpdateFromNodeAsync(session);
-                await UpdateFromWayAsync(session);
-                await UpdateFromRelationAsync(session);
+                await UpdateFromNodeAsync(session, full);
+                await UpdateFromWayAsync(session, full);
+                await UpdateFromRelationAsync(session, full);
                 await _progressHub.CompleteAsync(session);
             }
             catch (Exception ex)
@@ -38,7 +38,7 @@ namespace Updater.Placex
             }
         }
 
-        public async Task UpdateFromNodeAsync(string session)
+        public async Task UpdateFromNodeAsync(string session, bool full)
         {
             var current = 0L;
             var total = 0L;
@@ -146,7 +146,7 @@ namespace Updater.Placex
             }
         }
 
-        public async Task UpdateFromWayAsync(string session)
+        public async Task UpdateFromWayAsync(string session, bool full)
         {
             var current = 0L;
             var total = 0L;
@@ -348,7 +348,7 @@ namespace Updater.Placex
             }
         }
 
-        public async Task UpdateFromRelationAsync(string session)
+        public async Task UpdateFromRelationAsync(string session, bool full)
         {
             var current = 0L;
             var total = 0L;

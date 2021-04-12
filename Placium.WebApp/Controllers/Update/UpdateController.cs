@@ -34,9 +34,9 @@ namespace Placium.WebApp.Controllers.Update
 
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<IActionResult> Update(string session)
+        public async Task<IActionResult> Update(string session, bool full = false)
         {
-            await UpdateService.UpdateAsync(session);
+            await UpdateService.UpdateAsync(session, full);
 
             return Content("complete");
         }

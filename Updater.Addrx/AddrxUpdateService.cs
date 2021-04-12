@@ -19,7 +19,7 @@ namespace Updater.Addrx
             _progressHub = progressHub;
         }
 
-        public async Task UpdateAsync(string session)
+        public async Task UpdateAsync(string session, bool full)
         {
             try
             {

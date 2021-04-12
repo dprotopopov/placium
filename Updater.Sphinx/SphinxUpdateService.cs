@@ -21,12 +21,22 @@ namespace Updater.Sphinx
             _progressHub = progressHub;
         }
 
-        public async Task UpdateAsync(string session)
+        public async Task UpdateAsync(string session, bool full)
         {
             try
             {
                 using (var connection = new MySqlConnection(GetSphinxConnectionString()))
                 {
+                    if(full)
+                        TryExecuteNonQueries(new[]
+                        {
+                            "DROP TABLE addrob",
+                            "DROP TABLE house",
+                            "DROP TABLE stead",
+                            "DROP TABLE placex",
+                            "DROP TABLE addrx"
+                        }, connection);
+
                     TryExecuteNonQueries(new[]
                     {
                         "CREATE TABLE addrob(title text)",
@@ -36,11 +46,11 @@ namespace Updater.Sphinx
                         "CREATE TABLE addrx(title text,priority int)"
                     }, connection);
 
-                    await UpdateAddrobAsync(connection, session);
-                    await UpdateHouseAsync(connection, session);
-                    await UpdateSteadAsync(connection, session);
-                    await UpdatePlacexAsync(connection, session);
-                    await UpdateAddrxAsync(connection, session);
+                    await UpdateAddrobAsync(connection, session, full);
+                    await UpdateHouseAsync(connection, session, full);
+                    await UpdateSteadAsync(connection, session, full);
+                    await UpdatePlacexAsync(connection, session, full);
+                    await UpdateAddrxAsync(connection, session, full);
                     await _progressHub.CompleteAsync(session);
                 }
             }
@@ -62,7 +72,7 @@ namespace Updater.Sphinx
                 }
         }
 
-        private async Task UpdateAddrobAsync(MySqlConnection connection, string session)
+        private async Task UpdateAddrobAsync(MySqlConnection connection, string session, bool full)
         {
             var socr = true;
             var formal = false;
@@ -82,7 +92,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob);
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list = new List<string>();
@@ -186,7 +196,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdateHouseAsync(MySqlConnection connection, string session)
+        private async Task UpdateHouseAsync(MySqlConnection connection, string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
@@ -203,7 +213,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.House);
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.House, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list2 = new List<string>();
@@ -232,13 +242,14 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
+                        $"SELECT COUNT(*) FROM {x} JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate WHERE {x}.record_number>@last_record_number"));
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
                         $@"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}
+                        JOIN (SELECT now() as now) as q ON startdate<=now AND now<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
-                        WHERE {x}.record_number>@last_record_number AND startdate<=now() AND now()<enddate"));
+                        WHERE {x}.record_number>@last_record_number"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
@@ -323,7 +334,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdateSteadAsync(MySqlConnection connection, string session)
+        private async Task UpdateSteadAsync(MySqlConnection connection, string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
@@ -340,7 +351,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead);
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var list2 = new List<string>();
@@ -438,7 +449,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdatePlacexAsync(MySqlConnection connection, string session)
+        private async Task UpdatePlacexAsync(MySqlConnection connection, string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             {
@@ -453,7 +464,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex);
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
@@ -506,7 +517,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdateAddrxAsync(MySqlConnection connection, string session)
+        private async Task UpdateAddrxAsync(MySqlConnection connection, string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             {
@@ -521,7 +532,7 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx);
+                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
@@ -612,8 +623,10 @@ namespace Updater.Sphinx
             return docs2;
         }
 
-        private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type)
+        private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)
         {
+            if (full) return 0;
+
             using (var command = new NpgsqlCommand(
                 "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
                 , connection))
@@ -664,8 +677,10 @@ namespace Updater.Sphinx
             }
         }
 
-        private long GetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type)
+        private long GetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type, bool full)
         {
+            if (full) return 0;
+
             using (var command = new NpgsqlCommand(
                 "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
                 , connection))
