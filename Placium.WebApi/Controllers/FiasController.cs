@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Placium.Models;
 using Placium.Services;
 
 namespace Placium.WebApi.Controllers
@@ -31,7 +30,8 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetText(string guid, bool formal = false, bool socr = true)
         {
-            return Ok(string.Join(", ", (await _fiasService.GetDetailsAsync(guid, formal, socr)).Select(x => x.ToString())));
+            return Ok(string.Join(", ",
+                (await _fiasService.GetDetailsAsync(guid, formal, socr)).Select(x => x.ToString())));
         }
 
         [HttpGet("{guid}/children")]

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Placium.Models;
 using Placium.Services;
 using Placium.WebApp.Models;
 
@@ -29,7 +30,7 @@ namespace Placium.WebApp.Controllers
             {
                 model.PreviousItems = new List<SelectListItem>();
 
-                model.NextItems = (await _fiasService.GetRootsAsync(socr: true)).Select(x => new SelectListItem
+                model.NextItems = (await _fiasService.GetRootsAsync(socr: true)).Cast<Element>().Select(x => new SelectListItem
                 {
                     Text = x.title,
                     Value = x.guid.ToString()
@@ -37,14 +38,14 @@ namespace Placium.WebApp.Controllers
             }
             else
             {
-                model.PreviousItems = (await _fiasService.GetDetailsAsync(guid, socr: true)).Select(x =>
+                model.PreviousItems = (await _fiasService.GetDetailsAsync(guid, socr: true)).Cast<Element>().Select(x =>
                     new SelectListItem
                     {
                         Text = x.title,
                         Value = x.guid.ToString()
                     }).ToList();
 
-                model.NextItems = (await _fiasService.GetChildrenAsync(guid, socr: true)).Select(x => new SelectListItem
+                model.NextItems = (await _fiasService.GetChildrenAsync(guid, socr: true)).Cast<Element>().Select(x => new SelectListItem
                 {
                     Text = x.title,
                     Value = x.guid.ToString()
