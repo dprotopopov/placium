@@ -277,7 +277,7 @@ namespace Placium.Seeker
                 using (var command =
                     new NpgsqlCommand(
                         @"SELECT tags->@key AS tag  FROM placex
-                        WHERE tags?@key AND ST_DWithin(ST_SetSRID(ST_Point(@longitude,@latitude),4326)::geography,location::geography,@tolerance)
+                        WHERE tags?@key AND ST_DWithin(ST_SetSRID(ST_Point(@longitude,@latitude),4326),location,@tolerance/100000)
                         ORDER BY ST_SetSRID(ST_Point(@longitude,@latitude),4326)<->location LIMIT 1",
                         connection))
                 {
