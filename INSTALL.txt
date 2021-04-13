@@ -13,6 +13,14 @@ sudo curl -L "https://github.com/docker/compose/releases/download/1.28.6/docker-
 sudo chmod +x /usr/local/bin/docker-compose
 docker-compose --version
 
+# http://www.yolinux.com/TUTORIALS/LinuxTutorialAdditionalHardDrive.html
+sudo fdisk /dev/hdb
+	n   add a new partition
+sudo mkfs -t ext4 /dev/hdb1
+sudo mount -t ext4 /dev/hdb1 /opt2
+sudo nano /etc/fstab
+	/dev/hdb1               /opt2                   ext4    defaults        1 2
+
 sudo apt install git wget
 
 cd /opt2
@@ -35,7 +43,9 @@ cd && cp placium/manticore.conf /opt2/manticore/
 cd && cd placium
 cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.yandex.yml build
 cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up -d --remove-orphans
+cd && cd placium && docker-compose logs -f
+cd && cd placium && docker-compose down
+
+
 docker-compose -f docker-compose.yml -f docker-compose.override.yml build
 docker-compose -f docker-compose.yml -f docker-compose.override.yml up --remove-orphans
-docker-compose down
-docker logs
