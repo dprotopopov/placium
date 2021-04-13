@@ -6,5 +6,10 @@ namespace Placium.Models
     {
         public Guid guid { get; set; }
         public string title { get; set; }
+
+        public override string ToString()
+        {
+            return title; 
+        }
     }
 }
