@@ -33,8 +33,6 @@ namespace Placium.WebApi
             services.AddSignalR();
             services.AddHealthChecks();
 
-            services.AddMvc();
-
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo {Title = "Placium API", Version = "v1"});
@@ -51,21 +49,18 @@ namespace Placium.WebApi
 
             UseSwagger(app);
 
-            app.Map("/api", x =>
-            {
-                x.UseRouting();
-
-                x.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-            });
-
             app.UseRouting();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
 
             app.UseAuthentication(); // аутентификация
             app.UseAuthorization(); // авторизация
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
                 endpoints.MapHealthChecks("/health");
             });
         }
@@ -73,12 +68,12 @@ namespace Placium.WebApi
         public void UseSwagger(IApplicationBuilder app)
         {
             app.UseSwagger(c =>
-                c.RouteTemplate = "api/swagger/{documentName}/swagger.json"
+                c.RouteTemplate = "swagger/{documentName}/swagger.json"
             );
 
             app.UseSwaggerUI(c =>
             {
-                c.RoutePrefix = "api/swagger";
+                c.RoutePrefix = "swagger";
                 c.SwaggerEndpoint("v1/swagger.json", "Placium API");
             });
         }

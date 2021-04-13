@@ -8,7 +8,7 @@ using Placium.Seeker;
 namespace Placium.WebApi.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class SeekerController : ControllerBase
     {
         private readonly DefaultSeeker _seeker;

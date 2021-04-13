@@ -8,7 +8,7 @@ using Placium.Services;
 namespace Placium.WebApi.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class PlacexController : ControllerBase
     {
         private readonly PlacexService _placexService;

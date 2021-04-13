@@ -7,7 +7,7 @@ using Placium.Services;
 namespace Placium.WebApi.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class FiasController : ControllerBase
     {
         private readonly FiasService _fiasService;
