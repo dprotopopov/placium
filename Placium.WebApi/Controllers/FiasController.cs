@@ -19,7 +19,7 @@ namespace Placium.WebApi.Controllers
         }
 
         [HttpGet("{guid}/details")]
-        [ProducesResponseType(200, Type = typeof(List<Element>))]
+        [ProducesResponseType(200, Type = typeof(List<object>))]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetDetails(string guid, bool formal = false, bool socr = true)
         {
@@ -35,7 +35,7 @@ namespace Placium.WebApi.Controllers
         }
 
         [HttpGet("{guid}/children")]
-        [ProducesResponseType(200, Type = typeof(List<Element>))]
+        [ProducesResponseType(200, Type = typeof(List<object>))]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetChildren(string guid, bool formal = false, bool socr = true)
         {
@@ -44,7 +44,7 @@ namespace Placium.WebApi.Controllers
 
 
         [HttpGet("roots")]
-        [ProducesResponseType(200, Type = typeof(List<Element>))]
+        [ProducesResponseType(200, Type = typeof(List<object>))]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetRoots(bool formal = false, bool socr = true)
         {

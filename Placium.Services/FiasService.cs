@@ -115,7 +115,7 @@ namespace Placium.Services
             }
         }
 
-        public async Task<List<Element>> GetDetailsAsync(string guid, bool formal = false, bool socr = true)
+        public async Task<List<object>> GetDetailsAsync(string guid, bool formal = false, bool socr = true)
         {
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -123,7 +123,7 @@ namespace Placium.Services
 
                 connection.ReloadTypes();
 
-                var result = new List<Element>();
+                var result = new List<object>();
 
                 if (!string.IsNullOrEmpty(guid))
                     using (var command = new NpgsqlCommand(_parentRoomSql, connection))
@@ -263,7 +263,7 @@ namespace Placium.Services
             }
         }
 
-        public async Task<List<Element>> GetChildrenAsync(string guid, bool formal = false, bool socr = true)
+        public async Task<List<object>> GetChildrenAsync(string guid, bool formal = false, bool socr = true)
         {
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -271,7 +271,7 @@ namespace Placium.Services
 
                 connection.ReloadTypes();
 
-                var result = new List<Element>();
+                var result = new List<object>();
 
                 using (var command = new NpgsqlCommand(string.Join(";",
                     _childrenRoomSql, _childrenHouseSql, _childrenSteadSql, _childrenAddrobSql), connection))
@@ -370,7 +370,7 @@ namespace Placium.Services
             }
         }
 
-        public async Task<List<Element>> GetRootsAsync(bool formal = false, bool socr = true)
+        public async Task<List<object>> GetRootsAsync(bool formal = false, bool socr = true)
         {
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -378,7 +378,7 @@ namespace Placium.Services
 
                 connection.ReloadTypes();
 
-                var result = new List<Element>();
+                var result = new List<object>();
 
                 using (var command = new NpgsqlCommand(string.Join(";",
                     _rootRoomSql, _rootHouseSql, _rootSteadSql, _rootAddrobSql), connection))
