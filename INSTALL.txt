@@ -22,16 +22,17 @@ sudo nano /etc/fstab
 	/dev/hdb1               /opt2                   ext4    defaults        1 2
 
 sudo apt install git wget
+sudo yum install git wget
 
 cd /opt2
-mkdir -p upload
-mkdir -p fias/data
-mkdir -p osm/data
-mkdir -p manticore/run
-mkdir -p manticore/log
-mkdir -p manticore/data
-mkdir -p nginx/conf
-mkdir -p nginx/cache
+sudo mkdir -p upload
+sudo mkdir -p fias/data
+sudo mkdir -p osm/data
+sudo mkdir -p manticore/run
+sudo mkdir -p manticore/log
+sudo mkdir -p manticore/data
+sudo mkdir -p nginx/conf
+sudo mkdir -p nginx/cache
 cd upload
 wget -c https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf
 wget -c https://download.geofabrik.de/russia-latest.osm.pbf
@@ -47,13 +48,13 @@ cd && cd placium && docker-compose logs -f
 cd && cd placium && docker-compose down
 
 cd && git clone https://gitlab.pba.su/protopopovdy/placium.git
-cd && cp placium/nginx.conf /opt2/nginx/conf/
-cd && cp placium/manticore.conf /opt2/manticore/
+cd && sudo cp placium/nginx.conf /opt2/nginx/conf/
+cd && sudo cp placium/manticore.conf /opt2/manticore/
 cd && cd placium
-cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.pba.yml build
-cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.pba.yml up -d --remove-orphans
-cd && cd placium && docker-compose logs -f
-cd && cd placium && docker-compose down
+cd && cd placium && sudo docker-compose -f docker-compose.yml -f docker-compose.pba.yml build
+cd && cd placium && sudo docker-compose -f docker-compose.yml -f docker-compose.pba.yml up -d --remove-orphans
+cd && cd placium && sudo docker-compose logs -f
+cd && cd placium && sudo docker-compose down
 
 
 docker-compose -f docker-compose.yml -f docker-compose.override.yml build
