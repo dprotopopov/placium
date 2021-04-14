@@ -59,61 +59,148 @@ namespace Loader.Fias
 
         public async Task InstallAsync(Stream uploadStream, Dictionary<string, string> options, string session)
         {
-            try
+            var region = options.ContainsKey("region") ? options["region"] : string.Empty;
+
+            var regionMask = RegionMasks(region);
+
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
-                var region = options.ContainsKey("region") ? options["region"] : string.Empty;
+                await connection.OpenAsync();
 
-                var regionMask = RegionMasks(region);
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
 
-                using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
+                DropTables(connection);
+
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql",
+                    connection);
+
+                using (var archive = new ZipArchive(uploadStream))
                 {
-                    await connection.OpenAsync();
-
-                    var id = Guid.NewGuid().ToString();
-                    await _progressHub.InitAsync(id, session);
-
-                    DropTables(connection);
-
-                    await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql",
-                        connection);
-
-                    using (var archive = new ZipArchive(uploadStream))
+                    foreach (var entry in archive.Entries)
                     {
-                        foreach (var entry in archive.Entries)
+                        if (entry.FullName.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (entry.FullName.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
+                            var tableName = Path.GetFileNameWithoutExtension(entry.Name).ToLower();
+
+                            var skip = false;
+                            foreach (var pair in regionMask)
+                                skip = skip || pair.Key.IsMatch(tableName) && !pair.Value.IsMatch(tableName);
+
+                            if (!skip)
                             {
-                                var tableName = Path.GetFileNameWithoutExtension(entry.Name).ToLower();
+                                var key = FindKey(tableName);
 
-                                var skip = false;
-                                foreach (var pair in regionMask)
-                                    skip = skip || pair.Key.IsMatch(tableName) && !pair.Value.IsMatch(tableName);
+                                if (!string.IsNullOrEmpty(key))
 
-                                if (!skip)
-                                {
-                                    var key = FindKey(tableName);
-
-                                    if (!string.IsNullOrEmpty(key))
-
-                                        using (var stream = entry.Open())
+                                    using (var stream = entry.Open())
+                                    {
+                                        using (var table = Table.Open(stream, HeaderLoader.Default))
                                         {
-                                            using (var table = Table.Open(stream, HeaderLoader.Default))
+                                            var reader = table.OpenReader(_encoding);
+                                            var columns = table.Columns;
+
+                                            var names = columns.Select(x => x.Name.ToLower()).ToList();
+
+                                            TextWriter writer = null;
+                                            var buildIndices = false;
+
+                                            while (reader.Read())
                                             {
-                                                var reader = table.OpenReader(_encoding);
-                                                var columns = table.Columns;
-
-                                                var names = columns.Select(x => x.Name.ToLower()).ToList();
-
-                                                TextWriter writer = null;
-                                                var buildIndices = false;
-
-                                                while (reader.Read())
+                                                if (writer == null)
                                                 {
-                                                    if (writer == null)
+                                                    using (var command = new NpgsqlCommand(string.Join(";",
+                                                            $"DROP TABLE IF EXISTS {tableName}",
+                                                            $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
+                                                        , connection))
                                                     {
-                                                        using (var command = new NpgsqlCommand(string.Join(";",
-                                                                $"DROP TABLE IF EXISTS {tableName}",
-                                                                $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
+                                                        command.Prepare();
+
+                                                        command.ExecuteNonQuery();
+                                                    }
+
+                                                    writer = connection.BeginTextImport(
+                                                        $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
+
+                                                    buildIndices = true;
+                                                }
+
+                                                var values = columns.Select(x => x.ValueAsText(reader)).ToList();
+                                                writer.WriteLine(string.Join("\t", values));
+                                            }
+
+                                            writer?.Dispose();
+
+                                            if (buildIndices)
+                                                BuildIndices(new[] {tableName}, connection);
+                                        }
+                                    }
+                            }
+                        }
+
+                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                            session);
+                    }
+                }
+
+                await _progressHub.ProgressAsync(100f, id, session);
+
+                await connection.CloseAsync();
+            }
+        }
+
+        public async Task UpdateAsync(Stream uploadStream, Dictionary<string, string> options, string session)
+        {
+            var region = options.ContainsKey("region") ? options["region"] : string.Empty;
+
+            var regionMask = RegionMasks(region);
+
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
+            {
+                await connection.OpenAsync();
+
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
+
+                using (var archive = new ZipArchive(uploadStream))
+                {
+                    foreach (var entry in archive.Entries)
+                    {
+                        if (entry.FullName.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var tableName = Path.GetFileNameWithoutExtension(entry.Name).ToLower();
+
+                            var skip = false;
+                            foreach (var pair in regionMask)
+                                skip = skip || pair.Key.IsMatch(tableName) && !pair.Value.IsMatch(tableName);
+
+                            if (!skip)
+                            {
+                                var key = FindKey(tableName);
+
+                                if (!string.IsNullOrEmpty(key))
+                                    using (var stream = entry.Open())
+                                    {
+                                        using (var table = Table.Open(stream, HeaderLoader.Default))
+                                        {
+                                            var reader = table.OpenReader(_encoding);
+                                            var columns = table.Columns;
+
+
+                                            var names = columns.Select(x => x.Name.ToLower()).ToList();
+
+                                            TextWriter writer = null;
+                                            var buildIndices = false;
+                                            var insertFromTemp = false;
+
+                                            while (reader.Read())
+                                            {
+                                                if (writer == null)
+                                                {
+                                                    if (!TableIsExists(tableName, connection))
+                                                    {
+                                                        using (var command = new NpgsqlCommand(
+                                                            $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
                                                             , connection))
                                                         {
                                                             command.Prepare();
@@ -126,164 +213,59 @@ namespace Loader.Fias
 
                                                         buildIndices = true;
                                                     }
+                                                    else
+                                                    {
+                                                        using (var command = new NpgsqlCommand(string.Join(";",
+                                                                $"DROP TABLE IF EXISTS temp_{tableName}",
+                                                                $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
+                                                            , connection))
+                                                        {
+                                                            command.Prepare();
 
-                                                    var values = columns.Select(x => x.ValueAsText(reader)).ToList();
-                                                    writer.WriteLine(string.Join("\t", values));
+                                                            command.ExecuteNonQuery();
+                                                        }
+
+                                                        writer = connection.BeginTextImport(
+                                                            $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
+
+                                                        insertFromTemp = true;
+                                                    }
                                                 }
 
-                                                writer?.Dispose();
-
-                                                if (buildIndices)
-                                                    BuildIndices(new[] {tableName}, connection);
+                                                var values = columns.Select(x => x.ValueAsText(reader)).ToList();
+                                                writer.WriteLine(string.Join("\t", values));
                                             }
-                                        }
-                                }
-                            }
 
-                            await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
-                                session);
-                        }
-                    }
+                                            writer?.Dispose();
 
-                    await _progressHub.ProgressAsync(100f, id, session);
-                    await _progressHub.CompleteAsync(session);
-
-                    await connection.CloseAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                await _progressHub.ErrorAsync(ex.Message, session);
-                throw;
-            }
-        }
-
-        public async Task UpdateAsync(Stream uploadStream, Dictionary<string, string> options, string session)
-        {
-            try
-            {
-                var region = options.ContainsKey("region") ? options["region"] : string.Empty;
-
-                var regionMask = RegionMasks(region);
-
-                using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
-                {
-                    await connection.OpenAsync();
-
-                    var id = Guid.NewGuid().ToString();
-                    await _progressHub.InitAsync(id, session);
-
-                    using (var archive = new ZipArchive(uploadStream))
-                    {
-                        foreach (var entry in archive.Entries)
-                        {
-                            if (entry.FullName.EndsWith(".dbf", StringComparison.OrdinalIgnoreCase))
-                            {
-                                var tableName = Path.GetFileNameWithoutExtension(entry.Name).ToLower();
-
-                                var skip = false;
-                                foreach (var pair in regionMask)
-                                    skip = skip || pair.Key.IsMatch(tableName) && !pair.Value.IsMatch(tableName);
-
-                                if (!skip)
-                                {
-                                    var key = FindKey(tableName);
-
-                                    if (!string.IsNullOrEmpty(key))
-                                        using (var stream = entry.Open())
-                                        {
-                                            using (var table = Table.Open(stream, HeaderLoader.Default))
-                                            {
-                                                var reader = table.OpenReader(_encoding);
-                                                var columns = table.Columns;
-
-
-                                                var names = columns.Select(x => x.Name.ToLower()).ToList();
-
-                                                TextWriter writer = null;
-                                                var buildIndices = false;
-                                                var insertFromTemp = false;
-
-                                                while (reader.Read())
+                                            if (insertFromTemp)
+                                                using (var command = new NpgsqlCommand(string.Join(";",
+                                                        $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq')",
+                                                        $"DROP TABLE temp_{tableName}")
+                                                    , connection))
                                                 {
-                                                    if (writer == null)
-                                                    {
-                                                        if (!TableIsExists(tableName, connection))
-                                                        {
-                                                            using (var command = new NpgsqlCommand(
-                                                                $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
-                                                                , connection))
-                                                            {
-                                                                command.Prepare();
+                                                    command.Prepare();
 
-                                                                command.ExecuteNonQuery();
-                                                            }
-
-                                                            writer = connection.BeginTextImport(
-                                                                $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
-
-                                                            buildIndices = true;
-                                                        }
-                                                        else
-                                                        {
-                                                            using (var command = new NpgsqlCommand(string.Join(";",
-                                                                    $"DROP TABLE IF EXISTS temp_{tableName}",
-                                                                    $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
-                                                                , connection))
-                                                            {
-                                                                command.Prepare();
-
-                                                                command.ExecuteNonQuery();
-                                                            }
-
-                                                            writer = connection.BeginTextImport(
-                                                                $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
-
-                                                            insertFromTemp = true;
-                                                        }
-                                                    }
-
-                                                    var values = columns.Select(x => x.ValueAsText(reader)).ToList();
-                                                    writer.WriteLine(string.Join("\t", values));
+                                                    command.ExecuteNonQuery();
                                                 }
 
-                                                writer?.Dispose();
-
-                                                if (insertFromTemp)
-                                                    using (var command = new NpgsqlCommand(string.Join(";",
-                                                            $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq')",
-                                                            $"DROP TABLE temp_{tableName}")
-                                                        , connection))
-                                                    {
-                                                        command.Prepare();
-
-                                                        command.ExecuteNonQuery();
-                                                    }
-
-                                                if (buildIndices)
-                                                    BuildIndices(new[] {tableName}, connection);
-                                            }
+                                            if (buildIndices)
+                                                BuildIndices(new[] {tableName}, connection);
                                         }
-                                }
+                                    }
                             }
-
-                            await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
-                                session);
                         }
+
+                        await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                            session);
                     }
-
-                    foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
-
-                    await _progressHub.ProgressAsync(100f, id, session);
-                    await _progressHub.CompleteAsync(session);
-
-                    await connection.CloseAsync();
                 }
-            }
-            catch (Exception ex)
-            {
-                await _progressHub.ErrorAsync(ex.Message, session);
-                throw;
+
+                foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
+
+                await _progressHub.ProgressAsync(100f, id, session);
+
+                await connection.CloseAsync();
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -12,14 +13,17 @@ namespace Placium.WebApp.Controllers.Upload
 {
     public abstract class UploadController<TService> : Controller where TService : IUploadService
     {
+        protected readonly ProgressHub ProgressHub;
         protected readonly IConfiguration Configuration;
         protected readonly UploadConfig UploadConfig;
         protected readonly TService UploadService;
 
-        public UploadController(IConfiguration configuration, TService uploadService, IOptions<UploadConfig> uploadConfig)
+        public UploadController(IConfiguration configuration, TService uploadService,
+            IOptions<UploadConfig> uploadConfig, ProgressHub progressHub)
         {
             Configuration = configuration;
             UploadService = uploadService;
+            ProgressHub = progressHub;
             UploadConfig = uploadConfig.Value;
         }
 
@@ -32,7 +36,7 @@ namespace Placium.WebApp.Controllers.Upload
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
             ViewBag.Session = GetSession();
-            ViewBag.Files = Directory.GetFiles(UploadConfig.Path).Select(x=> Path.GetFileName(x)).ToArray();
+            ViewBag.Files = Directory.GetFiles(UploadConfig.Path).Select(x => Path.GetFileName(x)).ToArray();
             return View("~/Views/_UploadFromDisk.cshtml");
         }
 
@@ -44,15 +48,26 @@ namespace Placium.WebApp.Controllers.Upload
         [DisableRequestSizeLimit]
         public async Task<IActionResult> InstallFromDisk(string fileName, string region, string session)
         {
-            using (var stream = System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
+            try
             {
-                await UploadService.InstallAsync(stream, new Dictionary<string, string>
+                using (var stream =
+                    System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
                 {
-                    {"region", region}
-                }, session);
-            }
+                    await UploadService.InstallAsync(stream, new Dictionary<string, string>
+                    {
+                        {"region", region}
+                    }, session);
+                }
 
-            return Content(fileName);
+                await ProgressHub.CompleteAsync(session);
+
+                return Content("complete");
+            }
+            catch (Exception ex)
+            {
+                await ProgressHub.ErrorAsync(ex.Message, session);
+                throw;
+            }
         }
 
         public async Task<IActionResult> UpdateFromDisk()
@@ -72,15 +87,26 @@ namespace Placium.WebApp.Controllers.Upload
         [DisableRequestSizeLimit]
         public async Task<IActionResult> UpdateFromDisk(string fileName, string region, string session)
         {
-            using (var stream = System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
+            try
             {
-                await UploadService.UpdateAsync(stream, new Dictionary<string, string>
+                using (var stream =
+                    System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
                 {
-                    {"region", region}
-                }, session);
-            }
+                    await UploadService.UpdateAsync(stream, new Dictionary<string, string>
+                    {
+                        {"region", region}
+                    }, session);
+                }
 
-            return Content(fileName);
+                await ProgressHub.CompleteAsync(session);
+
+                return Content("complete");
+            }
+            catch (Exception ex)
+            {
+                await ProgressHub.ErrorAsync(ex.Message, session);
+                throw;
+            }
         }
 
         public async Task<IActionResult> InstallFromWeb()
@@ -98,24 +124,34 @@ namespace Placium.WebApp.Controllers.Upload
         [HttpPost]
         public async Task<IActionResult> InstallFromWeb(string url, string session)
         {
-            using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
-                FileAccess.ReadWrite, FileShare.None,
-                4096, FileOptions.DeleteOnClose))
+            try
             {
-                using (var webClient = new WebClient())
+                using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
+                    FileAccess.ReadWrite, FileShare.None,
+                    4096, FileOptions.DeleteOnClose))
                 {
-                    using (var streamFile = webClient.OpenRead(url))
+                    using (var webClient = new WebClient())
                     {
-                        await streamFile.CopyToAsync(tempFileStream);
+                        using (var streamFile = webClient.OpenRead(url))
+                        {
+                            await streamFile.CopyToAsync(tempFileStream);
+                        }
                     }
+
+                    tempFileStream.Position = 0;
+
+                    await UploadService.InstallAsync(tempFileStream, new Dictionary<string, string>(), session);
                 }
 
-                tempFileStream.Position = 0;
+                await ProgressHub.CompleteAsync(session);
 
-                await UploadService.InstallAsync(tempFileStream, new Dictionary<string, string>(), session);
+                return Content("complete");
             }
-
-            return Content(url);
+            catch (Exception ex)
+            {
+                await ProgressHub.ErrorAsync(ex.Message, session);
+                throw;
+            }
         }
 
         public async Task<IActionResult> UpdateFromWeb()
@@ -133,24 +169,34 @@ namespace Placium.WebApp.Controllers.Upload
         [HttpPost]
         public async Task<IActionResult> UpdateFromWeb(string url, string session)
         {
-            using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
-                FileAccess.ReadWrite, FileShare.None,
-                4096, FileOptions.DeleteOnClose))
+            try
             {
-                using (var webClient = new WebClient())
+                using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
+                    FileAccess.ReadWrite, FileShare.None,
+                    4096, FileOptions.DeleteOnClose))
                 {
-                    using (var streamFile = webClient.OpenRead(url))
+                    using (var webClient = new WebClient())
                     {
-                        await streamFile.CopyToAsync(tempFileStream);
+                        using (var streamFile = webClient.OpenRead(url))
+                        {
+                            await streamFile.CopyToAsync(tempFileStream);
+                        }
                     }
+
+                    tempFileStream.Position = 0;
+
+                    await UploadService.UpdateAsync(tempFileStream, new Dictionary<string, string>(), session);
                 }
 
-                tempFileStream.Position = 0;
+                await ProgressHub.CompleteAsync(session);
 
-                await UploadService.UpdateAsync(tempFileStream, new Dictionary<string, string>(), session);
+                return Content("complete");
             }
-
-            return Content(url);
+            catch (Exception ex)
+            {
+                await ProgressHub.ErrorAsync(ex.Message, session);
+                throw;
+            }
         }
 
         public class UploadFormInfo

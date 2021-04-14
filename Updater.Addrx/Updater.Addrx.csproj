@@ -5,14 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="CreateTable.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="CreateTable.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
   </ItemGroup>

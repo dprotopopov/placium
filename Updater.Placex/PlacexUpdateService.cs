@@ -24,18 +24,9 @@ namespace Updater.Placex
 
         public async Task UpdateAsync(string session, bool full)
         {
-            try
-            {
-                await UpdateFromNodeAsync(session, full);
-                await UpdateFromWayAsync(session, full);
-                await UpdateFromRelationAsync(session, full);
-                await _progressHub.CompleteAsync(session);
-            }
-            catch (Exception ex)
-            {
-                await _progressHub.ErrorAsync(ex.Message, session);
-                throw;
-            }
+            await UpdateFromNodeAsync(session, full);
+            await UpdateFromWayAsync(session, full);
+            await UpdateFromRelationAsync(session, full);
         }
 
         public async Task UpdateFromNodeAsync(string session, bool full)
@@ -634,43 +625,6 @@ namespace Updater.Placex
             return false;
         }
 
-        private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)
-        {
-            if (full) return 0;
-
-            using (var command = new NpgsqlCommand(
-                "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-
-                command.Prepare();
-
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
-            }
-
-            return 0;
-        }
-
-        public void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type,
-            long last_record_number)
-        {
-            using (var command = new NpgsqlCommand(
-                "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-                command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                command.Prepare();
-
-                command.ExecuteNonQuery();
-            }
-        }
 
         public class Point
         {

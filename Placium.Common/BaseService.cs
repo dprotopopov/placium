@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using Placium.Types;
 
 namespace Placium.Common
 {
@@ -93,9 +94,84 @@ namespace Placium.Common
             {
                 command.Prepare();
 
-                return (long)command.ExecuteScalar();
+                return (long) command.ExecuteScalar();
             }
         }
 
+        protected long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)
+        {
+            if (full) return 0;
+
+            using (var command = new NpgsqlCommand(
+                "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
+                , connection))
+            {
+                command.Parameters.AddWithValue("service_type", service_type);
+
+                command.Prepare();
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                        return reader.GetInt64(0);
+                }
+            }
+
+            return 0;
+        }
+
+        protected void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type,
+            long last_record_number)
+        {
+            using (var command = new NpgsqlCommand(
+                "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
+                , connection))
+            {
+                command.Parameters.AddWithValue("service_type", service_type);
+                command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                command.Prepare();
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        protected void SetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type,
+            long last_record_number)
+        {
+            using (var command = new NpgsqlCommand(
+                "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
+                , connection))
+            {
+                command.Parameters.AddWithValue("service_type", service_type);
+                command.Parameters.AddWithValue("last_record_number", last_record_number);
+
+                command.Prepare();
+
+                command.ExecuteNonQuery();
+            }
+        }
+
+        protected long GetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type, bool full)
+        {
+            if (full) return 0;
+
+            using (var command = new NpgsqlCommand(
+                "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
+                , connection))
+            {
+                command.Parameters.AddWithValue("service_type", service_type);
+
+                command.Prepare();
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (reader.Read())
+                        return reader.GetInt64(0);
+                }
+            }
+
+            return 0;
+        }
     }
 }

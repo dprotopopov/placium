@@ -35,6 +35,13 @@ CREATE TABLE service_history(
 	last_record_number BIGINT
 );
 
+CREATE TABLE addrx (
+	id BIGINT PRIMARY KEY,
+	tags hstore,
+	record_number BIGINT DEFAULT nextval('record_number_seq'),
+	record_id BIGINT DEFAULT nextval('record_id_seq')
+);
+
 CREATE TABLE placex (
 	id BIGSERIAL PRIMARY KEY,
 	osm_id BIGINT, 

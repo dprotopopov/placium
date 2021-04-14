@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
@@ -7,13 +8,15 @@ namespace Placium.WebApp.Controllers.Update
 {
     public abstract class UpdateController<TService> : Controller where TService : IUpdateService
     {
+        protected readonly ProgressHub ProgressHub;
         protected readonly IConfiguration Configuration;
         protected readonly TService UpdateService;
 
-        protected UpdateController(IConfiguration configuration, TService updateService)
+        protected UpdateController(IConfiguration configuration, TService updateService, ProgressHub progressHub)
         {
             Configuration = configuration;
             UpdateService = updateService;
+            ProgressHub = progressHub;
         }
 
         protected abstract UpdateFormInfo GetUpdateFormInfo();
@@ -36,9 +39,18 @@ namespace Placium.WebApp.Controllers.Update
         [DisableRequestSizeLimit]
         public async Task<IActionResult> Update(string session, bool full = false)
         {
-            await UpdateService.UpdateAsync(session, full);
+            try
+            {
+                await UpdateService.UpdateAsync(session, full);
+                await ProgressHub.CompleteAsync(session);
 
-            return Content("complete");
+                return Content("complete");
+            }
+            catch (Exception ex)
+            {
+                await ProgressHub.ErrorAsync(ex.Message, session);
+                throw;
+            }
         }
 
         public class UpdateFormInfo

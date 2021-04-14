@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using Placium.Common;
 
 namespace Placium.WebApp.Controllers.Upload
 {
@@ -9,7 +10,7 @@ namespace Placium.WebApp.Controllers.Upload
     public class FiasUploadController : UploadController<FiasUploadService>
     {
         public FiasUploadController(IConfiguration configuration, FiasUploadService uploadService,
-            IOptions<UploadConfig> uploadConfig) : base(configuration, uploadService, uploadConfig)
+            IOptions<UploadConfig> uploadConfig, ProgressHub progressHub) : base(configuration, uploadService, uploadConfig, progressHub)
         {
         }
 

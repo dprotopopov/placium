@@ -23,41 +23,29 @@ namespace Updater.Sphinx
 
         public async Task UpdateAsync(string session, bool full)
         {
-            try
+            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                using (var connection = new MySqlConnection(GetSphinxConnectionString()))
-                {
-                    if(full)
-                        TryExecuteNonQueries(new[]
-                        {
-                            "DROP TABLE addrob",
-                            "DROP TABLE house",
-                            "DROP TABLE stead",
-                            "DROP TABLE placex",
-                            "DROP TABLE addrx"
-                        }, connection);
-
+                if (full)
                     TryExecuteNonQueries(new[]
                     {
-                        "CREATE TABLE addrob(title text)",
-                        "CREATE TABLE house(title text)",
-                        "CREATE TABLE stead(title text)",
-                        "CREATE TABLE placex(title text)",
-                        "CREATE TABLE addrx(title text,priority int)"
+                        "DROP TABLE addrob",
+                        "DROP TABLE house",
+                        "DROP TABLE stead",
+                        "DROP TABLE addrx"
                     }, connection);
 
-                    await UpdateAddrobAsync(connection, session, full);
-                    await UpdateHouseAsync(connection, session, full);
-                    await UpdateSteadAsync(connection, session, full);
-                    await UpdatePlacexAsync(connection, session, full);
-                    await UpdateAddrxAsync(connection, session, full);
-                    await _progressHub.CompleteAsync(session);
-                }
-            }
-            catch (Exception ex)
-            {
-                await _progressHub.ErrorAsync(ex.Message, session);
-                throw;
+                TryExecuteNonQueries(new[]
+                {
+                    "CREATE TABLE addrob(title text)",
+                    "CREATE TABLE house(title text)",
+                    "CREATE TABLE stead(title text)",
+                    "CREATE TABLE addrx(title text,priority int)"
+                }, connection);
+
+                await UpdateAddrobAsync(connection, session, full);
+                await UpdateHouseAsync(connection, session, full);
+                await UpdateSteadAsync(connection, session, full);
+                await UpdateAddrxAsync(connection, session, full);
             }
         }
 
@@ -449,74 +437,6 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdatePlacexAsync(MySqlConnection connection, string session, bool full)
-        {
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
-            {
-                var current = 0L;
-                var total = 0L;
-
-                var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
-
-                await npgsqlConnection.OpenAsync();
-
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
-
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, full);
-                var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
-
-                var sql1 =
-                    "SELECT COUNT(*) FROM placex WHERE tags?'name' AND record_number>@last_record_number";
-
-                var sql =
-                    "SELECT record_id,tags->'name' FROM placex WHERE tags?'name' AND record_number>@last_record_number";
-
-                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
-                {
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            total = reader.GetInt64(0);
-
-                        var take = 10000;
-
-                        reader.NextResult();
-
-                        while (true)
-                        {
-                            var docs = reader.ReadDocs(take);
-
-                            if (docs.Any())
-                            {
-                                var sb = new StringBuilder("REPLACE INTO placex(id,title) VALUES ");
-                                sb.Append(string.Join(",", docs.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
-
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
-
-                                current += docs.Count;
-
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
-                            }
-
-                            if (docs.Count < take) break;
-                        }
-                    }
-                }
-
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, next_last_record_number);
-
-                await npgsqlConnection.CloseAsync();
-
-                await _progressHub.ProgressAsync(100f, id, session);
-            }
-        }
-
         private async Task UpdateAddrxAsync(MySqlConnection connection, string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
@@ -621,82 +541,6 @@ namespace Updater.Sphinx
             }
 
             return docs2;
-        }
-
-        private long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)
-        {
-            if (full) return 0;
-
-            using (var command = new NpgsqlCommand(
-                "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-
-                command.Prepare();
-
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
-            }
-
-            return 0;
-        }
-
-        public void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type,
-            long last_record_number)
-        {
-            using (var command = new NpgsqlCommand(
-                "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-                command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                command.Prepare();
-
-                command.ExecuteNonQuery();
-            }
-        }
-
-        public void SetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type,
-            long last_record_number)
-        {
-            using (var command = new NpgsqlCommand(
-                "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-                command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-                command.Prepare();
-
-                command.ExecuteNonQuery();
-            }
-        }
-
-        private long GetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type, bool full)
-        {
-            if (full) return 0;
-
-            using (var command = new NpgsqlCommand(
-                "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-
-                command.Prepare();
-
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
-            }
-
-            return 0;
         }
 
 
