@@ -46,6 +46,15 @@ cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.yande
 cd && cd placium && docker-compose logs -f
 cd && cd placium && docker-compose down
 
+cd && git clone https://gitlab.pba.su/protopopovdy/placium.git
+cd && cp placium/nginx.conf /opt2/nginx/conf/
+cd && cp placium/manticore.conf /opt2/manticore/
+cd && cd placium
+cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.pba.yml build
+cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.pba.yml up -d --remove-orphans
+cd && cd placium && docker-compose logs -f
+cd && cd placium && docker-compose down
+
 
 docker-compose -f docker-compose.yml -f docker-compose.override.yml build
 docker-compose -f docker-compose.yml -f docker-compose.override.yml up --remove-orphans
