@@ -48,14 +48,27 @@ namespace Updater.Addrx
                     "addr:housenumber"
                 };
 
+                var keys1 = new[]
+                {
+                    "addr:region",
+                    "addr:district",
+                    "addr:subdistrict",
+                    "addr:city",
+                    "addr:suburb",
+                    "addr:hamlet",
+                    "addr:street",
+                    "addr:housenumber",
+                    "place"
+                };
+
                 var total = 0L;
 
                 using (var command = new NpgsqlCommand(string.Join(";",
-                        "SELECT COUNT(*) FROM placex WHERE (tags?|@keys OR tags?'place') AND record_number>@last_record_number",
-                        "SELECT id FROM placex WHERE (tags?|@keys OR tags?'place') AND record_number>@last_record_number"),
+                        "SELECT COUNT(*) FROM placex WHERE tags?|@keys AND record_number>@last_record_number",
+                        "SELECT id FROM placex WHERE tags?|@keys AND record_number>@last_record_number"),
                     connection))
                 {
-                    command.Parameters.AddWithValue("keys", keys.ToArray());
+                    command.Parameters.AddWithValue("keys", keys1.ToArray());
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
                     command.Prepare();
