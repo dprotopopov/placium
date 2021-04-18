@@ -47,7 +47,8 @@ namespace Placium.Seeker
                            dictionary["addr:city"] == dictionary["addr:town"];
 
             foreach (var key in keys)
-                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) && (key != "addr:town" || !skipTown))
+                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
+                    (key != "addr:town" || !skipTown))
                     addr.Add(dictionary[key]);
 
             var housenumber = dictionary.ContainsKey("addr:housenumber")
@@ -96,6 +97,11 @@ namespace Placium.Seeker
                             $"SELECT id FROM addrob WHERE MATCH('({row.Yo().Escape()})<<({row2.Yo().Escape()})')",
                             connection);
                     }
+
+                    if (index == 0)
+                        list.FillAll(
+                            $"SELECT id FROM addrob WHERE MATCH('({row.Yo().Escape()})')",
+                            connection);
 
                     if (list.Any()) addrob.Add(list);
 
@@ -358,7 +364,8 @@ namespace Placium.Seeker
                            dictionary["addr:city"] == dictionary["addr:town"];
 
             foreach (var key in keys)
-                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) && (key != "addr:town" || !skipTown))
+                if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
+                    (key != "addr:town" || !skipTown))
                     addr.Add(dictionary[key]);
 
             var housenumber = dictionary.ContainsKey("addr:housenumber")
