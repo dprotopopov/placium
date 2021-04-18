@@ -33,14 +33,17 @@ namespace Placium.Common
             return count;
         }
 
-        public static int FillAll(this List<long> list, string sql, MySqlConnection connection, int take = 100)
+
+        public static int FillAll(this List<long> list, string sql, Dictionary<string, object> dictionary,
+            MySqlConnection connection, int take = 100)
         {
             var total = 0;
             for (var skip = 0;; skip += take)
-            {
                 try
                 {
-                    var count = list.Fill($"{sql} LIMIT {skip},{take}", connection);
+                    dictionary[":skip"] = skip;
+                    dictionary[":take"] = take;
+                    var count = list.Fill($"{sql} LIMIT :skip,:take", dictionary, connection);
                     total += count;
                     if (count < take) return total;
                 }
@@ -48,14 +51,17 @@ namespace Placium.Common
                 {
                     return total;
                 }
-            }
         }
 
-        public static int Fill(this List<long> list, string sql, MySqlConnection connection)
+        public static int Fill(this List<long> list, string sql, Dictionary<string, object> dictionary,
+            MySqlConnection connection)
         {
             connection.TryOpen();
+
             using (var command = new MySqlCommand(sql, connection))
             {
+                foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
+
                 using (var reader = command.ExecuteReader())
                 {
                     return list.Fill(reader);
