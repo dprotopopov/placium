@@ -41,9 +41,9 @@ namespace Placium.Common
             for (var skip = 0;; skip += take)
                 try
                 {
-                    dictionary[":skip"] = skip;
-                    dictionary[":take"] = take;
-                    var count = list.Fill($"{sql} LIMIT :skip,:take", dictionary, connection);
+                    dictionary["skip"] = skip;
+                    dictionary["take"] = take;
+                    var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection);
                     total += count;
                     if (count < take) return total;
                 }
