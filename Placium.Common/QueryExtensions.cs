@@ -62,6 +62,8 @@ namespace Placium.Common
             {
                 foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
 
+                command.Prepare();
+
                 using (var reader = command.ExecuteReader())
                 {
                     return list.Fill(reader);
