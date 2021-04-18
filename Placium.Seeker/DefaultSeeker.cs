@@ -84,44 +84,24 @@ namespace Placium.Seeker
 
                         if (!string.IsNullOrWhiteSpace(housenumber))
                         {
-                            var match1 =
-                                $"({housenumber.Yo().Escape()})<<({row.Yo().Escape()})<<({row2.Yo().Escape()})";
-                            var dic1 = new Dictionary<string, object>
-                            {
-                                {":match", match1}
-                            };
                             stead.FillAll(
-                                "SELECT id FROM stead WHERE MATCH(:match)",
-                                dic1, connection);
+                                $"SELECT id FROM stead WHERE MATCH('({housenumber.Yo().Escape()})<<({row.Yo().Escape()})<<({row2.Yo().Escape()})')",
+                                connection);
 
                             house.FillAll(
-                                "SELECT id FROM house WHERE MATCH(:match)",
-                                dic1, connection);
+                                $"SELECT id FROM house WHERE MATCH('({housenumber.Yo().Escape()})<<({row.Yo().Escape()})<<({row2.Yo().Escape()})')",
+                                connection);
                         }
 
-                        var match = $"({row.Yo().Escape()})<<({row2.Yo().Escape()})";
-                        var dic = new Dictionary<string, object>
-                        {
-                            {":match", match}
-                        };
-
                         list.FillAll(
-                            "SELECT id FROM addrob WHERE MATCH(:match)",
-                            dic, connection);
+                            $"SELECT id FROM addrob WHERE MATCH('({row.Yo().Escape()})<<({row2.Yo().Escape()})')",
+                            connection);
                     }
 
                     if (index == 0)
-                    {
-                        var match = $"({row.Yo().Escape()})";
-                        var dic = new Dictionary<string, object>
-                        {
-                            {":match", match}
-                        };
-
                         list.FillAll(
-                            "SELECT id FROM addrob WHERE MATCH(:match)",
-                            dic, connection);
-                    }
+                            $"SELECT id FROM addrob WHERE MATCH('({row.Yo().Escape()})')",
+                            connection);
 
                     if (list.Any()) addrob.Add(list);
 
@@ -436,14 +416,9 @@ namespace Placium.Seeker
                 for (var priority = 0; priority < 20; priority++)
                 {
                     var ids = new List<long>();
-                    var dic = new Dictionary<string, object>
-                    {
-                        {":match", match},
-                        {":priority", priority}
-                    };
                     ids.FillAll(
-                        "SELECT id FROM addrx WHERE MATCH(:match) AND priority=:priority",
-                        dic, connection);
+                        $"SELECT id FROM addrx WHERE MATCH('{match}') AND priority={priority}",
+                        connection);
 
                     if (!ids.Any()) continue;
 
