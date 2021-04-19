@@ -6,9 +6,9 @@ using Updater.Sphinx;
 namespace Placium.WebApp.Controllers.Update
 {
     [Authorize]
-    public class SphinxUpdateController : UpdateController<SphinxUpdateService>
+    public class Sphinx1UpdateController : UpdateController<Sphinx1UpdateService>
     {
-        public SphinxUpdateController(IConfiguration configuration, SphinxUpdateService updateService, ProgressHub progressHub) : base(configuration,
+        public Sphinx1UpdateController(IConfiguration configuration, Sphinx1UpdateService updateService, ProgressHub progressHub) : base(configuration,
             updateService, progressHub)
         {
         }
@@ -17,11 +17,11 @@ namespace Placium.WebApp.Controllers.Update
         {
             return new UpdateFormInfo
             {
-                Title = "Наполнение Sphinx (OSM)",
+                Title = "Наполнение Sphinx (ФИАС)",
                 Label = "Добавление новых записей в Sphinx"
             };
         }
-        protected override string GetSession() => nameof(SphinxUpdateController);
+        protected override string GetSession() => nameof(Sphinx1UpdateController);
 
     }
 }

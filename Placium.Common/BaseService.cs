@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using MySql.Data.MySqlClient;
 using Npgsql;
 using Placium.Types;
 
@@ -172,6 +174,32 @@ namespace Placium.Common
             }
 
             return 0;
+        }
+
+        protected int ExecuteNonQueryWithRepeatOnError(string sql, MySqlConnection connection)
+        {
+            while (true)
+                try
+                {
+                    connection.TryOpen();
+                    using (var mySqlCommand = new MySqlCommand(sql, connection))
+                    {
+                        return mySqlCommand.ExecuteNonQuery();
+                    }
+                }
+                catch (Exception)
+                {
+                }
+        }
+
+        protected void TryExecuteNonQueries(string[] sqls, MySqlConnection connection)
+        {
+            connection.TryOpen();
+            foreach (var sql in sqls)
+                using (var command = new MySqlCommand(sql, connection))
+                {
+                    command.TryExecuteNonQuery();
+                }
         }
     }
 }
