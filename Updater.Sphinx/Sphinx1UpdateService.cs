@@ -35,9 +35,9 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrob(title text)",
-                    "CREATE TABLE house(title text)",
-                    "CREATE TABLE stead(title text)"
+                    "CREATE TABLE addrob(title text,title2 text)",
+                    "CREATE TABLE house(housenumber text,title text,title2 text)",
+                    "CREATE TABLE stead(housenumber text,title text,title2 text)"
                 }, connection);
 
                 await UpdateAddrobAsync(connection, session, full);
@@ -144,10 +144,10 @@ namespace Updater.Sphinx
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid into ps
                                     from doc in ps.DefaultIfEmpty()
-                                    select new {doc1.id, text = $"#{doc1.text} @{doc?.text ?? doc1.text}"};
+                                    select new {doc1.id, text = $"{doc1.text}", text2=$"{doc?.text ?? doc1.text}"};
 
-                                var sb = new StringBuilder("REPLACE INTO addrob(id,title) VALUES ");
-                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
+                                var sb = new StringBuilder("REPLACE INTO addrob(id,title,title2) VALUES ");
+                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}','{x.text2.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
@@ -282,10 +282,10 @@ namespace Updater.Sphinx
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                     join doc3 in docs3 on doc2.parentguid equals doc3.guid into ps
                                     from doc in ps.DefaultIfEmpty()
-                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}"};
+                                    select new {doc1.id, housenumber = $"{doc1.text}", text = $"{doc2.text}", text2 = $"{doc?.text ?? doc2.text}" };
 
-                                var sb = new StringBuilder("REPLACE INTO house(id,title) VALUES ");
-                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
+                                var sb = new StringBuilder("REPLACE INTO house(id,housenumber,title,title2) VALUES ");
+                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.housenumber.TextEscape()}','{x.text.TextEscape()}','{x.text2.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 
@@ -397,10 +397,10 @@ namespace Updater.Sphinx
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                     join doc3 in docs3 on doc2.parentguid equals doc3.guid into ps
                                     from doc in ps.DefaultIfEmpty()
-                                    select new {doc1.id, text = $"#{doc1.text} @{doc2.text} @{doc?.text ?? doc2.text}"};
+                                    select new { doc1.id, housenumber = $"{doc1.text}", text = $"{doc2.text}", text2 = $"{doc?.text ?? doc2.text}" };
 
-                                var sb = new StringBuilder("REPLACE INTO stead(id,title) VALUES ");
-                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.text.TextEscape()}')")));
+                                var sb = new StringBuilder("REPLACE INTO stead(id,housenumber,title,title2) VALUES ");
+                                sb.Append(string.Join(",", q.Select(x => $"({x.id},'{x.housenumber.TextEscape()}','{x.text.TextEscape()}','{x.text2.TextEscape()}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
 

@@ -85,7 +85,7 @@ namespace Placium.Seeker
                         if (!string.IsNullOrWhiteSpace(housenumber))
                         {
                             var match1 =
-                                $"({housenumber.Yo().Escape()})<<({row.Yo().Escape()})<<({row2.Yo().Escape()})";
+                                $"@housenumber ({housenumber.Yo().Escape()}) @title ({row.Yo().Escape()}) @title2 ({row2.Yo().Escape()})";
                             var dic1 = new Dictionary<string, object>
                             {
                                 {"match", match1}
@@ -99,7 +99,7 @@ namespace Placium.Seeker
                                 dic1, connection);
                         }
 
-                        var match = $"({row.Yo().Escape()})<<({row2.Yo().Escape()})";
+                        var match = $"@title ({row.Yo().Escape()}) @title2 ({row2.Yo().Escape()})";
                         var dic = new Dictionary<string, object>
                         {
                             {"match", match}
@@ -112,7 +112,7 @@ namespace Placium.Seeker
 
                     if (index == 0)
                     {
-                        var match = $"({row.Yo().Escape()})";
+                        var match = $"@title ({row.Yo().Escape()})";
                         var dic = new Dictionary<string, object>
                         {
                             {"match", match}
