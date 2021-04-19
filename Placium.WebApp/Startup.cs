@@ -46,6 +46,7 @@ namespace Placium.WebApp
             services.AddSingleton<PlacexUpdateService>();
             services.AddSingleton<AddrxUpdateService>();
             services.AddSingleton<SphinxUpdateService>();
+            services.AddSingleton<Sphinx1UpdateService>();
             services.AddSingleton<ProgressHub>();
         }
 
