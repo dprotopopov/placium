@@ -51,13 +51,26 @@ namespace Updater.Sphinx
             var result = new List<Doc3>(take);
             for (var i = 0; i < take && reader.Read(); i++)
             {
-                var tags = (Dictionary<string, string>) reader.GetValue(1);
+                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
+                
                 var priority = keys.Length;
-                for (; priority > 0 && !tags.ContainsKey(keys[priority - 1]); priority--) ;
+                for (; priority > 0 && !dictionary.ContainsKey(keys[priority - 1]); priority--) ;
+
                 var list = new List<string>(priority);
-                for (var k = 0; k< priority; k++)
-                    if (tags.ContainsKey(keys[k]))
-                        list.Add(tags[keys[k]].Yo());
+
+                var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
+                               dictionary["addr:region"] == dictionary["addr:city"];
+
+                var skipTown = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:town") &&
+                               dictionary["addr:city"] == dictionary["addr:town"];
+
+                for (var k = 0; k < priority; k++)
+                {
+                    var key = keys[k];
+                    if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
+                        (key != "addr:town" || !skipTown))
+                        list.Add(dictionary[key].Yo());
+                }
 
                 result.Add(new Doc3
                 {
