@@ -28,11 +28,11 @@ namespace Placium.Seeker
             {
                 "addr:region",
                 "addr:district",
-                "addr:subdistrict",
                 "addr:city",
                 "addr:town",
                 "addr:village",
                 "addr:place",
+                "addr:subdistrict",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street"
@@ -283,11 +283,11 @@ namespace Placium.Seeker
             {
                 "addr:region",
                 "addr:district",
-                "addr:subdistrict",
                 "addr:city",
                 "addr:town",
                 "addr:village",
                 "addr:place",
+                "addr:subdistrict",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street",
@@ -365,11 +365,11 @@ namespace Placium.Seeker
             {
                 "addr:region",
                 "addr:district",
-                "addr:subdistrict",
                 "addr:city",
                 "addr:town",
                 "addr:village",
                 "addr:place",
+                "addr:subdistrict",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street"
@@ -407,11 +407,11 @@ namespace Placium.Seeker
             {
                 "addr:region",
                 "addr:district",
-                "addr:subdistrict",
                 "addr:city",
                 "addr:town",
                 "addr:village",
                 "addr:place",
+                "addr:subdistrict",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street",

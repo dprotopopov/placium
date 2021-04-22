@@ -40,8 +40,8 @@ namespace Updater.Addrx
                 {
                     "addr:region",
                     "addr:district",
-                    "addr:subdistrict",
                     "addr:city",
+                    "addr:subdistrict",
                     "addr:suburb",
                     "addr:hamlet",
                     "addr:street",
@@ -52,8 +52,8 @@ namespace Updater.Addrx
                 {
                     "addr:region",
                     "addr:district",
-                    "addr:subdistrict",
                     "addr:city",
+                    "addr:subdistrict",
                     "addr:suburb",
                     "addr:hamlet",
                     "addr:street",

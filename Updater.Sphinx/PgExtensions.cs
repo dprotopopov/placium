@@ -37,11 +37,11 @@ namespace Updater.Sphinx
             {
                 "addr:region",
                 "addr:district",
-                "addr:subdistrict",
                 "addr:city",
                 "addr:town",
                 "addr:village",
                 "addr:place",
+                "addr:subdistrict",
                 "addr:suburb",
                 "addr:hamlet",
                 "addr:street",
