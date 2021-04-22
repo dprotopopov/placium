@@ -485,14 +485,8 @@ namespace Placium.Seeker
 
             var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
 
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                await npgsqlConnection.OpenAsync();
-
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.UseGeoJson();
-
                 for (var priority = 0; limit > 0 && priority < 20; priority++)
                 {
                     var dic = new Dictionary<string, object>
@@ -505,8 +499,6 @@ namespace Placium.Seeker
                         dic, connection, limit: limit);
                     limit -= count;
                 }
-
-                await npgsqlConnection.CloseAsync();
 
                 return result;
             }
