@@ -421,8 +421,8 @@ namespace Placium.Seeker
             var result = new List<Placex>();
 
             var list = new List<string>(addr.Length + 1);
+            list.AddRange(addr);
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
-            list.AddRange(addr.Reverse());
             var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
@@ -470,6 +470,40 @@ namespace Placium.Seeker
                     }
 
                     if (result.Any()) break;
+                }
+
+                await npgsqlConnection.CloseAsync();
+
+                return result;
+            }
+        }
+
+        public async Task<List<string>> GetSuggestAsync(string search, int limit = 20)
+        {
+            var list = search.Split(",");
+            var result = new List<string>();
+
+            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+
+            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                await npgsqlConnection.OpenAsync();
+
+                npgsqlConnection.ReloadTypes();
+                npgsqlConnection.TypeMapper.UseGeoJson();
+
+                for (var priority = 0; limit > 0 && priority < 20; priority++)
+                {
+                    var dic = new Dictionary<string, object>
+                    {
+                        {"match", match},
+                        {"priority", priority}
+                    };
+                    var count = result.FillAll(
+                        "SELECT title FROM addrx WHERE MATCH(@match) AND priority=@priority",
+                        dic, connection, limit: limit);
+                    limit -= count;
                 }
 
                 await npgsqlConnection.CloseAsync();

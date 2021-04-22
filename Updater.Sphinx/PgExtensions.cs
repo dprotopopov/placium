@@ -55,14 +55,14 @@ namespace Updater.Sphinx
                 var priority = keys.Length;
                 for (; priority > 0 && !tags.ContainsKey(keys[priority - 1]); priority--) ;
                 var list = new List<string>(priority);
-                for (var k = priority; k > 0; k--)
-                    if (tags.ContainsKey(keys[k - 1]))
-                        list.Add(tags[keys[k - 1]].Yo());
+                for (var k = 0; k< priority; k++)
+                    if (tags.ContainsKey(keys[k]))
+                        list.Add(tags[keys[k]].Yo());
 
                 result.Add(new Doc3
                 {
                     id = reader.GetInt64(0),
-                    text = string.Join(" @", list),
+                    text = string.Join(", ", list),
                     priority = priority
                 });
             }

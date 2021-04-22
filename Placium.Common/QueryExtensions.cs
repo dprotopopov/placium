@@ -53,6 +53,26 @@ namespace Placium.Common
                 }
         }
 
+        public static int FillAll(this List<string> list, string sql, Dictionary<string, object> dictionary,
+            MySqlConnection connection, int take = 100, int limit = 1000)
+        {
+            var total = 0;
+            for (var skip = 0;; skip += take)
+                try
+                {
+                    dictionary["skip"] = skip;
+                    dictionary["take"] = take;
+                    var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection, limit);
+                    total += count;
+                    limit -= count;
+                    if (count < take || limit == 0) return total;
+                }
+                catch (Exception)
+                {
+                    return total;
+                }
+        }
+
         public static int Fill(this List<long> list, string sql, Dictionary<string, object> dictionary,
             MySqlConnection connection)
         {
@@ -69,12 +89,40 @@ namespace Placium.Common
             }
         }
 
+        public static int Fill(this List<string> list, string sql, Dictionary<string, object> dictionary,
+            MySqlConnection connection, int limit)
+        {
+            connection.TryOpen();
+
+            using (var command = new MySqlCommand(sql, connection))
+            {
+                foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
+
+                using (var reader = command.ExecuteReader())
+                {
+                    return list.Fill(reader, limit);
+                }
+            }
+        }
+
         public static int Fill(this List<long> list, MySqlDataReader reader)
         {
             var count = 0;
             while (reader.Read())
             {
                 list.Add(reader.GetInt64(0));
+                count++;
+            }
+
+            return count;
+        }
+
+        public static int Fill(this List<string> list, MySqlDataReader reader, int limit)
+        {
+            var count = 0;
+            for (var i = 0; i < limit && reader.Read(); i++)
+            {
+                list.Add(reader.GetString(0));
                 count++;
             }
 

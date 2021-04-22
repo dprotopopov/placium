@@ -1,0 +1,13 @@
+﻿@{
+    ViewData["Title"] = "Seeker";
+}
+
+<h1>Seeker</h1>
+
+@using (Html.BeginForm(method: FormMethod.Post))
+{
+    <label>Строка поиска</label>
+    @Html.TextBox("search")
+    <br />
+    <input type="submit" value="Выбрать" class="btn btn-primary" />
+}

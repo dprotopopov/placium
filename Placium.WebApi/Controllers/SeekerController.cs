@@ -41,5 +41,12 @@ namespace Placium.WebApi.Controllers
         {
             return Ok(await _seeker.GetOsmByAddrAsync(addr.Split(","), housenumber));
         }
+
+        [HttpGet("suggest")]
+        [ProducesResponseType(200, Type = typeof(List<string>))]
+        public async Task<IActionResult> GetSuggestAsync(string search, int limit = 20)
+        {
+            return Ok(await _seeker.GetSuggestAsync(search, limit));
+        }
     }
 }
