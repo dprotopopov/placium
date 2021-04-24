@@ -75,7 +75,7 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -95,6 +95,7 @@ namespace Updater.Sphinx
                     command.Prepare();
 
                     command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+                    command2.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command2.Prepare();
 
@@ -108,6 +109,8 @@ namespace Updater.Sphinx
 
                         while (true)
                         {
+                            var guids1 = new List<string>();
+
                             var docs1 = new List<Doc1>(take);
 
                             for (var i = 0; i < take && reader.Read(); i++)
@@ -139,7 +142,10 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, command2, guids.Length);
+                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command2, guids.Length);
+
+                                    if (!docs2.Any()) break;
+
                                     var q = from doc1 in docs1
                                         join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                         select new {doc1, doc2};
@@ -149,6 +155,8 @@ namespace Updater.Sphinx
                                         pair.doc1.parentguid = pair.doc2.parentguid;
                                         pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
                                     }
+
+                                    guids1.AddRange(guids);
                                 }
 
                                 var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
@@ -219,7 +227,7 @@ namespace Updater.Sphinx
                     list2.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -240,6 +248,7 @@ namespace Updater.Sphinx
                     command.Prepare();
 
                     command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+                    command2.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command2.Prepare();
 
@@ -253,6 +262,8 @@ namespace Updater.Sphinx
 
                         while (true)
                         {
+                            var guids1 = new List<string>();
+
                             var docs1 = new List<Doc1>(take);
 
                             for (var i = 0; i < take && reader.Read(); i++)
@@ -284,7 +295,10 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, command2, guids.Length);
+                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command2, guids.Length);
+
+                                    if (!docs2.Any()) break;
+
                                     var q = from doc1 in docs1
                                         join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                         select new {doc1, doc2};
@@ -294,6 +308,8 @@ namespace Updater.Sphinx
                                         pair.doc1.parentguid = pair.doc2.parentguid;
                                         pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
                                     }
+
+                                    guids1.AddRange(guids);
                                 }
 
                                 var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
@@ -369,7 +385,7 @@ namespace Updater.Sphinx
                     list3.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
@@ -400,6 +416,7 @@ namespace Updater.Sphinx
                     command2.Prepare();
 
                     command3.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+                    command3.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command3.Prepare();
 
@@ -413,6 +430,8 @@ namespace Updater.Sphinx
 
                         while (true)
                         {
+                            var guids1 = new List<string>();
+
                             var docs1 = new List<Doc1>(take);
 
                             for (var i = 0; i < take && reader.Read(); i++)
@@ -483,7 +502,10 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, command3, guids.Length);
+                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command3, guids.Length);
+
+                                    if (!docs2.Any()) break;
+
                                     var q = from doc1 in docs1
                                         join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                         select new {doc1, doc2};
@@ -493,6 +515,8 @@ namespace Updater.Sphinx
                                         pair.doc1.parentguid = pair.doc2.parentguid;
                                         pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
                                     }
+
+                                    guids1.AddRange(guids);
                                 }
 
                                 var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
@@ -564,7 +588,7 @@ namespace Updater.Sphinx
                     list2.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -582,6 +606,7 @@ namespace Updater.Sphinx
                     command.Prepare();
 
                     command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+                    command2.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command2.Prepare();
 
@@ -595,6 +620,8 @@ namespace Updater.Sphinx
 
                         while (true)
                         {
+                            var guids1 = new List<string>();
+
                             var docs1 = reader.ReadDocs1(take);
 
                             if (docs1.Any())
@@ -605,7 +632,10 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, command2, guids.Length);
+                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command2, guids.Length);
+
+                                    if (!docs2.Any()) break;
+
                                     var q = from doc1 in docs1
                                         join doc2 in docs2 on doc1.parentguid equals doc2.guid
                                         select new {doc1, doc2};
@@ -615,6 +645,8 @@ namespace Updater.Sphinx
                                         pair.doc1.parentguid = pair.doc2.parentguid;
                                         pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
                                     }
+
+                                    guids1.AddRange(guids);
                                 }
 
                                 var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
@@ -643,7 +675,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)
+        private List<Doc2> GetDocs2(string[] guids, string[] guids1, NpgsqlCommand npgsqlCommand2, int take)
         {
             var socr = true;
             var formal = false;
@@ -651,6 +683,7 @@ namespace Updater.Sphinx
             var docs2 = new List<Doc2>(take);
 
             npgsqlCommand2.Parameters["guids"].Value = guids;
+            npgsqlCommand2.Parameters["guids1"].Value = guids1;
 
             using (var reader2 = npgsqlCommand2.ExecuteReader())
             {
