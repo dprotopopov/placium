@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Fastenshtein" Version="1.0.0.7" />
     <PackageReference Include="Npgsql.GeoJSON" Version="5.0.4" />
   </ItemGroup>
 

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fastenshtein;
 using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
@@ -291,6 +292,8 @@ namespace Placium.Seeker
 
                             var list = new List<Doc>();
 
+                            var lev = new Levenshtein(roomnumber.Yo());
+
                             using (var reader = command.ExecuteReader())
                             {
                                 while (reader.Read())
@@ -304,7 +307,7 @@ namespace Placium.Seeker
                                     list.Add(new Doc
                                     {
                                         guid = roomguid,
-                                        distance = LevenshteinDistance.Calculate(roomnumber.Yo(), string.Join(" ", list1))
+                                        distance = lev.DistanceFrom(string.Join(" ", list1))
                                     });
                                 }
                             }
