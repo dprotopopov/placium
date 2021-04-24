@@ -35,21 +35,20 @@ namespace Updater.Sphinx
                 {
                     "CREATE TABLE addrobx(title text,priority int)"
                 }, connection);
-
-                await UpdateAddrobAsync(connection, session, full);
-                await UpdateHouseAsync(connection, session, full);
-                await UpdateSteadAsync(connection, session, full);
-                await UpdateRoomAsync(connection, session, full);
             }
+
+            await UpdateAddrobAsync(session, full);
+            await UpdateHouseAsync(session, full);
+            await UpdateSteadAsync(session, full);
+            await UpdateRoomAsync(session, full);
         }
 
-        private async Task UpdateAddrobAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateAddrobAsync(string session, bool full)
         {
             var socr = true;
             var formal = false;
 
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
-            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 var current = 0L;
                 var total = 0L;
@@ -58,7 +57,6 @@ namespace Updater.Sphinx
                 await _progressHub.InitAsync(id, session);
 
                 await npgsqlConnection.OpenAsync();
-                await npgsqlConnection2.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType2>("service_type2");
@@ -88,15 +86,10 @@ namespace Updater.Sphinx
                         WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
-                using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
                     command.Prepare();
-
-                    command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-
-                    command2.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -106,92 +99,123 @@ namespace Updater.Sphinx
 
                         reader.NextResult();
 
-                        while (true)
-                        {
-                            var guids1 = new List<string>();
+                        var obj = new object();
+                        var reader_is_empty = false;
 
-                            var docs1 = new List<Doc1>(take);
-
-                            for (var i = 0; i < take && reader.Read(); i++)
+                        Parallel.For(0, 12,
+                            i =>
                             {
-                                var offname = reader.SafeGetString(1);
-                                var formalname = reader.SafeGetString(2);
-                                var shortname = reader.SafeGetString(3);
-                                var socrname = reader.SafeGetString(4);
-                                var aolevel = reader.GetInt32(5);
-                                var parentguid = reader.SafeGetString(6);
-                                var title = aolevel > 1
-                                    ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
-                                    : formal
-                                        ? formalname
-                                        : offname;
-                                docs1.Add(new Doc1
+                                using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+                                using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
                                 {
-                                    id = reader.GetInt64(0),
-                                    text = title,
-                                    parentguid = parentguid
-                                });
-                            }
+                                    npgsqlConnection2.Open();
 
-                            if (docs1.Any())
-                            {
-                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray();
-                                    guids.Any();
-                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray())
-                                {
-                                    guids = guids.Except(guids1).ToArray();
-
-                                    if (!guids.Any()) break;
-
-                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                    if (!docs2.Any()) break;
-
-                                    var q = from doc1 in docs1
-                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                        select new {doc1, doc2};
-
-                                    foreach (var pair in q)
+                                    using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                                     {
-                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                        command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+
+                                        command2.Prepare();
+
+                                        while (true)
+                                        {
+                                            var guids1 = new List<string>();
+
+                                            var docs1 = new List<Doc1>(take);
+
+                                            lock (obj)
+                                            {
+                                                if (reader_is_empty) break;
+                                                for (var j = 0; j < take && reader.Read(); j++)
+                                                {
+                                                    var offname = reader.SafeGetString(1);
+                                                    var formalname = reader.SafeGetString(2);
+                                                    var shortname = reader.SafeGetString(3);
+                                                    var socrname = reader.SafeGetString(4);
+                                                    var aolevel = reader.GetInt32(5);
+                                                    var parentguid = reader.SafeGetString(6);
+                                                    var title = aolevel > 1
+                                                        ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                                                        : formal
+                                                            ? formalname
+                                                            : offname;
+                                                    docs1.Add(new Doc1
+                                                    {
+                                                        id = reader.GetInt64(0),
+                                                        text = title,
+                                                        parentguid = parentguid
+                                                    });
+                                                }
+
+                                                reader_is_empty = docs1.Count() < take;
+                                                if (!docs1.Any()) break;
+                                            }
+
+                                            if (docs1.Any())
+                                            {
+                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray();
+                                                    guids.Any();
+                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray())
+                                                {
+                                                    guids = guids.Except(guids1).ToArray();
+
+                                                    if (!guids.Any()) break;
+
+                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
+
+                                                    if (!docs2.Any()) break;
+
+                                                    var q = from doc1 in docs1
+                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                                                        select new {doc1, doc2};
+
+                                                    foreach (var pair in q)
+                                                    {
+                                                        pair.doc1.parentguid = pair.doc2.parentguid;
+                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                                    }
+
+                                                    guids1.AddRange(guids);
+                                                }
+
+                                                var sb = new StringBuilder(
+                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
+                                                sb.Append(string.Join(",",
+                                                    docs1.Select(x =>
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
+
+                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+
+                                                lock (obj)
+                                                {
+                                                    current += docs1.Count();
+
+                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                        .GetAwaiter()
+                                                        .GetResult();
+                                                }
+                                            }
+                                        }
                                     }
 
-                                    guids1.AddRange(guids);
+                                    npgsqlConnection2.Close();
                                 }
-
-                                var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                sb.Append(string.Join(",",
-                                    docs1.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
-
-                                current += docs1.Count;
-
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
-                            }
-
-                            if (docs1.Count < take) break;
-                        }
+                            });
                     }
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType2.Addrob, next_last_record_number);
 
-                await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
 
-        private async Task UpdateHouseAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateHouseAsync(string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
-            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 var current = 0L;
                 var total = 0L;
@@ -200,7 +224,6 @@ namespace Updater.Sphinx
                 await _progressHub.InitAsync(id, session);
 
                 await npgsqlConnection.OpenAsync();
-                await npgsqlConnection2.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType2>("service_type2");
@@ -244,15 +267,10 @@ namespace Updater.Sphinx
                         WHERE {x}.record_number>@last_record_number"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
-                using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
                     command.Prepare();
-
-                    command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-
-                    command2.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -262,92 +280,121 @@ namespace Updater.Sphinx
 
                         reader.NextResult();
 
-                        while (true)
-                        {
-                            var guids1 = new List<string>();
+                        var obj = new object();
+                        var reader_is_empty = false;
 
-                            var docs1 = new List<Doc1>(take);
-
-                            for (var i = 0; i < take && reader.Read(); i++)
+                        Parallel.For(0, 12,
+                            i =>
                             {
-                                var housenum = reader.SafeGetString(1);
-                                var buildnum = reader.SafeGetString(2);
-                                var strucnum = reader.SafeGetString(3);
-                                var name = reader.SafeGetString(4);
-                                var parentguid = reader.SafeGetString(5);
-                                var list1 = new List<string> {name};
-                                if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
-                                if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
-                                if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
-                                docs1.Add(new Doc1
+                                using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+                                using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
                                 {
-                                    id = reader.GetInt64(0),
-                                    text = string.Join(" ", list1),
-                                    parentguid = parentguid
-                                });
-                            }
+                                    npgsqlConnection2.Open();
 
-
-                            if (docs1.Any())
-                            {
-                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray();
-                                    guids.Any();
-                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray())
-                                {
-                                    guids = guids.Except(guids1).ToArray();
-
-                                    if (!guids.Any()) break;
-
-                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                    if (!docs2.Any()) break;
-
-                                    var q = from doc1 in docs1
-                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                        select new {doc1, doc2};
-
-                                    foreach (var pair in q)
+                                    using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                                     {
-                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                        command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+
+                                        command2.Prepare();
+
+                                        while (true)
+                                        {
+                                            var guids1 = new List<string>();
+
+                                            var docs1 = new List<Doc1>(take);
+
+                                            lock (obj)
+                                            {
+                                                if (reader_is_empty) break;
+                                                for (var j = 0; j < take && reader.Read(); j++)
+                                                {
+                                                    var housenum = reader.SafeGetString(1);
+                                                    var buildnum = reader.SafeGetString(2);
+                                                    var strucnum = reader.SafeGetString(3);
+                                                    var name = reader.SafeGetString(4);
+                                                    var parentguid = reader.SafeGetString(5);
+                                                    var list1 = new List<string> {name};
+                                                    if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
+                                                    if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
+                                                    if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
+                                                    docs1.Add(new Doc1
+                                                    {
+                                                        id = reader.GetInt64(0),
+                                                        text = string.Join(" ", list1),
+                                                        parentguid = parentguid
+                                                    });
+                                                }
+
+                                                reader_is_empty = docs1.Count() < take;
+                                                if (!docs1.Any()) break;
+                                            }
+
+                                            if (docs1.Any())
+                                            {
+                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray();
+                                                    guids.Any();
+                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray())
+                                                {
+                                                    guids = guids.Except(guids1).ToArray();
+
+                                                    if (!guids.Any()) break;
+
+                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
+
+                                                    if (!docs2.Any()) break;
+
+                                                    var q = from doc1 in docs1
+                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                                                        select new {doc1, doc2};
+
+                                                    foreach (var pair in q)
+                                                    {
+                                                        pair.doc1.parentguid = pair.doc2.parentguid;
+                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                                    }
+
+                                                    guids1.AddRange(guids);
+                                                }
+
+                                                var sb = new StringBuilder(
+                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
+                                                sb.Append(string.Join(",",
+                                                    docs1.Select(x =>
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
+
+                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+
+                                                lock (obj)
+                                                {
+                                                    current += docs1.Count();
+
+                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                        .GetAwaiter()
+                                                        .GetResult();
+                                                }
+                                            }
+                                        }
                                     }
 
-                                    guids1.AddRange(guids);
+                                    npgsqlConnection2.Close();
                                 }
-
-                                var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                sb.Append(string.Join(",",
-                                    docs1.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
-
-                                current += docs1.Count;
-
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
-                            }
-
-                            if (docs1.Count < take) break;
-                        }
+                            });
                     }
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType2.House, next_last_record_number);
 
-                await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
 
-        private async Task UpdateRoomAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateRoomAsync(string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
-            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
-            using (var npgsqlConnection3 = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 var current = 0L;
                 var total = 0L;
@@ -356,8 +403,6 @@ namespace Updater.Sphinx
                 await _progressHub.InitAsync(id, session);
 
                 await npgsqlConnection.OpenAsync();
-                await npgsqlConnection2.OpenAsync();
-                await npgsqlConnection3.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType2>("service_type2");
@@ -409,20 +454,10 @@ namespace Updater.Sphinx
                         WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
-                using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
-                using (var command3 = new NpgsqlCommand(sql3, npgsqlConnection3))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
                     command.Prepare();
-
-                    command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-
-                    command2.Prepare();
-
-                    command3.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-
-                    command3.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -432,131 +467,171 @@ namespace Updater.Sphinx
 
                         reader.NextResult();
 
-                        while (true)
-                        {
-                            var guids1 = new List<string>();
+                        var obj = new object();
+                        var reader_is_empty = false;
 
-                            var docs1 = new List<Doc1>(take);
-
-                            for (var i = 0; i < take && reader.Read(); i++)
+                        Parallel.For(0, 12,
+                            i =>
                             {
-                                var list1 = new List<string>();
-                                var flatnumber = reader.SafeGetString(1);
-                                var roomnumber = reader.SafeGetString(2);
-                                var parentguid = reader.SafeGetString(3);
-                                if (!string.IsNullOrEmpty(flatnumber)) list1.Add($"кв. {flatnumber}");
-                                if (!string.IsNullOrEmpty(roomnumber)) list1.Add($"комн. {roomnumber}");
-                                docs1.Add(new Doc1
+                                using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+                                using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
+                                using (var npgsqlConnection3 = new NpgsqlConnection(GetFiasConnectionString()))
                                 {
-                                    id = reader.GetInt64(0),
-                                    text = string.Join(" ", list1),
-                                    parentguid = parentguid
-                                });
-                            }
+                                    npgsqlConnection2.Open();
+                                    npgsqlConnection3.Open();
 
-                            if (docs1.Any())
-                            {
-                                var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                    .Select(x => x.parentguid).ToArray();
-                                var docs2 = new List<Doc2>(take);
-
-                                command2.Parameters["guids"].Value = guids;
-
-                                using (var reader2 = command2.ExecuteReader())
-                                {
-                                    while (reader2.Read())
+                                    using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
+                                    using (var command3 = new NpgsqlCommand(sql3, npgsqlConnection3))
                                     {
-                                        var housenum = reader.SafeGetString(1);
-                                        var buildnum = reader.SafeGetString(2);
-                                        var strucnum = reader.SafeGetString(3);
-                                        var name = reader.SafeGetString(4);
-                                        var parentguid = reader.SafeGetString(5);
-                                        var list1 = new List<string> {name};
-                                        if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
-                                        if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
-                                        if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
+                                        command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
-                                        docs2.Add(new Doc2
+                                        command2.Prepare();
+
+                                        command3.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+
+                                        command3.Prepare();
+
+                                        while (true)
                                         {
-                                            guid = reader2.SafeGetString(0),
-                                            text = string.Join(" ", list1),
-                                            parentguid = parentguid
-                                        });
+                                            var guids1 = new List<string>();
+
+                                            var docs1 = new List<Doc1>(take);
+
+                                            lock (obj)
+                                            {
+                                                if (reader_is_empty) break;
+                                                for (var j = 0; j < take && reader.Read(); j++)
+                                                {
+                                                    var list1 = new List<string>();
+                                                    var flatnumber = reader.SafeGetString(1);
+                                                    var roomnumber = reader.SafeGetString(2);
+                                                    var parentguid = reader.SafeGetString(3);
+                                                    if (!string.IsNullOrEmpty(flatnumber))
+                                                        list1.Add($"кв. {flatnumber}");
+                                                    if (!string.IsNullOrEmpty(roomnumber))
+                                                        list1.Add($"комн. {roomnumber}");
+                                                    docs1.Add(new Doc1
+                                                    {
+                                                        id = reader.GetInt64(0),
+                                                        text = string.Join(" ", list1),
+                                                        parentguid = parentguid
+                                                    });
+                                                }
+
+                                                reader_is_empty = docs1.Count() < take;
+                                                if (!docs1.Any()) break;
+                                            }
+
+                                            if (docs1.Any())
+                                            {
+                                                var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                    .Select(x => x.parentguid).ToArray();
+                                                var docs2 = new List<Doc2>(take);
+
+                                                command2.Parameters["guids"].Value = guids;
+
+                                                using (var reader2 = command2.ExecuteReader())
+                                                {
+                                                    while (reader2.Read())
+                                                    {
+                                                        var housenum = reader.SafeGetString(1);
+                                                        var buildnum = reader.SafeGetString(2);
+                                                        var strucnum = reader.SafeGetString(3);
+                                                        var name = reader.SafeGetString(4);
+                                                        var parentguid = reader.SafeGetString(5);
+                                                        var list1 = new List<string> {name};
+                                                        if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
+                                                        if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
+                                                        if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
+
+                                                        docs2.Add(new Doc2
+                                                        {
+                                                            guid = reader2.SafeGetString(0),
+                                                            text = string.Join(" ", list1),
+                                                            parentguid = parentguid
+                                                        });
+                                                    }
+                                                }
+
+                                                var q = from doc1 in docs1
+                                                    join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                                                    select new {doc1, doc2};
+
+                                                foreach (var pair in q)
+                                                {
+                                                    pair.doc1.parentguid = pair.doc2.parentguid;
+                                                    pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                                }
+                                            }
+
+
+                                            if (docs1.Any())
+                                            {
+                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray();
+                                                    guids.Any();
+                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray())
+                                                {
+                                                    guids = guids.Except(guids1).ToArray();
+
+                                                    if (!guids.Any()) break;
+
+                                                    var docs2 = GetDocs2(guids, command3, guids.Length);
+
+                                                    if (!docs2.Any()) break;
+
+                                                    var q = from doc1 in docs1
+                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                                                        select new {doc1, doc2};
+
+                                                    foreach (var pair in q)
+                                                    {
+                                                        pair.doc1.parentguid = pair.doc2.parentguid;
+                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                                    }
+
+                                                    guids1.AddRange(guids);
+                                                }
+
+                                                var sb = new StringBuilder(
+                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
+                                                sb.Append(string.Join(",",
+                                                    docs1.Select(x =>
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
+
+                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+
+                                                lock (obj)
+                                                {
+                                                    current += docs1.Count();
+
+                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                        .GetAwaiter()
+                                                        .GetResult();
+                                                }
+                                            }
+                                        }
                                     }
+
+                                    npgsqlConnection3.Close();
+                                    npgsqlConnection2.Close();
                                 }
-
-                                var q = from doc1 in docs1
-                                    join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                    select new {doc1, doc2};
-
-                                foreach (var pair in q)
-                                {
-                                    pair.doc1.parentguid = pair.doc2.parentguid;
-                                    pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                }
-                            }
-
-
-                            if (docs1.Any())
-                            {
-                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray();
-                                    guids.Any();
-                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray())
-                                {
-                                    guids = guids.Except(guids1).ToArray();
-
-                                    if (!guids.Any()) break;
-
-                                    var docs2 = GetDocs2(guids, command3, guids.Length);
-
-                                    if (!docs2.Any()) break;
-
-                                    var q = from doc1 in docs1
-                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                        select new {doc1, doc2};
-
-                                    foreach (var pair in q)
-                                    {
-                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                    }
-
-                                    guids1.AddRange(guids);
-                                }
-
-                                var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                sb.Append(string.Join(",",
-                                    docs1.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
-
-                                current += docs1.Count;
-
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
-                            }
-
-                            if (docs1.Count < take) break;
-                        }
+                            });
                     }
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType2.Room, next_last_record_number);
 
-                await npgsqlConnection3.CloseAsync();
-                await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
 
-        private async Task UpdateSteadAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateSteadAsync(string session, bool full)
         {
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
-            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 var current = 0L;
                 var total = 0L;
@@ -565,7 +640,6 @@ namespace Updater.Sphinx
                 await _progressHub.InitAsync(id, session);
 
                 await npgsqlConnection.OpenAsync();
-                await npgsqlConnection2.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType2>("service_type2");
@@ -606,15 +680,10 @@ namespace Updater.Sphinx
                         $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
-                using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                 {
                     command.Parameters.AddWithValue("last_record_number", last_record_number);
 
                     command.Prepare();
-
-                    command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-
-                    command2.Prepare();
 
                     using (var reader = command.ExecuteReader())
                     {
@@ -624,61 +693,94 @@ namespace Updater.Sphinx
 
                         reader.NextResult();
 
-                        while (true)
-                        {
-                            var guids1 = new List<string>();
+                        var obj = new object();
+                        var reader_is_empty = false;
 
-                            var docs1 = reader.ReadDocs1(take);
-
-                            if (docs1.Any())
+                        Parallel.For(0, 12,
+                            i =>
                             {
-                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray();
-                                    guids.Any();
-                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                        .Select(x => x.parentguid).ToArray())
+                                using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+                                using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
                                 {
-                                    guids = guids.Except(guids1).ToArray();
+                                    npgsqlConnection2.Open();
 
-                                    if (!guids.Any()) break;
-
-                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                    if (!docs2.Any()) break;
-
-                                    var q = from doc1 in docs1
-                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                        select new {doc1, doc2};
-
-                                    foreach (var pair in q)
+                                    using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
                                     {
-                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                        command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+
+                                        command2.Prepare();
+
+                                        while (true)
+                                        {
+                                            var guids1 = new List<string>();
+
+                                            List<Doc1> docs1;
+                                            lock (obj)
+                                            {
+                                                if (reader_is_empty) break;
+                                                docs1 = reader.ReadDocs1(take);
+
+                                                reader_is_empty = docs1.Count() < take;
+                                                if (!docs1.Any()) break;
+                                            }
+
+                                            if (docs1.Any())
+                                            {
+                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray();
+                                                    guids.Any();
+                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                                                        .Select(x => x.parentguid).ToArray())
+                                                {
+                                                    guids = guids.Except(guids1).ToArray();
+
+                                                    if (!guids.Any()) break;
+
+                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
+
+                                                    if (!docs2.Any()) break;
+
+                                                    var q = from doc1 in docs1
+                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                                                        select new {doc1, doc2};
+
+                                                    foreach (var pair in q)
+                                                    {
+                                                        pair.doc1.parentguid = pair.doc2.parentguid;
+                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                                    }
+
+                                                    guids1.AddRange(guids);
+                                                }
+
+                                                var sb = new StringBuilder(
+                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
+                                                sb.Append(string.Join(",",
+                                                    docs1.Select(x =>
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
+
+                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+
+                                                lock (obj)
+                                                {
+                                                    current += docs1.Count();
+
+                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                        .GetAwaiter()
+                                                        .GetResult();
+                                                }
+                                            }
+                                        }
                                     }
 
-                                    guids1.AddRange(guids);
+                                    npgsqlConnection2.Close();
                                 }
-
-                                var sb = new StringBuilder("REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                sb.Append(string.Join(",",
-                                    docs1.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
-
-                                current += docs1.Count;
-
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
-                            }
-
-                            if (docs1.Count < take) break;
-                        }
+                            });
                     }
                 }
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType2.Stead, next_last_record_number);
 
-                await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
 
                 await _progressHub.ProgressAsync(100f, id, session);
