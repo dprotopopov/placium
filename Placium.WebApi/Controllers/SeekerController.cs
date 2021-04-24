@@ -30,9 +30,16 @@ namespace Placium.WebApi.Controllers
 
         [HttpGet("fias_by_addr")]
         [ProducesResponseType(200, Type = typeof(List<string>))]
-        public async Task<IActionResult> GetFiasByAddrAsync(string addr, string housenumber)
+        public async Task<IActionResult> GetFiasByAddrAsync(string addr, string housenumber, string roomnumber)
         {
-            return Ok(await _seeker.GetFiasByAddrAsync(addr.Split(","), housenumber));
+            return Ok(await _seeker.GetFiasByAddrAsync(addr.Split(","), housenumber, roomnumber));
+        }
+
+        [HttpGet("fias_by_addr2")]
+        [ProducesResponseType(200, Type = typeof(List<string>))]
+        public async Task<IActionResult> GetFiasByAddr2Async(string addr, string housenumber, string roomnumber)
+        {
+            return Ok(await _seeker.GetFiasByAddr2Async(addr.Split(","), housenumber, roomnumber));
         }
 
         [HttpGet("osm_by_addr")]

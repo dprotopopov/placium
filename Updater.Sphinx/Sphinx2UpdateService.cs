@@ -235,9 +235,8 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $@"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}
+                        $@"SELECT {x}.record_id,housenum,buildnum,strucnum,aoguid FROM {x}
                         JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
-                        JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE {x}.record_number>@last_record_number"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -272,12 +271,10 @@ namespace Updater.Sphinx
                                 var housenum = reader.SafeGetString(1);
                                 var buildnum = reader.SafeGetString(2);
                                 var strucnum = reader.SafeGetString(3);
-                                var name = reader.SafeGetString(4);
-                                var parentguid = reader.SafeGetString(5);
+                                var parentguid = reader.SafeGetString(4);
                                 if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
                                 if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
-                                list1.Add(name);
                                 docs1.Add(new Doc1
                                 {
                                     id = reader.GetInt64(0),
@@ -389,9 +386,8 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $@"SELECT {x}.houseguid,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}
+                        $@"SELECT {x}.houseguid,housenum,buildnum,strucnum,aoguid FROM {x}
                         JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
-                        JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE {x}.houseguid=ANY(@guids)"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
@@ -466,12 +462,10 @@ namespace Updater.Sphinx
                                         var housenum = reader.SafeGetString(1);
                                         var buildnum = reader.SafeGetString(2);
                                         var strucnum = reader.SafeGetString(3);
-                                        var name = reader.SafeGetString(4);
-                                        var parentguid = reader.SafeGetString(5);
+                                        var parentguid = reader.SafeGetString(4);
                                         if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
                                         if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
                                         if (!string.IsNullOrEmpty(strucnum)) list1.Add($"с{strucnum}");
-                                        list1.Add(name);
 
                                         docs2.Add(new Doc2
                                         {

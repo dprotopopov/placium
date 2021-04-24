@@ -13,8 +13,48 @@ namespace Placium.Seeker
 {
     public class DefaultSeeker : BaseService
     {
+        private readonly string _addrobSql;
+        private readonly List<string> _listAddrob = new List<string>();
+        private readonly List<string> _listHouse = new List<string>();
+        private readonly List<string> _listRoom = new List<string>();
+        private readonly List<string> _listStead = new List<string>();
+
         public DefaultSeeker(IConfiguration configuration) : base(configuration)
         {
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
+            {
+                connection.Open();
+
+                using (var command = new NpgsqlCommand(
+                    string.Join(";", new[] {@"addrob\d+", @"house\d+", @"room\d+", @"stead\d+"}.Select(x =>
+                        $@"SELECT table_name FROM information_schema.tables
+                        WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                    connection))
+                {
+                    command.Prepare();
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        _listAddrob.Fill(reader);
+                        reader.NextResult();
+                        _listHouse.Fill(reader);
+                        reader.NextResult();
+                        _listRoom.Fill(reader);
+                        reader.NextResult();
+                        _listStead.Fill(reader);
+                    }
+                }
+
+                _addrobSql = string.Join("\nUNION ALL\n", string.Join("\nUNION ALL\n",
+                    _listRoom.Select(x =>
+                        $@"SELECT roomguid FROM {x} WHERE record_id=ANY(@ids)")), string.Join("\nUNION ALL\n",
+                    _listHouse.Select(x =>
+                        $@"SELECT houseguid FROM {x} WHERE record_id=ANY(@ids)")), string.Join("\nUNION ALL\n",
+                    _listStead.Select(x =>
+                        $"SELECT steadguid FROM {x} WHERE record_id=ANY(@ids)")), string.Join("\nUNION ALL\n",
+                    _listAddrob.Select(x =>
+                        $@"SELECT aoguid FROM {x} WHERE record_id=ANY(@ids)")));
+            }
         }
 
         /// <summary>
@@ -64,7 +104,7 @@ namespace Placium.Seeker
         /// <param name="addr">Массив с элементами адреса (от старшего к младшему)</param>
         /// <param name="housenumber">Номер дома/участка</param>
         /// <returns>Список кодов ФИАС</returns>
-        public async Task<List<string>> GetFiasByAddrAsync(string[] addr, string housenumber)
+        public async Task<List<string>> GetFiasByAddrAsync(string[] addr, string housenumber, string roomnumber = null)
         {
             var addrob = new List<List<long>>();
             var house = new List<long>();
@@ -133,32 +173,11 @@ namespace Placium.Seeker
             {
                 connection.Open();
 
-                var listAddrob = new List<string>();
-                var listHouse = new List<string>();
-                var listStead = new List<string>();
-
-                using (var command = new NpgsqlCommand(
-                    string.Join(";", new[] {@"addrob\d+", @"house\d+", @"stead\d+"}.Select(x =>
-                        $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
-                    connection))
-                {
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        listAddrob.Fill(reader);
-                        reader.NextResult();
-                        listHouse.Fill(reader);
-                        reader.NextResult();
-                        listStead.Fill(reader);
-                    }
-                }
-
                 var guidaddrob = new List<List<string>>();
                 var guidaddrobdic = new List<Dictionary<string, string>>();
 
                 using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                        listAddrob.Select(x =>
+                        _listAddrob.Select(x =>
                             $"SELECT aoguid,parentguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1")),
                     connection))
                 {
@@ -205,7 +224,7 @@ namespace Placium.Seeker
 
                 if (stead.Any())
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            listStead.Select(x =>
+                            _listStead.Select(x =>
                                 $"SELECT steadguid,parentguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1")),
                         connection))
                     {
@@ -226,7 +245,7 @@ namespace Placium.Seeker
 
                 if (house.Any())
                     using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
-                            listHouse.Select(x =>
+                            _listHouse.Select(x =>
                                 $@"SELECT houseguid,aoguid FROM {x}
                                 JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate
                                 WHERE record_id=ANY(@ids)")),
@@ -259,6 +278,42 @@ namespace Placium.Seeker
                 {
                     result.AddRange(guidhouse);
                     result.AddRange(guidstead);
+
+                    if (!string.IsNullOrEmpty(roomnumber))
+                        using (var command = new NpgsqlCommand(string.Join("\nUNION ALL\n",
+                                _listRoom.Select(x => $@"SELECT roomguid,flatnumber,roomnumber FROM {x}
+                                WHERE houseguid=ANY(@guids) AND livestatus=1")),
+                            connection))
+                        {
+                            command.Parameters.AddWithValue("guids", result.ToArray());
+
+                            command.Prepare();
+
+                            var list = new List<Doc>();
+
+                            using (var reader = command.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    var roomguid = reader.SafeGetString(0);
+                                    var flatnumber = reader.SafeGetString(1);
+                                    var roomnumber1 = reader.SafeGetString(2);
+                                    var list1 = new List<string>();
+                                    if (!string.IsNullOrEmpty(flatnumber)) list1.Add($"кв. {flatnumber}");
+                                    if (!string.IsNullOrEmpty(roomnumber)) list1.Add($"комн. {roomnumber1}");
+                                    list.Add(new Doc
+                                    {
+                                        guid = roomguid,
+                                        distance = LevenshteinDistance.Calculate(roomnumber.Yo(), string.Join(" ", list1))
+                                    });
+                                }
+                            }
+
+                            if (!list.Any()) return result;
+
+                            var min = list.Min(x => x.distance);
+                            result = list.Where(x => x.distance == min).Select(x => x.guid).ToList();
+                        }
 
                     return result;
                 }
@@ -423,6 +478,7 @@ namespace Placium.Seeker
             var list = new List<string>(addr.Length + 1);
             list.AddRange(addr);
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
+
             var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
@@ -478,6 +534,67 @@ namespace Placium.Seeker
             }
         }
 
+        /// <summary>
+        ///     Получение списка кодов ФИАС для заданного адреса
+        /// </summary>
+        /// <param name="addr">Массив с элементами адреса (от старшего к младшему)</param>
+        /// <param name="housenumber">Номер дома/участка</param>
+        /// <param name="roomnumber">Номер квартиры</param>
+        /// <returns>Список кодов ФИАС</returns>
+        public async Task<List<string>> GetFiasByAddr2Async(string[] addr, string housenumber, string roomnumber)
+        {
+            var result = new List<string>();
+
+            var list = new List<string>(addr.Length + 2);
+            list.AddRange(addr);
+            if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
+            if (!string.IsNullOrWhiteSpace(roomnumber)) list.Add(roomnumber);
+
+            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+
+            using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
+            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                await npgsqlConnection.OpenAsync();
+
+                npgsqlConnection.ReloadTypes();
+                npgsqlConnection.TypeMapper.UseGeoJson();
+
+                for (var priority = 0; priority < 20; priority++)
+                {
+                    var ids = new List<long>();
+                    var dic = new Dictionary<string, object>
+                    {
+                        {"match", match},
+                        {"priority", priority}
+                    };
+                    ids.FillAll(
+                        "SELECT id FROM addrobx WHERE MATCH(@match) AND priority=@priority",
+                        dic, connection);
+
+                    if (!ids.Any()) continue;
+
+                    using (var command = new NpgsqlCommand(_addrobSql, npgsqlConnection))
+                    {
+                        command.Parameters.AddWithValue("ids", ids.ToArray());
+
+                        command.Prepare();
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            result.Fill(reader);
+                        }
+                    }
+
+                    if (result.Any()) break;
+                }
+
+                await npgsqlConnection.CloseAsync();
+
+                return result;
+            }
+        }
+
         public async Task<List<string>> GetOsmSuggestAsync(string search, int limit = 20)
         {
             var list = search.Split(",");
@@ -503,6 +620,7 @@ namespace Placium.Seeker
                 return result;
             }
         }
+
         public async Task<List<string>> GetFiasSuggestAsync(string search, int limit = 20)
         {
             var list = search.Split(",");
