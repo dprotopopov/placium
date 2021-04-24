@@ -75,7 +75,7 @@ namespace Updater.Sphinx
                     list.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -142,7 +142,11 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command2, guids.Length);
+                                    guids = guids.Except(guids1).ToArray();
+
+                                    if (!guids.Any()) break;
+
+                                    var docs2 = GetDocs2(guids, command2, guids.Length);
 
                                     if (!docs2.Any()) break;
 
@@ -227,7 +231,7 @@ namespace Updater.Sphinx
                     list2.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -292,7 +296,11 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command2, guids.Length);
+                                    guids = guids.Except(guids1).ToArray();
+
+                                    if (!guids.Any()) break;
+
+                                    var docs2 = GetDocs2(guids, command2, guids.Length);
 
                                     if (!docs2.Any()) break;
 
@@ -382,7 +390,7 @@ namespace Updater.Sphinx
                     list3.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
@@ -496,7 +504,11 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command3, guids.Length);
+                                    guids = guids.Except(guids1).ToArray();
+
+                                    if (!guids.Any()) break;
+
+                                    var docs2 = GetDocs2(guids, command3, guids.Length);
 
                                     if (!docs2.Any()) break;
 
@@ -582,7 +594,7 @@ namespace Updater.Sphinx
                     list2.Select(x =>
                         $@"SELECT {x}.aoguid,offname,formalname,shortname,socrbase.socrname,aolevel,parentguid FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE {x}.aoguid=ANY(@guids) AND NOT {x}.aoguid=ANY(@guids1) AND {x}.livestatus=1"));
+                        WHERE {x}.aoguid=ANY(@guids) AND {x}.livestatus=1"));
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
@@ -626,7 +638,11 @@ namespace Updater.Sphinx
                                     guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
                                         .Select(x => x.parentguid).ToArray())
                                 {
-                                    var docs2 = GetDocs2(guids, guids1.ToArray(), command2, guids.Length);
+                                    guids = guids.Except(guids1).ToArray();
+
+                                    if (!guids.Any()) break;
+
+                                    var docs2 = GetDocs2(guids, command2, guids.Length);
 
                                     if (!docs2.Any()) break;
 
@@ -669,7 +685,7 @@ namespace Updater.Sphinx
             }
         }
 
-        private List<Doc2> GetDocs2(string[] guids, string[] guids1, NpgsqlCommand npgsqlCommand2, int take)
+        private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)
         {
             var socr = true;
             var formal = false;
@@ -677,7 +693,6 @@ namespace Updater.Sphinx
             var docs2 = new List<Doc2>(take);
 
             npgsqlCommand2.Parameters["guids"].Value = guids;
-            npgsqlCommand2.Parameters["guids1"].Value = guids1;
 
             using (var reader2 = npgsqlCommand2.ExecuteReader())
             {
