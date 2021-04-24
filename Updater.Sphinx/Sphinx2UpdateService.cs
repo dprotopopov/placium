@@ -389,7 +389,7 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $@"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}
+                        $@"SELECT {x}.houseguid,housenum,buildnum,strucnum,eststat.name,aoguid FROM {x}
                         JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE {x}.houseguid=ANY(@guids)"));
