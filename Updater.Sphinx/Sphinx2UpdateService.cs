@@ -103,7 +103,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 10000;
+                        var take = 1000;
 
                         reader.NextResult();
 
@@ -255,7 +255,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 10000;
+                        var take = 1000;
 
                         reader.NextResult();
 
@@ -420,7 +420,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 10000;
+                        var take = 1000;
 
                         reader.NextResult();
 
@@ -586,11 +586,11 @@ namespace Updater.Sphinx
 
                 var sql1 = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT COUNT(*) FROM {x} WHERE {x}.record_number>@last_record_number AND livestatus=1"));
+                        $"SELECT COUNT(*) FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT {x}.record_id,number,parentguid FROM {x} WHERE {x}.record_number>@last_record_number AND livestatus=1"));
+                        $"SELECT record_id,number,parentguid FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 using (var command2 = new NpgsqlCommand(sql2, npgsqlConnection2))
@@ -608,7 +608,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 10000;
+                        var take = 1000;
 
                         reader.NextResult();
 
