@@ -158,7 +158,7 @@ namespace Placium.Common
             long last_record_number)
         {
             using (var command = new NpgsqlCommand(
-                "INSERT INTO service_history2(service_type2,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
+                "INSERT INTO service_history2(service_type2,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type2) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
                 , connection))
             {
                 command.Parameters.AddWithValue("service_type", service_type);
