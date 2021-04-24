@@ -26,7 +26,7 @@
         var session = document.getElementById("session");
         var full = document.getElementById("full");
         formData.append("session", session.value);
-        formData.append("full", !!full.value);
+        formData.append("full", full.checked);
 
         $.ajax(
             {
