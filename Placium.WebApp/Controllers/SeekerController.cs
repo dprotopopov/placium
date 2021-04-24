@@ -54,14 +54,23 @@ namespace Placium.WebApp.Controllers
                 osm
             }));
         }
-        public IActionResult Suggest()
+        public IActionResult OsmSuggest()
         {
             return View();
         }
         [HttpPost]
-        public async Task<IActionResult> Suggest(string search, int limit=20)
+        public async Task<IActionResult> OsmSuggest(string search, int limit = 20)
         {
-            return Content(JsonConvert.SerializeObject(await _seeker.GetSuggestAsync(search, limit)));
+            return Content(JsonConvert.SerializeObject(await _seeker.GetOsmSuggestAsync(search, limit)));
+        }
+        public IActionResult FiasSuggest()
+        {
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> FiasSuggest(string search, int limit = 20)
+        {
+            return Content(JsonConvert.SerializeObject(await _seeker.GetFiasSuggestAsync(search, limit)));
         }
 
     }

@@ -2,7 +2,7 @@
 
 namespace Placium.Types
 {
-    public enum FiasServiceType
+    public enum FiasServiceType2
     {
         [PgName("addrob")]
         Addrob,
@@ -10,5 +10,7 @@ namespace Placium.Types
         House,
         [PgName("stead")]
         Stead,
+        [PgName("room")]
+        Room,
     }
 }

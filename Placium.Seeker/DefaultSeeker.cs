@@ -478,7 +478,7 @@ namespace Placium.Seeker
             }
         }
 
-        public async Task<List<string>> GetSuggestAsync(string search, int limit = 20)
+        public async Task<List<string>> GetOsmSuggestAsync(string search, int limit = 20)
         {
             var list = search.Split(",");
             var result = new List<string>();
@@ -496,6 +496,31 @@ namespace Placium.Seeker
                     };
                     var count = result.FillAll(
                         "SELECT title FROM addrx WHERE MATCH(@match) AND priority=@priority",
+                        dic, connection, limit: limit);
+                    limit -= count;
+                }
+
+                return result;
+            }
+        }
+        public async Task<List<string>> GetFiasSuggestAsync(string search, int limit = 20)
+        {
+            var list = search.Split(",");
+            var result = new List<string>();
+
+            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+
+            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                for (var priority = 0; limit > 0 && priority < 20; priority++)
+                {
+                    var dic = new Dictionary<string, object>
+                    {
+                        {"match", match},
+                        {"priority", priority}
+                    };
+                    var count = result.FillAll(
+                        "SELECT title FROM addrobx WHERE MATCH(@match) AND priority=@priority",
                         dic, connection, limit: limit);
                     limit -= count;
                 }
