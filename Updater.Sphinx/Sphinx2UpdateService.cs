@@ -95,7 +95,6 @@ namespace Updater.Sphinx
                     command.Prepare();
 
                     command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-                    command2.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command2.Prepare();
 
@@ -251,7 +250,6 @@ namespace Updater.Sphinx
                     command.Prepare();
 
                     command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-                    command2.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command2.Prepare();
 
@@ -420,7 +418,6 @@ namespace Updater.Sphinx
                     command2.Prepare();
 
                     command3.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-                    command3.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command3.Prepare();
 
@@ -612,7 +609,6 @@ namespace Updater.Sphinx
                     command.Prepare();
 
                     command2.Parameters.Add("guids", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-                    command2.Parameters.Add("guids1", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
 
                     command2.Prepare();
 
