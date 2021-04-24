@@ -302,8 +302,8 @@ namespace Placium.Seeker
                                     var flatnumber = reader.SafeGetString(1);
                                     var roomnumber1 = reader.SafeGetString(2);
                                     var list1 = new List<string>();
-                                    if (!string.IsNullOrEmpty(flatnumber)) list1.Add($"кв. {flatnumber}");
-                                    if (!string.IsNullOrEmpty(roomnumber)) list1.Add($"комн. {roomnumber1}");
+                                    if (!string.IsNullOrEmpty(flatnumber)) list1.Add($"Квартира {flatnumber}");
+                                    if (!string.IsNullOrEmpty(roomnumber)) list1.Add($"Комната {roomnumber1}");
                                     list.Add(new Doc
                                     {
                                         guid = roomguid,

@@ -507,9 +507,9 @@ namespace Updater.Sphinx
                                                     var roomnumber = reader.SafeGetString(2);
                                                     var parentguid = reader.SafeGetString(3);
                                                     if (!string.IsNullOrEmpty(flatnumber))
-                                                        list1.Add($"кв. {flatnumber}");
+                                                        list1.Add($"Квартира {flatnumber}");
                                                     if (!string.IsNullOrEmpty(roomnumber))
-                                                        list1.Add($"комн. {roomnumber}");
+                                                        list1.Add($"Комната {roomnumber}");
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),

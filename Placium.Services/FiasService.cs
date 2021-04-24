@@ -139,8 +139,8 @@ namespace Placium.Services
                                 var flatnumber = reader.SafeGetString(1);
                                 var roomnumber = reader.SafeGetString(2);
                                 var list = new List<string>();
-                                if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
-                                if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
+                                if (!string.IsNullOrEmpty(flatnumber)) list.Add($"Квартира {flatnumber}");
+                                if (!string.IsNullOrEmpty(roomnumber)) list.Add($"Комната {roomnumber}");
                                 result.Add(new Room
                                 {
                                     guid = Guid.Parse(guid),
@@ -287,8 +287,8 @@ namespace Placium.Services
                             var flatnumber = reader.SafeGetString(1);
                             var roomnumber = reader.SafeGetString(2);
                             var list = new List<string>();
-                            if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
-                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
+                            if (!string.IsNullOrEmpty(flatnumber)) list.Add($"Квартира {flatnumber}");
+                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"Комната {roomnumber}");
                             result.Add(new Room
                             {
                                 guid = Guid.Parse((string) reader.SafeGetString(0)),
@@ -392,8 +392,8 @@ namespace Placium.Services
                             var flatnumber = reader.SafeGetString(1);
                             var roomnumber = reader.SafeGetString(2);
                             var list = new List<string>();
-                            if (!string.IsNullOrEmpty(flatnumber)) list.Add($"кв. {flatnumber}");
-                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"комн. {roomnumber}");
+                            if (!string.IsNullOrEmpty(flatnumber)) list.Add($"Квартира {flatnumber}");
+                            if (!string.IsNullOrEmpty(roomnumber)) list.Add($"Комната {roomnumber}");
                             result.Add(new Room
                             {
                                 guid = Guid.Parse((string) reader.SafeGetString(0)),
