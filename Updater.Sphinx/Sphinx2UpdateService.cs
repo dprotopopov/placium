@@ -95,7 +95,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 100;
+                        var take = 1000;
 
                         reader.NextResult();
 
@@ -276,7 +276,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 100;
+                        var take = 1000;
 
                         reader.NextResult();
 
@@ -463,7 +463,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 100;
+                        var take = 1000;
 
                         reader.NextResult();
 
@@ -689,7 +689,7 @@ namespace Updater.Sphinx
                     {
                         while (reader.Read()) total += reader.GetInt64(0);
 
-                        var take = 100;
+                        var take = 1000;
 
                         reader.NextResult();
 
