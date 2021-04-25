@@ -33,6 +33,7 @@ sudo mkdir -p manticore/log
 sudo mkdir -p manticore/data
 sudo mkdir -p nginx/conf
 sudo mkdir -p nginx/cache
+sudo mkdir -p pgadmin
 cd upload
 wget -c https://download.bbbike.org/osm/bbbike/Moscow/Moscow.osm.pbf
 wget -c https://download.geofabrik.de/russia-latest.osm.pbf
