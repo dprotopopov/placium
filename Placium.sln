@@ -22,9 +22,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{77EF9329-7C3A-410F-BB20-AED059AE7C54}"
 	ProjectSection(SolutionItems) = preProject
 		.env = .env
+		docker-compose.d.yml = docker-compose.d.yml
 		docker-compose.override.yml = docker-compose.override.yml
-		docker-compose.pba.yml = docker-compose.pba.yml
-		docker-compose.yandex.yml = docker-compose.yandex.yml
+		docker-compose.y.yml = docker-compose.y.yml
 		docker-compose.yml = docker-compose.yml
 		INSTALL.txt = INSTALL.txt
 		manticore.conf = manticore.conf

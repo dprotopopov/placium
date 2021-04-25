@@ -1,0 +1,29 @@
+﻿version: "3.9"
+services:
+  webapp-placium:
+    volumes:
+      - //d/placium/upload:/upload/
+
+  fias-placium:
+    volumes:
+      - //d/placium/fias/data:/var/lib/postgresql/data
+
+  osm-placium:
+    volumes:
+      - //d/placium/osm/data:/var/lib/postgresql/data
+
+  manticore-placium:
+    volumes:
+      - //d/placium/manticore/run:/var/manticore/run
+      - //d/placium/manticore/log:/var/manticore/log
+      - //d/placium/manticore/data:/var/manticore/data
+      - //d/placium/manticore/manticore.conf:/etc/manticoresearch/manticore.conf
+ 
+  nginx-placium:
+    volumes:
+      - //d/placium/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - //d/placium/nginx/cache:/data/nginx/cache
+
+  pgadmin-placium:
+    volumes:
+      - //d/placium/pgadmin:/var/lib/pgadmin

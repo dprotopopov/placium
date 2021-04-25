@@ -2,28 +2,28 @@
 services:
   webapp-placium:
     volumes:
-      - //y/placium/upload:/upload/
+      - /opt2/upload:/upload/
 
   fias-placium:
     volumes:
-      - //y/placium/fias/data:/var/lib/postgresql/data
+      - /opt2/fias/data:/var/lib/postgresql/data
 
   osm-placium:
     volumes:
-      - //y/placium/osm/data:/var/lib/postgresql/data
+      - /opt2/osm/data:/var/lib/postgresql/data
 
   manticore-placium:
     volumes:
-      - //y/placium/manticore/run:/var/manticore/run
-      - //y/placium/manticore/log:/var/manticore/log
-      - //y/placium/manticore/data:/var/manticore/data
-      - //y/placium/manticore/manticore.conf:/etc/manticoresearch/manticore.conf
- 
+      - /opt2/manticore/run:/var/manticore/run
+      - /opt2/manticore/log:/var/manticore/log
+      - /opt2/manticore/data:/var/manticore/data
+      - /opt2/manticore/manticore.conf:/etc/manticoresearch/manticore.conf
+
   nginx-placium:
     volumes:
-      - //y/placium/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
-      - //y/placium/nginx/cache:/data/nginx/cache
+      - /opt2/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /opt2/nginx/cache:/data/nginx/cache
 
   pgadmin-placium:
     volumes:
-      - //y/placium/pgadmin:/var/lib/pgadmin
+      - /opt2/pgadmin:/var/lib/pgadmin
