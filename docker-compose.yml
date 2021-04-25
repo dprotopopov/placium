@@ -112,3 +112,5 @@ services:
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     networks:
       - placium
+    logging:
+      driver: none
