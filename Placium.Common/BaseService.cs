@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
@@ -227,6 +228,7 @@ namespace Placium.Common
                 }
                 catch (Exception)
                 {
+                    Thread.Sleep(2000);
                 }
         }
 
