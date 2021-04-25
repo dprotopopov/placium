@@ -534,11 +534,11 @@ namespace Updater.Sphinx
                                                 {
                                                     while (reader2.Read())
                                                     {
-                                                        var housenum = reader.SafeGetString(1);
-                                                        var buildnum = reader.SafeGetString(2);
-                                                        var strucnum = reader.SafeGetString(3);
-                                                        var name = reader.SafeGetString(4);
-                                                        var parentguid = reader.SafeGetString(5);
+                                                        var housenum = reader2.SafeGetString(1);
+                                                        var buildnum = reader2.SafeGetString(2);
+                                                        var strucnum = reader2.SafeGetString(3);
+                                                        var name = reader2.SafeGetString(4);
+                                                        var parentguid = reader2.SafeGetString(5);
                                                         var list1 = new List<string> {name};
                                                         if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
                                                         if (!string.IsNullOrEmpty(buildnum)) list1.Add($"к{buildnum}");
