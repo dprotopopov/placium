@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fastenshtein;
 using GeoJSON.Net;
@@ -19,6 +20,7 @@ namespace Placium.Seeker
         private readonly List<string> _listHouse = new List<string>();
         private readonly List<string> _listRoom = new List<string>();
         private readonly List<string> _listStead = new List<string>();
+        private readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
 
         public DefaultSeeker(IConfiguration configuration) : base(configuration)
         {
@@ -482,7 +484,7 @@ namespace Placium.Seeker
             list.AddRange(addr);
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
 
-            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -553,7 +555,7 @@ namespace Placium.Seeker
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
             if (!string.IsNullOrWhiteSpace(roomnumber)) list.Add(roomnumber);
 
-            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))

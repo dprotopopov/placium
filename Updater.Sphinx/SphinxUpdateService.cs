@@ -31,7 +31,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text,priority int)"
+                    "CREATE TABLE addrx(title text,priority int) phrase_boundary='U+2C' phrase_boundary_step='100'"
                 }, connection);
 
                 await UpdateAddrxAsync(connection, session, full);
