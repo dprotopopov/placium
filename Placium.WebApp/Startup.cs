@@ -37,10 +37,10 @@ namespace Placium.WebApp
             services.Configure<UploadConfig>(Configuration.GetSection(nameof(UploadConfig)));
             services.Configure<AccountConfig>(Configuration.GetSection(nameof(AccountConfig)));
 
-            services.AddTransient<DefaultSeeker>();
-            services.AddTransient<PlacexService>();
-            services.AddTransient<OsmService>();
-            services.AddTransient<FiasService>();
+            services.AddSingleton<DefaultSeeker>();
+            services.AddSingleton<PlacexService>();
+            services.AddSingleton<OsmService>();
+            services.AddSingleton<FiasService>();
             services.AddSingleton<FiasUploadService>();
             services.AddSingleton<OsmUploadService>();
             services.AddSingleton<PlacexUpdateService>();

@@ -19,10 +19,10 @@ namespace Placium.WebApi
 
         private void RegisterServices(IServiceCollection services)
         {
-            services.AddTransient<DefaultSeeker>();
-            services.AddTransient<PlacexService>();
-            services.AddTransient<OsmService>();
-            services.AddTransient<FiasService>();
+            services.AddSingleton<DefaultSeeker>();
+            services.AddSingleton<PlacexService>();
+            services.AddSingleton<OsmService>();
+            services.AddSingleton<FiasService>();
         }
 
         public void ConfigureServices(IServiceCollection services)
