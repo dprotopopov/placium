@@ -492,7 +492,7 @@ namespace Placium.Seeker
             list.AddRange(addr);
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
 
-            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
+            var match = string.Join(" NOTNEAR/99 ", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -563,7 +563,7 @@ namespace Placium.Seeker
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
             if (!string.IsNullOrWhiteSpace(roomnumber)) list.Add(roomnumber);
 
-            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
+            var match = string.Join(" NOTNEAR/99 ", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -613,7 +613,7 @@ namespace Placium.Seeker
             var list = search.Split(",");
             var result = new List<string>();
 
-            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
+            var match = string.Join(" NOTNEAR/99 ", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
@@ -639,7 +639,7 @@ namespace Placium.Seeker
             var list = search.Split(",");
             var result = new List<string>();
 
-            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
+            var match = string.Join(" NOTNEAR/99 ", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
