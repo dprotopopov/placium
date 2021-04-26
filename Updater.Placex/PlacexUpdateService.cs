@@ -24,12 +24,27 @@ namespace Updater.Placex
 
         public async Task UpdateAsync(string session, bool full)
         {
-            await UpdateFromNodeAsync(session, full);
-            await UpdateFromWayAsync(session, full);
-            await UpdateFromRelationAsync(session, full);
+            if (full)
+                using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+                {
+                    await npgsqlConnection.OpenAsync();
+
+                    npgsqlConnection.ReloadTypes();
+                    npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+
+                    SetLastRecordNumber(npgsqlConnection, OsmServiceType.Node, 0);
+                    SetLastRecordNumber(npgsqlConnection, OsmServiceType.Way, 0);
+                    SetLastRecordNumber(npgsqlConnection, OsmServiceType.Relation, 0);
+
+                    await npgsqlConnection.CloseAsync();
+                }
+
+            await UpdateNodeAsync(session, full);
+            await UpdateWayAsync(session, full);
+            await UpdateRelationAsync(session, full);
         }
 
-        public async Task UpdateFromNodeAsync(string session, bool full)
+        public async Task UpdateNodeAsync(string session, bool full)
         {
             var current = 0L;
             var total = 0L;
@@ -137,7 +152,7 @@ namespace Updater.Placex
             }
         }
 
-        public async Task UpdateFromWayAsync(string session, bool full)
+        public async Task UpdateWayAsync(string session, bool full)
         {
             var current = 0L;
             var total = 0L;
@@ -339,7 +354,7 @@ namespace Updater.Placex
             }
         }
 
-        public async Task UpdateFromRelationAsync(string session, bool full)
+        public async Task UpdateRelationAsync(string session, bool full)
         {
             var current = 0L;
             var total = 0L;

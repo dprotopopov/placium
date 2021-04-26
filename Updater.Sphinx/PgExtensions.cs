@@ -64,11 +64,15 @@ namespace Updater.Sphinx
                 var skipTown = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:town") &&
                                dictionary["addr:city"] == dictionary["addr:town"];
 
+                var skipVillage = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:village") &&
+                                  dictionary["addr:city"] == dictionary["addr:village"];
+
                 for (var k = 0; k < priority; k++)
                 {
                     var key = keys[k];
                     if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
-                        (key != "addr:town" || !skipTown))
+                        (key != "addr:town" || !skipTown) &&
+                        (key != "addr:village" || !skipVillage))
                         list.Add(dictionary[key].Yo());
                 }
 

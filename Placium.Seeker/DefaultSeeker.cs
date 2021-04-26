@@ -89,9 +89,13 @@ namespace Placium.Seeker
             var skipTown = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:town") &&
                            dictionary["addr:city"] == dictionary["addr:town"];
 
+            var skipVillage = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:village") &&
+                           dictionary["addr:city"] == dictionary["addr:village"];
+
             foreach (var key in keys)
                 if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
-                    (key != "addr:town" || !skipTown))
+                    (key != "addr:town" || !skipTown) &&
+                    (key != "addr:village" || !skipVillage))
                     addr.Add(dictionary[key]);
 
             var housenumber = dictionary.ContainsKey("addr:housenumber")
@@ -443,9 +447,13 @@ namespace Placium.Seeker
             var skipTown = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:town") &&
                            dictionary["addr:city"] == dictionary["addr:town"];
 
+            var skipVillage = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:village") &&
+                              dictionary["addr:city"] == dictionary["addr:village"];
+
             foreach (var key in keys)
                 if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
-                    (key != "addr:town" || !skipTown))
+                    (key != "addr:town" || !skipTown) &&
+                    (key != "addr:village" || !skipVillage))
                     addr.Add(dictionary[key]);
 
             var housenumber = dictionary.ContainsKey("addr:housenumber")
@@ -605,7 +613,7 @@ namespace Placium.Seeker
             var list = search.Split(",");
             var result = new List<string>();
 
-            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
@@ -631,7 +639,7 @@ namespace Placium.Seeker
             var list = search.Split(",");
             var result = new List<string>();
 
-            var match = string.Join("<<", list.Select(x => $"({x.Yo().Escape()})"));
+            var match = string.Join("<<", list.Select(x => $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x).Select(y => y.Yo().Escape()))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {

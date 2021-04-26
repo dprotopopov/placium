@@ -33,14 +33,28 @@ namespace Updater.Sphinx
                 {
                     "CREATE TABLE addrx(title text,priority int) phrase_boundary='U+2C' phrase_boundary_step='100'"
                 }, connection);
-
-                await UpdateAddrxAsync(connection, session, full);
             }
+
+            if (full)
+                using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+                {
+                    await npgsqlConnection.OpenAsync();
+
+                    npgsqlConnection.ReloadTypes();
+                    npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+
+                    SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, 0);
+
+                    await npgsqlConnection.CloseAsync();
+                }
+
+            await UpdateAddrxAsync(session, full);
         }
 
 
-        private async Task UpdateAddrxAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateAddrxAsync(string session, bool full)
         {
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 var current = 0L;
@@ -88,7 +102,7 @@ namespace Updater.Sphinx
                                 sb.Append(string.Join(",",
                                     docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority})")));
 
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
                                 current += docs.Count;
 

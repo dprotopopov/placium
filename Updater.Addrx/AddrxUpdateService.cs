@@ -21,6 +21,24 @@ namespace Updater.Addrx
 
         public async Task UpdateAsync(string session, bool full)
         {
+            if (full)
+                using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+                {
+                    await npgsqlConnection.OpenAsync();
+
+                    npgsqlConnection.ReloadTypes();
+                    npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+
+                    SetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, 0);
+
+                    await npgsqlConnection.CloseAsync();
+                }
+
+            await UpdatePlacexAsync(session, full);
+        }
+
+        public async Task UpdatePlacexAsync(string session, bool full)
+        {
             var id = Guid.NewGuid().ToString();
             await _progressHub.InitAsync(id, session);
 

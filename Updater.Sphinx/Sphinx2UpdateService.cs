@@ -37,6 +37,21 @@ namespace Updater.Sphinx
                 }, connection);
             }
 
+            if (full)
+                using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
+                {
+                    await npgsqlConnection.OpenAsync();
+                    npgsqlConnection.ReloadTypes();
+                    npgsqlConnection.TypeMapper.MapEnum<FiasServiceType2>("service_type2");
+
+                    SetLastRecordNumber(npgsqlConnection, FiasServiceType2.Addrob, 0);
+                    SetLastRecordNumber(npgsqlConnection, FiasServiceType2.House, 0);
+                    SetLastRecordNumber(npgsqlConnection, FiasServiceType2.Stead, 0);
+                    SetLastRecordNumber(npgsqlConnection, FiasServiceType2.Room, 0);
+
+                    await npgsqlConnection.CloseAsync();
+                }
+
             await UpdateAddrobAsync(session, full);
             await UpdateHouseAsync(session, full);
             await UpdateSteadAsync(session, full);

@@ -39,18 +39,33 @@ namespace Updater.Sphinx
                     "CREATE TABLE house(housenumber text,title text,title2 text)",
                     "CREATE TABLE stead(housenumber text,title text,title2 text)"
                 }, connection);
-
-                await UpdateAddrobAsync(connection, session, full);
-                await UpdateHouseAsync(connection, session, full);
-                await UpdateSteadAsync(connection, session, full);
             }
+
+            if (full)
+                using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
+                {
+                    await npgsqlConnection.OpenAsync();
+                    npgsqlConnection.ReloadTypes();
+                    npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
+
+                    SetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob, 0);
+                    SetLastRecordNumber(npgsqlConnection, FiasServiceType.House, 0);
+                    SetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead, 0);
+
+                    await npgsqlConnection.CloseAsync();
+                }
+
+            await UpdateAddrobAsync(session, full);
+            await UpdateHouseAsync(session, full);
+            await UpdateSteadAsync(session, full);
         }
 
-        private async Task UpdateAddrobAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateAddrobAsync(string session, bool full)
         {
             var socr = true;
             var formal = false;
 
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -151,7 +166,7 @@ namespace Updater.Sphinx
                                 sb.Append(string.Join(",",
                                     q.Select(x => $"({x.id},'{x.text.TextEscape()}','{x.text2.TextEscape()}')")));
 
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
                                 current += docs1.Count;
 
@@ -172,8 +187,9 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdateHouseAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateHouseAsync(string session, bool full)
         {
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -297,7 +313,7 @@ namespace Updater.Sphinx
                                     q.Select(x =>
                                         $"({x.id},'{x.housenumber.TextEscape()}','{x.text.TextEscape()}','{x.text2.TextEscape()}')")));
 
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
                                 current += docs1.Count;
 
@@ -318,8 +334,9 @@ namespace Updater.Sphinx
             }
         }
 
-        private async Task UpdateSteadAsync(MySqlConnection connection, string session, bool full)
+        private async Task UpdateSteadAsync(string session, bool full)
         {
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -420,7 +437,7 @@ namespace Updater.Sphinx
                                     q.Select(x =>
                                         $"({x.id},'{x.housenumber.TextEscape()}','{x.text.TextEscape()}','{x.text2.TextEscape()}')")));
 
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), connection);
+                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
                                 current += docs1.Count;
 
