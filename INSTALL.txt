@@ -43,8 +43,8 @@ cd && git clone https://github.com/dprotopopov/placium.git
 cd && cp placium/nginx.conf /opt2/nginx/conf/
 cd && cp placium/manticore.conf /opt2/manticore/
 cd && cd placium
-cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.yandex.yml build
-cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.yandex.yml up -d --remove-orphans
+cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.y.yml build
+cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.y.yml up -d --remove-orphans
 cd && cd placium && docker-compose logs -f
 cd && cd placium && docker-compose down
 
@@ -52,8 +52,8 @@ cd && git clone https://gitlab.pba.su/protopopovdy/placium.git
 cd && sudo cp placium/nginx.conf /opt2/nginx/conf/
 cd && sudo cp placium/manticore.conf /opt2/manticore/
 cd && cd placium
-cd && cd placium && sudo docker-compose -f docker-compose.yml -f docker-compose.pba.yml build
-cd && cd placium && sudo docker-compose -f docker-compose.yml -f docker-compose.pba.yml up -d --remove-orphans
+cd && cd placium && sudo docker-compose build
+cd && cd placium && sudo docker-compose up -d --remove-orphans
 cd && cd placium && sudo docker-compose logs -f
 cd && cd placium && sudo docker-compose down
 
