@@ -1,0 +1,48 @@
+Fastenshtein
+The MIT License (MIT)
+The one of the fastest Levenshtein distance packages on NuGet. Supports .NET Framework and .NET Core (.NET Standard 1.0). Levenshtein calculates the shortest possible distance between two strings. Producing a count of the number of insertions, deletions and substitutions to make one string into another.
+Простая формула - легко переписать без использования пакета
+
+Microsoft.AspNetCore.Server.IISIntegration
+ASP.NET Core components for working with the IIS AspNetCoreModule.
+Можно отказаться если не планируется размещать приложение под управлением IIS.
+
+Microsoft.AspNetCore.SignalR
+Components for providing real-time bi-directional communication across the Web.
+Используется в административной панели для отображения прогресса обработки данных
+
+MySql.Data
+MySql.Data.MySqlClient .Net Core Class Library
+Используется для соединения с manticore (sphinx)
+
+NDbfReader
+The MIT License (MIT)
+A fully managed reader of DBF files. Fast and lightweight with async support.
+
+Newtonsoft.Json
+Json.NET is a popular high-performance JSON framework for .NET
+
+Npgsql
+Npgsql is the open source .NET data provider for PostgreSQL.
+
+Npgsql.GeoJSON
+GeoJSON plugin for Npgsql, allowing mapping of PostGIS geometry types to GeoJSON types.
+
+OsmSharp
+The MIT License (MIT)
+An OpenStreetMap (OSM) library for .NET.
+
+OsmSharp.Geo
+The MIT License (MIT)
+OsmSharp.Geo enables using OSM-data in NTS.
+
+Swashbuckle.AspNetCore
+MIT License
+Swagger tools for documenting APIs built on ASP.NET Core
+
+System.IO.Compression.ZipFile
+Provides classes that support the compression and decompression of streams using file system paths.
+
+System.Text.Encoding.CodePages
+Provides support for code-page based encodings, including Windows-1252, Shift-JIS, and GB2312.
+

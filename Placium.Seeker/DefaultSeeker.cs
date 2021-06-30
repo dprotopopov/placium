@@ -132,7 +132,7 @@ namespace Placium.Seeker
                         if (!string.IsNullOrWhiteSpace(housenumber))
                         {
                             var match1 =
-                                $"@housenumber ({housenumber.Yo().Escape()}) @title ({row.Yo().Escape()}) @title2 ({row2.Yo().Escape()})";
+                                $"@housenumber ({housenumber.Yo().ToLower().Escape()}) @title ({row.Yo().ToLower().Escape()}) @title2 ({row2.Yo().Escape()})";
                             var dic1 = new Dictionary<string, object>
                             {
                                 {"match", match1}
@@ -146,7 +146,7 @@ namespace Placium.Seeker
                                 dic1, connection);
                         }
 
-                        var match = $"@title ({row.Yo().Escape()}) @title2 ({row2.Yo().Escape()})";
+                        var match = $"@title ({row.Yo().ToLower().Escape()}) @title2 ({row2.Yo().ToLower().Escape()})";
                         var dic = new Dictionary<string, object>
                         {
                             {"match", match}
@@ -159,7 +159,7 @@ namespace Placium.Seeker
 
                     if (index == 0)
                     {
-                        var match = $"@title ({row.Yo().Escape()})";
+                        var match = $"@title ({row.Yo().ToLower().Escape()})";
                         var dic = new Dictionary<string, object>
                         {
                             {"match", match}
@@ -494,7 +494,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -567,7 +567,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -619,7 +619,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
@@ -647,7 +647,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {

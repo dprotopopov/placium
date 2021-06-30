@@ -19,6 +19,7 @@ namespace Placium.WebApi
 
         private void RegisterServices(IServiceCollection services)
         {
+            services.AddSingleton<AddressService>();
             services.AddSingleton<DefaultSeeker>();
             services.AddSingleton<PlacexService>();
             services.AddSingleton<OsmService>();
