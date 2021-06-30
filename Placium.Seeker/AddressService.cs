@@ -113,6 +113,8 @@ namespace Placium.Seeker
             var socr = false;
             var formal = false;
 
+            Console.WriteLine($"guid = {guid}");
+
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
                 await connection.OpenAsync();
@@ -139,13 +141,15 @@ namespace Placium.Seeker
                                 var list = new List<string>();
                                 if (!string.IsNullOrEmpty(flatnumber)) list.Add($"Квартира {flatnumber}");
                                 if (!string.IsNullOrEmpty(roomnumber)) list.Add($"Комната {roomnumber}");
-                                entry.Flat = new AddressLevelEntry
+                                var levelEntry = new AddressLevelEntry
                                 {
                                     FiasCode = guid,
                                     Name = string.Join(", ", list),
                                     Type = "кв",
                                     TypeFull = "квартира"
                                 };
+                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
+                                entry.Flat = levelEntry;
                                 result.Add(string.Join(", ", list));
                                 guid = reader.SafeGetString(0);
                             }
@@ -174,13 +178,15 @@ namespace Placium.Seeker
                                 if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
                                 if (string.IsNullOrEmpty(entry.PostalCode)) entry.PostalCode = postalcode;
-                                entry.House = new AddressLevelEntry
+                                var levelEntry = new AddressLevelEntry
                                 {
                                     FiasCode = guid,
                                     Name = string.Join(" ", list),
                                     Type = "д",
                                     TypeFull = name
                                 };
+                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
+                                entry.House = levelEntry;
                                 result.Add(string.Join(", ", list));
                                 guid = reader.SafeGetString(0);
                             }
@@ -203,13 +209,15 @@ namespace Placium.Seeker
                                 var list = new List<string>();
                                 if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
                                 if (string.IsNullOrEmpty(entry.PostalCode)) entry.PostalCode = postalcode;
-                                entry.House = new AddressLevelEntry
+                                var levelEntry = new AddressLevelEntry
                                 {
                                     FiasCode = guid,
                                     Name = string.Join(" ", list),
                                     Type = "уч",
                                     TypeFull = "участок"
                                 };
+                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
+                                entry.House = levelEntry;
                                 result.Add(string.Join(", ", list));
                                 guid = reader.SafeGetString(0);
                             }
