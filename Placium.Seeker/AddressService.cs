@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
@@ -250,6 +252,7 @@ namespace Placium.Seeker
                                     Type = shortname,
                                     TypeFull = socrname
                                 };
+                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
                                 switch (aolevel)
                                 {
                                     case 1:
