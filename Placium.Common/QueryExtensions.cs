@@ -35,7 +35,7 @@ namespace Placium.Common
 
 
         public static int FillAll(this List<long> list, string sql, Dictionary<string, object> dictionary,
-            MySqlConnection connection, int take = 100)
+            MySqlConnection connection, int take = 100, int limit = 1000)
         {
             var total = 0;
             for (var skip = 0;; skip += take)
@@ -43,9 +43,10 @@ namespace Placium.Common
                 {
                     dictionary["skip"] = skip;
                     dictionary["take"] = take;
-                    var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection);
+                    var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection, limit);
                     total += count;
-                    if (count < take) return total;
+                    limit -= count;
+                    if (count < take || limit == 0) return total;
                 }
                 catch (Exception)
                 {
@@ -74,7 +75,7 @@ namespace Placium.Common
         }
 
         public static int Fill(this List<long> list, string sql, Dictionary<string, object> dictionary,
-            MySqlConnection connection)
+            MySqlConnection connection, int limit)
         {
             connection.TryOpen();
 
@@ -84,7 +85,7 @@ namespace Placium.Common
 
                 using (var reader = command.ExecuteReader())
                 {
-                    return list.Fill(reader);
+                    return list.Fill(reader, limit);
                 }
             }
         }
@@ -105,10 +106,10 @@ namespace Placium.Common
             }
         }
 
-        public static int Fill(this List<long> list, MySqlDataReader reader)
+        public static int Fill(this List<long> list, MySqlDataReader reader, int limit)
         {
             var count = 0;
-            while (reader.Read())
+            for (var i = 0; i < limit && reader.Read(); i++)
             {
                 list.Add(reader.GetInt64(0));
                 count++;

@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
-using Newtonsoft.Json;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
@@ -14,6 +12,7 @@ namespace Placium.Seeker
 {
     public class AddressService : BaseService
     {
+        private readonly string _guidSql;
         private readonly List<string> _listAddrob = new List<string>();
         private readonly List<string> _listHouse = new List<string>();
         private readonly List<string> _listRoom = new List<string>();
@@ -72,11 +71,20 @@ namespace Placium.Seeker
                     $@"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel,regioncode,postalcode FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
                         WHERE aoguid=@p AND livestatus=1"));
+
+            _guidSql = string.Join("\nUNION ALL\n",
+                _listRoom.Select(x => $@"SELECT roomguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"),
+                _listHouse.Select(x =>
+                    $@"SELECT houseguid FROM {x} JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate WHERE record_id=ANY(@ids)"),
+                _listStead.Select(x => $"SELECT steadguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"),
+                _listAddrob.Select(x => $@"SELECT aoguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"));
         }
 
         public async Task<IEnumerable<AddressEntry>> GetAddressInfo(string searchString, int limit = 20)
         {
-            var guids = await GetFiasSuggestAsync(searchString, limit);
+            var ids = await GetFiasSuggestAsync(searchString, limit);
+            var guids = await GetGuidsAsync(ids.ToArray());
+
             var result = new List<AddressEntry>();
 
             foreach (var guid in guids)
@@ -108,12 +116,35 @@ namespace Placium.Seeker
             return result;
         }
 
+        private async Task<List<string>> GetGuidsAsync(long[] ids)
+        {
+            var result = new List<string>();
+            using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
+            {
+                await connection.OpenAsync();
+
+                connection.ReloadTypes();
+                using (var command = new NpgsqlCommand(_guidSql, connection))
+                {
+                    command.Parameters.AddWithValue("ids", ids);
+
+                    command.Prepare();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read()) result.Add(reader.SafeGetString(0));
+                    }
+                }
+
+                await connection.CloseAsync();
+
+                return result;
+            }
+        }
+
         private async Task<AddressEntry> GetAddressEntryAsync(string guid)
         {
             var socr = false;
             var formal = false;
-
-            Console.WriteLine($"guid = {guid}");
 
             using (var connection = new NpgsqlConnection(GetFiasConnectionString()))
             {
@@ -148,7 +179,6 @@ namespace Placium.Seeker
                                     Type = "кв",
                                     TypeFull = "квартира"
                                 };
-                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
                                 entry.Flat = levelEntry;
                                 result.Add(string.Join(", ", list));
                                 guid = reader.SafeGetString(0);
@@ -185,7 +215,6 @@ namespace Placium.Seeker
                                     Type = "д",
                                     TypeFull = name
                                 };
-                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
                                 entry.House = levelEntry;
                                 result.Add(string.Join(", ", list));
                                 guid = reader.SafeGetString(0);
@@ -216,7 +245,6 @@ namespace Placium.Seeker
                                     Type = "уч",
                                     TypeFull = "участок"
                                 };
-                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
                                 entry.House = levelEntry;
                                 result.Add(string.Join(", ", list));
                                 guid = reader.SafeGetString(0);
@@ -260,7 +288,6 @@ namespace Placium.Seeker
                                     Type = shortname,
                                     TypeFull = socrname
                                 };
-                                Console.WriteLine(JsonConvert.SerializeObject(levelEntry));
                                 switch (aolevel)
                                 {
                                     case 1:
@@ -303,10 +330,10 @@ namespace Placium.Seeker
             }
         }
 
-        private async Task<List<string>> GetFiasSuggestAsync(string search, int limit = 20)
+        private async Task<List<long>> GetFiasSuggestAsync(string search, int limit = 20)
         {
             var list = search.Split(",");
-            var result = new List<string>();
+            var result = new List<long>();
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
@@ -322,7 +349,7 @@ namespace Placium.Seeker
                         {"priority", priority}
                     };
                     var count = result.FillAll(
-                        "SELECT title FROM addrobx WHERE MATCH(@match) AND priority=@priority",
+                        "SELECT id FROM addrobx WHERE MATCH(@match) AND priority=@priority",
                         dic, connection, limit: limit);
                     limit -= count;
                 }
