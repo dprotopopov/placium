@@ -72,12 +72,16 @@ namespace Placium.Seeker
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
                         WHERE aoguid=@p AND livestatus=1"));
 
-            _guidSql = string.Join("\nUNION ALL\n",
-                _listRoom.Select(x => $@"SELECT roomguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"),
-                _listHouse.Select(x =>
-                    $@"SELECT houseguid FROM {x} JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate WHERE record_id=ANY(@ids)"),
-                _listStead.Select(x => $"SELECT steadguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"),
-                _listAddrob.Select(x => $@"SELECT aoguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"));
+            var queries = new List<string>();
+            queries.AddRange(_listRoom.Select(x =>
+                $@"SELECT roomguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"));
+            queries.AddRange(_listHouse.Select(x =>
+                $@"SELECT houseguid FROM {x} JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate WHERE record_id=ANY(@ids)"));
+            queries.AddRange(_listStead.Select(x =>
+                $"SELECT steadguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"));
+            queries.AddRange(_listAddrob.Select(x =>
+                $@"SELECT aoguid FROM {x} WHERE record_id=ANY(@ids) AND livestatus=1"));
+            _guidSql = string.Join("\nUNION ALL\n", queries);
         }
 
         public async Task<IEnumerable<AddressEntry>> GetAddressInfo(string searchString, int limit = 20)
