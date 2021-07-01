@@ -31,7 +31,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text,priority int) phrase_boundary='U+2C' phrase_boundary_step='100'"
+                    "CREATE TABLE addrx(title text,priority int,lon string,lat string) phrase_boundary='U+2C' phrase_boundary_step='100'"
                 }, connection);
             }
 
@@ -72,10 +72,10 @@ namespace Updater.Sphinx
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
                 var sql1 =
-                    "SELECT COUNT(*) FROM addrx WHERE record_number>@last_record_number";
+                    "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
                 var sql =
-                    "SELECT id,tags FROM addrx WHERE record_number>@last_record_number";
+                    "SELECT addrx.id,addrx.tags,ST_AsText(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 {
@@ -98,9 +98,9 @@ namespace Updater.Sphinx
 
                             if (docs.Any())
                             {
-                                var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority,lon,lat) VALUES ");
                                 sb.Append(string.Join(",",
-                                    docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority})")));
+                                    docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority},'{x.lon}','{x.lat}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 

@@ -22,7 +22,7 @@ namespace Placium.Seeker
         private readonly string _parentRoomSql;
         private readonly string _parentSteadSql;
 
-        private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>\d+(\.\d+))\s+(?<lat>\d+(\.\d+))\s*\)",
+        private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>\d+(\.\d+)?)\s+(?<lat>\d+(\.\d+)?)\s*\)",
             RegexOptions.IgnoreCase);
 
         private readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
@@ -91,33 +91,31 @@ namespace Placium.Seeker
 
             var result = new List<AddressEntry>();
 
-            foreach (var guid in guids)
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                var entry = await GetAddressEntryAsync(guid);
-
-                var addr = entry.AddressString.Split(",").ToList();
-                while (addr.Any())
+                foreach (var guid in guids)
                 {
-                    var points = await GetOsmByAddrAsync(addr.ToArray());
+                    var entry = await GetAddressEntryAsync(guid);
 
-                    if (points.Any())
+                    var addr = entry.AddressString.Split(",").ToList();
+                    while (addr.Any())
                     {
-                        var match = _pointRegex.Match(points.First());
-                        if (match.Success)
+                        if (GetPointByAddr(addr.ToArray(), mySqlConnection, out var lon,
+                            out var lat))
                         {
-                            entry.GeoLon = match.Groups["lon"].Value;
-                            entry.GeoLat = match.Groups["lat"].Value;
+                            entry.GeoLon = lon;
+                            entry.GeoLat = lat;
                             break;
                         }
+
+                        addr.RemoveAt(addr.Count - 1);
                     }
 
-                    addr.RemoveAt(addr.Count - 1);
+                    result.Add(entry);
                 }
 
-                result.Add(entry);
+                return result;
             }
-
-            return result;
         }
 
         public async Task<IEnumerable<AddressEntry>> GetAddressInfo2Async(string searchString, int limit = 20)
@@ -126,33 +124,93 @@ namespace Placium.Seeker
 
             var result = new List<AddressEntry>();
 
-            foreach (var name in names)
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                var entry = new AddressEntry()
+                foreach (var name in names)
                 {
-                    AddressString = name
-                };
-
-                var addr = entry.AddressString.Split(",").ToList();
-                while (addr.Any())
-                {
-                    var points = await GetOsmByAddrAsync(addr.ToArray());
-
-                    if (points.Any())
+                    var entry = new AddressEntry
                     {
-                        var match = _pointRegex.Match(points.First());
-                        if (match.Success)
+                        AddressString = name
+                    };
+
+                    var addr = entry.AddressString.Split(",").ToList();
+                    while (addr.Any())
+                    {
+                        if (GetPointByAddr(addr.ToArray(), mySqlConnection, out var lon,
+                            out var lat))
                         {
-                            entry.GeoLon = match.Groups["lon"].Value;
-                            entry.GeoLat = match.Groups["lat"].Value;
+                            entry.GeoLon = lon;
+                            entry.GeoLat = lat;
                             break;
                         }
+
+                        addr.RemoveAt(addr.Count - 1);
                     }
 
-                    addr.RemoveAt(addr.Count - 1);
+                    result.Add(entry);
                 }
+            }
 
-                result.Add(entry);
+            return result;
+        }
+
+        public async Task<IEnumerable<AddressEntry>> GetAddressInfo3Async(string searchString, int limit = 20)
+        {
+            var result = new List<AddressEntry>();
+            var list = searchString.Split(",");
+            var match = string.Join("<<",
+                list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
+
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                for (var priority = 0; priority < 20 && limit > 0; priority++)
+                {
+                    var skip = 0;
+                    var take = 20;
+                    while (limit > 0)
+                    {
+                        mySqlConnection.TryOpen();
+
+                        using (var command =
+                            new MySqlCommand(
+                                @"SELECT addressString,postalCode,regionCode,country,geoLon,geoLat FROM address WHERE MATCH(@match) AND priority=@priority LIMIT @skip,@take",
+                                mySqlConnection))
+                        {
+                            command.Parameters.AddWithValue("skip", skip);
+                            command.Parameters.AddWithValue("take", take);
+                            command.Parameters.AddWithValue("priority", priority);
+                            command.Parameters.AddWithValue("match", match);
+
+                            using (var reader = command.ExecuteReader())
+                            {
+                                var count = 0;
+                                while (limit > 0 && reader.Read())
+                                {
+                                    count++;
+                                    limit--;
+                                    var addressString = reader.GetString(0);
+                                    var postalCode = reader.GetString(1);
+                                    var regionCode = reader.GetString(2);
+                                    var country = reader.GetString(3);
+                                    var geoLon = reader.GetString(4);
+                                    var geoLat = reader.GetString(5);
+                                    result.Add(new AddressEntry
+                                    {
+                                        AddressString = addressString,
+                                        PostalCode = postalCode,
+                                        RegionCode = regionCode,
+                                        Country = country,
+                                        GeoLon = geoLon,
+                                        GeoLat = geoLat
+                                    });
+                                }
+
+                                if (count < take) break;
+                            }
+                        }
+                    }
+                }
             }
 
             return result;
@@ -245,7 +303,7 @@ namespace Placium.Seeker
                                 var strucnum = reader.SafeGetString(3);
                                 var name = reader.SafeGetString(4);
                                 var postalcode = reader.SafeGetString(5);
-                                var list = new List<string> {name};
+                                var list = new List<string>();
                                 if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
                                 if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
                                 if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
@@ -374,9 +432,9 @@ namespace Placium.Seeker
 
         private async Task<List<long>> GetFiasSuggestAsync(string search, int limit = 20)
         {
-            var list = search.Split(",");
             var result = new List<long>();
 
+            var list = search.Split(",");
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
                     $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
@@ -399,6 +457,7 @@ namespace Placium.Seeker
                 return result;
             }
         }
+
         private async Task<List<string>> GetFiasSuggestNamesAsync(string search, int limit = 20)
         {
             var list = search.Split(",");
@@ -428,7 +487,7 @@ namespace Placium.Seeker
         }
 
 
-        private async Task<List<string>> GetOsmByAddrAsync(string[] addr)
+        private bool GetPointByAddr(string[] addr, MySqlConnection connection, out string lon, out string lat)
         {
             var keys = new[]
             {
@@ -445,58 +504,42 @@ namespace Placium.Seeker
                 "addr:housenumber"
             };
 
-            var result = new List<string>();
 
             var match = string.Join("<<",
                 addr.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
                     $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
 
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
-            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            for (var priority = 0; priority < 20; priority++)
             {
-                await npgsqlConnection.OpenAsync();
-
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.UseGeoJson();
-
-                for (var priority = 0; priority < 20; priority++)
+                var dic = new Dictionary<string, object>
                 {
-                    var ids = new List<long>();
-                    var dic = new Dictionary<string, object>
+                    {"match", match},
+                    {"priority", priority}
+                };
+
+                connection.TryOpen();
+
+                using (var command =
+                    new MySqlCommand("SELECT lon,lat FROM addrx WHERE MATCH(@match) AND priority=@priority LIMIT 1",
+                        connection))
+                {
+                    foreach (var pair in dic) command.Parameters.AddWithValue(pair.Key, pair.Value);
+
+                    using (var reader = command.ExecuteReader())
                     {
-                        {"match", match},
-                        {"priority", priority}
-                    };
-                    ids.FillAll(
-                        "SELECT id FROM addrx WHERE MATCH(@match) AND priority=@priority",
-                        dic, connection);
-
-                    if (!ids.Any()) continue;
-
-                    using (var command =
-                        new NpgsqlCommand(
-                            @"SELECT id,ST_AsText(ST_Centroid(location)) FROM placex WHERE tags?|@keys AND id=ANY(@ids) LIMIT 1",
-                            npgsqlConnection))
-                    {
-                        command.Parameters.AddWithValue("keys", keys.ToArray());
-                        command.Parameters.AddWithValue("ids", ids.ToArray());
-
-                        command.Prepare();
-
-                        using (var reader = command.ExecuteReader())
+                        if (reader.Read())
                         {
-                            while (reader.Read())
-                                result.Add(reader.GetString(1));
+                            lon = reader.GetString(0);
+                            lat = reader.GetString(1);
+                            return true;
                         }
                     }
-
-                    if (result.Any()) break;
                 }
-
-                await npgsqlConnection.CloseAsync();
-
-                return result;
             }
+
+            lon = lat = string.Empty;
+
+            return false;
         }
     }
 }

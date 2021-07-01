@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="8.0.23" />
+    <PackageReference Include="Npgsql.GeoJSON" Version="5.0.4" />
   </ItemGroup>
 
   <ItemGroup>
