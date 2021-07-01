@@ -21,7 +21,7 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(string searchString, int limit = 20)
         {
-            return Ok(await _addressService.GetAddressInfo(searchString, limit));
+            return Ok(await _addressService.GetAddressInfo2Async(searchString, limit));
         }
     }
 }

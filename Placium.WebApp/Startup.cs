@@ -55,7 +55,8 @@ namespace Placium.WebApp
         {
             RegisterServices(services);
 
-            services.AddControllersWithViews();
+            services.AddControllersWithViews()
+                .AddNewtonsoftJson();
             services.AddSignalR();
             services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
             services.Configure<KestrelServerOptions>(options =>

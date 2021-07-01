@@ -30,7 +30,8 @@ namespace Placium.WebApi
         {
             RegisterServices(services);
 
-            services.AddControllers();
+            services.AddControllers()
+                .AddNewtonsoftJson();
             services.AddSignalR();
             services.AddHealthChecks();
 

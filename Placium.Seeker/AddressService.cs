@@ -84,7 +84,7 @@ namespace Placium.Seeker
             _guidSql = string.Join("\nUNION ALL\n", queries);
         }
 
-        public async Task<IEnumerable<AddressEntry>> GetAddressInfo(string searchString, int limit = 20)
+        public async Task<IEnumerable<AddressEntry>> GetAddressInfoAsync(string searchString, int limit = 20)
         {
             var ids = await GetFiasSuggestAsync(searchString, limit);
             var guids = await GetGuidsAsync(ids.ToArray());
@@ -94,6 +94,44 @@ namespace Placium.Seeker
             foreach (var guid in guids)
             {
                 var entry = await GetAddressEntryAsync(guid);
+
+                var addr = entry.AddressString.Split(",").ToList();
+                while (addr.Any())
+                {
+                    var points = await GetOsmByAddrAsync(addr.ToArray());
+
+                    if (points.Any())
+                    {
+                        var match = _pointRegex.Match(points.First());
+                        if (match.Success)
+                        {
+                            entry.GeoLon = match.Groups["lon"].Value;
+                            entry.GeoLat = match.Groups["lat"].Value;
+                            break;
+                        }
+                    }
+
+                    addr.RemoveAt(addr.Count - 1);
+                }
+
+                result.Add(entry);
+            }
+
+            return result;
+        }
+
+        public async Task<IEnumerable<AddressEntry>> GetAddressInfo2Async(string searchString, int limit = 20)
+        {
+            var names = await GetFiasSuggestNamesAsync(searchString, limit);
+
+            var result = new List<AddressEntry>();
+
+            foreach (var name in names)
+            {
+                var entry = new AddressEntry()
+                {
+                    AddressString = name
+                };
 
                 var addr = entry.AddressString.Split(",").ToList();
                 while (addr.Any())
@@ -220,7 +258,7 @@ namespace Placium.Seeker
                                     TypeFull = name
                                 };
                                 entry.House = levelEntry;
-                                result.Add(string.Join(", ", list));
+                                result.Add(string.Join(" ", list));
                                 guid = reader.SafeGetString(0);
                             }
                         }
@@ -361,6 +399,34 @@ namespace Placium.Seeker
                 return result;
             }
         }
+        private async Task<List<string>> GetFiasSuggestNamesAsync(string search, int limit = 20)
+        {
+            var list = search.Split(",");
+            var result = new List<string>();
+
+            var match = string.Join("<<",
+                list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
+
+            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                for (var priority = 0; limit > 0 && priority < 20; priority++)
+                {
+                    var dic = new Dictionary<string, object>
+                    {
+                        {"match", match},
+                        {"priority", priority}
+                    };
+                    var count = result.FillAll(
+                        "SELECT title FROM addrobx WHERE MATCH(@match) AND priority=@priority",
+                        dic, connection, limit: limit);
+                    limit -= count;
+                }
+
+                return result;
+            }
+        }
+
 
         private async Task<List<string>> GetOsmByAddrAsync(string[] addr)
         {
