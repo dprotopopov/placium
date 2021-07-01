@@ -88,13 +88,14 @@ namespace Updater.Sphinx
                         if (reader.Read())
                             total = reader.GetInt64(0);
 
-                        var take = 10000;
+                        var take = 1000;
 
                         reader.NextResult();
 
                         while (true)
                         {
                             var docs = reader.ReadDocs3(take);
+                            
 
                             if (docs.Any())
                             {
@@ -105,6 +106,8 @@ namespace Updater.Sphinx
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
                                 current += docs.Count;
+
+                                Console.WriteLine($"processed {current}/{total} records");
 
                                 await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
