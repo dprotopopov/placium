@@ -62,7 +62,7 @@ namespace Placium.Common
         {
             if (s == null) return string.Empty;
 
-            return s.Replace("\\", @"\\")
+            return s.Replace("\\", @"\\\\")
                 .Replace("\'", @"\'")
                 .Replace("\r", @"\r")
                 .Replace("\n", @"\n")
@@ -72,18 +72,19 @@ namespace Placium.Common
                 .Replace("\f", @"\f")
                 .Replace("\v", @"\v")
                 .Replace("\0", @"\0")
-                .Replace("!", @"\\!")
-                .Replace("$", @"\\$")
-                .Replace("&", @"\\&")
-                .Replace("-", @"\\-")
-                .Replace("<", @"\\<")
-                .Replace("@", @"\\@")
-                .Replace("^", @"\\^")
-                .Replace("|", @"\\|")
-                .Replace("~", @"\\~")
-                .Replace("/", @"\\/")
-                .Replace("(", @"\\(")
-                .Replace(")", @"\\)")
+                .Replace("!", @"\!")
+                .Replace("$", @"\$")
+                .Replace("&", @"\&")
+                .Replace("-", @"\-")
+                .Replace("<", @"\<")
+                .Replace("@", @"\@")
+                .Replace("^", @"\^")
+                .Replace("|", @"\|")
+                .Replace("~", @"\~")
+                .Replace("=", @"\=")
+                .Replace("/", @"\/")
+                .Replace("(", @"\(")
+                .Replace(")", @"\)")
                 .Replace("\"", @"\""");
         }
 

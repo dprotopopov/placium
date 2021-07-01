@@ -1067,7 +1067,7 @@ namespace Updater.Sphinx
 
             var match = string.Join("<<",
                 addr.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
 
             for (var priority = 0; priority < 20; priority++)
             {

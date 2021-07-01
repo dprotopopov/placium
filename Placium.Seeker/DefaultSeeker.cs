@@ -494,7 +494,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -567,7 +567,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
 
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -619,7 +619,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
@@ -647,7 +647,7 @@ namespace Placium.Seeker
 
             var match = string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => y.Yo().ToLower().Escape()))})"));
+                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
