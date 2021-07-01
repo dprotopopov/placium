@@ -95,22 +95,23 @@ namespace Updater.Sphinx
                         while (true)
                         {
                             var docs = reader.ReadDocs3(take);
-                            
+
 
                             if (docs.Any())
                             {
                                 var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority,lon,lat) VALUES ");
                                 sb.Append(string.Join(",",
-                                    docs.Select(x => $"({x.id},'{x.text.TextEscape()}',{x.priority},'{x.lon}','{x.lat}')")));
+                                    docs.Select(x =>
+                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},'{x.lon}','{x.lat}')")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
-
-                                current += docs.Count;
-
-                                Console.WriteLine($"processed {current}/{total} records");
-
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
                             }
+
+                            current += docs.Count;
+
+                            await _progressHub.ProgressAsync(100f * current / total, id, session);
+
+                            Console.WriteLine($"processed {current}/{total} records");
 
                             if (docs.Count < take) break;
                         }

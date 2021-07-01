@@ -87,12 +87,12 @@ namespace Updater.Sphinx
                     text = string.Join(", ", list),
                     priority = priority
                 };
+
                 var match = _pointRegex.Match(reader.SafeGetString(2));
                 if (match.Success)
                 {
                     doc.lon = match.Groups["lon"].Value;
                     doc.lat = match.Groups["lat"].Value;
-                    break;
                 }
 
                 result.Add(doc);
