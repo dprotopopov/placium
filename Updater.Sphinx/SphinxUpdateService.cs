@@ -111,8 +111,6 @@ namespace Updater.Sphinx
 
                             await _progressHub.ProgressAsync(100f * current / total, id, session);
 
-                            Console.WriteLine($"processed {current}/{total} records");
-
                             if (docs.Count < take) break;
                         }
                     }
