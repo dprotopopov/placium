@@ -58,9 +58,137 @@ namespace Updater.Sphinx
                 }
 
             await UpdateAddrobAsync(session, full);
+            await UpdateLocationAsync(session);
             await UpdateHouseAsync(session, full);
+            await UpdateLocationAsync(session);
             await UpdateSteadAsync(session, full);
+            await UpdateLocationAsync(session);
             await UpdateRoomAsync(session, full);
+            await UpdateLocationAsync(session);
+        }
+
+        private async Task UpdateLocationAsync(string session)
+        {
+            var keys = new[]
+            {
+                "addr:region",
+                "addr:district",
+                "addr:city",
+                "addr:town",
+                "addr:village",
+                "addr:subdistrict",
+                "addr:suburb",
+                "addr:hamlet",
+                "addr:place",
+                "addr:street",
+                "addr:housenumber"
+            };
+
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+            {
+                var current = 0L;
+                var total = 0L;
+
+                var id = Guid.NewGuid().ToString();
+                await _progressHub.InitAsync(id, session);
+
+                await npgsqlConnection.OpenAsync();
+
+                npgsqlConnection.ReloadTypes();
+
+                var sql1 =
+                    "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE NOT addrx.tags?|@keys AND addrx.tags?@key";
+
+                var sql =
+                    "SELECT addrx.id,addrx.tags,ST_AsText(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE NOT addrx.tags?|@keys AND addrx.tags?@key";
+
+                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+                {
+                    command.Parameters.Add("keys", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
+                    command.Parameters.Add("key", NpgsqlDbType.Varchar);
+
+                    command.Prepare();
+
+                    for (var index = keys.Length; index-- > 0;)
+                    {
+                        command.Parameters["keys"].Value = keys.Skip(index + 1).ToArray();
+                        command.Parameters["key"].Value = keys[index];
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                                total += reader.GetInt64(0);
+
+                            reader.NextResult();
+
+                            while (reader.Read())
+                            {
+                                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
+
+                                var list = new List<string>(index + 1);
+
+                                var skipCity = dictionary.ContainsKey("addr:region") &&
+                                               dictionary.ContainsKey("addr:city") &&
+                                               dictionary["addr:region"] == dictionary["addr:city"];
+
+                                var skipTown = dictionary.ContainsKey("addr:city") &&
+                                               dictionary.ContainsKey("addr:town") &&
+                                               dictionary["addr:city"] == dictionary["addr:town"];
+
+                                var skipVillage = dictionary.ContainsKey("addr:city") &&
+                                                  dictionary.ContainsKey("addr:village") &&
+                                                  dictionary["addr:city"] == dictionary["addr:village"];
+
+                                for (var k = 0; k < index + 1; k++)
+                                {
+                                    var key = keys[k];
+                                    if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
+                                        (key != "addr:town" || !skipTown) &&
+                                        (key != "addr:village" || !skipVillage))
+                                        list.Add(dictionary[key].Yo());
+                                }
+
+                                var match = string.Join("<<",
+                                    list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
+                                        $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+
+                                var lon = "";
+                                var lat = "";
+
+                                var matchPoint = _pointRegex.Match(reader.SafeGetString(2));
+                                if (matchPoint.Success)
+                                {
+                                    lon = matchPoint.Groups["lon"].Value;
+                                    lat = matchPoint.Groups["lat"].Value;
+                                }
+
+                                mySqlConnection.TryOpen();
+
+                                using (var mySqlCommand = new MySqlCommand(
+                                    "UPDATE address SET geoLon=@lon,geoLat=@lat WHERE MATCH(@match) AND geoLon='' AND geoLat=''",
+                                    mySqlConnection))
+                                {
+                                    command.Parameters.AddWithValue("match", match);
+                                    command.Parameters.AddWithValue("lon", lon);
+                                    command.Parameters.AddWithValue("lat", lat);
+
+                                    mySqlCommand.TryExecuteNonQuery();
+
+                                    current++;
+                                }
+
+                                if (current % 1000 == 0)
+                                    await _progressHub.ProgressAsync(100f * current / total, id, session);
+                            }
+                        }
+                    }
+                }
+
+                await npgsqlConnection.CloseAsync();
+
+                await _progressHub.ProgressAsync(100f, id, session);
+            }
         }
 
         private async Task UpdateAddrobAsync(string session, bool full)
@@ -220,28 +348,12 @@ namespace Updater.Sphinx
                                                     guids1.AddRange(guids);
                                                 }
 
-
                                                 foreach (var doc1 in docs1)
-                                                {
-                                                    var addr = doc1.name.Split(',').ToList();
-                                                    while (addr.Any())
-                                                    {
-                                                        if (GetPointByAddr(addr.ToArray(), mySqlConnection, out var lon,
-                                                            out var lat))
-                                                        {
-                                                            doc1.lon = lon;
-                                                            doc1.lat = lat;
-                                                            break;
-                                                        }
-                                                        addr.RemoveAt(addr.Count - 1);
-                                                    }
-
                                                     if (!string.IsNullOrWhiteSpace(doc1.postalcode))
                                                     {
                                                         doc1.text = $"{doc1.postalcode}, {doc1.text}";
                                                         doc1.name = $"{doc1.postalcode}, {doc1.name}";
                                                     }
-                                                }
 
                                                 var sb = new StringBuilder(
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
@@ -443,28 +555,12 @@ namespace Updater.Sphinx
                                                     guids1.AddRange(guids);
                                                 }
 
-
                                                 foreach (var doc1 in docs1)
-                                                {
-                                                    var addr = doc1.name.Split(',').ToList();
-                                                    while (addr.Any())
-                                                    {
-                                                        if (GetPointByAddr(addr.ToArray(), mySqlConnection, out var lon,
-                                                            out var lat))
-                                                        {
-                                                            doc1.lon = lon;
-                                                            doc1.lat = lat;
-                                                            break;
-                                                        }
-                                                        addr.RemoveAt(addr.Count - 1);
-                                                    }
-
                                                     if (!string.IsNullOrWhiteSpace(doc1.postalcode))
                                                     {
                                                         doc1.text = $"{doc1.postalcode}, {doc1.text}";
                                                         doc1.name = $"{doc1.postalcode}, {doc1.name}";
                                                     }
-                                                }
 
                                                 var sb = new StringBuilder(
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
@@ -673,7 +769,7 @@ namespace Updater.Sphinx
                                                             parentguid = parentguid,
                                                             name = string.Join(" ", list11),
                                                             regioncode = regioncode,
-                                                            postalcode = postalcode,
+                                                            postalcode = postalcode
                                                         });
                                                     }
                                                 }
@@ -738,26 +834,11 @@ namespace Updater.Sphinx
                                                 }
 
                                                 foreach (var doc1 in docs1)
-                                                {
-                                                    var addr = doc1.name.Split(',').ToList();
-                                                    while (addr.Any())
-                                                    {
-                                                        if (GetPointByAddr(addr.ToArray(), mySqlConnection, out var lon,
-                                                            out var lat))
-                                                        {
-                                                            doc1.lon = lon;
-                                                            doc1.lat = lat;
-                                                            break;
-                                                        }
-                                                        addr.RemoveAt(addr.Count - 1);
-                                                    }
-
                                                     if (!string.IsNullOrWhiteSpace(doc1.postalcode))
                                                     {
                                                         doc1.text = $"{doc1.postalcode}, {doc1.text}";
                                                         doc1.name = $"{doc1.postalcode}, {doc1.name}";
                                                     }
-                                                }
 
                                                 var sb = new StringBuilder(
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
@@ -928,26 +1009,11 @@ namespace Updater.Sphinx
                                                 }
 
                                                 foreach (var doc1 in docs1)
-                                                {
-                                                    var addr = doc1.name.Split(',').ToList();
-                                                    while (addr.Any())
-                                                    {
-                                                        if (GetPointByAddr(addr.ToArray(), mySqlConnection, out var lon,
-                                                            out var lat))
-                                                        {
-                                                            doc1.lon = lon;
-                                                            doc1.lat = lat;
-                                                            break;
-                                                        }
-                                                        addr.RemoveAt(addr.Count - 1);
-                                                    }
-
                                                     if (!string.IsNullOrWhiteSpace(doc1.postalcode))
                                                     {
                                                         doc1.text = $"{doc1.postalcode}, {doc1.text}";
                                                         doc1.name = $"{doc1.postalcode}, {doc1.name}";
                                                     }
-                                                }
 
                                                 var sb = new StringBuilder(
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
@@ -1046,58 +1112,5 @@ namespace Updater.Sphinx
 
             return docs2;
         }
-
-        private bool GetPointByAddr(string[] addr, MySqlConnection connection, out string lon, out string lat)
-        {
-            var keys = new[]
-            {
-                "addr:region",
-                "addr:district",
-                "addr:city",
-                "addr:town",
-                "addr:village",
-                "addr:subdistrict",
-                "addr:suburb",
-                "addr:hamlet",
-                "addr:place",
-                "addr:street",
-                "addr:housenumber"
-            };
-
-
-            var match = string.Join("<<",
-                addr.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
-
-            for (var priority = 0; priority < 20; priority++)
-            {
-                connection.TryOpen();
-
-                using (var command =
-                    new MySqlCommand("SELECT lon,lat FROM addrx WHERE MATCH(@match) AND priority=@priority LIMIT 1",
-                        connection))
-                {
-                    command.Parameters.AddWithValue("priority", priority);
-                    command.Parameters.AddWithValue("match", match);
-
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            lon = reader.GetString(0);
-                            lat = reader.GetString(1);
-                            return true;
-                        }
-                    }
-                }
-
-            }
-
-            lon = lat = string.Empty;
-
-            return false;
-        }
     }
 }
-
