@@ -263,8 +263,9 @@ namespace Placium.Common
                         return mySqlCommand.ExecuteNonQuery();
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Console.WriteLine($"error execute mysql command ({ex.Message}). waiting.");
                     Thread.Sleep(2000);
                 }
         }
