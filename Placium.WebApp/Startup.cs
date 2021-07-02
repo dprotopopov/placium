@@ -34,6 +34,7 @@ namespace Placium.WebApp
 
         private void RegisterServices(IServiceCollection services)
         {
+            services.Configure<SphinxConfig>(Configuration.GetSection(nameof(SphinxConfig)));
             services.Configure<UploadConfig>(Configuration.GetSection(nameof(UploadConfig)));
             services.Configure<AccountConfig>(Configuration.GetSection(nameof(AccountConfig)));
 

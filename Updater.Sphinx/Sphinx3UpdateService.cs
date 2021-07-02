@@ -165,12 +165,16 @@ namespace Updater.Sphinx
 
                                 mySqlConnection.TryOpen();
 
-                                var mysql = $"UPDATE address SET geoLon='{lon}',geoLat='{lat}' WHERE MATCH('{match.Escape()}') AND geoLon='' AND geoLat=''";
+                                var mysql = $"UPDATE address SET geoLon='{lon}',geoLat='{lat}' WHERE MATCH('{match}') AND geoLon='' AND geoLat=''";
                                 using (var mySqlCommand = new MySqlCommand(mysql,mySqlConnection))
                                 {
-                                    if (mySqlCommand.TryExecuteNonQuery() == 0)
+                                    try
                                     {
-                                        Console.WriteLine(mysql);
+                                        mySqlCommand.ExecuteNonQuery();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine($"error execute mysql command {mysql} ({ex.Message})");
                                     }
 
                                     current++;

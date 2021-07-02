@@ -23,6 +23,7 @@ services:
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
+      SphinxConfig__HttpSql: "http://manticore-placium:9308/sql"
       UploadConfig__Path: "/upload"
       AccountConfig__Password: "${ADMIN_PASSWORD}"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9966
