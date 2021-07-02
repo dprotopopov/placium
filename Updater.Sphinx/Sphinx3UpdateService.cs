@@ -173,7 +173,10 @@ namespace Updater.Sphinx
                                     command.Parameters.AddWithValue("lon", lon);
                                     command.Parameters.AddWithValue("lat", lat);
 
-                                    mySqlCommand.TryExecuteNonQuery();
+                                    if (mySqlCommand.TryExecuteNonQuery() == 0)
+                                    {
+                                        Console.WriteLine($"MATCH('{match}') geoLon='{lon}' geoLat='{lat}'");
+                                    }
 
                                     current++;
                                 }
