@@ -360,7 +360,7 @@ namespace Updater.Sphinx
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
@@ -568,7 +568,7 @@ namespace Updater.Sphinx
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
@@ -847,7 +847,7 @@ namespace Updater.Sphinx
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
@@ -1023,7 +1023,7 @@ namespace Updater.Sphinx
                                                     "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
