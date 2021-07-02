@@ -33,8 +33,9 @@ namespace Placium.Common
             {
                 return command.ExecuteNonQuery();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"error execute mysql commant ({ex.Message}).");
             }
 
             return 0;
