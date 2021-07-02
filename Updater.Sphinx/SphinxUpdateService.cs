@@ -119,6 +119,7 @@ namespace Updater.Sphinx
                 SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, next_last_record_number);
 
                 await npgsqlConnection.CloseAsync();
+                mySqlConnection.TryClose();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }

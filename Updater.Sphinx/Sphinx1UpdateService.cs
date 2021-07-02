@@ -182,6 +182,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
+                mySqlConnection.TryClose();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
@@ -329,6 +330,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
+                mySqlConnection.TryClose();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
@@ -453,6 +455,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection2.CloseAsync();
                 await npgsqlConnection.CloseAsync();
+                mySqlConnection.TryClose();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }

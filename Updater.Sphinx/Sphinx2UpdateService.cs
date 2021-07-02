@@ -215,6 +215,7 @@ namespace Updater.Sphinx
                                     }
 
                                     npgsqlConnection2.Close();
+                                    mySqlConnection.TryClose();
                                 }
                             });
                     }
@@ -394,6 +395,7 @@ namespace Updater.Sphinx
                                     }
 
                                     npgsqlConnection2.Close();
+                                    mySqlConnection.TryClose();
                                 }
                             });
                     }
@@ -631,6 +633,7 @@ namespace Updater.Sphinx
 
                                     npgsqlConnection3.Close();
                                     npgsqlConnection2.Close();
+                                    mySqlConnection.TryClose();
                                 }
                             });
                     }
@@ -789,6 +792,7 @@ namespace Updater.Sphinx
                                     }
 
                                     npgsqlConnection2.Close();
+                                    mySqlConnection.TryClose();
                                 }
                             });
                     }

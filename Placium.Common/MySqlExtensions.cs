@@ -16,6 +16,17 @@ namespace Placium.Common
             }
         }
 
+        public static void TryClose(this MySqlConnection connection)
+        {
+            try
+            {
+                connection.Close();
+            }
+            catch (Exception)
+            {
+            }
+        }
+
         public static int TryExecuteNonQuery(this MySqlCommand command)
         {
             try
