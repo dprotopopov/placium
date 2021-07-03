@@ -122,95 +122,72 @@ namespace Updater.Sphinx
 
                             reader.NextResult();
 
-                            var obj = new object();
-                            var obj1 = new object();
-                            var obj2 = new object();
-                            var reader_is_empty = false;
+                            while (reader.Read())
+                            {
+                                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
+                                var point = reader.SafeGetString(2);
 
-                            Parallel.For(0, 12,
-                                i =>
+                                var list = new List<string>(index + 1);
+
+                                var skipCity = dictionary.ContainsKey("addr:region") &&
+                                               dictionary.ContainsKey("addr:city") &&
+                                               dictionary["addr:region"] == dictionary["addr:city"];
+
+                                var skipTown = dictionary.ContainsKey("addr:city") &&
+                                               dictionary.ContainsKey("addr:town") &&
+                                               dictionary["addr:city"] == dictionary["addr:town"];
+
+                                var skipVillage = dictionary.ContainsKey("addr:city") &&
+                                                  dictionary.ContainsKey("addr:village") &&
+                                                  dictionary["addr:city"] == dictionary["addr:village"];
+
+                                for (var k = 0; k < index + 1; k++)
                                 {
-                                    while (true)
+                                    var key = keys[k];
+                                    if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
+                                        (key != "addr:town" || !skipTown) &&
+                                        (key != "addr:village" || !skipVillage))
+                                        list.Add(dictionary[key].Yo());
+                                }
+
+                                var match = string.Join("<<",
+                                    list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
+                                        $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape2()}\""))})"));
+
+                                var lon = "";
+                                var lat = "";
+
+                                var matchPoint = _pointRegex.Match(point);
+                                if (matchPoint.Success)
+                                {
+                                    lon = matchPoint.Groups["lon"].Value;
+                                    lat = matchPoint.Groups["lat"].Value;
+                                }
+
+                                var mysql =
+                                    $"UPDATE address SET geoLon='{lon}',geoLat='{lat}' WHERE MATCH('{match}') AND geoLon='' AND geoLat=''";
+
+                                mySqlConnection.TryOpen();
+
+                                using (var mySqlCommand = new MySqlCommand(mysql, mySqlConnection))
+                                {
+                                    try
                                     {
-                                        Dictionary<string, string> dictionary;
-                                        string point;
-                                        lock (obj)
-                                        {
-                                            if (reader_is_empty) break;
-                                            reader_is_empty = !reader.Read();
-                                            if (reader_is_empty) break;
-                                            dictionary = (Dictionary<string, string>) reader.GetValue(1);
-                                            point = reader.SafeGetString(2);
-                                        }
-
-                                        var list = new List<string>(index + 1);
-
-                                        var skipCity = dictionary.ContainsKey("addr:region") &&
-                                                       dictionary.ContainsKey("addr:city") &&
-                                                       dictionary["addr:region"] == dictionary["addr:city"];
-
-                                        var skipTown = dictionary.ContainsKey("addr:city") &&
-                                                       dictionary.ContainsKey("addr:town") &&
-                                                       dictionary["addr:city"] == dictionary["addr:town"];
-
-                                        var skipVillage = dictionary.ContainsKey("addr:city") &&
-                                                          dictionary.ContainsKey("addr:village") &&
-                                                          dictionary["addr:city"] == dictionary["addr:village"];
-
-                                        for (var k = 0; k < index + 1; k++)
-                                        {
-                                            var key = keys[k];
-                                            if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
-                                                (key != "addr:town" || !skipTown) &&
-                                                (key != "addr:village" || !skipVillage))
-                                                list.Add(dictionary[key].Yo());
-                                        }
-
-                                        var match = string.Join("<<",
-                                            list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                                                $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape2()}\""))})"));
-
-                                        var lon = "";
-                                        var lat = "";
-
-                                        var matchPoint = _pointRegex.Match(point);
-                                        if (matchPoint.Success)
-                                        {
-                                            lon = matchPoint.Groups["lon"].Value;
-                                            lat = matchPoint.Groups["lat"].Value;
-                                        }
-
-                                        var mysql =
-                                            $"UPDATE address SET geoLon='{lon}',geoLat='{lat}' WHERE MATCH('{match}') AND geoLon='' AND geoLat=''";
-
-                                        lock (obj1)
-                                        {
-                                            mySqlConnection.TryOpen();
-
-                                            using (var mySqlCommand = new MySqlCommand(mysql, mySqlConnection))
-                                            {
-                                                try
-                                                {
-                                                    mySqlCommand.ExecuteNonQuery();
-                                                }
-                                                catch (Exception ex)
-                                                {
-                                                    Console.WriteLine(
-                                                        $"error execute sql command {mysql} ({ex.Message})");
-                                                }
-                                            }
-                                        }
-
-                                        lock (obj2)
-                                        {
-                                            current++;
-
-                                            if (current % 1000 == 0)
-                                                _progressHub.ProgressAsync(100f * current / total, id,
-                                                    session).GetAwaiter().GetResult();
-                                        }
+                                        mySqlCommand.ExecuteNonQuery();
                                     }
-                                });
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine(
+                                            $"error execute sql command {mysql} ({ex.Message})");
+                                    }
+                                }
+
+                                current++;
+
+                                if (current % 1000 == 0)
+                                    _progressHub.ProgressAsync(100f * current / total, id,
+                                        session).GetAwaiter().GetResult();
+                            }
                         }
                     }
                 }
