@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using NpgsqlTypes;
@@ -18,20 +15,15 @@ namespace Updater.Sphinx
 {
     public class Sphinx3UpdateService : BaseService, IUpdateService
     {
-        private readonly HttpClient _httpClient = new HttpClient();
-
         private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>\d+(\.\d+)?)\s+(?<lat>\d+(\.\d+)?)\s*\)",
             RegexOptions.IgnoreCase);
 
         private readonly ProgressHub _progressHub;
         private readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
-        private readonly SphinxConfig _sphinxConfig;
 
-        public Sphinx3UpdateService(ProgressHub progressHub, IConfiguration configuration,
-            IOptions<SphinxConfig> sphinxConfig) : base(configuration)
+        public Sphinx3UpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
-            _sphinxConfig = sphinxConfig.Value;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -92,6 +84,7 @@ namespace Updater.Sphinx
                 "addr:housenumber"
             };
 
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 var current = 0L;
@@ -130,6 +123,8 @@ namespace Updater.Sphinx
                             reader.NextResult();
 
                             var obj = new object();
+                            var obj1 = new object();
+                            var obj2 = new object();
                             var reader_is_empty = false;
 
                             Parallel.For(0, 12,
@@ -184,24 +179,29 @@ namespace Updater.Sphinx
                                             lon = matchPoint.Groups["lon"].Value;
                                             lat = matchPoint.Groups["lat"].Value;
                                         }
+
                                         var mysql =
                                             $"UPDATE address SET geoLon='{lon}',geoLat='{lat}' WHERE MATCH('{match}') AND geoLon='' AND geoLat=''";
 
-                                        using (var request =
-                                            new HttpRequestMessage(HttpMethod.Post, _sphinxConfig.HttpSql))
+                                        lock (obj1)
                                         {
-                                            request.Content = new StringContent(HttpUtility.UrlEncode($"query={mysql}"));
+                                            mySqlConnection.TryOpen();
 
-                                            using (var response =
-                                                _httpClient.SendAsync(request).GetAwaiter().GetResult())
+                                            using (var mySqlCommand = new MySqlCommand(mysql, mySqlConnection))
                                             {
-                                                if (!response.IsSuccessStatusCode)
+                                                try
+                                                {
+                                                    mySqlCommand.ExecuteNonQuery();
+                                                }
+                                                catch (Exception ex)
+                                                {
                                                     Console.WriteLine(
-                                                        $"error http sql ({response.StatusCode} {response.ReasonPhrase})");
+                                                        $"error execute sql command {mysql} ({ex.Message})");
+                                                }
                                             }
                                         }
 
-                                        lock (obj)
+                                        lock (obj2)
                                         {
                                             current++;
 
@@ -216,6 +216,7 @@ namespace Updater.Sphinx
                 }
 
                 await npgsqlConnection.CloseAsync();
+                mySqlConnection.TryClose();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
