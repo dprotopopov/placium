@@ -53,13 +53,13 @@ namespace Placium.WebApi
 
             app.UseRouting();
 
+            app.UseAuthentication(); // аутентификация
+            app.UseAuthorization(); // авторизация
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
-
-            app.UseAuthentication(); // аутентификация
-            app.UseAuthorization(); // авторизация
 
             app.UseEndpoints(endpoints =>
             {
