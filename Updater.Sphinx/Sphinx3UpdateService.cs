@@ -659,7 +659,7 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $@"SELECT record_id,flatnumber,roomnumber,houseguid,roomguid FROM {x}
+                        $@"SELECT record_id,flatnumber,roomnumber,houseguid,roomguid,postalcode FROM {x}
                         WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -717,6 +717,7 @@ namespace Updater.Sphinx
                                                     var roomnumber = reader.SafeGetString(2);
                                                     var parentguid = reader.SafeGetString(3);
                                                     var guid = reader.SafeGetString(4);
+                                                    var postalcode = reader.SafeGetString(5);
                                                     if (!string.IsNullOrEmpty(flatnumber))
                                                         list1.Add($"Квартира {flatnumber}");
                                                     if (!string.IsNullOrEmpty(roomnumber))
@@ -731,7 +732,8 @@ namespace Updater.Sphinx
                                                         text = string.Join(" ", list1),
                                                         parentguid = parentguid,
                                                         name = string.Join(" ", list11),
-                                                        guid = guid
+                                                        guid = guid,
+                                                        postalcode = postalcode
                                                     });
                                                 }
 
@@ -927,7 +929,7 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $"SELECT record_id,number,parentguid,steadguid FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
+                        $"SELECT record_id,number,parentguid,steadguid,regioncode,postalcode FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 {
@@ -968,7 +970,20 @@ namespace Updater.Sphinx
                                             lock (obj)
                                             {
                                                 if (reader_is_empty) break;
-                                                docs1 = GetDocs1(reader, take);
+
+                                                docs1 = new List<Doc1>(take);
+
+                                                for (var j = 0; j < take && reader.Read(); j++)
+                                                    docs1.Add(new Doc1
+                                                    {
+                                                        id = reader.GetInt64(0),
+                                                        text = reader.SafeGetString(1),
+                                                        parentguid = reader.SafeGetString(2),
+                                                        guid = reader.SafeGetString(3),
+                                                        name = reader.SafeGetString(1),
+                                                        regioncode = reader.SafeGetString(4),
+                                                        postalcode = reader.SafeGetString(5)
+                                                    });
 
                                                 reader_is_empty = docs1.Count() < take;
                                                 if (!docs1.Any()) break;
@@ -1052,23 +1067,6 @@ namespace Updater.Sphinx
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
-        }
-
-        public static List<Doc1> GetDocs1(NpgsqlDataReader reader, int take)
-        {
-            var result = new List<Doc1>(take);
-            for (var i = 0; i < take && reader.Read(); i++)
-                result.Add(new Doc1
-                {
-                    id = reader.GetInt64(0),
-                    text = reader.SafeGetString(1),
-                    parentguid = reader.SafeGetString(2),
-                    guid = reader.SafeGetString(3),
-                    name = reader.SafeGetString(1),
-                    regioncode = reader.SafeGetString(7),
-                    postalcode = reader.SafeGetString(8)
-                });
-            return result;
         }
 
         private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)
