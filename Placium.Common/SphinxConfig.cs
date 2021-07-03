@@ -1,4 +1,4 @@
-﻿namespace Placium.WebApp
+﻿namespace Placium.Common
 {
     public class SphinxConfig
     {
