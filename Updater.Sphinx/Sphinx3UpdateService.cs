@@ -443,7 +443,7 @@ namespace Updater.Sphinx
 
                 var sql = string.Join("\nUNION ALL\n",
                     list.Select(x =>
-                        $@"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid,regioncode,postalcode,{x}.houseguid FROM {x}
+                        $@"SELECT {x}.record_id,housenum,buildnum,strucnum,eststat.name,aoguid,postalcode,{x}.houseguid FROM {x}
                         JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE {x}.record_number>@last_record_number"));
@@ -495,9 +495,8 @@ namespace Updater.Sphinx
                                                     var strucnum = reader.SafeGetString(3);
                                                     var name = reader.SafeGetString(4);
                                                     var parentguid = reader.SafeGetString(5);
-                                                    var regioncode = reader.SafeGetString(6);
-                                                    var postalcode = reader.SafeGetString(7);
-                                                    var guid = reader.SafeGetString(8);
+                                                    var postalcode = reader.SafeGetString(6);
+                                                    var guid = reader.SafeGetString(7);
                                                     var list1 = new List<string> {name};
                                                     var list11 = new List<string>();
                                                     if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
@@ -513,7 +512,6 @@ namespace Updater.Sphinx
                                                         text = string.Join(" ", list1),
                                                         parentguid = parentguid,
                                                         name = string.Join(" ", list11),
-                                                        regioncode = regioncode,
                                                         postalcode = postalcode,
                                                         guid = guid
                                                     });
@@ -650,7 +648,7 @@ namespace Updater.Sphinx
 
                 var sql2 = string.Join("\nUNION ALL\n",
                     list2.Select(x =>
-                        $@"SELECT {x}.houseguid,housenum,buildnum,strucnum,eststat.name,aoguid,regioncode,postalcode FROM {x}
+                        $@"SELECT {x}.houseguid,housenum,buildnum,strucnum,eststat.name,aoguid,postalcode FROM {x}
                         JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE {x}.houseguid=ANY(@guids)"));
@@ -758,8 +756,7 @@ namespace Updater.Sphinx
                                                         var strucnum = reader2.SafeGetString(3);
                                                         var name = reader2.SafeGetString(4);
                                                         var parentguid = reader2.SafeGetString(5);
-                                                        var regioncode = reader2.SafeGetString(6);
-                                                        var postalcode = reader2.SafeGetString(7);
+                                                        var postalcode = reader2.SafeGetString(6);
                                                         var list1 = new List<string> {name};
                                                         var list11 = new List<string>();
                                                         if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
@@ -775,7 +772,6 @@ namespace Updater.Sphinx
                                                             text = string.Join(" ", list1),
                                                             parentguid = parentguid,
                                                             name = string.Join(" ", list11),
-                                                            regioncode = regioncode,
                                                             postalcode = postalcode
                                                         });
                                                     }
