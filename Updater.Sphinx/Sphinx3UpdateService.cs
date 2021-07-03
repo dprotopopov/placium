@@ -58,11 +58,8 @@ namespace Updater.Sphinx
                 }
 
             await UpdateAddrobAsync(session, full);
-            await UpdateLocationAsync(session);
             await UpdateHouseAsync(session, full);
-            await UpdateLocationAsync(session);
             await UpdateSteadAsync(session, full);
-            await UpdateLocationAsync(session);
             await UpdateRoomAsync(session, full);
             await UpdateLocationAsync(session);
         }
