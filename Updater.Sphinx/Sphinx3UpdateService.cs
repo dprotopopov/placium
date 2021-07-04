@@ -203,19 +203,7 @@ namespace Updater.Sphinx
                                         streamWriter.Write(data);
                                     }
 
-                                    try
-                                    {
-                                        var httpResponse = (HttpWebResponse) httpRequest.GetResponse();
-                                        using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-                                        {
-                                            var result = streamReader.ReadToEnd();
-                                            Console.WriteLine($"{(int) httpResponse.StatusCode} {result}");
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        Console.WriteLine($"error web request ({ex.Message})");
-                                    }
+                                    httpRequest.GetResponseAsync();
                                 }
 
                                 current += docs.Count;
