@@ -65,11 +65,11 @@ namespace Updater.Sphinx
                     await npgsqlConnection.CloseAsync();
                 }
 
-            await UpdateLocationAsync(session);
             await UpdateAddrobAsync(session, full);
             await UpdateHouseAsync(session, full);
             await UpdateSteadAsync(session, full);
             await UpdateRoomAsync(session, full);
+            await UpdateLocationAsync(session);
         }
 
         private async Task UpdateLocationAsync(string session)
@@ -127,7 +127,7 @@ namespace Updater.Sphinx
 
                             reader.NextResult();
 
-                            var take = 100;
+                            var take = 1000;
 
                             while (true)
                             {
@@ -203,7 +203,7 @@ namespace Updater.Sphinx
                                         streamWriter.Write(data);
                                     }
 
-                                    httpRequest.GetResponseAsync();
+                                    ThreadPool.QueueUserWorkItem(o => { httpRequest.GetResponse(); });
                                 }
 
                                 current += docs.Count;
