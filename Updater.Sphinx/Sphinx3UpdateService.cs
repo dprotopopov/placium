@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -190,6 +191,8 @@ namespace Updater.Sphinx
                                     httpRequest.Method = "POST";
 
                                     httpRequest.ContentType = "application/x-ndjson";
+                                    httpRequest.Timeout = Timeout.Infinite;
+                                    httpRequest.KeepAlive = true;
 
                                     var data = string.Join("",
                                         docs.Select(x =>
