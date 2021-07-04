@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using System.Net.Http;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -18,8 +19,6 @@ namespace Updater.Sphinx
 {
     public class Sphinx3UpdateService : BaseService, IUpdateService
     {
-        private readonly HttpClient _httpClient = new HttpClient();
-
         private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>\d+(\.\d+)?)\s+(?<lat>\d+(\.\d+)?)\s*\)",
             RegexOptions.IgnoreCase);
 
@@ -184,28 +183,41 @@ namespace Updater.Sphinx
                                 }
 
                                 if (docs.Any())
-                                    using (var request = new HttpRequestMessage(HttpMethod.Post,
-                                        $"{_sphinxConfig.Http}/bulk"))
+                                {
+                                    var url = $"{_sphinxConfig.Http}/bulk";
+
+                                    var httpRequest = (HttpWebRequest) WebRequest.Create(url);
+                                    httpRequest.Method = "POST";
+
+                                    httpRequest.ContentType = "application/x-ndjson";
+
+                                    var data = string.Join("",
+                                        docs.Select(x =>
+                                            $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n"));
+
+                                    using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
                                     {
-                                        request.Content = new StringContent(
-                                            string.Join("",
-                                                docs.Select(x =>
-                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n")),
-                                            Encoding.UTF8, "application/x-ndjson");
-                                        using (var response = await _httpClient.SendAsync(request))
+                                        streamWriter.Write(data);
+                                    }
+
+                                    try
+                                    {
+                                        var httpResponse = (HttpWebResponse) httpRequest.GetResponse();
+                                        using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
                                         {
-                                            if (!response.IsSuccessStatusCode)
-                                                Console.WriteLine(
-                                                    $"error bulk update POST {_sphinxConfig.Http}/bulk ({(int) response.StatusCode} {response.ReasonPhrase})");
-                                            else
-                                                Console.WriteLine(await response.Content.ReadAsStringAsync());
+                                            var result = streamReader.ReadToEnd();
+                                            Console.WriteLine($"{(int) httpResponse.StatusCode} {result}");
                                         }
                                     }
+                                    catch (Exception ex)
+                                    {
+                                        Console.WriteLine($"error web request ({ex.Message})");
+                                    }
+                                }
 
                                 current += docs.Count;
 
-                                _progressHub.ProgressAsync(100f * current / total, id,
-                                    session).GetAwaiter().GetResult();
+                                await _progressHub.ProgressAsync(100f * current / total, id, session);
 
                                 if (docs.Count < take) break;
                             }
