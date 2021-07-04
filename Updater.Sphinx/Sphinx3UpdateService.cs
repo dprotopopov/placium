@@ -203,7 +203,7 @@ namespace Updater.Sphinx
                                         streamWriter.Write(data);
                                     }
 
-                                    ThreadPool.QueueUserWorkItem(o => { httpRequest.GetResponse(); });
+                                    httpRequest.GetResponseAsync();
                                 }
 
                                 current += docs.Count;
