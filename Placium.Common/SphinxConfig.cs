@@ -2,6 +2,6 @@
 {
     public class SphinxConfig
     {
-        public string HttpSql { get; set; }
+        public string Http { get; set; }
     }
 }

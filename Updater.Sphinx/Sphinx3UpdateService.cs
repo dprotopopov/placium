@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using NpgsqlTypes;
@@ -15,15 +17,20 @@ namespace Updater.Sphinx
 {
     public class Sphinx3UpdateService : BaseService, IUpdateService
     {
+        private readonly HttpClient _httpClient = new HttpClient();
+
         private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>\d+(\.\d+)?)\s+(?<lat>\d+(\.\d+)?)\s*\)",
             RegexOptions.IgnoreCase);
 
         private readonly ProgressHub _progressHub;
         private readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
+        private readonly SphinxConfig _sphinxConfig;
 
-        public Sphinx3UpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
+        public Sphinx3UpdateService(ProgressHub progressHub, IConfiguration configuration,
+            IOptions<SphinxConfig> sphinxConfig) : base(configuration)
         {
             _progressHub = progressHub;
+            _sphinxConfig = sphinxConfig.Value;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -57,11 +64,11 @@ namespace Updater.Sphinx
                     await npgsqlConnection.CloseAsync();
                 }
 
+            await UpdateLocationAsync(session);
             await UpdateAddrobAsync(session, full);
             await UpdateHouseAsync(session, full);
             await UpdateSteadAsync(session, full);
             await UpdateRoomAsync(session, full);
-            await UpdateLocationAsync(session);
         }
 
         private async Task UpdateLocationAsync(string session)
@@ -119,71 +126,87 @@ namespace Updater.Sphinx
 
                             reader.NextResult();
 
-                            while (reader.Read())
+                            var take = 100;
+
+                            while (true)
                             {
-                                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
-                                var point = reader.SafeGetString(2);
+                                var docs = new List<Doc4>(take);
 
-                                var list = new List<string>(index + 1);
-
-                                var skipCity = dictionary.ContainsKey("addr:region") &&
-                                               dictionary.ContainsKey("addr:city") &&
-                                               dictionary["addr:region"] == dictionary["addr:city"];
-
-                                var skipTown = dictionary.ContainsKey("addr:city") &&
-                                               dictionary.ContainsKey("addr:town") &&
-                                               dictionary["addr:city"] == dictionary["addr:town"];
-
-                                var skipVillage = dictionary.ContainsKey("addr:city") &&
-                                                  dictionary.ContainsKey("addr:village") &&
-                                                  dictionary["addr:city"] == dictionary["addr:village"];
-
-                                for (var k = 0; k < index + 1; k++)
+                                for (var j = 0; j < take && reader.Read(); j++)
                                 {
-                                    var key = keys[k];
-                                    if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
-                                        (key != "addr:town" || !skipTown) &&
-                                        (key != "addr:village" || !skipVillage))
-                                        list.Add(dictionary[key].Yo());
-                                }
+                                    var dictionary = (Dictionary<string, string>) reader.GetValue(1);
+                                    var point = reader.SafeGetString(2);
 
-                                var match = string.Join("<<",
-                                    list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                                        $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape2()}\""))})"));
+                                    var list = new List<string>(index + 1);
 
-                                var lon = "";
-                                var lat = "";
+                                    var skipCity = dictionary.ContainsKey("addr:region") &&
+                                                   dictionary.ContainsKey("addr:city") &&
+                                                   dictionary["addr:region"] == dictionary["addr:city"];
 
-                                var matchPoint = _pointRegex.Match(point);
-                                if (matchPoint.Success)
-                                {
-                                    lon = matchPoint.Groups["lon"].Value;
-                                    lat = matchPoint.Groups["lat"].Value;
-                                }
+                                    var skipTown = dictionary.ContainsKey("addr:city") &&
+                                                   dictionary.ContainsKey("addr:town") &&
+                                                   dictionary["addr:city"] == dictionary["addr:town"];
 
-                                var mysql =
-                                    $"UPDATE address SET geoLon='{lon}',geoLat='{lat}' WHERE MATCH('{match}') AND geoLon='' AND geoLat=''";
+                                    var skipVillage = dictionary.ContainsKey("addr:city") &&
+                                                      dictionary.ContainsKey("addr:village") &&
+                                                      dictionary["addr:city"] == dictionary["addr:village"];
 
-                                mySqlConnection.TryOpen();
-
-                                using (var mySqlCommand = new MySqlCommand(mysql, mySqlConnection))
-                                {
-                                    try
+                                    for (var k = 0; k < index + 1; k++)
                                     {
-                                        mySqlCommand.ExecuteNonQuery();
+                                        var key = keys[k];
+                                        if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
+                                            (key != "addr:town" || !skipTown) &&
+                                            (key != "addr:village" || !skipVillage))
+                                            list.Add(dictionary[key].Yo());
                                     }
-                                    catch (Exception ex)
+
+                                    var match = string.Join("<<",
+                                        list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
+                                            $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+
+                                    var lon = "";
+                                    var lat = "";
+
+                                    var matchPoint = _pointRegex.Match(point);
+                                    if (matchPoint.Success)
                                     {
-                                        Console.WriteLine(
-                                            $"error execute sql command {mysql} ({ex.Message})");
+                                        lon = matchPoint.Groups["lon"].Value;
+                                        lat = matchPoint.Groups["lat"].Value;
                                     }
+
+                                    docs.Add(new Doc4
+                                    {
+                                        match = match,
+                                        lon = lon,
+                                        lat = lat
+                                    });
                                 }
 
-                                current++;
+                                if (docs.Any())
+                                    using (var request = new HttpRequestMessage(HttpMethod.Post,
+                                        $"{_sphinxConfig.Http}/bulk"))
+                                    {
+                                        request.Content = new StringContent(
+                                            string.Join("",
+                                                docs.Select(x =>
+                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":\"{x.match.Escape()}\"}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n")),
+                                            Encoding.UTF8, "application/x-ndjson");
+                                        using (var response = await _httpClient.SendAsync(request))
+                                        {
+                                            if (!response.IsSuccessStatusCode)
+                                                Console.WriteLine(
+                                                    $"error bulk update POST {_sphinxConfig.Http}/bulk ({(int) response.StatusCode} {response.ReasonPhrase})");
+                                            else
+                                                Console.WriteLine(await response.Content.ReadAsStringAsync());
+                                        }
+                                    }
 
-                                if (current % 1000 == 0)
-                                    _progressHub.ProgressAsync(100f * current / total, id,
-                                        session).GetAwaiter().GetResult();
+                                current += docs.Count;
+
+                                _progressHub.ProgressAsync(100f * current / total, id,
+                                    session).GetAwaiter().GetResult();
+
+                                if (docs.Count < take) break;
                             }
                         }
                     }
