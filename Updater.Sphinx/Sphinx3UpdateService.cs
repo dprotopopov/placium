@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
@@ -189,7 +190,7 @@ namespace Updater.Sphinx
                                         request.Content = new StringContent(
                                             string.Join("",
                                                 docs.Select(x =>
-                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":\"{x.match.Escape()}\"}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n")),
+                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n")),
                                             Encoding.UTF8, "application/x-ndjson");
                                         using (var response = await _httpClient.SendAsync(request))
                                         {
