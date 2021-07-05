@@ -20,7 +20,7 @@ namespace Updater.Sphinx
 {
     public class Sphinx3UpdateService : BaseService, IUpdateService
     {
-        private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>\d+(\.\d+)?)\s+(?<lat>\d+(\.\d+)?)\s*\)",
+        private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s+(?<lat>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s*\)",
             RegexOptions.IgnoreCase);
 
         private readonly ProgressHub _progressHub;

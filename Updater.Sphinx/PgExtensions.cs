@@ -8,7 +8,7 @@ namespace Updater.Sphinx
     public static class PgExtensions
     {
         private static readonly Regex _pointRegex = new Regex(
-            @"POINT\s*\(\s*(?<lon>\d+(\.\d+)?)\s+(?<lat>\d+(\.\d+)?)\s*\)",
+            @"POINT\s*\(\s*(?<lon>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s+(?<lat>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s*\)",
             RegexOptions.IgnoreCase);
 
         public static List<Doc> ReadDocs(this NpgsqlDataReader reader, int take)
