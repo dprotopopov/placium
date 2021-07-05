@@ -74,6 +74,8 @@ namespace Updater.Sphinx
 
         private async Task UpdateLocationAsync(string session)
         {
+            var url = $"{_sphinxConfig.Http}/bulk";
+
             var keys = new[]
             {
                 "addr:region",
@@ -103,12 +105,25 @@ namespace Updater.Sphinx
                 npgsqlConnection.ReloadTypes();
 
                 var sql1 =
-                    "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE NOT addrx.tags?|@keys AND addrx.tags?@key";
+                    "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.tags?|@keys";
+
+                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
+                {
+                    command.Parameters.AddWithValue("keys", keys);
+
+                    command.Prepare();
+                    
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            total = reader.GetInt64(0);
+                    }
+                }
 
                 var sql =
                     "SELECT addrx.id,addrx.tags,ST_AsText(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE NOT addrx.tags?|@keys AND addrx.tags?@key";
 
-                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
                 {
                     command.Parameters.Add("keys", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
                     command.Parameters.Add("key", NpgsqlDbType.Varchar);
@@ -122,96 +137,109 @@ namespace Updater.Sphinx
 
                         using (var reader = command.ExecuteReader())
                         {
-                            if (reader.Read())
-                                total += reader.GetInt64(0);
-
-                            reader.NextResult();
-
                             var take = 1000;
 
-                            while (true)
-                            {
-                                var docs = new List<Doc4>(take);
+                            var obj = new object();
+                            var reader_is_empty = false;
 
-                                for (var j = 0; j < take && reader.Read(); j++)
+                            Parallel.For(0, 12,
+                                i =>
                                 {
-                                    var dictionary = (Dictionary<string, string>) reader.GetValue(1);
-                                    var point = reader.SafeGetString(2);
-
-                                    var list = new List<string>(index + 1);
-
-                                    var skipCity = dictionary.ContainsKey("addr:region") &&
-                                                   dictionary.ContainsKey("addr:city") &&
-                                                   dictionary["addr:region"] == dictionary["addr:city"];
-
-                                    var skipTown = dictionary.ContainsKey("addr:city") &&
-                                                   dictionary.ContainsKey("addr:town") &&
-                                                   dictionary["addr:city"] == dictionary["addr:town"];
-
-                                    var skipVillage = dictionary.ContainsKey("addr:city") &&
-                                                      dictionary.ContainsKey("addr:village") &&
-                                                      dictionary["addr:city"] == dictionary["addr:village"];
-
-                                    for (var k = 0; k < index + 1; k++)
+                                    while (true)
                                     {
-                                        var key = keys[k];
-                                        if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
-                                            (key != "addr:town" || !skipTown) &&
-                                            (key != "addr:village" || !skipVillage))
-                                            list.Add(dictionary[key].Yo());
+                                        var docs = new List<Doc4>(take);
+
+                                        lock (obj)
+                                        {
+                                            if (reader_is_empty) break;
+                                            for (var j = 0; j < take && reader.Read(); j++)
+                                            {
+                                                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
+                                                var point = reader.SafeGetString(2);
+
+                                                var list = new List<string>(index + 1);
+
+                                                var skipCity = dictionary.ContainsKey("addr:region") &&
+                                                               dictionary.ContainsKey("addr:city") &&
+                                                               dictionary["addr:region"] == dictionary["addr:city"];
+
+                                                var skipTown = dictionary.ContainsKey("addr:city") &&
+                                                               dictionary.ContainsKey("addr:town") &&
+                                                               dictionary["addr:city"] == dictionary["addr:town"];
+
+                                                var skipVillage = dictionary.ContainsKey("addr:city") &&
+                                                                  dictionary.ContainsKey("addr:village") &&
+                                                                  dictionary["addr:city"] == dictionary["addr:village"];
+
+                                                for (var k = 0; k < index + 1; k++)
+                                                {
+                                                    var key = keys[k];
+                                                    if (dictionary.ContainsKey(key) &&
+                                                        (key != "addr:city" || !skipCity) &&
+                                                        (key != "addr:town" || !skipTown) &&
+                                                        (key != "addr:village" || !skipVillage))
+                                                        list.Add(dictionary[key].Yo());
+                                                }
+
+                                                var match = string.Join("<<",
+                                                    list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
+                                                        $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+
+                                                var lon = "";
+                                                var lat = "";
+
+                                                var matchPoint = _pointRegex.Match(point);
+                                                if (matchPoint.Success)
+                                                {
+                                                    lon = matchPoint.Groups["lon"].Value;
+                                                    lat = matchPoint.Groups["lat"].Value;
+                                                }
+
+                                                docs.Add(new Doc4
+                                                {
+                                                    match = match,
+                                                    lon = lon,
+                                                    lat = lat
+                                                });
+                                            }
+
+                                            reader_is_empty = docs.Count() < take;
+                                            if (!docs.Any()) break;
+                                        }
+
+                                        if (docs.Any())
+                                        {
+
+                                            var httpRequest = (HttpWebRequest) WebRequest.Create(url);
+                                            httpRequest.Method = "POST";
+
+                                            httpRequest.ContentType = "application/x-ndjson";
+                                            httpRequest.Timeout = Timeout.Infinite;
+                                            httpRequest.KeepAlive = true;
+
+                                            var data = string.Join("",
+                                                docs.Select(x =>
+                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n"));
+
+                                            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+                                            {
+                                                streamWriter.Write(data);
+                                            }
+
+                                            httpRequest.GetResponse();
+
+                                            lock (obj)
+                                            {
+                                                current += docs.Count();
+
+                                                _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                    .GetAwaiter()
+                                                    .GetResult();
+                                            }
+
+                                        }
                                     }
-
-                                    var match = string.Join("<<",
-                                        list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                                            $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
-
-                                    var lon = "";
-                                    var lat = "";
-
-                                    var matchPoint = _pointRegex.Match(point);
-                                    if (matchPoint.Success)
-                                    {
-                                        lon = matchPoint.Groups["lon"].Value;
-                                        lat = matchPoint.Groups["lat"].Value;
-                                    }
-
-                                    docs.Add(new Doc4
-                                    {
-                                        match = match,
-                                        lon = lon,
-                                        lat = lat
-                                    });
-                                }
-
-                                if (docs.Any())
-                                {
-                                    var url = $"{_sphinxConfig.Http}/bulk";
-
-                                    var httpRequest = (HttpWebRequest) WebRequest.Create(url);
-                                    httpRequest.Method = "POST";
-
-                                    httpRequest.ContentType = "application/x-ndjson";
-                                    httpRequest.Timeout = Timeout.Infinite;
-                                    httpRequest.KeepAlive = true;
-
-                                    var data = string.Join("",
-                                        docs.Select(x =>
-                                            $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n"));
-
-                                    using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
-                                    {
-                                        streamWriter.Write(data);
-                                    }
-
-                                    httpRequest.GetResponseAsync();
-                                }
-
-                                current += docs.Count;
-
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
-
-                                if (docs.Count < take) break;
-                            }
+                                });
                         }
                     }
                 }
