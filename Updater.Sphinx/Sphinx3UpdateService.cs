@@ -222,7 +222,7 @@ namespace Updater.Sphinx
 
                                             var data = string.Join("",
                                                 docs.Select(x =>
-                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":{x.lon.ToString(CultureInfo.InvariantCulture)},\"geoLat\":{x.lat.ToString(CultureInfo.InvariantCulture)},\"geoExists\":1}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoExists\":0}}}}]}}}}}}}}\n"));
+                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":{JsonConvert.ToString(x.lon)},\"geoLat\":{JsonConvert.ToString(x.lat)},\"geoExists\":1}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoExists\":0}}}}]}}}}}}}}\n"));
 
                                             using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
                                             {

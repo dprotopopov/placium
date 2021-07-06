@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using Placium.Common;
 
 namespace Placium.Seeker
@@ -64,8 +65,8 @@ namespace Placium.Seeker
                                         PostalCode = postalCode,
                                         RegionCode = regionCode,
                                         Country = country,
-                                        GeoLon = geoLon.ToString(CultureInfo.InvariantCulture),
-                                        GeoLat = geoLat.ToString(CultureInfo.InvariantCulture)
+                                        GeoLon = JsonConvert.ToString(geoLon),
+                                        GeoLat = JsonConvert.ToString(geoLat)
                                     });
                                 }
 
