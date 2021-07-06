@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -20,7 +21,8 @@ namespace Updater.Sphinx
 {
     public class Sphinx3UpdateService : BaseService, IUpdateService
     {
-        private readonly Regex _pointRegex = new Regex(@"POINT\s*\(\s*(?<lon>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s+(?<lat>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s*\)",
+        private readonly Regex _pointRegex = new Regex(
+            @"POINT\s*\(\s*(?<lon>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s+(?<lat>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s*\)",
             RegexOptions.IgnoreCase);
 
         private readonly ProgressHub _progressHub;
@@ -46,7 +48,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon string,geoLat string,guid string) phrase_boundary='U+2C' phrase_boundary_step='100'"
+                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon float,geoLat float,geoExists int,guid string) phrase_boundary='U+2C' phrase_boundary_step='100'"
                 }, connection);
             }
 
@@ -112,7 +114,7 @@ namespace Updater.Sphinx
                     command.Parameters.AddWithValue("keys", keys);
 
                     command.Prepare();
-                    
+
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -185,14 +187,16 @@ namespace Updater.Sphinx
                                                     list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
                                                         $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
 
-                                                var lon = "";
-                                                var lat = "";
+                                                var lon = 0.0;
+                                                var lat = 0.0;
 
                                                 var matchPoint = _pointRegex.Match(point);
                                                 if (matchPoint.Success)
                                                 {
-                                                    lon = matchPoint.Groups["lon"].Value;
-                                                    lat = matchPoint.Groups["lat"].Value;
+                                                    lon = double.Parse(matchPoint.Groups["lon"].Value,
+                                                        CultureInfo.InvariantCulture);
+                                                    lat = double.Parse(matchPoint.Groups["lat"].Value,
+                                                        CultureInfo.InvariantCulture);
                                                 }
 
                                                 docs.Add(new Doc4
@@ -209,7 +213,6 @@ namespace Updater.Sphinx
 
                                         if (docs.Any())
                                         {
-
                                             var httpRequest = (HttpWebRequest) WebRequest.Create(url);
                                             httpRequest.Method = "POST";
 
@@ -219,7 +222,7 @@ namespace Updater.Sphinx
 
                                             var data = string.Join("",
                                                 docs.Select(x =>
-                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":\"{x.lon}\",\"geoLat\":\"{x.lat}\"}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoLon\":\"\"}}}},{{\"equals\":{{\"geoLat\":\"\"}}}}]}}}}}}}}\n"));
+                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":{x.lon},\"geoLat\":{x.lat},\"geoExists\":1}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoExists\":0}}}}]}}}}}}}}\n"));
 
                                             using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
                                             {
@@ -236,7 +239,6 @@ namespace Updater.Sphinx
                                                     .GetAwaiter()
                                                     .GetResult();
                                             }
-
                                         }
                                     }
                                 });
@@ -416,10 +418,10 @@ namespace Updater.Sphinx
                                                     }
 
                                                 var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
+                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
@@ -622,10 +624,10 @@ namespace Updater.Sphinx
                                                     }
 
                                                 var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
+                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
@@ -901,10 +903,10 @@ namespace Updater.Sphinx
                                                     }
 
                                                 var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
+                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 
@@ -1090,10 +1092,10 @@ namespace Updater.Sphinx
                                                     }
 
                                                 var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,guid) VALUES ");
+                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
                                                 sb.Append(string.Join(",",
                                                     docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.lon}','{x.lat}','{x.guid}')")));
+                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
 
                                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
 

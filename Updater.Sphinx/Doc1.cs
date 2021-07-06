@@ -8,8 +8,6 @@
         public string postalcode { get; set; }
         public string regioncode { get; set; }
         public string parentguid { get; set; }
-        public string lon { get; set; }
-        public string lat { get; set; }
         public string guid { get; set; }
     }
 }

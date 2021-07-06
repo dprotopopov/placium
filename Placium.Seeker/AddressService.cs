@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ namespace Placium.Seeker
 
                         using (var command =
                             new MySqlCommand(
-                                @"SELECT addressString,postalCode,regionCode,country,geoLon,geoLat FROM address WHERE MATCH(@match) AND priority=@priority LIMIT @skip,@take",
+                                @"SELECT addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists FROM address WHERE MATCH(@match) AND priority=@priority LIMIT @skip,@take",
                                 mySqlConnection))
                         {
                             command.Parameters.AddWithValue("skip", skip);
@@ -55,16 +56,16 @@ namespace Placium.Seeker
                                     var postalCode = reader.GetString(1);
                                     var regionCode = reader.GetString(2);
                                     var country = reader.GetString(3);
-                                    var geoLon = reader.GetString(4);
-                                    var geoLat = reader.GetString(5);
+                                    var geoLon = reader.GetDouble(4);
+                                    var geoLat = reader.GetDouble(5);
                                     result.Add(new AddressEntry
                                     {
                                         AddressString = addressString,
                                         PostalCode = postalCode,
                                         RegionCode = regionCode,
                                         Country = country,
-                                        GeoLon = geoLon,
-                                        GeoLat = geoLat
+                                        GeoLon = geoLon.ToString(CultureInfo.InvariantCulture),
+                                        GeoLat = geoLat.ToString(CultureInfo.InvariantCulture)
                                     });
                                 }
 
