@@ -56,8 +56,8 @@ namespace Placium.Seeker
                                     var postalCode = reader.GetString(1);
                                     var regionCode = reader.GetString(2);
                                     var country = reader.GetString(3);
-                                    var geoLon = reader.GetDouble(4);
-                                    var geoLat = reader.GetDouble(5);
+                                    var geoLon = reader.GetFloat(4);
+                                    var geoLat = reader.GetFloat(5);
                                     result.Add(new AddressEntry
                                     {
                                         AddressString = addressString,
