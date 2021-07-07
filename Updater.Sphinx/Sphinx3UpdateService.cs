@@ -140,7 +140,7 @@ namespace Updater.Sphinx
 
                     for (var index = keys.Length; index > 0; index--)
                     {
-                        command.Parameters["keys"].Value = keys.Skip(index + 1).ToArray();
+                        command.Parameters["keys"].Value = keys;
                         command.Parameters["index"].Value = index;
 
                         using (var reader = command.ExecuteReader())
@@ -165,7 +165,7 @@ namespace Updater.Sphinx
                                                 var dictionary = (Dictionary<string, string>) reader.GetValue(1);
                                                 var point = reader.SafeGetString(2);
 
-                                                var list = new List<string>(index + 1);
+                                                var list = new List<string>(index);
 
                                                 var skipCity = dictionary.ContainsKey("addr:region") &&
                                                                dictionary.ContainsKey("addr:city") &&
