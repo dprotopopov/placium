@@ -81,7 +81,7 @@ namespace Updater.Sphinx
             var keys = new[]
             {
                 "addr:region",
-                "addr:district",
+                //"addr:district",
                 "addr:city",
                 "addr:town",
                 "addr:village",
@@ -106,6 +106,12 @@ namespace Updater.Sphinx
 
                 npgsqlConnection.ReloadTypes();
 
+                TryExecuteNonQueries(new[]
+                {
+                    "UPDATE address SET geoExists=0 WHERE geoExists=1",
+                    "FLUSH RTINDEX address"
+                }, mySqlConnection);
+
                 var sql1 =
                     "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.tags?|@keys";
 
@@ -123,19 +129,19 @@ namespace Updater.Sphinx
                 }
 
                 var sql =
-                    "SELECT addrx.id,addrx.tags,ST_AsText(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE NOT addrx.tags?|@keys AND addrx.tags?@key";
+                    "SELECT addrx.id,addrx.tags,ST_AsText(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE array_length(akeys(slice(addrx.tags,@keys)),1)=@index ";
 
                 using (var command = new NpgsqlCommand(sql, npgsqlConnection))
                 {
                     command.Parameters.Add("keys", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-                    command.Parameters.Add("key", NpgsqlDbType.Varchar);
+                    command.Parameters.Add("index", NpgsqlDbType.Integer);
 
                     command.Prepare();
 
-                    for (var index = keys.Length; index-- > 0;)
+                    for (var index = keys.Length; index > 0; index--)
                     {
                         command.Parameters["keys"].Value = keys.Skip(index + 1).ToArray();
-                        command.Parameters["key"].Value = keys[index];
+                        command.Parameters["index"].Value = index;
 
                         using (var reader = command.ExecuteReader())
                         {
@@ -173,15 +179,12 @@ namespace Updater.Sphinx
                                                                   dictionary.ContainsKey("addr:village") &&
                                                                   dictionary["addr:city"] == dictionary["addr:village"];
 
-                                                for (var k = 0; k < index + 1; k++)
-                                                {
-                                                    var key = keys[k];
+                                                foreach (var key in keys)
                                                     if (dictionary.ContainsKey(key) &&
                                                         (key != "addr:city" || !skipCity) &&
                                                         (key != "addr:town" || !skipTown) &&
                                                         (key != "addr:village" || !skipVillage))
                                                         list.Add(dictionary[key].Yo());
-                                                }
 
                                                 var match = string.Join("<<",
                                                     list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
@@ -242,6 +245,11 @@ namespace Updater.Sphinx
                                         }
                                     }
                                 });
+
+                            TryExecuteNonQueries(new[]
+                            {
+                                "FLUSH RTINDEX address"
+                            }, mySqlConnection);
                         }
                     }
                 }
