@@ -230,6 +230,7 @@ namespace Placium.Common
 
             return 0;
         }
+
         protected long GetLastRecordNumber(NpgsqlConnection connection, FiasServiceType3 service_type, bool full)
         {
             if (full) return 0;
@@ -272,12 +273,14 @@ namespace Placium.Common
 
         protected void TryExecuteNonQueries(string[] sqls, MySqlConnection connection)
         {
-            connection.TryOpen();
             foreach (var sql in sqls)
+            {
+                connection.TryOpen();
                 using (var command = new MySqlCommand(sql, connection))
                 {
                     command.TryExecuteNonQuery();
                 }
+            }
         }
     }
 }
