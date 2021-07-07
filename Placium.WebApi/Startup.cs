@@ -30,11 +30,11 @@ namespace Placium.WebApi
         {
             RegisterServices(services);
 
-            services.AddCors(options => options.AddDefaultPolicy(
-                builder => builder
-                    .SetIsOriginAllowed((x => true))
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()));
+            //services.AddCors(options => options.AddDefaultPolicy(
+            //    builder => builder
+            //        .SetIsOriginAllowed((x => true))
+            //        .AllowAnyHeader()
+            //        .AllowAnyMethod()));
 
             services.AddControllers()
                 .AddNewtonsoftJson();
