@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,7 +32,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text,priority int,lon string,lat string) phrase_boundary='U+2C' phrase_boundary_step='100'"
+                    "CREATE TABLE addrx(title text,priority int,lon float,lat float) phrase_boundary='U+2C' phrase_boundary_step='100'"
                 }, connection);
             }
 
@@ -102,7 +103,7 @@ namespace Updater.Sphinx
                                 var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority,lon,lat) VALUES ");
                                 sb.Append(string.Join(",",
                                     docs.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},'{x.lon}','{x.lat}')")));
+                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString("0.000000", CultureInfo.InvariantCulture)},{x.lat.ToString("0.000000", CultureInfo.InvariantCulture)})")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                             }

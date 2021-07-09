@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Npgsql;
 using Placium.Common;
@@ -40,6 +41,7 @@ namespace Updater.Sphinx
         {
             var keys = new[]
             {
+                "addr:postalcode",
                 "addr:region",
                 "addr:district",
                 "addr:city",
@@ -91,8 +93,8 @@ namespace Updater.Sphinx
                 var match = _pointRegex.Match(reader.SafeGetString(2));
                 if (match.Success)
                 {
-                    doc.lon = match.Groups["lon"].Value;
-                    doc.lat = match.Groups["lat"].Value;
+                    doc.lon = double.Parse(match.Groups["lon"].Value, CultureInfo.InvariantCulture);
+                    doc.lat = double.Parse(match.Groups["lat"].Value, CultureInfo.InvariantCulture);
                 }
 
                 result.Add(doc);

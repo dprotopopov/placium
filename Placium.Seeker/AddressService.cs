@@ -37,7 +37,7 @@ namespace Placium.Seeker
 
                         using (var command =
                             new MySqlCommand(
-                                @"SELECT addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists FROM address WHERE MATCH(@match) AND priority=@priority LIMIT @skip,@take",
+                                @"SELECT title,lon,lat FROM addrx WHERE MATCH(@match) AND priority=@priority LIMIT @skip,@take",
                                 mySqlConnection))
                         {
                             command.Parameters.AddWithValue("skip", skip);
@@ -53,17 +53,11 @@ namespace Placium.Seeker
                                     count++;
                                     limit--;
                                     var addressString = reader.GetString(0);
-                                    var postalCode = reader.GetString(1);
-                                    var regionCode = reader.GetString(2);
-                                    var country = reader.GetString(3);
-                                    var geoLon = reader.GetFloat(4);
-                                    var geoLat = reader.GetFloat(5);
+                                    var geoLon = reader.GetFloat(1);
+                                    var geoLat = reader.GetFloat(2);
                                     result.Add(new AddressEntry
                                     {
                                         AddressString = addressString,
-                                        PostalCode = postalCode,
-                                        RegionCode = regionCode,
-                                        Country = country,
                                         GeoLon = JsonConvert.ToString(geoLon),
                                         GeoLat = JsonConvert.ToString(geoLat)
                                     });
