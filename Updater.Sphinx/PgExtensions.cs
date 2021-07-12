@@ -41,7 +41,7 @@ namespace Updater.Sphinx
         {
             var keys = new[]
             {
-                "addr:postalcode",
+                "addr:postcode",
                 "addr:region",
                 "addr:district",
                 "addr:city",
