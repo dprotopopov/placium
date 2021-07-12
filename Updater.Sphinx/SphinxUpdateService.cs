@@ -32,7 +32,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text,priority int,lon float,lat float) phrase_boundary='U+2C' phrase_boundary_step='100'"
+                    "CREATE TABLE addrx(title text,priority int,lon float,lat float) phrase_boundary='U+2C' phrase_boundary_step='100' min_infix_len='1' expand_keywords='1' morphology='stem_ru'"
                 }, connection);
             }
 
