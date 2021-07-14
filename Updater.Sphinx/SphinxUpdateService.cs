@@ -32,7 +32,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text,priority int,lon float,lat float) phrase_boundary='U+2C' phrase_boundary_step='100' min_infix_len='1' expand_keywords='1' morphology='stem_ru'"
+                    "CREATE TABLE addrx(title text,priority int,lon float,lat float,building int) phrase_boundary='U+2C' phrase_boundary_step='100' min_infix_len='1' expand_keywords='1' morphology='stem_ru'"
                 }, connection);
             }
 
@@ -100,10 +100,10 @@ namespace Updater.Sphinx
 
                             if (docs.Any())
                             {
-                                var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority,lon,lat) VALUES ");
+                                var sb = new StringBuilder("REPLACE INTO addrx(id,title,priority,lon,lat,building) VALUES ");
                                 sb.Append(string.Join(",",
                                     docs.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString("0.000000", CultureInfo.InvariantCulture)},{x.lat.ToString("0.000000", CultureInfo.InvariantCulture)})")));
+                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString("0.000000", CultureInfo.InvariantCulture)},{x.lat.ToString("0.000000", CultureInfo.InvariantCulture)},{(x.building?1:0)})")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                             }

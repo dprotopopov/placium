@@ -87,7 +87,8 @@ namespace Updater.Sphinx
                 {
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
-                    priority = priority
+                    priority = priority,
+                    building = dictionary.ContainsKey("addr:housenumber")
                 };
 
                 var match = _pointRegex.Match(reader.SafeGetString(2));
