@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Fastenshtein;
 using GeoJSON.Net;
@@ -20,7 +19,6 @@ namespace Placium.Seeker
         private readonly List<string> _listHouse = new List<string>();
         private readonly List<string> _listRoom = new List<string>();
         private readonly List<string> _listStead = new List<string>();
-        private readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
 
         public DefaultSeeker(IConfiguration configuration) : base(configuration)
         {
@@ -492,9 +490,7 @@ namespace Placium.Seeker
             list.AddRange(addr);
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
 
-            var match = string.Join("<<",
-                list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+            var match = list.ToMatch();
 
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -565,9 +561,7 @@ namespace Placium.Seeker
             if (!string.IsNullOrWhiteSpace(housenumber)) list.Add(housenumber);
             if (!string.IsNullOrWhiteSpace(roomnumber)) list.Add(roomnumber);
 
-            var match = string.Join("<<",
-                list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+            var match = list.ToMatch();
 
             using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
@@ -614,27 +608,20 @@ namespace Placium.Seeker
 
         public async Task<List<string>> GetOsmSuggestAsync(string search, int limit = 20)
         {
-            var list = search.Split(",");
+            var list = search.Split(",").ToList();
             var result = new List<string>();
 
-            var match = string.Join("<<",
-                list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+            var match = list.ToMatch();
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                for (var priority = 0; limit > 0 && priority < 20; priority++)
+                var dic = new Dictionary<string, object>
                 {
-                    var dic = new Dictionary<string, object>
-                    {
-                        {"match", match},
-                        {"priority", priority}
-                    };
-                    var count = result.FillAll(
-                        "SELECT title FROM addrx WHERE MATCH(@match) AND priority=@priority",
-                        dic, connection, limit: limit);
-                    limit -= count;
-                }
+                    {"match", match}
+                };
+                var count = result.FillAll(
+                    "SELECT title FROM addrx WHERE MATCH(@match) ORDER BY priority",
+                    dic, connection, limit: limit);
 
                 return result;
             }
@@ -642,27 +629,20 @@ namespace Placium.Seeker
 
         public async Task<List<string>> GetFiasSuggestAsync(string search, int limit = 20)
         {
-            var list = search.Split(",");
+            var list = search.Split(",").ToList();
             var result = new List<string>();
 
-            var match = string.Join("<<",
-                list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+            var match = list.ToMatch();
 
             using (var connection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                for (var priority = 0; limit > 0 && priority < 20; priority++)
+                var dic = new Dictionary<string, object>
                 {
-                    var dic = new Dictionary<string, object>
-                    {
-                        {"match", match},
-                        {"priority", priority}
-                    };
-                    var count = result.FillAll(
-                        "SELECT title FROM addrobx WHERE MATCH(@match) AND priority=@priority",
-                        dic, connection, limit: limit);
-                    limit -= count;
-                }
+                    {"match", match}
+                };
+                var count = result.FillAll(
+                    "SELECT title FROM addrobx WHERE MATCH(@match) ORDER BY priority",
+                    dic, connection, limit: limit);
 
                 return result;
             }

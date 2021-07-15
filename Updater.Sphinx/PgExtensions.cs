@@ -31,7 +31,7 @@ namespace Updater.Sphinx
                 result.Add(new Doc1
                 {
                     id = reader.GetInt64(0),
-                    text = reader.SafeGetString(1),
+                    addrfull = reader.SafeGetString(1),
                     parentguid = reader.SafeGetString(2)
                 });
             return result;

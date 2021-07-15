@@ -1,17 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
-using Newtonsoft.Json;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
@@ -21,19 +15,11 @@ namespace Updater.Sphinx
 {
     public class Sphinx3UpdateService : BaseService, IUpdateService
     {
-        private readonly Regex _pointRegex = new Regex(
-            @"POINT\s*\(\s*(?<lon>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s+(?<lat>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s*\)",
-            RegexOptions.IgnoreCase);
-
         private readonly ProgressHub _progressHub;
-        private readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
-        private readonly SphinxConfig _sphinxConfig;
 
-        public Sphinx3UpdateService(ProgressHub progressHub, IConfiguration configuration,
-            IOptions<SphinxConfig> sphinxConfig) : base(configuration)
+        public Sphinx3UpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
-            _sphinxConfig = sphinxConfig.Value;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -48,7 +34,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon float,geoLat float,geoExists int,guid string) phrase_boundary='U+2C' phrase_boundary_step='100'"
+                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon float,geoLat float,geoExists int,guid string) phrase_boundary='U+2C' phrase_boundary_step='100' min_infix_len='1' expand_keywords='1' morphology='stem_ru'"
                 }, connection);
             }
 
@@ -70,195 +56,7 @@ namespace Updater.Sphinx
             await UpdateAddrobAsync(session, full);
             await UpdateHouseAsync(session, full);
             await UpdateSteadAsync(session, full);
-            await UpdateRoomAsync(session, full);
-            await UpdateLocationAsync(session);
-        }
-
-        private async Task UpdateLocationAsync(string session)
-        {
-            var url = $"{_sphinxConfig.Http}/bulk";
-
-            var keys = new[]
-            {
-                "addr:region",
-                //"addr:district",
-                "addr:city",
-                "addr:town",
-                "addr:village",
-                "addr:subdistrict",
-                "addr:suburb",
-                "addr:hamlet",
-                "addr:place",
-                "addr:street",
-                "addr:housenumber"
-            };
-
-            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
-            {
-                var current = 0L;
-                var total = 0L;
-
-                var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
-
-                await npgsqlConnection.OpenAsync();
-
-                npgsqlConnection.ReloadTypes();
-
-                TryExecuteNonQueries(new[]
-                {
-                    "UPDATE address SET geoExists=0 WHERE geoExists=1",
-                    "FLUSH RTINDEX address"
-                }, mySqlConnection);
-
-                var sql1 =
-                    "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.tags?|@keys";
-
-                using (var command = new NpgsqlCommand(sql1, npgsqlConnection))
-                {
-                    command.Parameters.AddWithValue("keys", keys);
-
-                    command.Prepare();
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.Read())
-                            total = reader.GetInt64(0);
-                    }
-                }
-
-                var sql =
-                    "SELECT addrx.id,addrx.tags,ST_AsText(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE array_length(akeys(slice(addrx.tags,@keys)),1)=@index ";
-
-                using (var command = new NpgsqlCommand(sql, npgsqlConnection))
-                {
-                    command.Parameters.Add("keys", NpgsqlDbType.Array | NpgsqlDbType.Varchar);
-                    command.Parameters.Add("index", NpgsqlDbType.Integer);
-
-                    command.Prepare();
-
-                    for (var index = keys.Length; index > 0; index--)
-                    {
-                        command.Parameters["keys"].Value = keys;
-                        command.Parameters["index"].Value = index;
-
-                        using (var reader = command.ExecuteReader())
-                        {
-                            var take = 1000;
-
-                            var obj = new object();
-                            var reader_is_empty = false;
-
-                            Parallel.For(0, 12,
-                                i =>
-                                {
-                                    while (true)
-                                    {
-                                        var docs = new List<Doc4>(take);
-
-                                        lock (obj)
-                                        {
-                                            if (reader_is_empty) break;
-                                            for (var j = 0; j < take && reader.Read(); j++)
-                                            {
-                                                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
-                                                var point = reader.SafeGetString(2);
-
-                                                var list = new List<string>(index);
-
-                                                var skipCity = dictionary.ContainsKey("addr:region") &&
-                                                               dictionary.ContainsKey("addr:city") &&
-                                                               dictionary["addr:region"] == dictionary["addr:city"];
-
-                                                var skipTown = dictionary.ContainsKey("addr:city") &&
-                                                               dictionary.ContainsKey("addr:town") &&
-                                                               dictionary["addr:city"] == dictionary["addr:town"];
-
-                                                var skipVillage = dictionary.ContainsKey("addr:city") &&
-                                                                  dictionary.ContainsKey("addr:village") &&
-                                                                  dictionary["addr:city"] == dictionary["addr:village"];
-
-                                                foreach (var key in keys)
-                                                    if (dictionary.ContainsKey(key) &&
-                                                        (key != "addr:city" || !skipCity) &&
-                                                        (key != "addr:town" || !skipTown) &&
-                                                        (key != "addr:village" || !skipVillage))
-                                                        list.Add(dictionary[key].Yo());
-
-                                                var match = string.Join("<<",
-                                                    list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                                                        $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
-
-                                                var lon = 0.0;
-                                                var lat = 0.0;
-
-                                                var matchPoint = _pointRegex.Match(point);
-                                                if (matchPoint.Success)
-                                                {
-                                                    lon = double.Parse(matchPoint.Groups["lon"].Value,
-                                                        CultureInfo.InvariantCulture);
-                                                    lat = double.Parse(matchPoint.Groups["lat"].Value,
-                                                        CultureInfo.InvariantCulture);
-                                                }
-
-                                                docs.Add(new Doc4
-                                                {
-                                                    match = match,
-                                                    lon = lon,
-                                                    lat = lat
-                                                });
-                                            }
-
-                                            reader_is_empty = docs.Count() < take;
-                                            if (!docs.Any()) break;
-                                        }
-
-                                        if (docs.Any())
-                                        {
-                                            var httpRequest = (HttpWebRequest) WebRequest.Create(url);
-                                            httpRequest.Method = "POST";
-
-                                            httpRequest.ContentType = "application/x-ndjson";
-                                            httpRequest.Timeout = Timeout.Infinite;
-                                            httpRequest.KeepAlive = true;
-
-                                            var data = string.Join("",
-                                                docs.Select(x =>
-                                                    $"{{\"update\":{{\"index\":\"address\",\"doc\":{{\"geoLon\":{JsonConvert.ToString(x.lon)},\"geoLat\":{JsonConvert.ToString(x.lat)},\"geoExists\":1}},\"query\":{{\"bool\":{{\"must\":[{{\"query_string\":{JsonConvert.ToString(x.match)}}},{{\"equals\":{{\"geoExists\":0}}}}]}}}}}}}}\n"));
-
-                                            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
-                                            {
-                                                streamWriter.Write(data);
-                                            }
-
-                                            httpRequest.GetResponse();
-
-                                            lock (obj)
-                                            {
-                                                current += docs.Count();
-
-                                                _progressHub.ProgressAsync(100f * current / total, id, session)
-                                                    .GetAwaiter()
-                                                    .GetResult();
-                                            }
-                                        }
-                                    }
-                                });
-
-                            TryExecuteNonQueries(new[]
-                            {
-                                "FLUSH RTINDEX address"
-                            }, mySqlConnection);
-                        }
-                    }
-                }
-
-                await npgsqlConnection.CloseAsync();
-                mySqlConnection.TryClose();
-
-                await _progressHub.ProgressAsync(100f, id, session);
-            }
+            //await UpdateRoomAsync(session, full);
         }
 
         private async Task UpdateAddrobAsync(string session, bool full)
@@ -354,12 +152,12 @@ namespace Updater.Sphinx
                                                     var regioncode = reader.SafeGetString(7);
                                                     var postalcode = reader.SafeGetString(8);
                                                     var guid = reader.SafeGetString(9);
-                                                    var title = aolevel > 1
+                                                    var addrfull = aolevel > 1
                                                         ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
                                                         : formal
                                                             ? formalname
                                                             : offname;
-                                                    var name = aolevel > 1
+                                                    var addrshort = aolevel > 1
                                                         ? $"{(false ? socrname : shortname)} {(false ? formalname : offname)}"
                                                         : false
                                                             ? formalname
@@ -367,9 +165,9 @@ namespace Updater.Sphinx
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
-                                                        text = title,
+                                                        addrfull = addrfull,
                                                         parentguid = parentguid,
-                                                        name = name,
+                                                        addrshort = addrshort,
                                                         regioncode = regioncode,
                                                         postalcode = postalcode,
                                                         guid = guid
@@ -382,56 +180,7 @@ namespace Updater.Sphinx
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                        pair.doc1.name = $"{pair.doc2.name}, {pair.doc1.name}";
-                                                        pair.doc1.postalcode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.postalcode)
-                                                                ? pair.doc2.postalcode
-                                                                : pair.doc1.postalcode;
-                                                        pair.doc1.regioncode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.regioncode)
-                                                                ? pair.doc2.regioncode
-                                                                : pair.doc1.regioncode;
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                foreach (var doc1 in docs1)
-                                                    if (!string.IsNullOrWhiteSpace(doc1.postalcode))
-                                                    {
-                                                        doc1.text = $"{doc1.postalcode}, {doc1.text}";
-                                                        doc1.name = $"{doc1.postalcode}, {doc1.name}";
-                                                    }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command2, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -546,8 +295,6 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-                                            var guids1 = new List<string>();
-
                                             var docs1 = new List<Doc1>(take);
 
                                             lock (obj)
@@ -574,9 +321,9 @@ namespace Updater.Sphinx
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
-                                                        text = string.Join(" ", list1),
+                                                        housesteadfull = string.Join(" ", list1),
+                                                        housesteadshort = string.Join(" ", list11),
                                                         parentguid = parentguid,
-                                                        name = string.Join(" ", list11),
                                                         postalcode = postalcode,
                                                         guid = guid
                                                     });
@@ -588,56 +335,7 @@ namespace Updater.Sphinx
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                        pair.doc1.name = $"{pair.doc2.name}, {pair.doc1.name}";
-                                                        pair.doc1.postalcode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.postalcode)
-                                                                ? pair.doc2.postalcode
-                                                                : pair.doc1.postalcode;
-                                                        pair.doc1.regioncode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.regioncode)
-                                                                ? pair.doc2.regioncode
-                                                                : pair.doc1.regioncode;
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                foreach (var doc1 in docs1)
-                                                    if (!string.IsNullOrWhiteSpace(doc1.postalcode))
-                                                    {
-                                                        doc1.text = $"{doc1.postalcode}, {doc1.text}";
-                                                        doc1.name = $"{doc1.postalcode}, {doc1.name}";
-                                                    }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command2, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -767,8 +465,6 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-                                            var guids1 = new List<string>();
-
                                             var docs1 = new List<Doc1>(take);
 
                                             lock (obj)
@@ -794,9 +490,9 @@ namespace Updater.Sphinx
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
-                                                        text = string.Join(" ", list1),
+                                                        roomshort = string.Join(" ", list11),
+                                                        roomfull = string.Join(" ", list1),
                                                         parentguid = parentguid,
-                                                        name = string.Join(" ", list11),
                                                         guid = guid,
                                                         postalcode = postalcode
                                                     });
@@ -836,9 +532,9 @@ namespace Updater.Sphinx
                                                         docs2.Add(new Doc2
                                                         {
                                                             guid = reader2.SafeGetString(0),
-                                                            text = string.Join(" ", list1),
+                                                            housefull = string.Join(" ", list1),
+                                                            houseshort = string.Join(" ", list11),
                                                             parentguid = parentguid,
-                                                            name = string.Join(" ", list11),
                                                             postalcode = postalcode
                                                         });
                                                     }
@@ -851,8 +547,6 @@ namespace Updater.Sphinx
                                                 foreach (var pair in q)
                                                 {
                                                     pair.doc1.parentguid = pair.doc2.parentguid;
-                                                    pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                    pair.doc1.name = $"{pair.doc2.name}, {pair.doc1.name}";
                                                     pair.doc1.postalcode =
                                                         string.IsNullOrWhiteSpace(pair.doc1.postalcode)
                                                             ? pair.doc2.postalcode
@@ -861,62 +555,21 @@ namespace Updater.Sphinx
                                                         string.IsNullOrWhiteSpace(pair.doc1.regioncode)
                                                             ? pair.doc2.regioncode
                                                             : pair.doc1.regioncode;
+                                                    pair.doc1.housesteadfull =
+                                                        string.IsNullOrWhiteSpace(pair.doc1.housesteadfull)
+                                                            ? pair.doc2.housefull
+                                                            : pair.doc1.housesteadfull;
+                                                    pair.doc1.housesteadshort =
+                                                        string.IsNullOrWhiteSpace(pair.doc1.housesteadshort)
+                                                            ? pair.doc2.houseshort
+                                                            : pair.doc1.housesteadshort;
                                                 }
                                             }
 
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command3, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                        pair.doc1.name = $"{pair.doc2.name}, {pair.doc1.name}";
-                                                        pair.doc1.postalcode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.postalcode)
-                                                                ? pair.doc2.postalcode
-                                                                : pair.doc1.postalcode;
-                                                        pair.doc1.regioncode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.regioncode)
-                                                                ? pair.doc2.regioncode
-                                                                : pair.doc1.regioncode;
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                foreach (var doc1 in docs1)
-                                                    if (!string.IsNullOrWhiteSpace(doc1.postalcode))
-                                                    {
-                                                        doc1.text = $"{doc1.postalcode}, {doc1.text}";
-                                                        doc1.name = $"{doc1.postalcode}, {doc1.name}";
-                                                    }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command3, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -1029,23 +682,19 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-                                            var guids1 = new List<string>();
+                                            var docs1 = new List<Doc1>(take);
 
-                                            List<Doc1> docs1;
                                             lock (obj)
                                             {
                                                 if (reader_is_empty) break;
-
-                                                docs1 = new List<Doc1>(take);
 
                                                 for (var j = 0; j < take && reader.Read(); j++)
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
-                                                        text = reader.SafeGetString(1),
+                                                        housesteadfull = reader.SafeGetString(1),
                                                         parentguid = reader.SafeGetString(2),
                                                         guid = reader.SafeGetString(3),
-                                                        name = reader.SafeGetString(1),
                                                         regioncode = reader.SafeGetString(4),
                                                         postalcode = reader.SafeGetString(5)
                                                     });
@@ -1056,56 +705,7 @@ namespace Updater.Sphinx
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                        pair.doc1.name = $"{pair.doc2.name}, {pair.doc1.name}";
-                                                        pair.doc1.postalcode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.postalcode)
-                                                                ? pair.doc2.postalcode
-                                                                : pair.doc1.postalcode;
-                                                        pair.doc1.regioncode =
-                                                            string.IsNullOrWhiteSpace(pair.doc1.regioncode)
-                                                                ? pair.doc2.regioncode
-                                                                : pair.doc1.regioncode;
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                foreach (var doc1 in docs1)
-                                                    if (!string.IsNullOrWhiteSpace(doc1.postalcode))
-                                                    {
-                                                        doc1.text = $"{doc1.postalcode}, {doc1.text}";
-                                                        doc1.name = $"{doc1.postalcode}, {doc1.name}";
-                                                    }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,guid) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}','{x.name.TextEscape()}','{x.postalcode}','{x.regioncode}','RU','{x.guid}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command2, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -1134,6 +734,114 @@ namespace Updater.Sphinx
             }
         }
 
+        private void ProcessDoc1(List<Doc1> docs1, NpgsqlCommand command2, MySqlConnection mySqlConnection)
+        {
+            var guids1 = new List<string>();
+
+            for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                    .Select(x => x.parentguid).ToArray();
+                guids.Any();
+                guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                    .Select(x => x.parentguid).ToArray())
+            {
+                guids = guids.Except(guids1).ToArray();
+
+                if (!guids.Any()) break;
+
+                var docs2 = GetDocs2(guids, command2, guids.Length);
+
+                if (!docs2.Any()) break;
+
+                var q = from doc1 in docs1
+                    join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                    select new {doc1, doc2};
+
+                foreach (var pair in q)
+                {
+                    pair.doc1.parentguid = pair.doc2.parentguid;
+                    pair.doc1.addrfull = string.IsNullOrEmpty(pair.doc1.addrfull)
+                        ? pair.doc2.addrfull
+                        : $"{pair.doc2.addrfull}, {pair.doc1.addrfull}";
+                    pair.doc1.addrshort = string.IsNullOrEmpty(pair.doc1.addrshort)
+                        ? pair.doc2.addrshort
+                        : $"{pair.doc2.addrshort}, {pair.doc1.addrshort}";
+                    pair.doc1.postalcode =
+                        string.IsNullOrWhiteSpace(pair.doc1.postalcode)
+                            ? pair.doc2.postalcode
+                            : pair.doc1.postalcode;
+                    pair.doc1.regioncode =
+                        string.IsNullOrWhiteSpace(pair.doc1.regioncode)
+                            ? pair.doc2.regioncode
+                            : pair.doc1.regioncode;
+                    pair.doc1.housesteadfull = string.IsNullOrWhiteSpace(pair.doc1.housesteadfull)
+                        ? pair.doc2.housefull
+                        : pair.doc1.housesteadfull;
+                    pair.doc1.housesteadshort = string.IsNullOrWhiteSpace(pair.doc1.housesteadshort)
+                        ? pair.doc2.houseshort
+                        : pair.doc1.housesteadshort;
+                }
+
+                guids1.AddRange(guids);
+            }
+
+            foreach (var doc1 in docs1)
+            {
+                var building = 0;
+                if (!string.IsNullOrWhiteSpace(doc1.housesteadfull))
+                {
+                    doc1.addrfull = $"{doc1.addrfull}, {doc1.housesteadfull}";
+                    doc1.addrshort = $"{doc1.addrshort}, {doc1.housesteadshort}";
+                    building = 1;
+                }
+
+                for (var list = doc1.addrshort.Split(",").ToList(); list.Any(); list.RemoveAt(list.Count - 1))
+                {
+                    var match = list.ToMatch();
+
+                    mySqlConnection.TryOpen();
+                    using (var mySqlCommand =
+                        new MySqlCommand(
+                            @"SELECT id,lon,lat FROM addrx WHERE MATCH(@match) AND building<=@building ORDER BY priority LIMIT 1")
+                    )
+                    {
+                        mySqlCommand.Parameters.AddWithValue("match", match);
+                        mySqlCommand.Parameters.AddWithValue("building", building);
+
+                        using (var reader = mySqlCommand.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                doc1.lon = reader.GetFloat(1);
+                                doc1.lat = reader.GetFloat(2);
+                                doc1.geoexists = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(doc1.roomshort))
+                {
+                    doc1.addrfull = $"{doc1.addrfull}, {doc1.roomshort}";
+                    doc1.addrshort = $"{doc1.addrshort}, {doc1.roomshort}";
+                }
+
+                if (!string.IsNullOrWhiteSpace(doc1.postalcode))
+                {
+                    doc1.addrfull = $"{doc1.postalcode}, {doc1.addrfull}";
+                    doc1.addrshort = $"{doc1.postalcode}, {doc1.addrshort}";
+                }
+            }
+
+            var sb = new StringBuilder(
+                "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,guid) VALUES ");
+            sb.Append(string.Join(",",
+                docs1.Select(x =>
+                    $"({x.id},'{x.addrfull.TextEscape()}',{x.addrfull.Split(",").Length},'{x.addrshort.TextEscape()}','{x.postalcode}','{x.regioncode}','RU',{x.lon.ToString("0.000000", CultureInfo.InvariantCulture)},{x.lat.ToString("0.000000", CultureInfo.InvariantCulture)},{(x.geoexists ? 1 : 0)},'{x.guid}')")));
+
+            ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+        }
+
         private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)
         {
             var socr = true;
@@ -1155,12 +863,12 @@ namespace Updater.Sphinx
                     var parentguid = reader2.SafeGetString(6);
                     var regioncode = reader2.SafeGetString(7);
                     var postalcode = reader2.SafeGetString(8);
-                    var title = aolevel > 1
+                    var addrfull = aolevel > 1
                         ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
                         : formal
                             ? formalname
                             : offname;
-                    var name = aolevel > 1
+                    var addrshort = aolevel > 1
                         ? $"{(false ? socrname : shortname)} {(false ? formalname : offname)}"
                         : false
                             ? formalname
@@ -1169,8 +877,8 @@ namespace Updater.Sphinx
                     docs2.Add(new Doc2
                     {
                         guid = reader2.SafeGetString(0),
-                        text = title,
-                        name = name,
+                        addrfull = addrfull,
+                        addrshort = addrshort,
                         regioncode = regioncode,
                         postalcode = postalcode,
                         parentguid = parentguid

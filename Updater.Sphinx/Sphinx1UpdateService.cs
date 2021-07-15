@@ -144,7 +144,7 @@ namespace Updater.Sphinx
                                 docs1.Add(new Doc1
                                 {
                                     id = reader.GetInt64(0),
-                                    text = title,
+                                    addrfull = title,
                                     parentguid = parentguid
                                 });
                             }
@@ -160,7 +160,7 @@ namespace Updater.Sphinx
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid into ps
                                     from doc in ps.DefaultIfEmpty()
-                                    select new {doc1.id, text = $"{doc1.text}", text2 = $"{doc?.text ?? doc1.text}"};
+                                    select new {doc1.id, text = $"{doc1.addrfull}", text2 = $"{doc?.addrfull ?? doc1.addrfull}"};
 
                                 var sb = new StringBuilder("REPLACE INTO addrob(id,title,title2) VALUES ");
                                 sb.Append(string.Join(",",
@@ -282,7 +282,7 @@ namespace Updater.Sphinx
                                 docs1.Add(new Doc1
                                 {
                                     id = reader.GetInt64(0),
-                                    text = string.Join(" ", list1),
+                                    addrfull = string.Join(" ", list1),
                                     parentguid = parentguid
                                 });
                             }
@@ -305,8 +305,8 @@ namespace Updater.Sphinx
                                     from doc in ps.DefaultIfEmpty()
                                     select new
                                     {
-                                        doc1.id, housenumber = $"{doc1.text}", text = $"{doc2.text}",
-                                        text2 = $"{doc?.text ?? doc2.text}"
+                                        doc1.id, housenumber = $"{doc1.addrfull}", text = $"{doc2.addrfull}",
+                                        text2 = $"{doc?.addrfull ?? doc2.addrfull}"
                                     };
 
                                 var sb = new StringBuilder("REPLACE INTO house(id,housenumber,title,title2) VALUES ");
@@ -430,8 +430,8 @@ namespace Updater.Sphinx
                                     from doc in ps.DefaultIfEmpty()
                                     select new
                                     {
-                                        doc1.id, housenumber = $"{doc1.text}", text = $"{doc2.text}",
-                                        text2 = $"{doc?.text ?? doc2.text}"
+                                        doc1.id, housenumber = $"{doc1.addrfull}", text = $"{doc2.addrfull}",
+                                        text2 = $"{doc?.addrfull ?? doc2.addrfull}"
                                     };
 
                                 var sb = new StringBuilder("REPLACE INTO stead(id,housenumber,title,title2) VALUES ");
@@ -489,7 +489,7 @@ namespace Updater.Sphinx
                     docs2.Add(new Doc2
                     {
                         guid = reader2.SafeGetString(0),
-                        text = title,
+                        addrfull = title,
                         parentguid = parentguid
                     });
                 }

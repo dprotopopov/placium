@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
@@ -11,8 +10,6 @@ namespace Placium.Seeker
 {
     public class AddressService : BaseService
     {
-        private readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
-
         public AddressService(IConfiguration configuration) : base(configuration)
         {
         }
@@ -20,51 +17,46 @@ namespace Placium.Seeker
         public async Task<IEnumerable<AddressEntry>> GetAddressInfoAsync(string searchString, int limit = 20)
         {
             var result = new List<AddressEntry>();
-            var list = searchString.Split(",");
-            var match = string.Join("<<",
-                list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+            var list = searchString.Split(",").ToList();
+
+            var match = list.ToMatch();
 
             using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
             {
-                for (var priority = 0; priority < 20 && limit > 0; priority++)
+                var skip = 0;
+                var take = 20;
+                while (limit > 0)
                 {
-                    var skip = 0;
-                    var take = 20;
-                    while (limit > 0)
+                    mySqlConnection.TryOpen();
+
+                    using (var command =
+                        new MySqlCommand(
+                            @"SELECT title,lon,lat FROM addrx WHERE MATCH(@match) ORDER BY priority LIMIT @skip,@take",
+                            mySqlConnection))
                     {
-                        mySqlConnection.TryOpen();
+                        command.Parameters.AddWithValue("skip", skip);
+                        command.Parameters.AddWithValue("take", take);
+                        command.Parameters.AddWithValue("match", match);
 
-                        using (var command =
-                            new MySqlCommand(
-                                @"SELECT title,lon,lat FROM addrx WHERE MATCH(@match) AND priority=@priority LIMIT @skip,@take",
-                                mySqlConnection))
+                        using (var reader = command.ExecuteReader())
                         {
-                            command.Parameters.AddWithValue("skip", skip);
-                            command.Parameters.AddWithValue("take", take);
-                            command.Parameters.AddWithValue("priority", priority);
-                            command.Parameters.AddWithValue("match", match);
-
-                            using (var reader = command.ExecuteReader())
+                            var count = 0;
+                            while (limit > 0 && reader.Read())
                             {
-                                var count = 0;
-                                while (limit > 0 && reader.Read())
+                                count++;
+                                limit--;
+                                var addressString = reader.GetString(0);
+                                var geoLon = reader.GetFloat(1);
+                                var geoLat = reader.GetFloat(2);
+                                result.Add(new AddressEntry
                                 {
-                                    count++;
-                                    limit--;
-                                    var addressString = reader.GetString(0);
-                                    var geoLon = reader.GetFloat(1);
-                                    var geoLat = reader.GetFloat(2);
-                                    result.Add(new AddressEntry
-                                    {
-                                        AddressString = addressString,
-                                        GeoLon = JsonConvert.ToString(geoLon),
-                                        GeoLat = JsonConvert.ToString(geoLat)
-                                    });
-                                }
-
-                                if (count < take) break;
+                                    AddressString = addressString,
+                                    GeoLon = JsonConvert.ToString(geoLon),
+                                    GeoLat = JsonConvert.ToString(geoLat)
+                                });
                             }
+
+                            if (count < take) break;
                         }
                     }
                 }

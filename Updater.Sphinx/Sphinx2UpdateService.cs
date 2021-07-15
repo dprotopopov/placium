@@ -33,7 +33,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrobx(title text,priority int) phrase_boundary='U+2C' phrase_boundary_step='100'"
+                    "CREATE TABLE addrobx(title text,priority int) phrase_boundary='U+2C' phrase_boundary_step='100' min_infix_len='1' expand_keywords='1' morphology='stem_ru'"
                 }, connection);
             }
 
@@ -133,8 +133,6 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-                                            var guids1 = new List<string>();
-
                                             var docs1 = new List<Doc1>(take);
 
                                             lock (obj)
@@ -156,7 +154,7 @@ namespace Updater.Sphinx
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
-                                                        text = title,
+                                                        addrfull = title,
                                                         parentguid = parentguid
                                                     });
                                                 }
@@ -167,40 +165,7 @@ namespace Updater.Sphinx
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command2, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -315,8 +280,6 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-                                            var guids1 = new List<string>();
-
                                             var docs1 = new List<Doc1>(take);
 
                                             lock (obj)
@@ -336,7 +299,7 @@ namespace Updater.Sphinx
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
-                                                        text = string.Join(" ", list1),
+                                                        addrfull = string.Join(" ", list1),
                                                         parentguid = parentguid
                                                     });
                                                 }
@@ -347,40 +310,7 @@ namespace Updater.Sphinx
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command2, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -510,8 +440,6 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-                                            var guids1 = new List<string>();
-
                                             var docs1 = new List<Doc1>(take);
 
                                             lock (obj)
@@ -530,7 +458,7 @@ namespace Updater.Sphinx
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
-                                                        text = string.Join(" ", list1),
+                                                        addrfull = string.Join(" ", list1),
                                                         parentguid = parentguid
                                                     });
                                                 }
@@ -564,7 +492,7 @@ namespace Updater.Sphinx
                                                         docs2.Add(new Doc2
                                                         {
                                                             guid = reader2.SafeGetString(0),
-                                                            text = string.Join(" ", list1),
+                                                            addrfull = string.Join(" ", list1),
                                                             parentguid = parentguid
                                                         });
                                                     }
@@ -577,47 +505,14 @@ namespace Updater.Sphinx
                                                 foreach (var pair in q)
                                                 {
                                                     pair.doc1.parentguid = pair.doc2.parentguid;
-                                                    pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
+                                                    pair.doc1.addrfull = $"{pair.doc2.addrfull}, {pair.doc1.addrfull}";
                                                 }
                                             }
 
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command3, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command3, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -730,7 +625,6 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-                                            var guids1 = new List<string>();
 
                                             List<Doc1> docs1;
                                             lock (obj)
@@ -744,40 +638,7 @@ namespace Updater.Sphinx
 
                                             if (docs1.Any())
                                             {
-                                                for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray();
-                                                    guids.Any();
-                                                    guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
-                                                        .Select(x => x.parentguid).ToArray())
-                                                {
-                                                    guids = guids.Except(guids1).ToArray();
-
-                                                    if (!guids.Any()) break;
-
-                                                    var docs2 = GetDocs2(guids, command2, guids.Length);
-
-                                                    if (!docs2.Any()) break;
-
-                                                    var q = from doc1 in docs1
-                                                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                                                        select new {doc1, doc2};
-
-                                                    foreach (var pair in q)
-                                                    {
-                                                        pair.doc1.parentguid = pair.doc2.parentguid;
-                                                        pair.doc1.text = $"{pair.doc2.text}, {pair.doc1.text}";
-                                                    }
-
-                                                    guids1.AddRange(guids);
-                                                }
-
-                                                var sb = new StringBuilder(
-                                                    "REPLACE INTO addrobx(id,title,priority) VALUES ");
-                                                sb.Append(string.Join(",",
-                                                    docs1.Select(x =>
-                                                        $"({x.id},'{x.text.TextEscape()}','{x.text.Split(",").Length}')")));
-
-                                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                                ProcessDoc1(docs1, command2, mySqlConnection);
 
                                                 lock (obj)
                                                 {
@@ -806,6 +667,47 @@ namespace Updater.Sphinx
             }
         }
 
+        private void ProcessDoc1(List<Doc1> docs1, NpgsqlCommand command2, MySqlConnection mySqlConnection)
+        {
+            var guids1 = new List<string>();
+
+            for (var guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                    .Select(x => x.parentguid).ToArray();
+                guids.Any();
+                guids = docs1.Where(x => !string.IsNullOrEmpty(x.parentguid))
+                    .Select(x => x.parentguid).ToArray())
+            {
+                guids = guids.Except(guids1).ToArray();
+
+                if (!guids.Any()) break;
+
+                var docs2 = GetDocs2(guids, command2, guids.Length);
+
+                if (!docs2.Any()) break;
+
+                var q = from doc1 in docs1
+                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                        select new { doc1, doc2 };
+
+                foreach (var pair in q)
+                {
+                    pair.doc1.parentguid = pair.doc2.parentguid;
+                    pair.doc1.addrfull = $"{pair.doc2.addrfull}, {pair.doc1.addrfull}";
+                }
+
+                guids1.AddRange(guids);
+            }
+
+            var sb = new StringBuilder(
+                "REPLACE INTO addrobx(id,title,priority) VALUES ");
+            sb.Append(string.Join(",",
+                docs1.Select(x =>
+                    $"({x.id},'{x.addrfull.TextEscape()}',{x.addrfull.Split(",").Length})")));
+
+            ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+
+
+        }
         private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)
         {
             var socr = true;
@@ -834,7 +736,7 @@ namespace Updater.Sphinx
                     docs2.Add(new Doc2
                     {
                         guid = reader2.SafeGetString(0),
-                        text = title,
+                        addrfull = title,
                         parentguid = parentguid
                     });
                 }
