@@ -620,7 +620,7 @@ namespace Placium.Seeker
                     {"match", match}
                 };
                 var count = result.FillAll(
-                    "SELECT title FROM addrx WHERE MATCH(@match) ORDER BY priority",
+                    "SELECT title FROM addrx WHERE MATCH(@match) ORDER BY priority ASC",
                     dic, connection, limit: limit);
 
                 return result;
@@ -641,7 +641,7 @@ namespace Placium.Seeker
                     {"match", match}
                 };
                 var count = result.FillAll(
-                    "SELECT title FROM addrobx WHERE MATCH(@match) ORDER BY priority",
+                    "SELECT title FROM addrobx WHERE MATCH(@match) ORDER BY priority ASC",
                     dic, connection, limit: limit);
 
                 return result;

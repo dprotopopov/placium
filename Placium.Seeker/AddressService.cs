@@ -31,7 +31,7 @@ namespace Placium.Seeker
 
                     using (var command =
                         new MySqlCommand(
-                            @"SELECT title,lon,lat FROM addrx WHERE MATCH(@match) ORDER BY priority LIMIT @skip,@take",
+                            @"SELECT title,lon,lat FROM addrx WHERE MATCH(@match) ORDER BY priority ASC LIMIT @skip,@take",
                             mySqlConnection))
                     {
                         command.Parameters.AddWithValue("skip", skip);

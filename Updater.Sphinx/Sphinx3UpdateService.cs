@@ -807,7 +807,7 @@ namespace Updater.Sphinx
                     mySqlConnection.TryOpen();
                     using (var mySqlCommand =
                         new MySqlCommand(
-                            @"SELECT id,lon,lat FROM addrx WHERE MATCH(@match) AND building<=@building ORDER BY priority LIMIT 1")
+                            @"SELECT id,lon,lat FROM addrx WHERE MATCH(@match) AND building<=@building ORDER BY priority ASC LIMIT 1")
                     )
                     {
                         mySqlCommand.Parameters.AddWithValue("match", match);
