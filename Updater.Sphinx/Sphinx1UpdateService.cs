@@ -35,9 +35,12 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrob(title text,title2 text)",
-                    "CREATE TABLE house(housenumber text,title text,title2 text)",
+                    "CREATE TABLE addrob(title text,title2 text)"
+                    + " charset_table='0..9,A..Z->a..z,a..z,U+410..U+42F->U+430..U+44F,U+430..U+44F,U+401->U+0435,U+451->U+0435'",
+                    "CREATE TABLE house(housenumber text,title text,title2 text)"
+                    + " charset_table='0..9,A..Z->a..z,a..z,U+410..U+42F->U+430..U+44F,U+430..U+44F,U+401->U+0435,U+451->U+0435'",
                     "CREATE TABLE stead(housenumber text,title text,title2 text)"
+                    + " charset_table='0..9,A..Z->a..z,a..z,U+410..U+42F->U+430..U+44F,U+430..U+44F,U+401->U+0435,U+451->U+0435'"
                 }, connection);
             }
 

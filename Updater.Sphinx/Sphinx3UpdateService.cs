@@ -34,7 +34,13 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon float,geoLat float,geoExists int,guid string) phrase_boundary='U+2C' phrase_boundary_step='100' min_infix_len='1' expand_keywords='1' morphology='stem_ru'"
+                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon float,geoLat float,geoExists int,guid string)"
+                    + " phrase_boundary='U+2C'"
+                    + " phrase_boundary_step='100'"
+                    + " min_infix_len='1'"
+                    + " expand_keywords='1'"
+                    + " charset_table='0..9,A..Z->a..z,a..z,U+410..U+42F->U+430..U+44F,U+430..U+44F,U+401->U+0435,U+451->U+0435'"
+                    + " morphology='stem_ru'"
                 }, connection);
             }
 
@@ -158,7 +164,7 @@ namespace Updater.Sphinx
                                                             ? formalname
                                                             : offname;
                                                     var addrshort = aolevel > 1
-                                                        ? $"{(false ? socrname : shortname)} {(false ? formalname : offname)}"
+                                                        ? $"{(true ? socrname : shortname)} {(false ? formalname : offname)}"
                                                         : false
                                                             ? formalname
                                                             : offname;
@@ -480,13 +486,13 @@ namespace Updater.Sphinx
                                                     var guid = reader.SafeGetString(4);
                                                     var postalcode = reader.SafeGetString(5);
                                                     if (!string.IsNullOrEmpty(flatnumber))
-                                                        list1.Add($"Квартира {flatnumber}");
+                                                        list1.Add($"квартира {flatnumber}");
                                                     if (!string.IsNullOrEmpty(roomnumber))
-                                                        list1.Add($"Комната {roomnumber}");
+                                                        list1.Add($"комната {roomnumber}");
                                                     if (!string.IsNullOrEmpty(flatnumber))
-                                                        list11.Add($"кв. {flatnumber}");
+                                                        list11.Add($"квартира {flatnumber}");
                                                     if (!string.IsNullOrEmpty(roomnumber))
-                                                        list11.Add($"комн. {roomnumber}");
+                                                        list11.Add($"комната {roomnumber}");
                                                     docs1.Add(new Doc1
                                                     {
                                                         id = reader.GetInt64(0),
@@ -869,7 +875,7 @@ namespace Updater.Sphinx
                             ? formalname
                             : offname;
                     var addrshort = aolevel > 1
-                        ? $"{(false ? socrname : shortname)} {(false ? formalname : offname)}"
+                        ? $"{(true ? socrname : shortname)} {(false ? formalname : offname)}"
                         : false
                             ? formalname
                             : offname;

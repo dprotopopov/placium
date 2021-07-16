@@ -80,7 +80,7 @@ namespace Updater.Sphinx
                     if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
                         (key != "addr:town" || !skipTown) &&
                         (key != "addr:village" || !skipVillage))
-                        list.Add(dictionary[key].Yo());
+                        list.Add(dictionary[key]);
                 }
 
                 var doc = new Doc3

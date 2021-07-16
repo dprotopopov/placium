@@ -130,7 +130,7 @@ namespace Placium.Seeker
                         if (!string.IsNullOrWhiteSpace(housenumber))
                         {
                             var match1 =
-                                $"@housenumber ({housenumber.Yo().ToLower().Escape()}) @title ({row.Yo().ToLower().Escape()}) @title2 ({row2.Yo().Escape()})";
+                                $"@housenumber ({housenumber.Escape()}) @title ({row.Escape()}) @title2 ({row2.Escape()})";
                             var dic1 = new Dictionary<string, object>
                             {
                                 {"match", match1}
@@ -144,7 +144,7 @@ namespace Placium.Seeker
                                 dic1, connection);
                         }
 
-                        var match = $"@title ({row.Yo().ToLower().Escape()}) @title2 ({row2.Yo().ToLower().Escape()})";
+                        var match = $"@title ({row.Escape()}) @title2 ({row2.Escape()})";
                         var dic = new Dictionary<string, object>
                         {
                             {"match", match}
@@ -157,7 +157,7 @@ namespace Placium.Seeker
 
                     if (index == 0)
                     {
-                        var match = $"@title ({row.Yo().ToLower().Escape()})";
+                        var match = $"@title ({row.Escape()})";
                         var dic = new Dictionary<string, object>
                         {
                             {"match", match}
@@ -296,7 +296,7 @@ namespace Placium.Seeker
 
                             var list = new List<Doc>();
 
-                            var lev = new Levenshtein(roomnumber.Yo());
+                            var lev = new Levenshtein(roomnumber.Yo().ToLower());
 
                             using (var reader = command.ExecuteReader())
                             {
@@ -311,7 +311,7 @@ namespace Placium.Seeker
                                     list.Add(new Doc
                                     {
                                         guid = roomguid,
-                                        distance = lev.DistanceFrom(string.Join(" ", list1))
+                                        distance = lev.DistanceFrom(string.Join(" ", list1).Yo().ToLower())
                                     });
                                 }
                             }
