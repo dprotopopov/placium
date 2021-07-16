@@ -50,7 +50,12 @@ namespace Updater.Sphinx
                 "addr:subdistrict",
                 "addr:suburb",
                 "addr:hamlet",
+                "addr:allotments",
+                "addr:isolated_dwelling",
+                "addr:neighbourhood",
+                "addr:locality",
                 "addr:place",
+                "addr:quarter",
                 "addr:street",
                 "addr:housenumber"
             };
