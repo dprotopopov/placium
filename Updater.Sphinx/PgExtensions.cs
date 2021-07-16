@@ -56,6 +56,8 @@ namespace Updater.Sphinx
                 "addr:locality",
                 "addr:place",
                 "addr:quarter",
+                "addr:island",
+                "addr:islet",
                 "addr:street",
                 "addr:housenumber"
             };
