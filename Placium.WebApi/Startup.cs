@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+ï»¿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,8 +67,8 @@ namespace Placium.WebApi
 
             app.UseRouting();
 
-            app.UseAuthentication(); // àóòåíòèôèêàöèÿ
-            app.UseAuthorization(); // àâòîðèçàöèÿ
+            app.UseAuthentication(); // Ð°ÑƒÑ‚ÐµÐ½Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ
+            app.UseAuthorization(); // Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð°Ñ†Ð¸Ñ
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 

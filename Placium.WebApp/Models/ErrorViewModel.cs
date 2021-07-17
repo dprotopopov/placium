@@ -1,4 +1,4 @@
-namespace Placium.WebApp.Models
+﻿namespace Placium.WebApp.Models
 {
     public class ErrorViewModel
     {

@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.IO;
 using Loader.Fias;
 using Loader.Osm;
@@ -80,7 +80,7 @@ namespace Placium.WebApp
                 x.MultipartHeadersLengthLimit = int.MaxValue;
             });
 
-            // óñòàíîâêà êîíôèãóðàöèè ïîäêëþ÷åíèÿ
+            // ÑƒÑÑ‚Ð°Ð½Ð¾Ð²ÐºÐ° ÐºÐ¾Ð½Ñ„Ð¸Ð³ÑƒÑ€Ð°Ñ†Ð¸Ð¸ Ð¿Ð¾Ð´ÐºÐ»ÑŽÑ‡ÐµÐ½Ð¸Ñ
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options => //CookieAuthenticationOptions
                 {
@@ -112,8 +112,8 @@ namespace Placium.WebApp
 
             app.UseRouting();
 
-            app.UseAuthentication(); // àóòåíòèôèêàöèÿ
-            app.UseAuthorization(); // àâòîðèçàöèÿ
+            app.UseAuthentication(); // Ð°ÑƒÑ‚ÐµÐ½Ñ‚Ð¸Ñ„Ð¸ÐºÐ°Ñ†Ð¸Ñ
+            app.UseAuthorization(); // Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð°Ñ†Ð¸Ñ
 
             app.UseEndpoints(endpoints =>
             {
