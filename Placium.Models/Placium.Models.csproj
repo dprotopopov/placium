@@ -5,7 +5,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Npgsql.GeoJSON" Version="5.0.4" />
+	  <PackageReference Include="NetTopologySuite" Version="2.3.0" />
 	</ItemGroup>
 
 </Project>

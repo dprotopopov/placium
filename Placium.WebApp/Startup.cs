@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NetTopologySuite.IO.Converters;
+using Newtonsoft.Json;
 using Placium.Common;
 using Placium.Seeker;
 using Placium.Services;
@@ -58,7 +60,13 @@ namespace Placium.WebApp
             RegisterServices(services);
 
             services.AddControllersWithViews()
-                .AddNewtonsoftJson();
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                    options.SerializerSettings.Converters.Add(new GeometryConverter());
+                    options.SerializerSettings.Converters.Add(new CoordinateConverter());
+                });
+
             services.AddSignalR();
             services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
             services.Configure<KestrelServerOptions>(options =>

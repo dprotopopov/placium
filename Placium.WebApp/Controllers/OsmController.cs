@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
-using Placium.Types;
 using Placium.Services;
+using Placium.Types;
 
 namespace Placium.WebApp.Controllers
 {
@@ -30,7 +32,17 @@ namespace Placium.WebApp.Controllers
 
             var type = (OsmType) Enum.Parse(typeof(OsmType), osm_type, true);
 
-            return Content(JsonConvert.SerializeObject(await _osmService.GetByIdAsync(id, type)));
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter>
+                {
+                    new GeometryConverter(),
+                    new CoordinateConverter()
+                }
+            };
+
+            return Content(JsonConvert.SerializeObject(await _osmService.GetByIdAsync(id, type), serializerSettings));
         }
     }
 }

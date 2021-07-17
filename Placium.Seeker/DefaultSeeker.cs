@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Fastenshtein;
-using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
+using NetTopologySuite.Geometries;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
@@ -75,6 +75,10 @@ namespace Placium.Seeker
                 "addr:subdistrict",
                 "addr:suburb",
                 "addr:hamlet",
+                "addr:allotments",
+                "addr:isolated_dwelling",
+                "addr:neighbourhood",
+                "addr:locality",
                 "addr:place",
                 "addr:street"
             };
@@ -498,7 +502,7 @@ namespace Placium.Seeker
                 await npgsqlConnection.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.UseGeoJson();
+                npgsqlConnection.TypeMapper.UseNetTopologySuite();
 
                 for (var priority = 0; priority < 20; priority++)
                 {
@@ -531,7 +535,7 @@ namespace Placium.Seeker
                                 {
                                     id = reader.GetInt64(0),
                                     tags = (Dictionary<string, string>) reader.GetValue(1),
-                                    location = (GeoJSONObject) reader.GetValue(2)
+                                    location = (Geometry) reader.GetValue(2)
                                 });
                         }
                     }
@@ -569,7 +573,7 @@ namespace Placium.Seeker
                 await npgsqlConnection.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.UseGeoJson();
+                npgsqlConnection.TypeMapper.UseNetTopologySuite();
 
                 for (var priority = 0; priority < 20; priority++)
                 {

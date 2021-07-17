@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using GeoJSON.Net;
+using NetTopologySuite.Geometries;
 
 namespace Placium.Models
 {
@@ -7,6 +7,6 @@ namespace Placium.Models
     {
         public long id { get; set; }
         public Dictionary<string, string> tags { get; set; }
-        public object location { get; set; }
+        public Geometry location { get; set; }
     }
 }

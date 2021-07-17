@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using GeoJSON.Net;
 using Microsoft.Extensions.Configuration;
+using NetTopologySuite.Geometries;
 using Npgsql;
 using Placium.Common;
 using Placium.Models;
@@ -21,7 +21,7 @@ namespace Placium.Services
                 await connection.OpenAsync();
 
                 connection.ReloadTypes();
-                connection.TypeMapper.UseGeoJson();
+                connection.TypeMapper.UseNetTopologySuite();
 
                 var result = new List<Placex>(limit);
 
@@ -45,7 +45,7 @@ namespace Placium.Services
                             {
                                 id = reader.GetInt64(0),
                                 tags = (Dictionary<string, string>) reader.GetValue(1),
-                                location = (GeoJSONObject) reader.GetValue(2)
+                                location = (Geometry) reader.GetValue(2)
                             });
                     }
                 }
@@ -64,7 +64,7 @@ namespace Placium.Services
                 await connection.OpenAsync();
 
                 connection.ReloadTypes();
-                connection.TypeMapper.UseGeoJson();
+                connection.TypeMapper.UseNetTopologySuite();
 
                 var result = new List<Placex>(limit);
 
@@ -89,7 +89,7 @@ namespace Placium.Services
                             {
                                 id = reader.GetInt64(0),
                                 tags = (Dictionary<string, string>) reader.GetValue(1),
-                                location = (GeoJSONObject) reader.GetValue(2)
+                                location = (Geometry) reader.GetValue(2)
                             });
                     }
                 }

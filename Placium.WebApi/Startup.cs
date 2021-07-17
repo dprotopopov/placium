@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
+using NetTopologySuite.IO.Converters;
+using Newtonsoft.Json;
 using Placium.Seeker;
 using Placium.Services;
 
@@ -37,7 +39,13 @@ namespace Placium.WebApi
             //        .AllowAnyMethod()));
 
             services.AddControllers()
-                .AddNewtonsoftJson();
+                .AddNewtonsoftJson(options =>
+                {
+                    options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                    options.SerializerSettings.Converters.Add(new GeometryConverter());
+                    options.SerializerSettings.Converters.Add(new CoordinateConverter());
+                });
+
             services.AddSignalR();
             services.AddHealthChecks();
 
@@ -62,15 +70,9 @@ namespace Placium.WebApi
             app.UseAuthentication(); // аутентификация
             app.UseAuthorization(); // авторизация
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapHealthChecks("/health");
-            });
+            app.UseEndpoints(endpoints => { endpoints.MapHealthChecks("/health"); });
         }
 
         public void UseSwagger(IApplicationBuilder app)

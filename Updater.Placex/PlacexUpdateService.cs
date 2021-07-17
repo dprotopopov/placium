@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
@@ -448,6 +450,10 @@ namespace Updater.Placex
 
                                         command4.Prepare();
 
+                                        var wktReader = new WKTReader();
+                                        var wktWriter = new WKTWriter();
+                                        var geometryFactory = new GeometryFactory();
+
                                         while (true)
                                         {
                                             long id0;
@@ -466,89 +472,68 @@ namespace Updater.Placex
 
                                             if (members.Any())
                                             {
-                                                var cleanMember = members.Where(x => x.Type == 1 && x.Role == "outer")
+                                                var cleanMember = members.Where(x => x.Type == 1)
                                                     .ToArray();
                                                 if (cleanMember.Any())
                                                 {
-                                                    var outers = new List<long[]>();
-                                                    var outerRings = new List<long[]>();
+                                                    var g = geometryFactory.CreateEmpty(Dimension.Surface);
 
-                                                    command3.Parameters["ids"].Value =
-                                                        cleanMember.Select(x => x.Id).ToArray();
-
-                                                    using (var reader3 = command3.ExecuteReader())
-                                                    {
-                                                        while (reader3.Read())
+                                                    var role = cleanMember.First().Role;
+                                                    var currentMembers = new List<OsmRelationMember>
+                                                        {cleanMember.First()};
+                                                    for (var index = 1; index < cleanMember.Length; index++)
+                                                        if (cleanMember[index].Role != role)
                                                         {
-                                                            var id = reader3.GetInt64(0);
-                                                            var nodes = (long[]) reader3.GetValue(1);
-                                                            if (!nodes.Any()) continue;
-                                                            outers.Add(nodes);
-                                                        }
-                                                    }
-
-                                                    while (ConnectToRings(outers, outerRings))
-                                                    {
-                                                    }
-
-                                                    var any = false;
-                                                    var sb = new StringBuilder("SRID=4326;");
-                                                    sb.Append("MULTIPOLYGON");
-                                                    sb.Append("(");
-                                                    var first = true;
-                                                    foreach (var nodes in outerRings)
-                                                    {
-                                                        if (nodes.Length < 4) continue;
-
-                                                        var dic = new Dictionary<long, Point>(nodes.Length);
-
-                                                        command4.Parameters["ids"].Value = nodes;
-
-                                                        using (var reader4 = command4.ExecuteReader())
-                                                        {
-                                                            while (reader4.Read())
-                                                                dic.Add(reader4.GetInt64(0), new Point
+                                                            if (ProcessMembers(currentMembers, command3,
+                                                                command4, out var wkt))
+                                                            {
+                                                                var g1 = wktReader.Read(wkt);
+                                                                switch (role)
                                                                 {
-                                                                    longitude = reader4.GetDouble(1),
-                                                                    latitude = reader4.GetDouble(2)
-                                                                });
-                                                        }
+                                                                    case "outer":
+                                                                        g = g.Union(g1);
+                                                                        break;
+                                                                    case "inner":
+                                                                        g = g.Difference(g1);
+                                                                        break;
+                                                                }
+                                                            }
 
-                                                        var cleanNodes = nodes.Where(id => dic.ContainsKey(id))
-                                                            .ToArray();
-                                                        if (cleanNodes.Length < 4) continue;
-                                                        if (first) first = false;
-                                                        else sb.Append(",");
-                                                        sb.Append("((");
-                                                        sb.Append(string.Join(",",
-                                                            cleanNodes.Select(id =>
-                                                                $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
-                                                        if (cleanNodes.First() != cleanNodes.Last())
+                                                            role = cleanMember[index].Role;
+                                                            currentMembers = new List<OsmRelationMember>
+                                                                {cleanMember[index]};
+                                                        }
+                                                        else
                                                         {
-                                                            var id = cleanNodes.First();
-                                                            sb.Append(
-                                                                $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                                                            currentMembers.Add(cleanMember[index]);
                                                         }
 
-                                                        sb.Append("))");
-                                                        any = true;
+                                                    if (ProcessMembers(currentMembers, command3,
+                                                        command4, out var wkt1))
+                                                    {
+                                                        var g1 = wktReader.Read(wkt1);
+                                                        switch (role)
+                                                        {
+                                                            case "outer":
+                                                                g = g.Union(g1);
+                                                                break;
+                                                            case "inner":
+                                                                g = g.Difference(g1);
+                                                                break;
+                                                        }
                                                     }
 
-                                                    sb.Append(")");
 
-                                                    if (any)
+                                                    var values = new List<string>
                                                     {
-                                                        var values = new List<string>
-                                                        {
-                                                            id0.ToString(),
-                                                            tags.TextEscape(),
-                                                            sb.ToString()
-                                                        };
+                                                        id0.ToString(),
+                                                        tags.TextEscape(),
+                                                        "SRID=4326;" + wktWriter.Write(g)
+                                                    };
 
-                                                        lock (obj)
-                                                        {
-                                                            writer.WriteLine(string.Join("\t", values));
-                                                        }
+                                                    lock (obj)
+                                                    {
+                                                        writer.WriteLine(string.Join("\t", values));
                                                     }
                                                 }
                                             }
@@ -592,6 +577,79 @@ namespace Updater.Placex
                 await connection2.CloseAsync();
                 await connection.CloseAsync();
             }
+        }
+
+        private bool ProcessMembers(List<OsmRelationMember> members, NpgsqlCommand command3,
+            NpgsqlCommand command4, out string wkt)
+        {
+            var sb = new StringBuilder("SRID=4326;");
+            sb.Append("MULTIPOLYGON");
+            sb.Append("(");
+
+            var ways = new List<long[]>();
+            var rings = new List<long[]>();
+
+            command3.Parameters["ids"].Value =
+                members.Select(x => x.Id).ToArray();
+
+            using (var reader3 = command3.ExecuteReader())
+            {
+                while (reader3.Read())
+                {
+                    var id = reader3.GetInt64(0);
+                    var nodes = (long[]) reader3.GetValue(1);
+                    if (!nodes.Any()) continue;
+                    ways.Add(nodes);
+                }
+            }
+
+            while (ConnectToRings(ways, rings))
+            {
+            }
+
+            var any = false;
+            var first = true;
+            foreach (var nodes in rings)
+            {
+                if (nodes.Length < 4) continue;
+
+                var dic = new Dictionary<long, Point>(nodes.Length);
+
+                command4.Parameters["ids"].Value = nodes;
+
+                using (var reader4 = command4.ExecuteReader())
+                {
+                    while (reader4.Read())
+                        dic.Add(reader4.GetInt64(0), new Point
+                        {
+                            longitude = reader4.GetDouble(1),
+                            latitude = reader4.GetDouble(2)
+                        });
+                }
+
+                var cleanNodes = nodes.Where(id => dic.ContainsKey(id))
+                    .ToArray();
+                if (cleanNodes.Length < 4) continue;
+                if (first) first = false;
+                else sb.Append(",");
+                sb.Append("((");
+                sb.Append(string.Join(",",
+                    cleanNodes.Select(id =>
+                        $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                if (cleanNodes.First() != cleanNodes.Last())
+                {
+                    var id = cleanNodes.First();
+                    sb.Append(
+                        $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                }
+
+                sb.Append("))");
+                any = true;
+            }
+
+            sb.Append(")");
+            wkt = sb.ToString();
+            return any;
         }
 
         private bool ConnectToRings(List<long[]> list, List<long[]> rings)

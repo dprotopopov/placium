@@ -1,7 +1,9 @@
-﻿using System.Globalization;
+﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
 using Placium.Seeker;
 
@@ -30,11 +32,20 @@ namespace Placium.WebApp.Controllers
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var addr = await _seeker.GetAddrByCoordsAsync(latitude, longitude);
             var fias = await _seeker.GetFiasByAddrAsync(addr);
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter>
+                {
+                    new GeometryConverter(),
+                    new CoordinateConverter()
+                }
+            };
             return Content(JsonConvert.SerializeObject(new
             {
                 addr,
                 fias
-            }));
+            }, serializerSettings));
         }
 
         public IActionResult ByAddr()
@@ -48,30 +59,62 @@ namespace Placium.WebApp.Controllers
             var arr = addr.Split(",");
             var fias = await _seeker.GetFiasByAddrAsync(arr, housenumber);
             var osm = await _seeker.GetOsmByAddrAsync(arr, housenumber);
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter>
+                {
+                    new GeometryConverter(),
+                    new CoordinateConverter()
+                }
+            };
             return Content(JsonConvert.SerializeObject(new
             {
                 fias,
                 osm
-            }));
+            }, serializerSettings));
         }
+
         public IActionResult OsmSuggest()
         {
             return View();
         }
+
         [HttpPost]
         public async Task<IActionResult> OsmSuggest(string search, int limit = 20)
         {
-            return Content(JsonConvert.SerializeObject(await _seeker.GetOsmSuggestAsync(search, limit)));
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter>
+                {
+                    new GeometryConverter(),
+                    new CoordinateConverter()
+                }
+            };
+            return Content(JsonConvert.SerializeObject(await _seeker.GetOsmSuggestAsync(search, limit),
+                serializerSettings));
         }
+
         public IActionResult FiasSuggest()
         {
             return View();
         }
+
         [HttpPost]
         public async Task<IActionResult> FiasSuggest(string search, int limit = 20)
         {
-            return Content(JsonConvert.SerializeObject(await _seeker.GetFiasSuggestAsync(search, limit)));
+            var serializerSettings = new JsonSerializerSettings
+            {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                Converters = new List<JsonConverter>
+                {
+                    new GeometryConverter(),
+                    new CoordinateConverter()
+                }
+            };
+            return Content(JsonConvert.SerializeObject(await _seeker.GetFiasSuggestAsync(search, limit),
+                serializerSettings));
         }
-
     }
 }

@@ -15,9 +15,9 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.5" />
     <PackageReference Include="MySql.Data" Version="8.0.23" />
     <PackageReference Include="NDbfReader" Version="2.3.0" />
+    <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Npgsql" Version="5.0.4" />
-    <PackageReference Include="Npgsql.GeoJSON" Version="5.0.4" />
     <PackageReference Include="OsmSharp" Version="6.2.0" />
     <PackageReference Include="OsmSharp.Geo" Version="6.2.0" />
     <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
