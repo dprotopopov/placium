@@ -481,13 +481,15 @@ namespace Updater.Placex
                                                     var role = cleanMember.First().Role;
                                                     var currentMembers = new List<OsmRelationMember>
                                                         {cleanMember.First()};
-                                                    for (var index = 1; index < cleanMember.Length; index++)
-                                                        if (cleanMember[index].Role != role)
+                                                    for (var index = 1; index <= cleanMember.Length; index++)
+                                                        if (index == cleanMember.Length ||
+                                                            cleanMember[index].Role != role)
                                                         {
                                                             if (ProcessMembers(currentMembers, command3,
                                                                 command4, out var wkt))
                                                             {
                                                                 var g1 = wktReader.Read(wkt);
+                                                                if (!g1.IsValid) g1 = g1.Buffer(0);
                                                                 switch (role)
                                                                 {
                                                                     case "outer":
@@ -497,7 +499,10 @@ namespace Updater.Placex
                                                                         g = g.Difference(g1);
                                                                         break;
                                                                 }
+                                                                if (!g.IsValid) g = g.Buffer(0);
                                                             }
+
+                                                            if (index == cleanMember.Length) break;
 
                                                             role = cleanMember[index].Role;
                                                             currentMembers = new List<OsmRelationMember>
@@ -507,21 +512,6 @@ namespace Updater.Placex
                                                         {
                                                             currentMembers.Add(cleanMember[index]);
                                                         }
-
-                                                    if (ProcessMembers(currentMembers, command3,
-                                                        command4, out var wkt1))
-                                                    {
-                                                        var g1 = wktReader.Read(wkt1);
-                                                        switch (role)
-                                                        {
-                                                            case "outer":
-                                                                g = g.Union(g1);
-                                                                break;
-                                                            case "inner":
-                                                                g = g.Difference(g1);
-                                                                break;
-                                                        }
-                                                    }
 
 
                                                     var values = new List<string>
