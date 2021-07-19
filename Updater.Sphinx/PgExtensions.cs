@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Npgsql;
 using Placium.Common;
 
@@ -8,10 +6,6 @@ namespace Updater.Sphinx
 {
     public static class PgExtensions
     {
-        private static readonly Regex _pointRegex = new Regex(
-            @"POINT\s*\(\s*(?<lon>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s+(?<lat>[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+))\s*\)",
-            RegexOptions.IgnoreCase);
-
         public static List<Doc> ReadDocs(this NpgsqlDataReader reader, int take)
         {
             var result = new List<Doc>(take);
@@ -95,15 +89,10 @@ namespace Updater.Sphinx
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
                     priority = priority,
-                    building = dictionary.ContainsKey("addr:housenumber")
+                    building = dictionary.ContainsKey("addr:housenumber"),
+                    lon = reader.GetFloat(2),
+                    lat = reader.GetFloat(3)
                 };
-
-                var match = _pointRegex.Match(reader.SafeGetString(2));
-                if (match.Success)
-                {
-                    doc.lon = double.Parse(match.Groups["lon"].Value, CultureInfo.InvariantCulture);
-                    doc.lat = double.Parse(match.Groups["lat"].Value, CultureInfo.InvariantCulture);
-                }
 
                 result.Add(doc);
             }

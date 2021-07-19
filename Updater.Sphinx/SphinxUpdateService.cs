@@ -13,6 +13,7 @@ namespace Updater.Sphinx
 {
     public class SphinxUpdateService : BaseService, IUpdateService
     {
+        private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly ProgressHub _progressHub;
 
         public SphinxUpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
@@ -82,7 +83,7 @@ namespace Updater.Sphinx
                     "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
                 var sql =
-                    "SELECT addrx.id,addrx.tags,ST_AsText(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
+                    "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location)),ST_Y(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
                 using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                 {
@@ -110,7 +111,7 @@ namespace Updater.Sphinx
                                     "REPLACE INTO addrx(id,title,priority,lon,lat,building) VALUES ");
                                 sb.Append(string.Join(",",
                                     docs.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString("0.000000", CultureInfo.InvariantCulture)},{x.lat.ToString("0.000000", CultureInfo.InvariantCulture)},{(x.building ? 1 : 0)})")));
+                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{(x.building ? 1 : 0)})")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                             }
