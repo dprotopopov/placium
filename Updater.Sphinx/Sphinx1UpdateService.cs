@@ -163,7 +163,10 @@ namespace Updater.Sphinx
                                 var q = from doc1 in docs1
                                     join doc2 in docs2 on doc1.parentguid equals doc2.guid into ps
                                     from doc in ps.DefaultIfEmpty()
-                                    select new {doc1.id, text = $"{doc1.addrfull}", text2 = $"{doc?.addrfull ?? doc1.addrfull}"};
+                                    select new
+                                    {
+                                        doc1.id, text = $"{doc1.addrfull}", text2 = $"{doc?.addrfull ?? doc1.addrfull}"
+                                    };
 
                                 var sb = new StringBuilder("REPLACE INTO addrob(id,title,title2) VALUES ");
                                 sb.Append(string.Join(",",
@@ -413,7 +416,7 @@ namespace Updater.Sphinx
 
                         while (true)
                         {
-                            var docs1 = reader.ReadDocs1(take);
+                            var docs1 = ReadDocs1(reader, take);
 
                             if (docs1.Any())
                             {
@@ -462,6 +465,19 @@ namespace Updater.Sphinx
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
+        }
+
+        public List<Doc1> ReadDocs1(NpgsqlDataReader reader, int take)
+        {
+            var result = new List<Doc1>(take);
+            for (var i = 0; i < take && reader.Read(); i++)
+                result.Add(new Doc1
+                {
+                    id = reader.GetInt64(0),
+                    addrfull = reader.SafeGetString(1),
+                    parentguid = reader.SafeGetString(2)
+                });
+            return result;
         }
 
         private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)

@@ -34,7 +34,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon float,geoLat float,geoExists int,guid string)"
+                    "CREATE TABLE address(title text,priority int,addressString string,postalCode string,regionCode string,country string,geoLon float,geoLat float,geoExists int,building int,guid string)"
                     + " phrase_boundary='U+2C'"
                     + " phrase_boundary_step='100'"
                     + " min_infix_len='1'"
@@ -792,12 +792,15 @@ namespace Updater.Sphinx
 
             foreach (var doc1 in docs1)
             {
-                var building = 0;
                 if (!string.IsNullOrWhiteSpace(doc1.housesteadfull))
                 {
                     doc1.addrfull = $"{doc1.addrfull}, {doc1.housesteadfull}";
+                    doc1.building = 1;
+                }
+                if (!string.IsNullOrWhiteSpace(doc1.housesteadshort))
+                {
                     doc1.addrshort = $"{doc1.addrshort}, {doc1.housesteadshort}";
-                    building = 1;
+                    doc1.building = 1;
                 }
 
                 for (var list = doc1.addrshort.Split(",").ToList(); list.Any(); list.RemoveAt(list.Count - 1))
@@ -811,7 +814,7 @@ namespace Updater.Sphinx
                     )
                     {
                         mySqlCommand.Parameters.AddWithValue("match", match);
-                        mySqlCommand.Parameters.AddWithValue("building", building);
+                        mySqlCommand.Parameters.AddWithValue("building", doc1.building);
 
                         using (var reader = mySqlCommand.ExecuteReader())
                         {
@@ -819,16 +822,20 @@ namespace Updater.Sphinx
                             {
                                 doc1.lon = reader.GetFloat(1);
                                 doc1.lat = reader.GetFloat(2);
-                                doc1.geoexists = true;
+                                doc1.geoexists = 1;
                                 break;
                             }
                         }
                     }
                 }
 
+                if (!string.IsNullOrWhiteSpace(doc1.roomfull))
+                {
+                    doc1.addrfull = $"{doc1.addrfull}, {doc1.roomfull}";
+                }
+
                 if (!string.IsNullOrWhiteSpace(doc1.roomshort))
                 {
-                    doc1.addrfull = $"{doc1.addrfull}, {doc1.roomshort}";
                     doc1.addrshort = $"{doc1.addrshort}, {doc1.roomshort}";
                 }
 
@@ -840,10 +847,10 @@ namespace Updater.Sphinx
             }
 
             var sb = new StringBuilder(
-                "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,guid) VALUES ");
+                "REPLACE INTO address(id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) VALUES ");
             sb.Append(string.Join(",",
                 docs1.Select(x =>
-                    $"({x.id},'{x.addrfull.TextEscape()}',{x.addrfull.Split(",").Length},'{x.addrshort.TextEscape()}','{x.postalcode}','{x.regioncode}','RU',{x.lon.ToString("0.000000", CultureInfo.InvariantCulture)},{x.lat.ToString("0.000000", CultureInfo.InvariantCulture)},{(x.geoexists ? 1 : 0)},'{x.guid}')")));
+                    $"({x.id},'{x.addrfull.TextEscape()}',{x.addrfull.Split(",").Length},'{x.addrshort.TextEscape()}','{x.postalcode}','{x.regioncode}','RU',{x.lon.ToString("0.000000", CultureInfo.InvariantCulture)},{x.lat.ToString("0.000000", CultureInfo.InvariantCulture)},{x.geoexists},{x.building},'{x.guid}')")));
 
             ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
         }

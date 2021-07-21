@@ -38,6 +38,7 @@
     <ProjectReference Include="..\Placium.Services\Placium.Services.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
     <ProjectReference Include="..\Updater.Addrx\Updater.Addrx.csproj" />
+    <ProjectReference Include="..\Updater.Fias\Updater.Fias.csproj" />
     <ProjectReference Include="..\Updater.Placex\Updater.Placex.csproj" />
     <ProjectReference Include="..\Updater.Sphinx\Updater.Sphinx.csproj" />
   </ItemGroup>

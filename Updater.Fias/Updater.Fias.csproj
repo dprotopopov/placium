@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="CreateAddresxTables.sql" />
+    <None Remove="CreateAddresxTempTables.sql" />
+    <None Remove="CreateAddrxTables.sql" />
+    <None Remove="CreateAddrxTempTables.sql" />
+    <None Remove="InsertAddresxFromTempTables.sql" />
+    <None Remove="InsertAddrxFromTempTables.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="CreateAddresxTempTables.sql" />
+    <EmbeddedResource Include="CreateAddresxTables.sql" />
+    <EmbeddedResource Include="CreateAddrxTables.sql" />
+    <EmbeddedResource Include="CreateAddrxTempTables.sql" />
+    <EmbeddedResource Include="InsertAddresxFromTempTables.sql" />
+    <EmbeddedResource Include="InsertAddrxFromTempTables.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+    <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
+  </ItemGroup>
+
+</Project>

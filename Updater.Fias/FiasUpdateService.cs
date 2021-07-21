@@ -1,47 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using MySql.Data.MySqlClient;
 using Npgsql;
 using Placium.Common;
 using Placium.Types;
 
-namespace Updater.Sphinx
+namespace Updater.Fias
 {
-    public class SphinxUpdateService : BaseService, IUpdateService
+    public class FiasUpdateService : BaseService, IUpdateService
     {
-        private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly ProgressHub _progressHub;
 
-        public SphinxUpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
+        public FiasUpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
         }
 
         public async Task UpdateAsync(string session, bool full)
         {
-            using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
             {
+                await npgsqlConnection.OpenAsync();
                 if (full)
-                    TryExecuteNonQueries(new[]
-                    {
-                        "DROP TABLE addrx"
-                    }, connection);
+                    await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Fias.CreateAddrxTables.sql",
+                        npgsqlConnection);
 
-                TryExecuteNonQueries(new[]
+                ExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text,priority int,lon float,lat float,building int)"
-                    + " phrase_boundary='U+2C'"
-                    + " phrase_boundary_step='100'"
-                    + " min_infix_len='1'"
-                    + " expand_keywords='1'"
-                    + " charset_table='0..9,A..Z->a..z,a..z,U+410..U+42F->U+430..U+44F,U+430..U+44F,U+401->U+0435,U+451->U+0435'"
-                    + " morphology='stem_ru'"
-                }, connection);
+                    new[]
+                    {
+                        "DROP INDEX IF EXISTS addrx_title_idx"
+                    }
+                }, npgsqlConnection);
+                await npgsqlConnection.CloseAsync();
             }
 
             if (full)
@@ -63,7 +56,7 @@ namespace Updater.Sphinx
 
         private async Task UpdateAddrxAsync(string session, bool full)
         {
-            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+            using (var npgsqlConnection2 = new NpgsqlConnection(GetOsmConnectionString()))
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 var current = 0L;
@@ -72,6 +65,7 @@ namespace Updater.Sphinx
                 var id = Guid.NewGuid().ToString();
                 await _progressHub.InitAsync(id, session);
 
+                await npgsqlConnection2.OpenAsync();
                 await npgsqlConnection.OpenAsync();
 
                 npgsqlConnection.ReloadTypes();
@@ -80,61 +74,77 @@ namespace Updater.Sphinx
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
-                var sql1 =
-                    "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Fias.CreateAddrxTempTables.sql",
+                    npgsqlConnection2);
 
-                var sql =
-                    "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location)),ST_Y(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
-
-                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+                using (var writer = npgsqlConnection2.BeginTextImport(
+                    "COPY temp_addrx (id,title,priority,lon,lat,building) FROM STDIN WITH NULL AS ''"))
                 {
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+                    var sql1 =
+                        "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
-                    command.Prepare();
+                    var sql =
+                        "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location)),ST_Y(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
-                    using (var reader = command.ExecuteReader())
+                    using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
                     {
-                        if (reader.Read())
-                            total = reader.GetInt64(0);
+                        command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                        var take = 1000;
+                        command.Prepare();
 
-                        reader.NextResult();
-
-                        while (true)
+                        using (var reader = command.ExecuteReader())
                         {
-                            var docs = ReadDocs3(reader, take);
+                            if (reader.Read())
+                                total = reader.GetInt64(0);
 
+                            var take = 1000;
 
-                            if (docs.Any())
+                            reader.NextResult();
+
+                            while (true)
                             {
-                                var sb = new StringBuilder(
-                                    "REPLACE INTO addrx(id,title,priority,lon,lat,building) VALUES ");
-                                sb.Append(string.Join(",",
-                                    docs.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{(x.building ? 1 : 0)})")));
+                                var docs = ReadDocs3(reader, take);
 
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
+                                foreach (var doc in docs)
+                                {
+                                    var values = new[]
+                                    {
+                                        doc.id.ToString(),
+                                        doc.text.ValueAsText(),
+                                        doc.priority.ToString(),
+                                        doc.lon.ValueAsText(),
+                                        doc.lat.ValueAsText(),
+                                        doc.building.ToString()
+                                    };
+
+                                    writer.WriteLine(string.Join("\t", values));
+                                }
+
+                                current += docs.Count;
+
+                                await _progressHub.ProgressAsync(100f * current / total, id, session);
+
+                                if (docs.Count < take) break;
                             }
-
-                            current += docs.Count;
-
-                            await _progressHub.ProgressAsync(100f * current / total, id, session);
-
-                            if (docs.Count < take) break;
                         }
                     }
                 }
 
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Updater.Fias.InsertAddrxFromTempTables.sql",
+                    npgsqlConnection2);
+
+
                 SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, next_last_record_number);
 
                 await npgsqlConnection.CloseAsync();
-                mySqlConnection.TryClose();
+                await npgsqlConnection2.CloseAsync();
 
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
-        public  List<Doc3> ReadDocs3(NpgsqlDataReader reader, int take)
+
+        public List<Doc3> ReadDocs3(NpgsqlDataReader reader, int take)
         {
             var keys = new[]
             {
@@ -162,7 +172,7 @@ namespace Updater.Sphinx
             var result = new List<Doc3>(take);
             for (var i = 0; i < take && reader.Read(); i++)
             {
-                var dictionary = (Dictionary<string, string>)reader.GetValue(1);
+                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
 
                 var priority = keys.Length;
                 for (; priority > 0 && !dictionary.ContainsKey(keys[priority - 1]); priority--) ;
@@ -192,7 +202,7 @@ namespace Updater.Sphinx
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
                     priority = priority,
-                    building = dictionary.ContainsKey("addr:housenumber"),
+                    building = dictionary.ContainsKey("addr:housenumber")?1:0,
                     lon = reader.GetFloat(2),
                     lat = reader.GetFloat(3)
                 };
@@ -202,6 +212,5 @@ namespace Updater.Sphinx
 
             return result;
         }
-
     }
 }

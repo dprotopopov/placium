@@ -1,4 +1,4 @@
-﻿namespace Updater.Sphinx
+﻿namespace Updater.Fias
 {
     public class Doc1
     {

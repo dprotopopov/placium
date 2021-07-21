@@ -65,6 +65,18 @@ namespace Placium.Common
             }
         }
 
+        protected void ExecuteNonQueries(string[][] sqls, NpgsqlConnection conn)
+        {
+            foreach (var sql in sqls)
+                using (var command = new NpgsqlCommand(string.Join(";", sql), conn))
+                {
+                    command.Prepare();
+
+                    command.ExecuteNonQuery();
+                }
+        }
+
+
         protected async Task ExecuteResourceAsync(Assembly assembly, string resource, NpgsqlConnection connection)
         {
             using (var stream = assembly.GetManifestResourceStream(resource))

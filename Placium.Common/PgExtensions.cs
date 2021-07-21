@@ -179,6 +179,14 @@ namespace Placium.Common
         {
             return value?.ToString("G", CultureInfo.InvariantCulture) ?? string.Empty;
         }
+        public static string ValueAsText(this double value)
+        {
+            return value.ToString("G", CultureInfo.InvariantCulture);
+        }
+        public static string ValueAsText(this float value)
+        {
+            return value.ToString("G", CultureInfo.InvariantCulture);
+        }
 
         public static string ValueAsText(this DateTime? value)
         {

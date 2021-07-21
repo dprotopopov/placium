@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
-using Updater.Sphinx;
+using Updater.Fias;
 
 namespace Placium.WebApp.Controllers.Update
 {
     [Authorize]
-    public class Sphinx3UpdateController : UpdateController<Sphinx3UpdateService>
+    public class FiasUpdateController : UpdateController<FiasUpdateService>
     {
-        public Sphinx3UpdateController(IConfiguration configuration, Sphinx3UpdateService updateService,
+        public FiasUpdateController(IConfiguration configuration, FiasUpdateService updateService,
             ProgressHub progressHub) : base(configuration,
             updateService, progressHub)
         {
@@ -18,14 +18,14 @@ namespace Placium.WebApp.Controllers.Update
         {
             return new UpdateFormInfo
             {
-                Title = "Наполнение Sphinx (Visary)",
-                Label = "Добавление новых записей в Sphinx"
+                Title = "Наполнение Fias (OSM)",
+                Label = "Добавление новых записей в Fias"
             };
         }
 
         protected override string GetSession()
         {
-            return nameof(Sphinx3UpdateController);
+            return nameof(FiasUpdateController);
         }
     }
 }

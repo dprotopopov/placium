@@ -631,12 +631,11 @@ namespace Updater.Sphinx
 
                                         while (true)
                                         {
-
                                             List<Doc1> docs1;
                                             lock (obj)
                                             {
                                                 if (reader_is_empty) break;
-                                                docs1 = reader.ReadDocs1(take);
+                                                docs1 = ReadDocs1(reader, take);
 
                                                 reader_is_empty = docs1.Count() < take;
                                                 if (!docs1.Any()) break;
@@ -673,6 +672,19 @@ namespace Updater.Sphinx
             }
         }
 
+        public List<Doc1> ReadDocs1(NpgsqlDataReader reader, int take)
+        {
+            var result = new List<Doc1>(take);
+            for (var i = 0; i < take && reader.Read(); i++)
+                result.Add(new Doc1
+                {
+                    id = reader.GetInt64(0),
+                    addrfull = reader.SafeGetString(1),
+                    parentguid = reader.SafeGetString(2)
+                });
+            return result;
+        }
+
         private void ProcessDoc1(List<Doc1> docs1, NpgsqlCommand command2, MySqlConnection mySqlConnection)
         {
             var guids1 = new List<string>();
@@ -692,8 +704,8 @@ namespace Updater.Sphinx
                 if (!docs2.Any()) break;
 
                 var q = from doc1 in docs1
-                        join doc2 in docs2 on doc1.parentguid equals doc2.guid
-                        select new { doc1, doc2 };
+                    join doc2 in docs2 on doc1.parentguid equals doc2.guid
+                    select new {doc1, doc2};
 
                 foreach (var pair in q)
                 {
@@ -711,9 +723,8 @@ namespace Updater.Sphinx
                     $"({x.id},'{x.addrfull.TextEscape()}',{x.addrfull.Split(",").Length})")));
 
             ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
-
-
         }
+
         private List<Doc2> GetDocs2(string[] guids, NpgsqlCommand npgsqlCommand2, int take)
         {
             var socr = true;
