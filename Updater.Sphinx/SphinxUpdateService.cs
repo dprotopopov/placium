@@ -112,7 +112,7 @@ namespace Updater.Sphinx
                                     "REPLACE INTO addrx(id,title,priority,lon,lat,building) VALUES ");
                                 sb.Append(string.Join(",",
                                     docs.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{(x.building ? 1 : 0)})")));
+                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building})")));
 
                                 ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                             }
@@ -134,7 +134,8 @@ namespace Updater.Sphinx
                 await _progressHub.ProgressAsync(100f, id, session);
             }
         }
-        public  List<Doc3> ReadDocs3(NpgsqlDataReader reader, int take)
+
+        public List<Doc3> ReadDocs3(NpgsqlDataReader reader, int take)
         {
             var keys = new[]
             {
@@ -162,7 +163,7 @@ namespace Updater.Sphinx
             var result = new List<Doc3>(take);
             for (var i = 0; i < take && reader.Read(); i++)
             {
-                var dictionary = (Dictionary<string, string>)reader.GetValue(1);
+                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
 
                 var priority = keys.Length;
                 for (; priority > 0 && !dictionary.ContainsKey(keys[priority - 1]); priority--) ;
@@ -192,9 +193,9 @@ namespace Updater.Sphinx
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
                     priority = priority,
-                    building = dictionary.ContainsKey("addr:housenumber"),
-                    lon = reader.GetFloat(2),
-                    lat = reader.GetFloat(3)
+                    building = dictionary.ContainsKey("addr:housenumber") ? 1 : 0,
+                    lon = reader.GetDouble(2),
+                    lat = reader.GetDouble(3)
                 };
 
                 result.Add(doc);
@@ -202,6 +203,5 @@ namespace Updater.Sphinx
 
             return result;
         }
-
     }
 }

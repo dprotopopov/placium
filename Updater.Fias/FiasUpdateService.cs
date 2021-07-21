@@ -202,9 +202,9 @@ namespace Updater.Fias
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
                     priority = priority,
-                    building = dictionary.ContainsKey("addr:housenumber")?1:0,
-                    lon = reader.GetFloat(2),
-                    lat = reader.GetFloat(3)
+                    building = dictionary.ContainsKey("addr:housenumber") ? 1 : 0,
+                    lon = reader.GetDouble(2),
+                    lat = reader.GetDouble(3)
                 };
 
                 result.Add(doc);

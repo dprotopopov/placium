@@ -7,6 +7,6 @@
         public int priority { get; set; }
         public double lon { get; set; }
         public double lat { get; set; }
-        public bool building { get; set; }
+        public int building { get; set; }
     }
 }
