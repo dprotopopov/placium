@@ -21,4 +21,4 @@ ON CONFLICT (id) DO UPDATE SET
 	lat=EXCLUDED.lat,
 	building=EXCLUDED.building;
 DROP TABLE temp_addrx;
-CREATE INDEX addrx_title_idx ON addr USING GIN(to_tsvector('russian',title));
+CREATE INDEX addrx_title_idx ON addrx USING GIN(to_tsvector('russian',title));
