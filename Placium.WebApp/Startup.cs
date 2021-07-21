@@ -18,6 +18,7 @@ using Placium.Common;
 using Placium.Seeker;
 using Placium.Services;
 using Updater.Addrx;
+using Updater.Fias;
 using Updater.Placex;
 using Updater.Sphinx;
 
@@ -52,6 +53,8 @@ namespace Placium.WebApp
             services.AddSingleton<Sphinx1UpdateService>();
             services.AddSingleton<Sphinx2UpdateService>();
             services.AddSingleton<Sphinx3UpdateService>();
+            services.AddSingleton<FiasUpdateService>();
+            services.AddSingleton<Fias3UpdateService>();
             services.AddSingleton<ProgressHub>();
         }
 
