@@ -56,7 +56,7 @@ namespace Updater.Fias
 
         private async Task UpdateAddrxAsync(string session, bool full)
         {
-            using (var npgsqlConnection2 = new NpgsqlConnection(GetOsmConnectionString()))
+            using (var npgsqlConnection2 = new NpgsqlConnection(GetFiasConnectionString()))
             using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
             {
                 var current = 0L;
