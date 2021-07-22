@@ -100,7 +100,7 @@ namespace Updater.Fias
                     npgsqlConnection3);
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addresx (title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -158,11 +158,7 @@ namespace Updater.Fias
                                                             : formal
                                                                 ? formalname
                                                                 : offname;
-                                                        var addrshort = aolevel > 1
-                                                            ? $"{(true ? socrname : shortname)} {(false ? formalname : offname)}"
-                                                            : false
-                                                                ? formalname
-                                                                : offname;
+                                                        var addrshort = offname;
                                                         docs1.Add(new Doc1
                                                         {
                                                             id = reader.GetInt64(0),
@@ -189,8 +185,9 @@ namespace Updater.Fias
                                                         {
                                                             var values = new[]
                                                             {
-                                                                doc.addrfull.ValueAsText(),
-                                                                doc.addrfull.Split(",").Length.ToString(),
+                                                                doc.id.ToString(),
+                                                                doc.addrshort.ValueAsText(),
+                                                                doc.addrshort.Split(",").Length.ToString(),
                                                                 doc.addrfull.ValueAsText(),
                                                                 doc.postalcode.ValueAsText(),
                                                                 doc.regioncode.ValueAsText(),
@@ -291,7 +288,7 @@ namespace Updater.Fias
                         WHERE {x}.record_number>@last_record_number"));
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addresx (title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -356,6 +353,7 @@ namespace Updater.Fias
                                                             housesteadshort = string.Join(" ", list11),
                                                             parentguid = parentguid,
                                                             postalcode = postalcode,
+                                                            building = 1,
                                                             guid = guid
                                                         });
                                                     }
@@ -374,8 +372,9 @@ namespace Updater.Fias
                                                         {
                                                             var values = new[]
                                                             {
-                                                                doc.addrfull.ValueAsText(),
-                                                                doc.addrfull.Split(",").Length.ToString(),
+                                                                doc.id.ToString(),
+                                                                doc.addrshort.ValueAsText(),
+                                                                doc.addrshort.Split(",").Length.ToString(),
                                                                 doc.addrfull.ValueAsText(),
                                                                 doc.postalcode.ValueAsText(),
                                                                 doc.regioncode.ValueAsText(),
@@ -484,7 +483,7 @@ namespace Updater.Fias
                         WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var writer = npgsqlConnection4.BeginTextImport(
-                    "COPY temp_addresx (title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -555,6 +554,7 @@ namespace Updater.Fias
                                                             roomfull = string.Join(" ", list1),
                                                             parentguid = parentguid,
                                                             guid = guid,
+                                                            building = 1,
                                                             postalcode = postalcode
                                                         });
                                                     }
@@ -644,8 +644,9 @@ namespace Updater.Fias
                                                         {
                                                             var values = new[]
                                                             {
-                                                                doc.addrfull.ValueAsText(),
-                                                                doc.addrfull.Split(",").Length.ToString(),
+                                                                doc.id.ToString(),
+                                                                doc.addrshort.ValueAsText(),
+                                                                doc.addrshort.Split(",").Length.ToString(),
                                                                 doc.addrfull.ValueAsText(),
                                                                 doc.postalcode.ValueAsText(),
                                                                 doc.regioncode.ValueAsText(),
@@ -744,7 +745,7 @@ namespace Updater.Fias
                         $"SELECT record_id,number,parentguid,steadguid,regioncode,postalcode FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addresx (title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -793,7 +794,8 @@ namespace Updater.Fias
                                                             parentguid = reader.SafeGetString(2),
                                                             guid = reader.SafeGetString(3),
                                                             regioncode = reader.SafeGetString(4),
-                                                            postalcode = reader.SafeGetString(5)
+                                                            postalcode = reader.SafeGetString(5),
+                                                            building = 1
                                                         });
 
                                                     reader_is_empty = docs1.Count() < take;
@@ -810,8 +812,9 @@ namespace Updater.Fias
                                                         {
                                                             var values = new[]
                                                             {
-                                                                doc.addrfull.ValueAsText(),
-                                                                doc.addrfull.Split(",").Length.ToString(),
+                                                                doc.id.ToString(),
+                                                                doc.addrshort.ValueAsText(),
+                                                                doc.addrshort.Split(",").Length.ToString(),
                                                                 doc.addrfull.ValueAsText(),
                                                                 doc.postalcode.ValueAsText(),
                                                                 doc.regioncode.ValueAsText(),
@@ -923,6 +926,8 @@ namespace Updater.Fias
                 if (!string.IsNullOrWhiteSpace(doc1.roomfull)) doc1.addrfull = $"{doc1.addrfull}, {doc1.roomfull}";
 
                 if (!string.IsNullOrWhiteSpace(doc1.roomshort)) doc1.addrshort = $"{doc1.addrshort}, {doc1.roomshort}";
+
+                if (!string.IsNullOrWhiteSpace(doc1.postalcode)) doc1.addrfull = $"{doc1.postalcode}, {doc1.addrfull}";
             }
         }
 
@@ -952,11 +957,7 @@ namespace Updater.Fias
                         : formal
                             ? formalname
                             : offname;
-                    var addrshort = aolevel > 1
-                        ? $"{(true ? socrname : shortname)} {(false ? formalname : offname)}"
-                        : false
-                            ? formalname
-                            : offname;
+                    var addrshort = offname;
 
                     docs2.Add(new Doc2
                     {

@@ -1,5 +1,6 @@
 ﻿DROP TABLE IF EXISTS addresx;
 CREATE TABLE addresx (
+	id BIGINT PRIMARY KEY,
 	title TEXT,
 	priority INTEGER,
 	addressString TEXT,
@@ -10,5 +11,5 @@ CREATE TABLE addresx (
 	geoLat REAL,
 	geoExists INTEGER,
 	building INTEGER,
-	guid VARCHAR(255) PRIMARY KEY
+	guid VARCHAR(255)
 );
