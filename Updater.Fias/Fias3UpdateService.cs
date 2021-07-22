@@ -72,6 +72,10 @@ namespace Updater.Fias
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
 
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    npgsqlConnection3);
+
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.Addrob, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
@@ -248,6 +252,10 @@ namespace Updater.Fias
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
+
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    npgsqlConnection3);
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.House, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
@@ -435,6 +443,10 @@ namespace Updater.Fias
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
+
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    npgsqlConnection4);
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.Room, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
@@ -708,6 +720,10 @@ namespace Updater.Fias
 
                 npgsqlConnection.ReloadTypes();
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
+
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    npgsqlConnection3);
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.Stead, full);
                 var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
