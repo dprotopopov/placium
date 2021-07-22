@@ -26,7 +26,7 @@ namespace Updater.Fias
             {
                 await npgsqlConnection.OpenAsync();
                 if (full)
-                    await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Fias.CreateAddresxTables.sql",
+                    await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Updater.Fias.CreateAddressxTables.sql",
                         npgsqlConnection);
                 await npgsqlConnection.CloseAsync();
             }
@@ -73,7 +73,7 @@ namespace Updater.Fias
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    "Updater.Fias.CreateAddressxTempTables.sql",
                     npgsqlConnection3);
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.Addrob, full);
@@ -104,7 +104,7 @@ namespace Updater.Fias
                     npgsqlConnection3);
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -224,7 +224,7 @@ namespace Updater.Fias
                 }
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.InsertAddresxFromTempTables.sql",
+                    "Updater.Fias.InsertAddressxFromTempTables.sql",
                     npgsqlConnection3);
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType3.Addrob, next_last_record_number);
@@ -254,7 +254,7 @@ namespace Updater.Fias
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    "Updater.Fias.CreateAddressxTempTables.sql",
                     npgsqlConnection3);
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.House, full);
@@ -296,7 +296,7 @@ namespace Updater.Fias
                         WHERE {x}.record_number>@last_record_number"));
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -415,7 +415,7 @@ namespace Updater.Fias
                 }
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.InsertAddresxFromTempTables.sql",
+                    "Updater.Fias.InsertAddressxFromTempTables.sql",
                     npgsqlConnection3);
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType3.House, next_last_record_number);
@@ -445,7 +445,7 @@ namespace Updater.Fias
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    "Updater.Fias.CreateAddressxTempTables.sql",
                     npgsqlConnection4);
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.Room, full);
@@ -495,7 +495,7 @@ namespace Updater.Fias
                         WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var writer = npgsqlConnection4.BeginTextImport(
-                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -692,7 +692,7 @@ namespace Updater.Fias
                 }
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.InsertAddresxFromTempTables.sql",
+                    "Updater.Fias.InsertAddressxFromTempTables.sql",
                     npgsqlConnection4);
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType3.Room, next_last_record_number);
@@ -722,7 +722,7 @@ namespace Updater.Fias
                 npgsqlConnection.TypeMapper.MapEnum<FiasServiceType3>("service_type3");
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.CreateAddresxTempTables.sql",
+                    "Updater.Fias.CreateAddressxTempTables.sql",
                     npgsqlConnection3);
 
                 var last_record_number = GetLastRecordNumber(npgsqlConnection, FiasServiceType3.Stead, full);
@@ -761,7 +761,7 @@ namespace Updater.Fias
                         $"SELECT record_id,number,parentguid,steadguid,regioncode,postalcode FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addresx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -863,7 +863,7 @@ namespace Updater.Fias
                 }
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Updater.Fias.InsertAddresxFromTempTables.sql",
+                    "Updater.Fias.InsertAddressxFromTempTables.sql",
                     npgsqlConnection3);
 
                 SetLastRecordNumber(npgsqlConnection, FiasServiceType3.Stead, next_last_record_number);

@@ -5,20 +5,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="CreateAddresxTables.sql" />
-    <None Remove="CreateAddresxTempTables.sql" />
+    <None Remove="CreateAddressxTables.sql" />
+    <None Remove="CreateAddressxTempTables.sql" />
     <None Remove="CreateAddrxTables.sql" />
     <None Remove="CreateAddrxTempTables.sql" />
-    <None Remove="InsertAddresxFromTempTables.sql" />
+    <None Remove="InsertAddressxFromTempTables.sql" />
     <None Remove="InsertAddrxFromTempTables.sql" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="CreateAddresxTempTables.sql" />
-    <EmbeddedResource Include="CreateAddresxTables.sql" />
+    <EmbeddedResource Include="CreateAddressxTempTables.sql" />
+    <EmbeddedResource Include="CreateAddressxTables.sql" />
     <EmbeddedResource Include="CreateAddrxTables.sql" />
     <EmbeddedResource Include="CreateAddrxTempTables.sql" />
-    <EmbeddedResource Include="InsertAddresxFromTempTables.sql" />
+    <EmbeddedResource Include="InsertAddressxFromTempTables.sql" />
     <EmbeddedResource Include="InsertAddrxFromTempTables.sql" />
   </ItemGroup>
 

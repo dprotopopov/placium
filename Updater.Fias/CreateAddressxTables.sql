@@ -1,6 +1,6 @@
-﻿DROP TABLE IF EXISTS temp_addresx;
-CREATE TEMP TABLE temp_addresx (
-	id BIGINT,
+﻿DROP TABLE IF EXISTS addressx;
+CREATE TABLE addressx (
+	id BIGINT PRIMARY KEY,
 	title TEXT,
 	priority INTEGER,
 	addressString TEXT,

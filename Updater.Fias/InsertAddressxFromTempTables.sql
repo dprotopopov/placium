@@ -1,4 +1,4 @@
-﻿INSERT INTO addresx(
+﻿INSERT INTO addressx(
 	id,
 	title,
 	priority,
@@ -24,7 +24,7 @@ SELECT
 	geoExists,
 	building,
 	guid
-FROM temp_addresx
+FROM temp_addressx
 ON CONFLICT (id) DO UPDATE SET
 	title=EXCLUDED.title,
 	priority=EXCLUDED.priority,
@@ -37,4 +37,4 @@ ON CONFLICT (id) DO UPDATE SET
 	geoExists=EXCLUDED.geoExists,
 	building=EXCLUDED.building,
 	guid=EXCLUDED.guid;
-DROP TABLE temp_addresx;
+DROP TABLE temp_addressx;
