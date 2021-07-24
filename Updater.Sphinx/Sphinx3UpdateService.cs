@@ -329,6 +329,8 @@ namespace Updater.Sphinx
                                                         id = reader.GetInt64(0),
                                                         housesteadfull = string.Join(" ", list1),
                                                         housesteadshort = string.Join(" ", list11),
+                                                        addrfull = string.Empty,
+                                                        addrshort = string.Empty,
                                                         parentguid = parentguid,
                                                         postalcode = postalcode,
                                                         guid = guid
@@ -498,6 +500,8 @@ namespace Updater.Sphinx
                                                         id = reader.GetInt64(0),
                                                         roomshort = string.Join(" ", list11),
                                                         roomfull = string.Join(" ", list1),
+                                                        addrfull = string.Empty,
+                                                        addrshort = string.Empty,
                                                         parentguid = parentguid,
                                                         guid = guid,
                                                         postalcode = postalcode
@@ -699,6 +703,9 @@ namespace Updater.Sphinx
                                                     {
                                                         id = reader.GetInt64(0),
                                                         housesteadfull = reader.SafeGetString(1),
+                                                        housesteadshort = reader.SafeGetString(1),
+                                                        addrfull = string.Empty,
+                                                        addrshort = string.Empty,
                                                         parentguid = reader.SafeGetString(2),
                                                         guid = reader.SafeGetString(3),
                                                         regioncode = reader.SafeGetString(4),
