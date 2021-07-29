@@ -408,8 +408,8 @@ namespace Updater.Placex
                 using (var writer = connection2.BeginTextImport(
                     "COPY temp_placex_relation (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
                 using (var command = new NpgsqlCommand(string.Join(";",
-                        "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number"
-                        , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND tags->'type'='multipolygon' AND record_number>@last_record_number")
+                        "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND record_number>@last_record_number"
+                        , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND record_number>@last_record_number")
                     , connection))
                 {
                     command.Parameters.AddWithValue("keys", keys.ToArray());
