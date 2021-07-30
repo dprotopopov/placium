@@ -118,7 +118,14 @@ namespace Updater.Addrx
                                         WHERE c.id=ANY(@ids) AND p.tags?|@keys UNION ALL
                                         SELECT c.id, concat('addr:',p.tags->'place') as key, p.tags->'name' as val FROM placex c
                                         JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
-                                        WHERE c.id=ANY(@ids) AND p.tags?'place') as q WHERE key like 'addr%' GROUP BY id
+                                        WHERE c.id=ANY(@ids) AND p.tags?'place' UNION ALL
+                                        SELECT c.id, 'addr:region' as key, p.tags->'name' as val FROM placex c
+                                        JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
+                                        WHERE c.id=ANY(@ids) AND p.tags->'type'='boundary' and p.tags->'admin_level'='4' UNION ALL
+                                        SELECT c.id, 'addr:district' as key, p.tags->'name' as val FROM placex c
+                                        JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
+                                        WHERE c.id=ANY(@ids) AND p.tags->'type'='boundary' and p.tags->'admin_level'='5') as q
+                                        WHERE key like 'addr%' GROUP BY id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                         connection2))
                                     {

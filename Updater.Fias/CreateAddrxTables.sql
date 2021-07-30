@@ -5,5 +5,6 @@ CREATE TABLE addrx (
 	priority INTEGER,
 	lon REAL,
 	lat REAL,
+	housenumber VARCHAR(100),
 	building INTEGER
 );

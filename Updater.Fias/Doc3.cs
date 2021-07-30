@@ -8,5 +8,6 @@
         public double lon { get; set; }
         public double lat { get; set; }
         public int building { get; set; }
+        public string housenumber { get; set; }
     }
 }

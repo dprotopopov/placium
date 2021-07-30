@@ -10,6 +10,7 @@ CREATE TEMP TABLE temp_addressx (
 	geoLon REAL,
 	geoLat REAL,
 	geoExists INTEGER,
+	housenumber VARCHAR(100),
 	building INTEGER,
 	guid VARCHAR(255)
 );

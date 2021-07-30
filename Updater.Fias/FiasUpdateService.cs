@@ -78,7 +78,7 @@ namespace Updater.Fias
                     npgsqlConnection2);
 
                 using (var writer = npgsqlConnection2.BeginTextImport(
-                    "COPY temp_addrx (id,title,priority,lon,lat,building) FROM STDIN WITH NULL AS ''"))
+                    "COPY temp_addrx (id,title,priority,lon,lat,housenumber,building) FROM STDIN WITH NULL AS ''"))
                 {
                     var sql1 =
                         "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
@@ -114,6 +114,7 @@ namespace Updater.Fias
                                         doc.priority.ToString(),
                                         doc.lon.ValueAsText(),
                                         doc.lat.ValueAsText(),
+                                        doc.housenumber.ValueAsText(),
                                         doc.building.ToString()
                                     };
 
@@ -165,8 +166,7 @@ namespace Updater.Fias
                 "addr:quarter",
                 "addr:island",
                 "addr:islet",
-                "addr:street",
-                "addr:housenumber"
+                "addr:street"
             };
 
             var result = new List<Doc3>(take);
@@ -202,6 +202,9 @@ namespace Updater.Fias
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
                     priority = priority,
+                    housenumber = dictionary.ContainsKey("addr:housenumber")
+                        ? dictionary["addr:housenumber"]
+                        : string.Empty,
                     building = dictionary.ContainsKey("addr:housenumber") ? 1 : 0,
                     lon = reader.SafeGetDouble(2) ?? 0,
                     lat = reader.SafeGetDouble(3) ?? 0

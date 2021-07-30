@@ -104,7 +104,7 @@ namespace Updater.Fias
                     npgsqlConnection3);
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,housenumber,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -199,6 +199,7 @@ namespace Updater.Fias
                                                                 doc.lon.ValueAsText(),
                                                                 doc.lat.ValueAsText(),
                                                                 doc.geoexists.ToString(),
+                                                                doc.housesteadshort.ValueAsText(),
                                                                 doc.building.ToString(),
                                                                 doc.guid.ValueAsText()
                                                             };
@@ -296,7 +297,7 @@ namespace Updater.Fias
                         WHERE {x}.record_number>@last_record_number"));
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,housenumber,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -392,6 +393,7 @@ namespace Updater.Fias
                                                                 doc.lon.ValueAsText(),
                                                                 doc.lat.ValueAsText(),
                                                                 doc.geoexists.ToString(),
+                                                                doc.housesteadshort.ValueAsText(),
                                                                 doc.building.ToString(),
                                                                 doc.guid.ValueAsText()
                                                             };
@@ -497,7 +499,7 @@ namespace Updater.Fias
                         WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var writer = npgsqlConnection4.BeginTextImport(
-                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,housenumber,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -670,6 +672,7 @@ namespace Updater.Fias
                                                                 doc.lon.ValueAsText(),
                                                                 doc.lat.ValueAsText(),
                                                                 doc.geoexists.ToString(),
+                                                                doc.housesteadshort.ValueAsText(),
                                                                 doc.building.ToString(),
                                                                 doc.guid.ValueAsText()
                                                             };
@@ -765,7 +768,7 @@ namespace Updater.Fias
                         $"SELECT record_id,number,parentguid,steadguid,regioncode,postalcode FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
                 using (var writer = npgsqlConnection3.BeginTextImport(
-                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,building,guid) FROM STDIN WITH NULL AS ''")
+                    "COPY temp_addressx (id,title,priority,addressString,postalCode,regionCode,country,geoLon,geoLat,geoExists,housenumber,building,guid) FROM STDIN WITH NULL AS ''")
                 )
                 {
                     using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -845,6 +848,7 @@ namespace Updater.Fias
                                                                 doc.lon.ValueAsText(),
                                                                 doc.lat.ValueAsText(),
                                                                 doc.geoexists.ToString(),
+                                                                doc.housesteadshort.ValueAsText(),
                                                                 doc.building.ToString(),
                                                                 doc.guid.ValueAsText()
                                                             };
@@ -940,15 +944,7 @@ namespace Updater.Fias
                     doc1.building = 1;
                 }
 
-                if (!string.IsNullOrWhiteSpace(doc1.housesteadshort))
-                {
-                    doc1.addrshort = $"{doc1.addrshort}, {doc1.housesteadshort}";
-                    doc1.building = 1;
-                }
-
                 if (!string.IsNullOrWhiteSpace(doc1.roomfull)) doc1.addrfull = $"{doc1.addrfull}, {doc1.roomfull}";
-
-                if (!string.IsNullOrWhiteSpace(doc1.roomshort)) doc1.addrshort = $"{doc1.addrshort}, {doc1.roomshort}";
 
                 if (!string.IsNullOrWhiteSpace(doc1.postalcode)) doc1.addrfull = $"{doc1.postalcode}, {doc1.addrfull}";
             }
