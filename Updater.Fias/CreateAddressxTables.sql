@@ -10,7 +10,7 @@ CREATE TABLE addressx (
 	geoLon REAL,
 	geoLat REAL,
 	geoExists INTEGER,
-	housenumber VARCHAR(100),
+	housenumber VARCHAR(120),
 	building INTEGER,
 	guid VARCHAR(255)
 );
