@@ -5,6 +5,6 @@ CREATE TEMP TABLE temp_addrx (
 	priority INTEGER,
 	lon REAL,
 	lat REAL,
-	housenumber VARCHAR(120),
+	housenumber VARCHAR(127),
 	building INTEGER
 );
