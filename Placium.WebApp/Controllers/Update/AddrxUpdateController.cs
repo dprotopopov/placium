@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
 using Updater.Addrx;
@@ -8,7 +9,7 @@ namespace Placium.WebApp.Controllers.Update
     [Authorize]
     public class AddrxUpdateController : UpdateController<AddrxUpdateService>
     {
-        public AddrxUpdateController(IConfiguration configuration, AddrxUpdateService updateService, ProgressHub progressHub) : base(configuration,
+        public AddrxUpdateController(IConfiguration configuration, AddrxUpdateService updateService, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration,
             updateService, progressHub)
         {
         }

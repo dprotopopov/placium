@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
 using Updater.Sphinx;
@@ -8,7 +9,7 @@ namespace Placium.WebApp.Controllers.Update
     [Authorize]
     public class Sphinx1UpdateController : UpdateController<Sphinx1UpdateService>
     {
-        public Sphinx1UpdateController(IConfiguration configuration, Sphinx1UpdateService updateService, ProgressHub progressHub) : base(configuration,
+        public Sphinx1UpdateController(IConfiguration configuration, Sphinx1UpdateService updateService, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration,
             updateService, progressHub)
         {
         }

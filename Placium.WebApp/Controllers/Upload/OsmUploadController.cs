@@ -1,5 +1,6 @@
 ﻿using Loader.Osm;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Placium.Common;
@@ -10,7 +11,7 @@ namespace Placium.WebApp.Controllers.Upload
     public class OsmUploadController : UploadController<OsmUploadService>
     {
         public OsmUploadController(IConfiguration configuration, OsmUploadService uploadService,
-            IOptions<UploadConfig> uploadConfig, ProgressHub progressHub) : base(configuration, uploadService, uploadConfig, progressHub)
+            IOptions<UploadConfig> uploadConfig, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration, uploadService, uploadConfig, progressHub)
         {
         }
 

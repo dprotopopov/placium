@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using NpgsqlTypes;
@@ -12,9 +13,9 @@ namespace Updater.Addrx
 {
     public class AddrxUpdateService : BaseService, IUpdateService
     {
-        private readonly ProgressHub _progressHub;
+        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
 
-        public AddrxUpdateService(IConfiguration configuration, ProgressHub progressHub) : base(configuration)
+        public AddrxUpdateService(IConfiguration configuration, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration)
         {
             _progressHub = progressHub;
         }
@@ -40,7 +41,7 @@ namespace Updater.Addrx
         public async Task UpdatePlacexAsync(string session, bool full)
         {
             var id = Guid.NewGuid().ToString();
-            await _progressHub.InitAsync(id, session);
+            await _progressHub.Clients.All.Init(id, session);
 
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
@@ -153,7 +154,7 @@ namespace Updater.Addrx
                                             {
                                                 current += list.Count();
 
-                                                _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                _progressHub.Clients.All.Progress(100f * current / total, id, session)
                                                     .GetAwaiter()
                                                     .GetResult();
                                             }
@@ -170,7 +171,7 @@ namespace Updater.Addrx
 
                 await connection.CloseAsync();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 

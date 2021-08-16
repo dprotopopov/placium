@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Npgsql;
@@ -14,9 +15,9 @@ namespace Updater.Sphinx
 {
     public class Sphinx1UpdateService : BaseService, IUpdateService
     {
-        private readonly ProgressHub _progressHub;
+        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
 
-        public Sphinx1UpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
+        public Sphinx1UpdateService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
         }
@@ -76,7 +77,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
                 await npgsqlConnection2.OpenAsync();
@@ -176,7 +177,7 @@ namespace Updater.Sphinx
 
                                 current += docs1.Count;
 
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
+                                await _progressHub.Clients.All.Progress(100f * current / total, id, session);
                             }
 
                             if (docs1.Count < take) break;
@@ -190,7 +191,7 @@ namespace Updater.Sphinx
                 await npgsqlConnection.CloseAsync();
                 mySqlConnection.TryClose();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 
@@ -204,7 +205,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
                 await npgsqlConnection2.OpenAsync();
@@ -324,7 +325,7 @@ namespace Updater.Sphinx
 
                                 current += docs1.Count;
 
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
+                                await _progressHub.Clients.All.Progress(100f * current / total, id, session);
                             }
 
                             if (docs1.Count < take) break;
@@ -338,7 +339,7 @@ namespace Updater.Sphinx
                 await npgsqlConnection.CloseAsync();
                 mySqlConnection.TryClose();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 
@@ -352,7 +353,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
                 await npgsqlConnection2.OpenAsync();
@@ -449,7 +450,7 @@ namespace Updater.Sphinx
 
                                 current += docs1.Count;
 
-                                await _progressHub.ProgressAsync(100f * current / total, id, session);
+                                await _progressHub.Clients.All.Progress(100f * current / total, id, session);
                             }
 
                             if (docs1.Count < take) break;
@@ -463,7 +464,7 @@ namespace Updater.Sphinx
                 await npgsqlConnection.CloseAsync();
                 mySqlConnection.TryClose();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 

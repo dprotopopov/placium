@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
 
@@ -8,11 +9,11 @@ namespace Placium.WebApp.Controllers.Update
 {
     public abstract class UpdateController<TService> : Controller where TService : IUpdateService
     {
-        protected readonly ProgressHub ProgressHub;
+        protected readonly IHubContext<ProgressHub, IProgressHubClient> ProgressHub;
         protected readonly IConfiguration Configuration;
         protected readonly TService UpdateService;
 
-        protected UpdateController(IConfiguration configuration, TService updateService, ProgressHub progressHub)
+        protected UpdateController(IConfiguration configuration, TService updateService, IHubContext<ProgressHub, IProgressHubClient> progressHub)
         {
             Configuration = configuration;
             UpdateService = updateService;
@@ -42,13 +43,13 @@ namespace Placium.WebApp.Controllers.Update
             try
             {
                 await UpdateService.UpdateAsync(session, full);
-                await ProgressHub.CompleteAsync(session);
+                await ProgressHub.Clients.All.Complete(session);
 
                 return Content("complete");
             }
             catch (Exception ex)
             {
-                await ProgressHub.ErrorAsync(ex.Message, session);
+                await ProgressHub.Clients.All.Error(ex.Message, session);
                 throw;
             }
         }

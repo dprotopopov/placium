@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Npgsql;
@@ -15,9 +16,9 @@ namespace Updater.Sphinx
 {
     public class Sphinx3UpdateService : BaseService, IUpdateService
     {
-        private readonly ProgressHub _progressHub;
+        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
 
-        public Sphinx3UpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
+        public Sphinx3UpdateService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
         }
@@ -76,7 +77,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
 
@@ -192,7 +193,7 @@ namespace Updater.Sphinx
                                                 {
                                                     current += docs1.Count();
 
-                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                    _progressHub.Clients.All.Progress(100f * current / total, id, session)
                                                         .GetAwaiter()
                                                         .GetResult();
                                                 }
@@ -211,7 +212,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.CloseAsync();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 
@@ -223,7 +224,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
 
@@ -349,7 +350,7 @@ namespace Updater.Sphinx
                                                 {
                                                     current += docs1.Count();
 
-                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                    _progressHub.Clients.All.Progress(100f * current / total, id, session)
                                                         .GetAwaiter()
                                                         .GetResult();
                                                 }
@@ -368,7 +369,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.CloseAsync();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 
@@ -380,7 +381,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
 
@@ -585,7 +586,7 @@ namespace Updater.Sphinx
                                                 {
                                                     current += docs1.Count();
 
-                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                    _progressHub.Clients.All.Progress(100f * current / total, id, session)
                                                         .GetAwaiter()
                                                         .GetResult();
                                                 }
@@ -605,7 +606,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.CloseAsync();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 
@@ -617,7 +618,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
 
@@ -724,7 +725,7 @@ namespace Updater.Sphinx
                                                 {
                                                     current += docs1.Count();
 
-                                                    _progressHub.ProgressAsync(100f * current / total, id, session)
+                                                    _progressHub.Clients.All.Progress(100f * current / total, id, session)
                                                         .GetAwaiter()
                                                         .GetResult();
                                                 }
@@ -743,7 +744,7 @@ namespace Updater.Sphinx
 
                 await npgsqlConnection.CloseAsync();
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
             }
         }
 

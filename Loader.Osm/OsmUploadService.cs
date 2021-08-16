@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using OsmSharp;
@@ -23,7 +24,7 @@ namespace Loader.Osm
             Relation
         }
 
-        private readonly ProgressHub _progressHub;
+        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
 
         private readonly string[] nodeKeys =
         {
@@ -65,7 +66,7 @@ namespace Loader.Osm
             "nodes"
         };
 
-        public OsmUploadService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
+        public OsmUploadService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
         }
@@ -77,7 +78,7 @@ namespace Loader.Osm
                 await connection.OpenAsync();
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 DropTables(connection);
 
@@ -181,7 +182,7 @@ namespace Loader.Osm
                         }
 
                         if (count++ % 1000 == 0)
-                            await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                            await _progressHub.Clients.All.Progress(100f * uploadStream.Position / uploadStream.Length, id,
                                 session);
                     }
 
@@ -190,7 +191,7 @@ namespace Loader.Osm
 
                 BuildIndices(connection);
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
 
                 await connection.CloseAsync();
             }
@@ -203,7 +204,7 @@ namespace Loader.Osm
                 await connection.OpenAsync();
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.InitAsync(id, session);
+                await _progressHub.Clients.All.Init(id, session);
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.sql",
                     connection);
@@ -305,7 +306,7 @@ namespace Loader.Osm
                         }
 
                         if (count++ % 1000 == 0)
-                            await _progressHub.ProgressAsync(100f * uploadStream.Position / uploadStream.Length, id,
+                            await _progressHub.Clients.All.Progress(100f * uploadStream.Position / uploadStream.Length, id,
                                 session);
                     }
 
@@ -315,7 +316,7 @@ namespace Loader.Osm
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql",
                     connection);
 
-                await _progressHub.ProgressAsync(100f, id, session);
+                await _progressHub.Clients.All.Progress(100f, id, session);
 
                 await connection.CloseAsync();
             }

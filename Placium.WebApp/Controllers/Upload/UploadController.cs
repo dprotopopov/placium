@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Placium.Common;
@@ -13,13 +14,13 @@ namespace Placium.WebApp.Controllers.Upload
 {
     public abstract class UploadController<TService> : Controller where TService : IUploadService
     {
-        protected readonly ProgressHub ProgressHub;
+        protected readonly IHubContext<ProgressHub, IProgressHubClient> ProgressHub;
         protected readonly IConfiguration Configuration;
         protected readonly UploadConfig UploadConfig;
         protected readonly TService UploadService;
 
         public UploadController(IConfiguration configuration, TService uploadService,
-            IOptions<UploadConfig> uploadConfig, ProgressHub progressHub)
+            IOptions<UploadConfig> uploadConfig, IHubContext<ProgressHub, IProgressHubClient> progressHub)
         {
             Configuration = configuration;
             UploadService = uploadService;
@@ -59,13 +60,13 @@ namespace Placium.WebApp.Controllers.Upload
                     }, session);
                 }
 
-                await ProgressHub.CompleteAsync(session);
+                await ProgressHub.Clients.All.Complete(session);
 
                 return Content("complete");
             }
             catch (Exception ex)
             {
-                await ProgressHub.ErrorAsync(ex.Message, session);
+                await ProgressHub.Clients.All.Error(ex.Message, session);
                 throw;
             }
         }
@@ -98,13 +99,13 @@ namespace Placium.WebApp.Controllers.Upload
                     }, session);
                 }
 
-                await ProgressHub.CompleteAsync(session);
+                await ProgressHub.Clients.All.Complete(session);
 
                 return Content("complete");
             }
             catch (Exception ex)
             {
-                await ProgressHub.ErrorAsync(ex.Message, session);
+                await ProgressHub.Clients.All.Error(ex.Message, session);
                 throw;
             }
         }
@@ -143,13 +144,13 @@ namespace Placium.WebApp.Controllers.Upload
                     await UploadService.InstallAsync(tempFileStream, new Dictionary<string, string>(), session);
                 }
 
-                await ProgressHub.CompleteAsync(session);
+                await ProgressHub.Clients.All.Complete(session);
 
                 return Content("complete");
             }
             catch (Exception ex)
             {
-                await ProgressHub.ErrorAsync(ex.Message, session);
+                await ProgressHub.Clients.All.Error(ex.Message, session);
                 throw;
             }
         }
@@ -188,13 +189,13 @@ namespace Placium.WebApp.Controllers.Upload
                     await UploadService.UpdateAsync(tempFileStream, new Dictionary<string, string>(), session);
                 }
 
-                await ProgressHub.CompleteAsync(session);
+                await ProgressHub.Clients.All.Complete(session);
 
                 return Content("complete");
             }
             catch (Exception ex)
             {
-                await ProgressHub.ErrorAsync(ex.Message, session);
+                await ProgressHub.Clients.All.Error(ex.Message, session);
                 throw;
             }
         }

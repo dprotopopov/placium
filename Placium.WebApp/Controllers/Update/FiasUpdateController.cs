@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
 using Updater.Fias;
@@ -9,7 +10,7 @@ namespace Placium.WebApp.Controllers.Update
     public class FiasUpdateController : UpdateController<FiasUpdateService>
     {
         public FiasUpdateController(IConfiguration configuration, FiasUpdateService updateService,
-            ProgressHub progressHub) : base(configuration,
+            IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration,
             updateService, progressHub)
         {
         }
