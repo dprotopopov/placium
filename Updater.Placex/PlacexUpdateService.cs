@@ -602,13 +602,9 @@ namespace Updater.Placex
             }
 
             var any = false;
-            var first = true;
             foreach (var nodes in rings)
             {
                 if (nodes.Length < 4) continue;
-
-                var sb = new StringBuilder("SRID=4326;");
-                sb.Append("POLYGON");
 
                 var dic = new Dictionary<long, Point>(nodes.Length);
 
@@ -633,10 +629,9 @@ namespace Updater.Placex
                 var cleanNodes = nodes.Where(id => dic.ContainsKey(id))
                     .ToArray();
                 if (cleanNodes.Length < 4) continue;
-                if (first)
-                    first = false;
-                else
-                    sb.Append(",");
+
+                var sb = new StringBuilder("SRID=4326;");
+                sb.Append("POLYGON");
 
                 sb.Append("((");
                 sb.Append(string.Join(",",
