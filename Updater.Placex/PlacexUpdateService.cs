@@ -16,8 +16,11 @@ namespace Updater.Placex
 {
     public class PlacexUpdateService : BaseService, IUpdateService
     {
+        private readonly GeometryFactory _geometryFactory = new GeometryFactory();
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly ProgressHub _progressHub;
+        private readonly WKTReader _wktReader = new WKTReader();
+        private readonly WKTWriter _wktWriter = new WKTWriter();
 
         public PlacexUpdateService(ProgressHub progressHub, IConfiguration configuration) : base(configuration)
         {
@@ -274,6 +277,12 @@ namespace Updater.Placex
                                                         });
                                                 }
 
+                                                var longShift =
+                                                    dic.Values.Any(x => x.longitude < -165) &&
+                                                    dic.Values.Any(x => x.longitude > 165)
+                                                        ? 360.0
+                                                        : 0.0;
+
                                                 var cleanNodes = nodes.Where(id => dic.ContainsKey(id)).ToArray();
 
                                                 if (cleanNodes.Any())
@@ -288,7 +297,8 @@ namespace Updater.Placex
                                                         : "(");
                                                     sb.Append(string.Join(",",
                                                         nodes.Where(id => dic.ContainsKey(id)).Select(id =>
-                                                            $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                                                            $"{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+
 
                                                     if (area && cleanNodes.Length > 2 &&
                                                         (cleanNodes.Length < 4 ||
@@ -296,12 +306,13 @@ namespace Updater.Placex
                                                     {
                                                         var id = cleanNodes.First();
                                                         sb.Append(
-                                                            $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                                                            $",{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
                                                     }
 
                                                     sb.Append(cleanNodes.Length > 1
                                                         ? area && cleanNodes.Length > 2 ? "))" : ")"
                                                         : ")");
+
 
                                                     var values = new List<string>
                                                     {
@@ -450,10 +461,6 @@ namespace Updater.Placex
 
                                         command4.Prepare();
 
-                                        var wktReader = new WKTReader();
-                                        var wktWriter = new WKTWriter();
-                                        var geometryFactory = new GeometryFactory();
-
                                         while (true)
                                         {
                                             long id0;
@@ -476,7 +483,7 @@ namespace Updater.Placex
                                                     .ToArray();
                                                 if (cleanMember.Any())
                                                 {
-                                                    var g = geometryFactory.CreateEmpty(Dimension.Surface);
+                                                    var g = _geometryFactory.CreateEmpty(Dimension.Surface);
 
                                                     var role = cleanMember.First().Role;
                                                     var currentMembers = new List<OsmRelationMember>
@@ -486,10 +493,8 @@ namespace Updater.Placex
                                                             cleanMember[index].Role != role)
                                                         {
                                                             if (ProcessMembers(currentMembers, command3,
-                                                                command4, out var wkt))
+                                                                command4, out var g1))
                                                             {
-                                                                var g1 = wktReader.Read(wkt);
-                                                                if (!g1.IsValid) g1 = g1.Buffer(0);
                                                                 switch (role)
                                                                 {
                                                                     case "outer":
@@ -499,6 +504,7 @@ namespace Updater.Placex
                                                                         g = g.Difference(g1);
                                                                         break;
                                                                 }
+
                                                                 if (!g.IsValid) g = g.Buffer(0);
                                                             }
 
@@ -518,7 +524,7 @@ namespace Updater.Placex
                                                     {
                                                         id0.ToString(),
                                                         tags.TextEscape(),
-                                                        "SRID=4326;" + wktWriter.Write(g)
+                                                        "SRID=4326;" + _wktWriter.Write(g)
                                                     };
 
                                                     lock (obj)
@@ -570,11 +576,9 @@ namespace Updater.Placex
         }
 
         private bool ProcessMembers(List<OsmRelationMember> members, NpgsqlCommand command3,
-            NpgsqlCommand command4, out string wkt)
+            NpgsqlCommand command4, out Geometry g)
         {
-            var sb = new StringBuilder("SRID=4326;");
-            sb.Append("MULTIPOLYGON");
-            sb.Append("(");
+            g = _geometryFactory.CreateEmpty(Dimension.Surface);
 
             var ways = new List<long[]>();
             var rings = new List<long[]>();
@@ -603,6 +607,9 @@ namespace Updater.Placex
             {
                 if (nodes.Length < 4) continue;
 
+                var sb = new StringBuilder("SRID=4326;");
+                sb.Append("POLYGON");
+
                 var dic = new Dictionary<long, Point>(nodes.Length);
 
                 command4.Parameters["ids"].Value = nodes;
@@ -617,28 +624,41 @@ namespace Updater.Placex
                         });
                 }
 
+                var longShift =
+                    dic.Values.Any(x => x.longitude < -165) &&
+                    dic.Values.Any(x => x.longitude > 165)
+                        ? 360.0
+                        : 0.0;
+
                 var cleanNodes = nodes.Where(id => dic.ContainsKey(id))
                     .ToArray();
                 if (cleanNodes.Length < 4) continue;
-                if (first) first = false;
-                else sb.Append(",");
+                if (first)
+                    first = false;
+                else
+                    sb.Append(",");
+
                 sb.Append("((");
                 sb.Append(string.Join(",",
                     cleanNodes.Select(id =>
-                        $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                        $"{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
                 if (cleanNodes.First() != cleanNodes.Last())
                 {
                     var id = cleanNodes.First();
                     sb.Append(
-                        $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                        $",{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
                 }
 
                 sb.Append("))");
+
+                var g1 = _wktReader.Read(sb.ToString());
+                if (!g1.IsValid) g1 = g1.Buffer(0);
+
+                g = g.Union(g1);
+
                 any = true;
             }
 
-            sb.Append(")");
-            wkt = sb.ToString();
             return any;
         }
 
