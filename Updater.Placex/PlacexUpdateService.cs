@@ -46,8 +46,8 @@ namespace Updater.Placex
                     await npgsqlConnection.CloseAsync();
                 }
 
-            //await UpdateNodeAsync(session, full);
-            //await UpdateWayAsync(session, full);
+            await UpdateNodeAsync(session, full);
+            await UpdateWayAsync(session, full);
             await UpdateRelationAsync(session, full);
         }
 
@@ -279,12 +279,6 @@ namespace Updater.Placex
                                                         });
                                                 }
 
-                                                var longShift =
-                                                    dic.Values.Any(x => x.longitude < -165) &&
-                                                    dic.Values.Any(x => x.longitude > 165)
-                                                        ? 360.0
-                                                        : 0.0;
-
                                                 var cleanNodes = nodes.Where(id => dic.ContainsKey(id)).ToArray();
 
                                                 if (cleanNodes.Any())
@@ -299,7 +293,7 @@ namespace Updater.Placex
                                                         : "(");
                                                     sb.Append(string.Join(",",
                                                         nodes.Where(id => dic.ContainsKey(id)).Select(id =>
-                                                            $"{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                                                            $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
 
 
                                                     if (area && cleanNodes.Length > 2 &&
@@ -308,7 +302,7 @@ namespace Updater.Placex
                                                     {
                                                         var id = cleanNodes.First();
                                                         sb.Append(
-                                                            $",{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                                                            $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
                                                     }
 
                                                     sb.Append(cleanNodes.Length > 1
@@ -672,12 +666,6 @@ namespace Updater.Placex
                         });
                 }
 
-                var longShift =
-                    dic.Values.Any(x => x.longitude < -165) &&
-                    dic.Values.Any(x => x.longitude > 165)
-                        ? 360.0
-                        : 0.0;
-
                 var cleanNodes = ring.Where(id => dic.ContainsKey(id))
                     .ToArray();
                 if (cleanNodes.Length < 4) continue;
@@ -688,12 +676,12 @@ namespace Updater.Placex
                 sb.Append("((");
                 sb.Append(string.Join(",",
                     cleanNodes.Select(id =>
-                        $"{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                        $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
                 if (cleanNodes.First() != cleanNodes.Last())
                 {
                     var id = cleanNodes.First();
                     sb.Append(
-                        $",{(dic[id].longitude < 0 ? dic[id].longitude + longShift : dic[id].longitude).ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                        $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
                 }
 
                 sb.Append("))");
