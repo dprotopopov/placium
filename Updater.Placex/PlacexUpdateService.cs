@@ -23,7 +23,8 @@ namespace Updater.Placex
         private readonly WKTReader _wktReader = new WKTReader();
         private readonly WKTWriter _wktWriter = new WKTWriter();
 
-        public PlacexUpdateService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
+        public PlacexUpdateService(IHubContext<ProgressHub, IProgressHubClient> progressHub,
+            IConfiguration configuration) : base(configuration)
         {
             _progressHub = progressHub;
         }
@@ -334,7 +335,8 @@ namespace Updater.Placex
                                                 current++;
 
                                                 if (current % 1000 == 0)
-                                                    _progressHub.Clients.All.Progress(100f * current / total, id1, session)
+                                                    _progressHub.Clients.All.Progress(100f * current / total, id1,
+                                                            session)
                                                         .GetAwaiter()
                                                         .GetResult();
                                             }
@@ -540,7 +542,8 @@ namespace Updater.Placex
                                                 current++;
 
                                                 if (current % 1000 == 0)
-                                                    _progressHub.Clients.All.Progress(100f * current / total, id1, session)
+                                                    _progressHub.Clients.All.Progress(100f * current / total, id1,
+                                                            session)
                                                         .GetAwaiter()
                                                         .GetResult();
                                             }
@@ -581,6 +584,7 @@ namespace Updater.Placex
         {
             g = _geometryFactory.CreateEmpty(Dimension.Surface);
 
+            var ids = new List<long>();
             var ways = new List<long[]>();
             var rings = new List<long[]>();
 
@@ -592,6 +596,7 @@ namespace Updater.Placex
                 while (reader3.Read())
                 {
                     var id = reader3.GetInt64(0);
+                    ids.Add(id);
                     var nodes = (long[]) reader3.GetValue(1);
                     if (!nodes.Any()) continue;
                     ways.Add(nodes);
@@ -602,14 +607,24 @@ namespace Updater.Placex
             {
             }
 
+            foreach (var way in ways)
+                if (way.Length >= 2)
+                {
+                    var list = new List<long>(way.Length + 1);
+                    list.AddRange(way);
+                    list.Add(way.First());
+                    rings.Add(list.ToArray());
+                }
+
             var any = false;
-            foreach (var nodes in rings)
+
+            foreach (var ring in rings)
             {
-                if (nodes.Length < 4) continue;
+                if (ring.Length < 4) continue;
 
-                var dic = new Dictionary<long, Point>(nodes.Length);
+                var dic = new Dictionary<long, Point>(ring.Length);
 
-                command4.Parameters["ids"].Value = nodes;
+                command4.Parameters["ids"].Value = ring;
 
                 using (var reader4 = command4.ExecuteReader())
                 {
@@ -627,7 +642,7 @@ namespace Updater.Placex
                         ? 360.0
                         : 0.0;
 
-                var cleanNodes = nodes.Where(id => dic.ContainsKey(id))
+                var cleanNodes = ring.Where(id => dic.ContainsKey(id))
                     .ToArray();
                 if (cleanNodes.Length < 4) continue;
 
