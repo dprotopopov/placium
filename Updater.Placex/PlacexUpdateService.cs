@@ -458,7 +458,7 @@ namespace Updater.Placex
                                         "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
                                         , connection4))
                                     using (var command5 = new NpgsqlCommand(
-                                        "SELECT id,nodes FROM way WHERE NOT id=ANY(@ids) AND nodes&&@ids1"
+                                        "SELECT id,nodes FROM way WHERE NOT id=ANY(@ids) AND (nodes[1]=ANY(@ids1) OR nodes[cardinality(nodes)]=ANY(@ids1))"
                                         , connection5))
                                     {
                                         command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
