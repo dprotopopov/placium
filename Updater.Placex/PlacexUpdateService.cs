@@ -46,8 +46,8 @@ namespace Updater.Placex
                     await npgsqlConnection.CloseAsync();
                 }
 
-            //await UpdateNodeAsync(session, full);
-            //await UpdateWayAsync(session, full);
+            await UpdateNodeAsync(session, full);
+            await UpdateWayAsync(session, full);
             await UpdateRelationAsync(session, full);
         }
 
@@ -439,11 +439,9 @@ namespace Updater.Placex
                             {
                                 using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
                                 using (var connection4 = new NpgsqlConnection(GetOsmConnectionString()))
-                                using (var connection5 = new NpgsqlConnection(GetOsmConnectionString()))
                                 {
                                     connection3.Open();
                                     connection4.Open();
-                                    connection5.Open();
 
                                     using (var command3 = new NpgsqlCommand(
                                         "SELECT id,nodes FROM way WHERE id=ANY(@ids)"
@@ -451,9 +449,6 @@ namespace Updater.Placex
                                     using (var command4 = new NpgsqlCommand(
                                         "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
                                         , connection4))
-                                    using (var command5 = new NpgsqlCommand(
-                                        "SELECT id,nodes FROM way WHERE NOT (id=ANY(@ids)) AND (nodes[1]=ANY(@ids1) OR nodes[cardinality(nodes)]=ANY(@ids1))"
-                                        , connection5))
                                     {
                                         command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
@@ -462,11 +457,6 @@ namespace Updater.Placex
                                         command4.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
                                         command4.Prepare();
-
-                                        command5.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                                        command5.Parameters.Add("ids1", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-
-                                        command5.Prepare();
 
                                         while (true)
                                         {
@@ -500,7 +490,7 @@ namespace Updater.Placex
                                                             cleanMember[index].Role != role)
                                                         {
                                                             if (ProcessMembers(currentMembers, command3,
-                                                                command4, command5, out var g1))
+                                                                command4, out var g1))
                                                             {
                                                                 switch (role)
                                                                 {
@@ -554,7 +544,6 @@ namespace Updater.Placex
                                         }
                                     }
 
-                                    connection5.Close();
                                     connection4.Close();
                                     connection3.Close();
                                 }
@@ -585,7 +574,7 @@ namespace Updater.Placex
         }
 
         private bool ProcessMembers(List<OsmRelationMember> members, NpgsqlCommand command3,
-            NpgsqlCommand command4, NpgsqlCommand command5, out Geometry g)
+            NpgsqlCommand command4, out Geometry g)
         {
             g = _geometryFactory.CreateEmpty(Dimension.Surface);
 
@@ -607,31 +596,6 @@ namespace Updater.Placex
                     ways.Add(nodes);
                 }
             }
-
-            //for (var added = true; added;)
-            //{
-            //    added = false;
-
-            //    var ids1 = new List<long>(ways.Count * 2);
-            //    ids1.AddRange(ways.Select(x => x.First()));
-            //    ids1.AddRange(ways.Select(x => x.Last()));
-
-            //    command5.Parameters["ids"].Value = ids.ToArray();
-            //    command5.Parameters["ids1"].Value = ids1.ToArray();
-
-            //    using (var reader5 = command3.ExecuteReader())
-            //    {
-            //        while (reader5.Read())
-            //        {
-            //            var id = reader5.GetInt64(0);
-            //            ids.Add(id);
-            //            var nodes = (long[]) reader5.GetValue(1);
-            //            if (!nodes.Any()) continue;
-            //            ways.Add(nodes);
-            //            added = true;
-            //        }
-            //    }
-            //}
 
             while (ConnectToRings(ways, rings))
             {
