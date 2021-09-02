@@ -120,4 +120,8 @@ WebUI/Content/Images/bg.png
 Visary.Reporting.WebApi/App_Data/Reports/
 
 #SSH
+<<<<<<< HEAD
 .ssh/*
+=======
+.ssh
+>>>>>>> 5ad2c5a04fa48ed1c55328f473832940e1c3f13f
