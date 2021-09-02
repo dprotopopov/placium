@@ -1,0 +1,61 @@
+version: 0.1
+env:
+  DOTNET_SDK_IMAGE: registry.npc.ba/visary/sdk-restored:0.3.482
+jobs:
+  build:
+    tags:
+      - test
+    steps:
+      - name: Build and publish solution
+        env:
+          PROJECT_NAME: $PROJECT_NAMESPACE
+        dotnet:
+          solution: Placium.sln
+          docker-images:
+            webapi: Placium.WebApi
+            application: Placium.WebApp
+
+  deploy:
+    tags:
+      - deploy
+      - test
+    steps:
+      - name: Deploy helm charts
+        helm3:
+          - release: ${TAG_VERSION_NAME}-${PROJECT_NAMESPACE}-env
+            chart: deploy/charts/deploy-env
+            upgrade: >-
+              -f deploy/charts/deploy-env/${TAG_VERSION_NAME}.yaml --create-namespace -i
+              --namespace=${PROJECT_NAMESPACE}-${TAG_VERSION_NAME}
+
+          - release: ${TAG_VERSION_NAME}-${PROJECT_NAMESPACE}-app
+            chart: deploy/charts/deploy-app
+            upgrade: >-
+              -f deploy/charts/deploy-app/${TAG_VERSION_NAME}.yaml --create-namespace -i
+              --namespace=${PROJECT_NAMESPACE}-${TAG_VERSION_NAME}
+              --set global.podAnnotations.build-version=$BUILD_VERSION
+
+  release:
+    tags:
+      - release
+    steps:
+      - name: Build and publish solution
+        dotnet:
+          publish:
+            - Placium.WebApi
+            - Placium.WebApp
+
+      - name: Create distrib archive
+        zip: {}
+        register: release_file_path
+
+      - name: Upload file to nexus
+        credentials:
+          usernamePassword:
+            {
+              credentialsId: docker-registry-user,
+              usernameVariable: USERNAME,
+              passwordVariable: PASSWORD,
+            }
+        to-nexus:
+          file: "$release_file_path"

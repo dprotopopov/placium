@@ -1,0 +1,22 @@
+image: registry.npc.ba/placium/application
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+nameOverride: application
+
+migrateJob:
+  enabled: false
+
+ingress:
+  enabled: true
+  hosts:
+    - name: "{{ tpl .Values.global.host.application . }}"
+      path: /
+
+defaultConfig:
+  appsettings.json:
+    ConnectionStrings:
+      OsmConnection: '{{ include "visary.connectionString.postgres" . }}'
+      FiasConnection: '{{ include "visary.connectionString.postgres" . }}'
+      SphinxConnection: '{{ include "visary.connectionString.sphinx" . }}'
