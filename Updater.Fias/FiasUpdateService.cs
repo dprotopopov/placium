@@ -2,21 +2,19 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using Npgsql;
 using Placium.Common;
 using Placium.Types;
 
 namespace Updater.Fias
 {
-    public class FiasUpdateService : BaseService, IUpdateService
+    public class FiasUpdateService : BaseAppService, IUpdateService
     {
-        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
+        private readonly IProgressClient _progressClient;
 
-        public FiasUpdateService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
+        public FiasUpdateService(IProgressClient progressClient, IConnectionsConfig configuration) : base(configuration)
         {
-            _progressHub = progressHub;
+            _progressClient = progressClient;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -64,7 +62,7 @@ namespace Updater.Fias
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.Clients.All.Init(id, session);
+                await _progressClient.Init(id, session);
 
                 await npgsqlConnection2.OpenAsync();
                 await npgsqlConnection.OpenAsync();
@@ -124,7 +122,7 @@ namespace Updater.Fias
 
                                 current += docs.Count;
 
-                                await _progressHub.Clients.All.Progress(100f * current / total, id, session);
+                                await _progressClient.Progress(100f * current / total, id, session);
 
                                 if (docs.Count < take) break;
                             }
@@ -142,7 +140,7 @@ namespace Updater.Fias
                 await npgsqlConnection.CloseAsync();
                 await npgsqlConnection2.CloseAsync();
 
-                await _progressHub.Clients.All.Progress(100f, id, session);
+                await _progressClient.Progress(100f, id, session);
             }
         }
 

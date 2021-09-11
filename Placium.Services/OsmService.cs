@@ -7,7 +7,7 @@ using Placium.Types;
 
 namespace Placium.Services
 {
-    public class OsmService : BaseService
+    public class OsmService : BaseApiService
     {
         private readonly string _selectNodeById = @"SELECT 
         id,

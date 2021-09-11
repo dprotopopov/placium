@@ -10,7 +10,7 @@ using Placium.Models;
 
 namespace Placium.Services
 {
-    public class FiasService : BaseService
+    public class FiasService : BaseApiService
     {
         private readonly string _childrenAddrobSql;
         private readonly string _childrenHouseSql;

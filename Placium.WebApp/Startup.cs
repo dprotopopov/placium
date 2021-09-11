@@ -1,13 +1,9 @@
-﻿using System;
-using System.IO;
-using Loader.Fias;
+﻿using Loader.Fias;
 using Loader.Osm;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,9 +33,12 @@ namespace Placium.WebApp
 
         private void RegisterServices(IServiceCollection services)
         {
+            services.AddSingleton<IConnectionsConfig, AppsettingsConnectionsConfig>();
+            services.AddSingleton<IProgressClient, SignalRProgressClient>();
+
             services.Configure<SphinxConfig>(Configuration.GetSection(nameof(SphinxConfig)));
             services.Configure<UploadConfig>(Configuration.GetSection(nameof(UploadConfig)));
-            services.Configure<AccountConfig>(Configuration.GetSection(nameof(AccountConfig)));
+            services.Configure<ServerConfig>(Configuration.GetSection(nameof(ServerConfig)));
 
             services.AddSingleton<DefaultSeeker>();
             services.AddSingleton<PlacexService>();
@@ -69,7 +68,13 @@ namespace Placium.WebApp
                     options.SerializerSettings.Converters.Add(new GeometryConverter());
                     options.SerializerSettings.Converters.Add(new CoordinateConverter());
                 });
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            });
 
+            services.AddRazorPages();
             services.AddSignalR();
             services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
             services.Configure<KestrelServerOptions>(options =>
@@ -82,23 +87,16 @@ namespace Placium.WebApp
                 x.MultipartBodyLengthLimit = int.MaxValue; // if don't set default value is: 128 MB
                 x.MultipartHeadersLengthLimit = int.MaxValue;
             });
-
-            // установка конфигурации подключения
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(options => //CookieAuthenticationOptions
-                {
-                    options.LoginPath = new PathString("/Account/Login");
-                });
-
-            var keysFolder = Path.Combine(WebHostEnvironment.ContentRootPath, "temp-keys");
-            services.AddDataProtection()
-                .SetApplicationName("WebApp")
-                .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
-                .SetDefaultKeyLifetime(TimeSpan.FromDays(14));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            var config = Configuration.GetSection(nameof(ServerConfig)).Get<ServerConfig>();
+
+            app.UsePathBase(config.PathBase);
+
+            app.UseForwardedHeaders();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -115,17 +113,14 @@ namespace Placium.WebApp
 
             app.UseRouting();
 
-            app.UseAuthentication(); // аутентификация
-            app.UseAuthorization(); // авторизация
+            app.Use((context, next) => { return next(); });
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    "default",
-                    "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
+                endpoints.MapDefaultControllerRoute();
+                endpoints.MapHub<ProgressHub>("/progress");
             });
-
-            app.UseEndpoints(endpoints => { endpoints.MapHub<ProgressHub>("/progress"); });
         }
     }
 }

@@ -12,7 +12,7 @@ using Placium.Models;
 
 namespace Placium.Seeker
 {
-    public class DefaultSeeker : BaseService
+    public class DefaultSeeker : BaseApiService
     {
         private readonly string _addrobSql;
         private readonly List<string> _listAddrob = new List<string>();

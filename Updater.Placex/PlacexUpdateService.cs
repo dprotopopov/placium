@@ -4,8 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Npgsql;
@@ -15,18 +13,18 @@ using Placium.Types;
 
 namespace Updater.Placex
 {
-    public class PlacexUpdateService : BaseService, IUpdateService
+    public class PlacexUpdateService : BaseAppService, IUpdateService
     {
         private readonly GeometryFactory _geometryFactory = new GeometryFactory();
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
-        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
+        private readonly IProgressClient _progressClient;
         private readonly WKTReader _wktReader = new WKTReader();
         private readonly WKTWriter _wktWriter = new WKTWriter();
 
-        public PlacexUpdateService(IHubContext<ProgressHub, IProgressHubClient> progressHub,
-            IConfiguration configuration) : base(configuration)
+        public PlacexUpdateService(IProgressClient progressClient,
+            IConnectionsConfig configuration) : base(configuration)
         {
-            _progressHub = progressHub;
+            _progressClient = progressClient;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -57,7 +55,7 @@ namespace Updater.Placex
             var total = 0L;
 
             var id = Guid.NewGuid().ToString();
-            await _progressHub.Clients.All.Init(id, session);
+            await _progressClient.Init(id, session);
 
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
@@ -133,11 +131,11 @@ namespace Updater.Placex
                             writer.WriteLine(string.Join("\t", values));
 
                             if (current % 1000 == 0)
-                                await _progressHub.Clients.All.Progress(100f * current / total, id, session);
+                                await _progressClient.Progress(100f * current / total, id, session);
                         }
                     }
 
-                    await _progressHub.Clients.All.Progress(100f, id, session);
+                    await _progressClient.Progress(100f, id, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -165,7 +163,7 @@ namespace Updater.Placex
             var total = 0L;
 
             var id1 = Guid.NewGuid().ToString();
-            await _progressHub.Clients.All.Init(id1, session);
+            await _progressClient.Init(id1, session);
 
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
@@ -329,7 +327,7 @@ namespace Updater.Placex
                                                 current++;
 
                                                 if (current % 1000 == 0)
-                                                    _progressHub.Clients.All.Progress(100f * current / total, id1,
+                                                    _progressClient.Progress(100f * current / total, id1,
                                                             session)
                                                         .GetAwaiter()
                                                         .GetResult();
@@ -342,7 +340,7 @@ namespace Updater.Placex
                             });
                     }
 
-                    await _progressHub.Clients.All.Progress(100f, id1, session);
+                    await _progressClient.Progress(100f, id1, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -370,7 +368,7 @@ namespace Updater.Placex
             var total = 0L;
 
             var id1 = Guid.NewGuid().ToString();
-            await _progressHub.Clients.All.Init(id1, session);
+            await _progressClient.Init(id1, session);
 
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
@@ -536,7 +534,7 @@ namespace Updater.Placex
                                                 current++;
 
                                                 if (current % 1000 == 0)
-                                                    _progressHub.Clients.All.Progress(100f * current / total, id1,
+                                                    _progressClient.Progress(100f * current / total, id1,
                                                             session)
                                                         .GetAwaiter()
                                                         .GetResult();
@@ -550,7 +548,7 @@ namespace Updater.Placex
                             });
                     }
 
-                    await _progressHub.Clients.All.Progress(100f, id1, session);
+                    await _progressClient.Progress(100f, id1, session);
                 }
 
 

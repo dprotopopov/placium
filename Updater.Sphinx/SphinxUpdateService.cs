@@ -4,8 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using Placium.Common;
@@ -13,14 +11,15 @@ using Placium.Types;
 
 namespace Updater.Sphinx
 {
-    public class SphinxUpdateService : BaseService, IUpdateService
+    public class SphinxUpdateService : BaseAppService, IUpdateService
     {
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
-        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
+        private readonly IProgressClient _progressClient;
 
-        public SphinxUpdateService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
+        public SphinxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration) : base(
+            configuration)
         {
-            _progressHub = progressHub;
+            _progressClient = progressClient;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -71,7 +70,7 @@ namespace Updater.Sphinx
                 var total = 0L;
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.Clients.All.Init(id, session);
+                await _progressClient.Init(id, session);
 
                 await npgsqlConnection.OpenAsync();
 
@@ -120,7 +119,7 @@ namespace Updater.Sphinx
 
                             current += docs.Count;
 
-                            await _progressHub.Clients.All.Progress(100f * current / total, id, session);
+                            await _progressClient.Progress(100f * current / total, id, session);
 
                             if (docs.Count < take) break;
                         }
@@ -132,7 +131,7 @@ namespace Updater.Sphinx
                 await npgsqlConnection.CloseAsync();
                 mySqlConnection.TryClose();
 
-                await _progressHub.Clients.All.Progress(100f, id, session);
+                await _progressClient.Progress(100f, id, session);
             }
         }
 

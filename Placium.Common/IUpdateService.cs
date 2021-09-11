@@ -1,5 +1,4 @@
 ﻿using System.Threading.Tasks;
-using Npgsql;
 
 namespace Placium.Common
 {

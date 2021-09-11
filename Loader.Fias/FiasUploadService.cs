@@ -7,15 +7,13 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using NDbfReader;
 using Npgsql;
 using Placium.Common;
 
 namespace Loader.Fias
 {
-    public class FiasUploadService : BaseService, IUploadService
+    public class FiasUploadService : BaseAppService, IUploadService
     {
         private readonly Dictionary<string, string> _deleted = new Dictionary<string, string>
         {
@@ -51,11 +49,11 @@ namespace Loader.Fias
             {new Regex(@"^stead\d+$", RegexOptions.IgnoreCase), "steadid"}
         };
 
-        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
+        private readonly IProgressClient _progressClient;
 
-        public FiasUploadService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
+        public FiasUploadService(IProgressClient progressClient, IConnectionsConfig configuration) : base(configuration)
         {
-            _progressHub = progressHub;
+            _progressClient = progressClient;
         }
 
         public async Task InstallAsync(Stream uploadStream, Dictionary<string, string> options, string session)
@@ -69,7 +67,7 @@ namespace Loader.Fias
                 await connection.OpenAsync();
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.Clients.All.Init(id, session);
+                await _progressClient.Init(id, session);
 
                 DropTables(connection);
 
@@ -139,12 +137,12 @@ namespace Loader.Fias
                             }
                         }
 
-                        await _progressHub.Clients.All.Progress(100f * uploadStream.Position / uploadStream.Length, id,
+                        await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
                             session);
                     }
                 }
 
-                await _progressHub.Clients.All.Progress(100f, id, session);
+                await _progressClient.Progress(100f, id, session);
 
                 await connection.CloseAsync();
             }
@@ -161,7 +159,7 @@ namespace Loader.Fias
                 await connection.OpenAsync();
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.Clients.All.Init(id, session);
+                await _progressClient.Init(id, session);
 
                 using (var archive = new ZipArchive(uploadStream))
                 {
@@ -257,14 +255,14 @@ namespace Loader.Fias
                             }
                         }
 
-                        await _progressHub.Clients.All.Progress(100f * uploadStream.Position / uploadStream.Length, id,
+                        await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
                             session);
                     }
                 }
 
                 foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
 
-                await _progressHub.Clients.All.Progress(100f, id, session);
+                await _progressClient.Progress(100f, id, session);
 
                 await connection.CloseAsync();
             }

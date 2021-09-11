@@ -5,18 +5,17 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Npgsql;
 using Placium.Types;
 
 namespace Placium.Common
 {
-    public class BaseService
+    public class BaseAppService
     {
-        private readonly IConfiguration _configuration;
+        private readonly IConnectionsConfig _configuration;
 
-        public BaseService(IConfiguration configuration)
+        public BaseAppService(IConnectionsConfig configuration)
         {
             _configuration = configuration;
         }

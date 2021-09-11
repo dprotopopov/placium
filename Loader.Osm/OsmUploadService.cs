@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using Npgsql;
 using OsmSharp;
 using OsmSharp.Streams;
@@ -14,7 +12,7 @@ using Placium.Common;
 
 namespace Loader.Osm
 {
-    public class OsmUploadService : BaseService, IUploadService
+    public class OsmUploadService : BaseAppService, IUploadService
     {
         public enum ElementType
         {
@@ -24,7 +22,7 @@ namespace Loader.Osm
             Relation
         }
 
-        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
+        private readonly IProgressClient _progressClient;
 
         private readonly string[] nodeKeys =
         {
@@ -66,9 +64,9 @@ namespace Loader.Osm
             "nodes"
         };
 
-        public OsmUploadService(IHubContext<ProgressHub, IProgressHubClient> progressHub, IConfiguration configuration) : base(configuration)
+        public OsmUploadService(IProgressClient progressClient, IConnectionsConfig configuration) : base(configuration)
         {
-            _progressHub = progressHub;
+            _progressClient = progressClient;
         }
 
         public async Task InstallAsync(Stream uploadStream, Dictionary<string, string> options, string session)
@@ -78,7 +76,7 @@ namespace Loader.Osm
                 await connection.OpenAsync();
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.Clients.All.Init(id, session);
+                await _progressClient.Init(id, session);
 
                 DropTables(connection);
 
@@ -182,7 +180,7 @@ namespace Loader.Osm
                         }
 
                         if (count++ % 1000 == 0)
-                            await _progressHub.Clients.All.Progress(100f * uploadStream.Position / uploadStream.Length, id,
+                            await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
                                 session);
                     }
 
@@ -191,7 +189,7 @@ namespace Loader.Osm
 
                 BuildIndices(connection);
 
-                await _progressHub.Clients.All.Progress(100f, id, session);
+                await _progressClient.Progress(100f, id, session);
 
                 await connection.CloseAsync();
             }
@@ -204,7 +202,7 @@ namespace Loader.Osm
                 await connection.OpenAsync();
 
                 var id = Guid.NewGuid().ToString();
-                await _progressHub.Clients.All.Init(id, session);
+                await _progressClient.Init(id, session);
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.sql",
                     connection);
@@ -306,7 +304,7 @@ namespace Loader.Osm
                         }
 
                         if (count++ % 1000 == 0)
-                            await _progressHub.Clients.All.Progress(100f * uploadStream.Position / uploadStream.Length, id,
+                            await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
                                 session);
                     }
 
@@ -316,7 +314,7 @@ namespace Loader.Osm
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql",
                     connection);
 
-                await _progressHub.Clients.All.Progress(100f, id, session);
+                await _progressClient.Progress(100f, id, session);
 
                 await connection.CloseAsync();
             }

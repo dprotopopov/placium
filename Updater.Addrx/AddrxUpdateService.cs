@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Configuration;
 using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
@@ -11,13 +9,14 @@ using Placium.Types;
 
 namespace Updater.Addrx
 {
-    public class AddrxUpdateService : BaseService, IUpdateService
+    public class AddrxUpdateService : BaseAppService, IUpdateService
     {
-        private readonly IHubContext<ProgressHub, IProgressHubClient> _progressHub;
+        private readonly IProgressClient _progressClient;
 
-        public AddrxUpdateService(IConfiguration configuration, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration)
+        public AddrxUpdateService(IConnectionsConfig configuration, IProgressClient progressClient) : base(
+            configuration)
         {
-            _progressHub = progressHub;
+            _progressClient = progressClient;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -41,7 +40,7 @@ namespace Updater.Addrx
         public async Task UpdatePlacexAsync(string session, bool full)
         {
             var id = Guid.NewGuid().ToString();
-            await _progressHub.Clients.All.Init(id, session);
+            await _progressClient.Init(id, session);
 
             using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
             {
@@ -154,7 +153,7 @@ namespace Updater.Addrx
                                             {
                                                 current += list.Count();
 
-                                                _progressHub.Clients.All.Progress(100f * current / total, id, session)
+                                                _progressClient.Progress(100f * current / total, id, session)
                                                     .GetAwaiter()
                                                     .GetResult();
                                             }
@@ -171,7 +170,7 @@ namespace Updater.Addrx
 
                 await connection.CloseAsync();
 
-                await _progressHub.Clients.All.Progress(100f, id, session);
+                await _progressClient.Progress(100f, id, session);
             }
         }
 

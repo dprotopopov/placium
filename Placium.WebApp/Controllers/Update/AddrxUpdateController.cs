@@ -1,15 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
 using Updater.Addrx;
 
 namespace Placium.WebApp.Controllers.Update
 {
-    [Authorize]
     public class AddrxUpdateController : UpdateController<AddrxUpdateService>
     {
-        public AddrxUpdateController(IConfiguration configuration, AddrxUpdateService updateService, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration,
+        public AddrxUpdateController(IConfiguration configuration, AddrxUpdateService updateService,
+            IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration,
             updateService, progressHub)
         {
         }
@@ -23,6 +22,9 @@ namespace Placium.WebApp.Controllers.Update
             };
         }
 
-        protected override string GetSession() => nameof(AddrxUpdateController);
+        protected override string GetSession()
+        {
+            return nameof(AddrxUpdateController);
+        }
     }
 }

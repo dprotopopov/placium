@@ -11,6 +11,7 @@
     <PackageReference Include="Npgsql" Version="5.0.4" />
     <PackageReference Include="OsmSharp" Version="6.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
+    <PackageReference Include="ShellProgressBar" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>

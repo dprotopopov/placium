@@ -14,8 +14,8 @@ namespace Placium.WebApp.Controllers.Upload
 {
     public abstract class UploadController<TService> : Controller where TService : IUploadService
     {
-        protected readonly IHubContext<ProgressHub, IProgressHubClient> ProgressHub;
         protected readonly IConfiguration Configuration;
+        protected readonly IHubContext<ProgressHub, IProgressHubClient> ProgressHub;
         protected readonly UploadConfig UploadConfig;
         protected readonly TService UploadService;
 

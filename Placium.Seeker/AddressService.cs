@@ -8,7 +8,7 @@ using Placium.Common;
 
 namespace Placium.Seeker
 {
-    public class AddressService : BaseService
+    public class AddressService : BaseApiService
     {
         public AddressService(IConfiguration configuration) : base(configuration)
         {

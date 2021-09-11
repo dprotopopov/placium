@@ -1,5 +1,4 @@
 ﻿using Loader.Osm;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -7,11 +6,12 @@ using Placium.Common;
 
 namespace Placium.WebApp.Controllers.Upload
 {
-    [Authorize]
     public class OsmUploadController : UploadController<OsmUploadService>
     {
         public OsmUploadController(IConfiguration configuration, OsmUploadService uploadService,
-            IOptions<UploadConfig> uploadConfig, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration, uploadService, uploadConfig, progressHub)
+            IOptions<UploadConfig> uploadConfig, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(
+            configuration, uploadService,
+            uploadConfig, progressHub)
         {
         }
 
@@ -32,6 +32,10 @@ namespace Placium.WebApp.Controllers.Upload
                 Label = "База данных OSM"
             };
         }
-        protected override string GetSession() => nameof(OsmUploadController);
+
+        protected override string GetSession()
+        {
+            return nameof(OsmUploadController);
+        }
     }
 }

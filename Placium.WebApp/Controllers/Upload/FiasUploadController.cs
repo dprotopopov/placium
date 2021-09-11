@@ -1,5 +1,4 @@
 ﻿using Loader.Fias;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -7,11 +6,12 @@ using Placium.Common;
 
 namespace Placium.WebApp.Controllers.Upload
 {
-    [Authorize]
     public class FiasUploadController : UploadController<FiasUploadService>
     {
         public FiasUploadController(IConfiguration configuration, FiasUploadService uploadService,
-            IOptions<UploadConfig> uploadConfig, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration, uploadService, uploadConfig, progressHub)
+            IOptions<UploadConfig> uploadConfig, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(
+            configuration, uploadService,
+            uploadConfig, progressHub)
         {
         }
 
@@ -32,7 +32,10 @@ namespace Placium.WebApp.Controllers.Upload
                 Label = "Обновление БД ФИАС (fias_delta_dbf.zip)"
             };
         }
-        protected override string GetSession() => nameof(FiasUploadController);
 
+        protected override string GetSession()
+        {
+            return nameof(FiasUploadController);
+        }
     }
 }
