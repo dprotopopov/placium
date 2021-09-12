@@ -268,7 +268,7 @@ namespace Loader.Fias
             }
         }
 
-        private Dictionary<Regex, Regex> RegionMasks(string region)
+        private static Dictionary<Regex, Regex> RegionMasks(string region)
         {
             return new Dictionary<Regex, Regex>
             {

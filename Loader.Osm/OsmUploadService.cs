@@ -22,9 +22,7 @@ namespace Loader.Osm
             Relation
         }
 
-        private readonly IProgressClient _progressClient;
-
-        private readonly string[] nodeKeys =
+        private readonly string[] _nodeKeys =
         {
             "id",
             "version",
@@ -38,7 +36,9 @@ namespace Loader.Osm
             "tags"
         };
 
-        private readonly string[] relationKeys =
+        private readonly IProgressClient _progressClient;
+
+        private readonly string[] _relationKeys =
         {
             "id",
             "version",
@@ -51,7 +51,7 @@ namespace Loader.Osm
             "members"
         };
 
-        private readonly string[] wayKeys =
+        private readonly string[] _wayKeys =
         {
             "id",
             "version",
@@ -99,7 +99,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Node;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS ''");
+                                        $"COPY node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var nodeValues = new[]
@@ -127,7 +127,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Way;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS ''");
+                                        $"COPY way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var wayValues = new[]
@@ -154,7 +154,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Relation;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS ''");
+                                        $"COPY relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var relationValues = new[]
@@ -223,7 +223,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Node;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_node ({string.Join(",", nodeKeys)}) FROM STDIN WITH NULL AS ''");
+                                        $"COPY temp_node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var nodeValues = new[]
@@ -251,7 +251,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Way;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_way ({string.Join(",", wayKeys)}) FROM STDIN WITH NULL AS ''");
+                                        $"COPY temp_way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var wayValues = new[]
@@ -278,7 +278,7 @@ namespace Loader.Osm
                                     lastType = ElementType.Relation;
                                     writer?.Dispose();
                                     writer = connection.BeginTextImport(
-                                        $"COPY temp_relation ({string.Join(",", relationKeys)}) FROM STDIN WITH NULL AS ''");
+                                        $"COPY temp_relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
                                 }
 
                                 var relationValues = new[]
