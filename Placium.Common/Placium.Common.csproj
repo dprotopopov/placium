@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\AstraUtils\AstraUtils.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
   </ItemGroup>
 

@@ -42,7 +42,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Services", "Placium
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Fias", "Updater.Fias\Updater.Fias.csproj", "{8F709E06-37A8-42F9-B594-1473A9F35A96}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "placium", "placium\placium.csproj", "{63B8E953-C89A-4B38-8CFD-193C6CCF5126}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "placium", "placium\placium.csproj", "{63B8E953-C89A-4B38-8CFD-193C6CCF5126}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AstraUtils", "AstraUtils\AstraUtils.csproj", "{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -106,6 +108,10 @@ Global
 		{63B8E953-C89A-4B38-8CFD-193C6CCF5126}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63B8E953-C89A-4B38-8CFD-193C6CCF5126}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63B8E953-C89A-4B38-8CFD-193C6CCF5126}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
