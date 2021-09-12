@@ -28,5 +28,12 @@ namespace Placium.Common
         {
             _dictionary.Add(id, new ProgressBar(MaxTicks, null, _options));
         }
+
+        public async Task Finalize(string id, string session)
+        {
+            _dictionary[id].Tick(MaxTicks);
+            _dictionary[id].Dispose();
+            _dictionary.Remove(id);
+        }
     }
 }

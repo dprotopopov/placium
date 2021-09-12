@@ -135,7 +135,7 @@ namespace Updater.Placex
                         }
                     }
 
-                    await _progressClient.Progress(100f, id, session);
+                    await _progressClient.Finalize(id, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -340,7 +340,7 @@ namespace Updater.Placex
                             });
                     }
 
-                    await _progressClient.Progress(100f, id1, session);
+                    await _progressClient.Finalize(id1, session);
                 }
 
                 using (var command = new NpgsqlCommand(
@@ -548,7 +548,7 @@ namespace Updater.Placex
                             });
                     }
 
-                    await _progressClient.Progress(100f, id1, session);
+                    await _progressClient.Finalize(id1, session);
                 }
 
 

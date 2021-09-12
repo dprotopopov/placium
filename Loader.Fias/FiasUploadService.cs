@@ -142,7 +142,7 @@ namespace Loader.Fias
                     }
                 }
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
 
                 await connection.CloseAsync();
             }
@@ -262,7 +262,7 @@ namespace Loader.Fias
 
                 foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
 
                 await connection.CloseAsync();
             }

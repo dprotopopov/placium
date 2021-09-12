@@ -30,7 +30,7 @@ namespace placium
 
         private static async Task Main(string[] args)
         {
-            Console.WriteLine("Welcome to Placium application!");
+            Console.WriteLine("Welcome to Placium!");
 
             var builder = new ConfigurationBuilder();
             builder.AddCommandLine(args);

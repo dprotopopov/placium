@@ -234,7 +234,7 @@ namespace Updater.Fias
                 await npgsqlConnection.CloseAsync();
                 await npgsqlConnection3.CloseAsync();
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
             }
         }
 
@@ -429,7 +429,7 @@ namespace Updater.Fias
                 await npgsqlConnection.CloseAsync();
                 await npgsqlConnection3.CloseAsync();
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
             }
         }
 
@@ -710,7 +710,7 @@ namespace Updater.Fias
                 await npgsqlConnection.CloseAsync();
                 await npgsqlConnection4.CloseAsync();
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
             }
         }
 
@@ -886,7 +886,7 @@ namespace Updater.Fias
                 await npgsqlConnection.CloseAsync();
                 await npgsqlConnection3.CloseAsync();
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
             }
         }
 

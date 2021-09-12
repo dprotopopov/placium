@@ -21,5 +21,10 @@ namespace Placium.Common
         {
             await _progressHub.Clients.All.Init(id, session);
         }
+
+        public async Task Finalize(string id, string session)
+        {
+            await _progressHub.Clients.All.Progress(100f, id, session);
+        }
     }
 }

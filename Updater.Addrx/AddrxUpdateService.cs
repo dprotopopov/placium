@@ -170,7 +170,7 @@ namespace Updater.Addrx
 
                 await connection.CloseAsync();
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
             }
         }
 

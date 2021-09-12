@@ -189,7 +189,7 @@ namespace Loader.Osm
 
                 BuildIndices(connection);
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
 
                 await connection.CloseAsync();
             }
@@ -314,7 +314,7 @@ namespace Loader.Osm
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql",
                     connection);
 
-                await _progressClient.Progress(100f, id, session);
+                await _progressClient.Finalize(id, session);
 
                 await connection.CloseAsync();
             }
