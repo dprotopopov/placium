@@ -14,6 +14,54 @@ namespace Placium.Seeker
         {
         }
 
+        public async Task<IEnumerable<AddressEntry>> GetAddrByCoordsAsync(double latitude, double longitude, int limit = 20)
+        {
+            var result = new List<AddressEntry>();
+            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                var skip = 0;
+                var take = 20;
+                while (limit > 0)
+                {
+                    mySqlConnection.TryOpen();
+
+                    using (var command =
+                        new MySqlCommand(
+                            @"SELECT title,lon,lat,GEODIST(@lat,@lon,lat,lon,{in=degrees,out=miles}) AS distance FROM addrx ORDER BY distance ASC LIMIT @skip,@take",
+                            mySqlConnection))
+                    {
+                        command.Parameters.AddWithValue("skip", skip);
+                        command.Parameters.AddWithValue("take", take);
+                        command.Parameters.AddWithValue("lat", latitude);
+                        command.Parameters.AddWithValue("lon", longitude);
+
+                        using (var reader = command.ExecuteReader())
+                        {
+                            var count = 0;
+                            while (limit > 0 && reader.Read())
+                            {
+                                count++;
+                                limit--;
+                                var addressString = reader.GetString(0);
+                                var geoLon = reader.GetFloat(1);
+                                var geoLat = reader.GetFloat(2);
+                                result.Add(new AddressEntry
+                                {
+                                    AddressString = addressString,
+                                    GeoLon = JsonConvert.ToString(geoLon),
+                                    GeoLat = JsonConvert.ToString(geoLat)
+                                });
+                            }
+
+                            if (count < take) break;
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
         public async Task<IEnumerable<AddressEntry>> GetAddressInfoAsync(string searchString, int limit = 20)
         {
             var result = new List<AddressEntry>();
