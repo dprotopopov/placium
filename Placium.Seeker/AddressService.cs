@@ -27,7 +27,7 @@ namespace Placium.Seeker
 
                     using (var command =
                         new MySqlCommand(
-                            @"SELECT title,lon,lat,GEODIST(@lat,@lon,lat,lon,{in=degrees,out=miles}) AS distance FROM addrx WHERE priority>0 ORDER BY distance ASC LIMIT @skip,@take",
+                            @"SELECT GEODIST(@lat,@lon,lat,lon,{in=degrees,out=miles}) AS distance,title,lon,lat FROM addrx ORDER BY distance ASC LIMIT @skip,@take",
                             mySqlConnection))
                     {
                         command.Parameters.AddWithValue("skip", skip);
@@ -42,9 +42,9 @@ namespace Placium.Seeker
                             {
                                 count++;
                                 limit--;
-                                var addressString = reader.GetString(0);
-                                var geoLon = reader.GetFloat(1);
-                                var geoLat = reader.GetFloat(2);
+                                var addressString = reader.GetString(1);
+                                var geoLon = reader.GetFloat(2);
+                                var geoLat = reader.GetFloat(3);
                                 result.Add(new AddressEntry
                                 {
                                     AddressString = addressString,
