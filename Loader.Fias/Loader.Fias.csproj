@@ -5,15 +5,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="CreateSequence.sql" />
+    <None Remove="CreateSequence.pgsql" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="CreateSequence.sql" />
+    <EmbeddedResource Include="CreateSequence.pgsql" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NDbfReader" Version="2.3.0" />
+    <PackageReference Include="NDbfReader" Version="2.4.0" />
   </ItemGroup>
 
   <ItemGroup>

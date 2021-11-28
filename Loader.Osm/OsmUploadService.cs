@@ -80,7 +80,7 @@ namespace Loader.Osm
 
                 DropTables(connection);
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTables.sql",
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTables.pgsql",
                     connection);
 
                 long count = 0;
@@ -204,7 +204,7 @@ namespace Loader.Osm
                 var id = Guid.NewGuid().ToString();
                 await _progressClient.Init(id, session);
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.sql",
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.pgsql",
                     connection);
 
                 long count = 0;
@@ -311,7 +311,7 @@ namespace Loader.Osm
                     writer?.Dispose();
                 }
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.sql",
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.pgsql",
                     connection);
 
                 await _progressClient.Finalize(id, session);

@@ -103,7 +103,7 @@ namespace Updater.Sphinx
 
                         while (true)
                         {
-                            var docs = ReadDocs3(reader, take);
+                            var docs = ReadDocs(reader, take);
 
 
                             if (docs.Any())
@@ -135,7 +135,7 @@ namespace Updater.Sphinx
             }
         }
 
-        public List<Doc3> ReadDocs3(NpgsqlDataReader reader, int take)
+        public List<Doc> ReadDocs(NpgsqlDataReader reader, int take)
         {
             var keys = new[]
             {
@@ -160,7 +160,7 @@ namespace Updater.Sphinx
                 "addr:housenumber"
             };
 
-            var result = new List<Doc3>(take);
+            var result = new List<Doc>(take);
             for (var i = 0; i < take && reader.Read(); i++)
             {
                 var dictionary = (Dictionary<string, string>) reader.GetValue(1);
@@ -188,7 +188,7 @@ namespace Updater.Sphinx
                         list.Add(dictionary[key]);
                 }
 
-                var doc = new Doc3
+                var doc = new Doc
                 {
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),

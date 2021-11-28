@@ -71,7 +71,7 @@ namespace Loader.Fias
 
                 DropTables(connection);
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.sql",
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Fias.CreateSequence.pgsql",
                     connection);
 
                 using (var archive = new ZipArchive(uploadStream))

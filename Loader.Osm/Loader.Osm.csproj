@@ -5,20 +5,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="CreateTables.sql" />
-    <None Remove="CreateTempTables.sql" />
-    <None Remove="InsertFromTempTables.sql" />
+    <None Remove="CreateTables.pgsql" />
+    <None Remove="CreateTempTables.pgsql" />
+    <None Remove="InsertFromTempTables.pgsql" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="CreateTables.sql" />
-    <EmbeddedResource Include="CreateTempTables.sql" />
-    <EmbeddedResource Include="InsertFromTempTables.sql" />
+    <EmbeddedResource Include="CreateTables.pgsql" />
+    <EmbeddedResource Include="CreateTempTables.pgsql" />
+    <EmbeddedResource Include="InsertFromTempTables.pgsql" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
-    <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
   </ItemGroup>
 
 </Project>

@@ -16,16 +16,13 @@ namespace placium
 {
     internal class Program
     {
-        private static readonly Type[] _types =
+        private static readonly Type[] Types =
         {
             typeof(FiasUploadService),
             typeof(OsmUploadService),
             typeof(PlacexUpdateService),
             typeof(AddrxUpdateService),
             typeof(SphinxUpdateService),
-            typeof(Sphinx1UpdateService),
-            typeof(Sphinx2UpdateService),
-            typeof(Sphinx3UpdateService)
         };
 
         private static async Task Main(string[] args)
@@ -47,14 +44,11 @@ namespace placium
                 .AddSingleton<PlacexUpdateService>()
                 .AddSingleton<AddrxUpdateService>()
                 .AddSingleton<SphinxUpdateService>()
-                .AddSingleton<Sphinx1UpdateService>()
-                .AddSingleton<Sphinx2UpdateService>()
-                .AddSingleton<Sphinx3UpdateService>()
                 .BuildServiceProvider();
 
             try
             {
-                var type = _types.FirstOrDefault(t => t.Name == config["service"]);
+                var type = Types.FirstOrDefault(t => t.Name == config["service"]);
                 if (type == null) throw new Exception($"Unknown service '{config["service"]}'");
                 var service = serviceProvider.GetService(type);
                 switch (service)
