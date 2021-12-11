@@ -202,6 +202,7 @@ namespace Placium.Common
                 catch (Exception ex)
                 {
                     Console.WriteLine($"error execute mysql command ({ex.Message}). waiting.");
+                    connection.TryClose();
                     Thread.Sleep(2000);
                 }
         }
