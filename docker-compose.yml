@@ -22,7 +22,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
-      ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
+      ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=600"
       SphinxConfig__Http: "http://manticore-placium:9308"
       UploadConfig__Path: "/upload"
       ServerConfig__BasePath: "/placium"
@@ -46,7 +46,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
-      ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
+      ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=600"
       ServerConfig__BasePath: "/placium"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
