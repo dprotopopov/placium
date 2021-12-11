@@ -11,8 +11,9 @@ namespace Placium.Common
             {
                 connection.Open();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"error execute mysql command ({ex.Message}).");
             }
         }
 
@@ -22,8 +23,9 @@ namespace Placium.Common
             {
                 connection.Close();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"error execute mysql command ({ex.Message}).");
             }
         }
 
