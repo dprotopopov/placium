@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
@@ -9,7 +8,6 @@ using Placium.Services;
 
 namespace Placium.WebApp.Controllers
 {
-    [Authorize]
     public class PlacexController : Controller
     {
         private readonly PlacexService _placexService;

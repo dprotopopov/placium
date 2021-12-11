@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "placium": {
+      "commandName": "Project",
+      "commandLineArgs": "--service=OsmUploadService --action=install --file=\"D:\\Projects\\placium\\upload\\Moscow.osm.pbf\" --OsmConnection=\"Host=localhost;Port=5432;Database=Osm;Username=postgres;Password=password;Command Timeout=0\""
+    }
+  }
+}

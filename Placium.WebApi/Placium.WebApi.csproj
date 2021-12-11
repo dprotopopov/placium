@@ -7,14 +7,11 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-	</ItemGroup>
-
-	<ItemGroup>
 	      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.16" />
 	      <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.2.1" />
 	      <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
-	    			<PackageReference Include="Swashbuckle.AspNetCore" Version="6.1.2" />
+	      <PackageReference Include="NetTopologySuite.IO.PostGis" Version="2.1.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -22,7 +19,6 @@
 		<ProjectReference Include="..\Placium.Models\Placium.Models.csproj" />
 		<ProjectReference Include="..\Placium.Seeker\Placium.Seeker.csproj" />
 		<ProjectReference Include="..\Placium.Services\Placium.Services.csproj" />
-		<ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
 	</ItemGroup>
 
 </Project>

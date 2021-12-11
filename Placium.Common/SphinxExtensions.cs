@@ -8,11 +8,11 @@ namespace Placium.Common
     {
         private static readonly Regex _spaceRegex = new Regex(@"\s+", RegexOptions.IgnoreCase);
 
-        public static string ToMatch(this List<string> list)
+        public static string ToMatch(this List<string> list, int near = 199)
         {
             return string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join(" NEAR/9 ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+                    $"({string.Join($" NEAR/{near} ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
         }
     }
 }

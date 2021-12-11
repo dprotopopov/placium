@@ -1,13 +1,9 @@
-﻿using System;
-using System.IO;
-using Loader.Fias;
-using Loader.Osm;
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Loader.Fias.File;
+using Loader.Osm.File;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,12 +11,11 @@ using Microsoft.Extensions.Hosting;
 using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
 using Placium.Common;
-using Placium.Seeker;
 using Placium.Services;
-using Updater.Addrx;
-using Updater.Fias;
-using Updater.Placex;
-using Updater.Sphinx;
+using Updater.Addrobx.Sphinx;
+using Updater.Addrx.Database;
+using Updater.Addrx.Sphinx;
+using Updater.Placex.Database;
 
 namespace Placium.WebApp
 {
@@ -37,24 +32,24 @@ namespace Placium.WebApp
 
         private void RegisterServices(IServiceCollection services)
         {
+            services.AddSingleton<IConnectionsConfig, AppsettingsConnectionsConfig>();
+            services.AddSingleton<IParallelConfig, AppsettingsParallelConfig>();
+            services.AddSingleton<IProgressClient, SignalRProgressClient>();
+
             services.Configure<SphinxConfig>(Configuration.GetSection(nameof(SphinxConfig)));
             services.Configure<UploadConfig>(Configuration.GetSection(nameof(UploadConfig)));
-            services.Configure<AccountConfig>(Configuration.GetSection(nameof(AccountConfig)));
+            services.Configure<ServerConfig>(Configuration.GetSection(nameof(ServerConfig)));
+            services.Configure<ParallelConfig>(Configuration.GetSection(nameof(ParallelConfig)));
 
-            services.AddSingleton<DefaultSeeker>();
             services.AddSingleton<PlacexService>();
             services.AddSingleton<OsmService>();
             services.AddSingleton<FiasService>();
-            services.AddSingleton<FiasUploadService>();
-            services.AddSingleton<OsmUploadService>();
-            services.AddSingleton<PlacexUpdateService>();
-            services.AddSingleton<AddrxUpdateService>();
-            services.AddSingleton<SphinxUpdateService>();
-            services.AddSingleton<Sphinx1UpdateService>();
-            services.AddSingleton<Sphinx2UpdateService>();
-            services.AddSingleton<Sphinx3UpdateService>();
-            services.AddSingleton<FiasUpdateService>();
-            services.AddSingleton<Fias3UpdateService>();
+            services.AddSingleton<FileFiasUploadService>();
+            services.AddSingleton<FileOsmUploadService>();
+            services.AddSingleton<DatabasePlacexUpdateService>();
+            services.AddSingleton<DatabaseAddrxUpdateService>();
+            services.AddSingleton<SphinxAddrxUpdateService>();
+            services.AddSingleton<SphinxAddrobxUpdateService>();
             services.AddSingleton<ProgressHub>();
         }
 
@@ -69,7 +64,13 @@ namespace Placium.WebApp
                     options.SerializerSettings.Converters.Add(new GeometryConverter());
                     options.SerializerSettings.Converters.Add(new CoordinateConverter());
                 });
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            });
 
+            services.AddRazorPages();
             services.AddSignalR();
             services.Configure<IISServerOptions>(options => { options.MaxRequestBodySize = int.MaxValue; });
             services.Configure<KestrelServerOptions>(options =>
@@ -82,23 +83,16 @@ namespace Placium.WebApp
                 x.MultipartBodyLengthLimit = int.MaxValue; // if don't set default value is: 128 MB
                 x.MultipartHeadersLengthLimit = int.MaxValue;
             });
-
-            // установка конфигурации подключения
-            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-                .AddCookie(options => //CookieAuthenticationOptions
-                {
-                    options.LoginPath = new PathString("/Account/Login");
-                });
-
-            var keysFolder = Path.Combine(WebHostEnvironment.ContentRootPath, "temp-keys");
-            services.AddDataProtection()
-                .SetApplicationName("WebApp")
-                .PersistKeysToFileSystem(new DirectoryInfo(keysFolder))
-                .SetDefaultKeyLifetime(TimeSpan.FromDays(14));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            var config = Configuration.GetSection(nameof(ServerConfig)).Get<ServerConfig>();
+
+            app.UsePathBase(config.PathBase);
+
+            app.UseForwardedHeaders();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -115,17 +109,12 @@ namespace Placium.WebApp
 
             app.UseRouting();
 
-            app.UseAuthentication(); // аутентификация
-            app.UseAuthorization(); // авторизация
-
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllerRoute(
-                    "default",
-                    "{controller=Home}/{action=Index}/{id?}");
+                endpoints.MapRazorPages();
+                endpoints.MapDefaultControllerRoute();
+                endpoints.MapHub<ProgressHub>("/progress");
             });
-
-            app.UseEndpoints(endpoints => { endpoints.MapHub<ProgressHub>("/progress"); });
         }
     }
 }

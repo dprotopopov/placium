@@ -9,11 +9,12 @@ namespace Placium.WebApp.Controllers.Update
 {
     public abstract class UpdateController<TService> : Controller where TService : IUpdateService
     {
-        protected readonly IHubContext<ProgressHub, IProgressHubClient> ProgressHub;
         protected readonly IConfiguration Configuration;
+        protected readonly IHubContext<ProgressHub, IProgressHubClient> ProgressHub;
         protected readonly TService UpdateService;
 
-        protected UpdateController(IConfiguration configuration, TService updateService, IHubContext<ProgressHub, IProgressHubClient> progressHub)
+        protected UpdateController(IConfiguration configuration, TService updateService,
+            IHubContext<ProgressHub, IProgressHubClient> progressHub)
         {
             Configuration = configuration;
             UpdateService = updateService;

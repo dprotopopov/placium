@@ -8,7 +8,7 @@ using Placium.Models;
 
 namespace Placium.Services
 {
-    public class PlacexService : BaseService
+    public class PlacexService : BaseApiService
     {
         public PlacexService(IConfiguration configuration) : base(configuration)
         {

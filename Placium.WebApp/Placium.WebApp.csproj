@@ -11,17 +11,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.16" />
     <PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.2.1" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.5" />
-    <PackageReference Include="MySql.Data" Version="8.0.23" />
-    <PackageReference Include="NDbfReader" Version="2.3.0" />
     <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="Npgsql" Version="5.0.4" />
-    <PackageReference Include="OsmSharp" Version="6.2.0" />
-    <PackageReference Include="OsmSharp.Geo" Version="6.2.0" />
-    <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>
 
  
@@ -32,15 +23,14 @@
  
   <ItemGroup>
     <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
-    <ProjectReference Include="..\Loader.Fias\Loader.Fias.csproj" />
-    <ProjectReference Include="..\Loader.Osm\Loader.Osm.csproj" />
-    <ProjectReference Include="..\Placium.Seeker\Placium.Seeker.csproj" />
+    <ProjectReference Include="..\Loader.Fias.File\Loader.Fias.File.csproj" />
+    <ProjectReference Include="..\Loader.Osm.File\Loader.Osm.File.csproj" />
     <ProjectReference Include="..\Placium.Services\Placium.Services.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
-    <ProjectReference Include="..\Updater.Addrx\Updater.Addrx.csproj" />
-    <ProjectReference Include="..\Updater.Fias\Updater.Fias.csproj" />
-    <ProjectReference Include="..\Updater.Placex\Updater.Placex.csproj" />
-    <ProjectReference Include="..\Updater.Sphinx\Updater.Sphinx.csproj" />
+    <ProjectReference Include="..\Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj" />
+    <ProjectReference Include="..\Updater.Addrx.Database\Updater.Addrx.Database.csproj" />
+    <ProjectReference Include="..\Updater.Placex.Database\Updater.Placex.Database.csproj" />
+    <ProjectReference Include="..\Updater.Addrx.Sphinx\Updater.Addrx.Sphinx.csproj" />
   </ItemGroup>
 
 

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="CreateTables.pgsql" />
+    <None Remove="CreateTempTables.pgsql" />
+    <None Remove="InsertFromTempTables.pgsql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="CreateTables.pgsql" />
+    <EmbeddedResource Include="CreateTempTables.pgsql" />
+    <EmbeddedResource Include="InsertFromTempTables.pgsql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
@@ -10,7 +9,6 @@ using Placium.Types;
 
 namespace Placium.WebApp.Controllers
 {
-    [Authorize]
     public class OsmController : Controller
     {
         private readonly OsmService _osmService;

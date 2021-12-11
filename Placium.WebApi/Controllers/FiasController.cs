@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Placium.Seeker;
 using Placium.Services;
 
 namespace Placium.WebApi.Controllers
@@ -10,11 +11,13 @@ namespace Placium.WebApi.Controllers
     [Route("api/[controller]")]
     public class FiasController : ControllerBase
     {
+        private readonly FiasAddressService _fiasAddressService;
         private readonly FiasService _fiasService;
 
-        public FiasController(FiasService fiasService)
+        public FiasController(FiasService fiasService, FiasAddressService fiasAddressService)
         {
             _fiasService = fiasService;
+            _fiasAddressService = fiasAddressService;
         }
 
         [HttpGet("{guid}/details")]
@@ -49,6 +52,14 @@ namespace Placium.WebApi.Controllers
         public async Task<IActionResult> GetRoots(bool formal = false, bool socr = true)
         {
             return Ok(await _fiasService.GetRootsAsync(formal, socr));
+        }
+
+        [HttpGet]
+        [ProducesResponseType(200, Type = typeof(List<AddressEntry>))]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> Get(string searchString, int limit = 20)
+        {
+            return Ok(await _fiasAddressService.GetByNameAsync(searchString, limit));
         }
     }
 }

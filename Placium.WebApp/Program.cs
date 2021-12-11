@@ -1,25 +1,29 @@
 ﻿using System.Text;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
+using Placium.Common;
 
 namespace Placium.WebApp
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            CreateHostBuilder(args).Build().Run();
+            using var host = CreateWebHostBuilder(args).Build();
+
+            await host.StartAsync();
+            host.SetSocketPermissions();
+            await host.WaitForShutdownAsync();
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args)
+        public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
-            return Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder =>
-                {
-                    webBuilder.UseStartup<Startup>();
-                    webBuilder.UseIISIntegration();
-                });
+            return WebHost.CreateDefaultBuilder(args)
+                .UseUnixSocketCredential()
+                .UseIISIntegration()
+                .UseStartup<Startup>();
         }
     }
 }

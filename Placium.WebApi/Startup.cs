@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
+using Placium.Common;
 using Placium.Seeker;
 using Placium.Services;
 
@@ -21,8 +23,10 @@ namespace Placium.WebApi
 
         private void RegisterServices(IServiceCollection services)
         {
-            services.AddSingleton<AddressService>();
-            services.AddSingleton<DefaultSeeker>();
+            services.Configure<ServerConfig>(Configuration.GetSection(nameof(ServerConfig)));
+
+            services.AddSingleton<OsmAddressService>();
+            services.AddSingleton<FiasAddressService>();
             services.AddSingleton<PlacexService>();
             services.AddSingleton<OsmService>();
             services.AddSingleton<FiasService>();
@@ -46,6 +50,12 @@ namespace Placium.WebApi
                     options.SerializerSettings.Converters.Add(new CoordinateConverter());
                 });
 
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            });
+
             services.AddSignalR();
             services.AddHealthChecks();
 
@@ -57,6 +67,12 @@ namespace Placium.WebApi
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            var config = Configuration.GetSection(nameof(ServerConfig)).Get<ServerConfig>();
+
+            app.UsePathBase(config.PathBase);
+
+            app.UseForwardedHeaders();
+
             app.UseDefaultFiles();
 
             app.UseStaticFiles();
@@ -66,9 +82,6 @@ namespace Placium.WebApi
             UseSwagger(app);
 
             app.UseRouting();
-
-            app.UseAuthentication(); // аутентификация
-            app.UseAuthorization(); // авторизация
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
