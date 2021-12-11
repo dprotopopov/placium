@@ -1,4 +1,4 @@
-﻿namespace Updater.Sphinx
+﻿namespace Updater.Addrx.Sphinx
 {
     public class Doc
     {

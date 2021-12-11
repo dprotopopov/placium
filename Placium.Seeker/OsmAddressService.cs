@@ -8,13 +8,13 @@ using Placium.Common;
 
 namespace Placium.Seeker
 {
-    public class AddressService : BaseApiService
+    public class OsmAddressService : BaseApiService
     {
-        public AddressService(IConfiguration configuration) : base(configuration)
+        public OsmAddressService(IConfiguration configuration) : base(configuration)
         {
         }
 
-        public async Task<IEnumerable<AddressEntry>> GetAddrByCoordsAsync(double latitude, double longitude, int limit = 20)
+        public async Task<IEnumerable<AddressEntry>> GetByCoordsAsync(double latitude, double longitude, int limit = 20)
         {
             var result = new List<AddressEntry>();
             using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
@@ -62,7 +62,7 @@ namespace Placium.Seeker
             return result;
         }
 
-        public async Task<IEnumerable<AddressEntry>> GetAddressInfoAsync(string searchString, int limit = 20)
+        public async Task<IEnumerable<AddressEntry>> GetByNameAsync(string searchString, int limit = 20)
         {
             var result = new List<AddressEntry>();
             var list = searchString.Split(",").ToList();

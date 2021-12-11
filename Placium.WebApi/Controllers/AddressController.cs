@@ -10,11 +10,11 @@ namespace Placium.WebApi.Controllers
     [Route("api/[controller]")]
     public class AddressController : ControllerBase
     {
-        private readonly AddressService _addressService;
+        private readonly OsmAddressService _osmAddressService;
 
-        public AddressController(AddressService addressService)
+        public AddressController(OsmAddressService osmAddressService)
         {
-            _addressService = addressService;
+            _osmAddressService = osmAddressService;
         }
 
         [HttpGet]
@@ -22,7 +22,7 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> Get(string searchString, int limit = 20)
         {
-            return Ok(await _addressService.GetAddressInfoAsync(searchString, limit));
+            return Ok(await _osmAddressService.GetByNameAsync(searchString, limit));
         }
 
         [Route("by_coords")]
@@ -34,7 +34,7 @@ namespace Placium.WebApi.Controllers
             var arr = coords.Split(",");
             var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
             var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Ok(await _addressService.GetAddrByCoordsAsync(latitude, longitude, limit));
+            return Ok(await _osmAddressService.GetByCoordsAsync(latitude, longitude, limit));
         }
     }
 }

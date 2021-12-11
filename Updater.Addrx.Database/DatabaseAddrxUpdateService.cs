@@ -7,16 +7,19 @@ using NpgsqlTypes;
 using Placium.Common;
 using Placium.Types;
 
-namespace Updater.Addrx
+namespace Updater.Addrx.Database
 {
-    public class AddrxUpdateService : BaseAppService, IUpdateService
+    public class DatabaseAddrxUpdateService : BaseAppService, IUpdateService
     {
+        private readonly IParallelConfig _parallelConfig;
         private readonly IProgressClient _progressClient;
 
-        public AddrxUpdateService(IConnectionsConfig configuration, IProgressClient progressClient) : base(
+        public DatabaseAddrxUpdateService(IConnectionsConfig configuration, IProgressClient progressClient,
+            IParallelConfig parallelConfig) : base(
             configuration)
         {
             _progressClient = progressClient;
+            _parallelConfig = parallelConfig;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -104,7 +107,7 @@ namespace Updater.Addrx
                         var obj = new object();
                         var reader_is_empty = false;
 
-                        Parallel.For(0, 12,
+                        Parallel.For(0, _parallelConfig.GetNumberOfThreads(),
                             i =>
                             {
                                 using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))

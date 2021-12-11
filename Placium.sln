@@ -7,17 +7,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.WebApp", "Placium.W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Common", "Placium.Common\Placium.Common.csproj", "{4B621C87-E2F0-4C74-8A2D-29D2C3C68919}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loader.Fias", "Loader.Fias\Loader.Fias.csproj", "{DA8B66FE-24F4-44F8-A991-BE7F08D2878A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loader.Fias.File", "Loader.Fias.File\Loader.Fias.File.csproj", "{DA8B66FE-24F4-44F8-A991-BE7F08D2878A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loader.Osm", "Loader.Osm\Loader.Osm.csproj", "{8513F2AC-2B7B-45AB-8A3E-F9C78933A5CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loader.Osm.File", "Loader.Osm.File\Loader.Osm.File.csproj", "{8513F2AC-2B7B-45AB-8A3E-F9C78933A5CC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Types", "Placium.Types\Placium.Types.csproj", "{68B11999-F918-4F45-A930-1597E8E2F302}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.WebApi", "Placium.WebApi\Placium.WebApi.csproj", "{9B88E6AD-B247-4442-89CC-89DE3CD8F9A1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Placex", "Updater.Placex\Updater.Placex.csproj", "{FB94DD7D-24A9-4101-8AB2-1BEDBDA23D5D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Placex.Database", "Updater.Placex.Database\Updater.Placex.Database.csproj", "{FB94DD7D-24A9-4101-8AB2-1BEDBDA23D5D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Sphinx", "Updater.Sphinx\Updater.Sphinx.csproj", "{3EBF9A30-7538-440B-A77C-7138F2FA16FB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addrx.Sphinx", "Updater.Addrx.Sphinx\Updater.Addrx.Sphinx.csproj", "{3EBF9A30-7538-440B-A77C-7138F2FA16FB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{77EF9329-7C3A-410F-BB20-AED059AE7C54}"
 	ProjectSection(SolutionItems) = preProject
@@ -34,7 +34,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Seeker", "Placium.Seeker\Placium.Seeker.csproj", "{876DD837-54A8-4804-B773-4ED280E65E3B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addrx", "Updater.Addrx\Updater.Addrx.csproj", "{74011989-E61F-4D83-A9ED-B26FFE8F36D2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addrx.Database", "Updater.Addrx.Database\Updater.Addrx.Database.csproj", "{74011989-E61F-4D83-A9ED-B26FFE8F36D2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.Models", "Placium.Models\Placium.Models.csproj", "{1B378E87-E009-4D62-8E84-EA7F076EF70E}"
 EndProject
@@ -43,6 +43,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "placium", "placium\placium.csproj", "{63B8E953-C89A-4B38-8CFD-193C6CCF5126}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AstraUtils", "AstraUtils\AstraUtils.csproj", "{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater.Addrobx.Sphinx", "Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj", "{0206B60C-011C-4ED2-84C0-E9ED005C053C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -106,6 +108,10 @@ Global
 		{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0206B60C-011C-4ED2-84C0-E9ED005C053C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0206B60C-011C-4ED2-84C0-E9ED005C053C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0206B60C-011C-4ED2-84C0-E9ED005C053C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0206B60C-011C-4ED2-84C0-E9ED005C053C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

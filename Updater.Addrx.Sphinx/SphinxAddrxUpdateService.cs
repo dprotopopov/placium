@@ -9,14 +9,14 @@ using Npgsql;
 using Placium.Common;
 using Placium.Types;
 
-namespace Updater.Sphinx
+namespace Updater.Addrx.Sphinx
 {
-    public class SphinxUpdateService : BaseAppService, IUpdateService
+    public class SphinxAddrxUpdateService : BaseAppService, IUpdateService
     {
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
         private readonly IProgressClient _progressClient;
 
-        public SphinxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration) : base(
+        public SphinxAddrxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration) : base(
             configuration)
         {
             _progressClient = progressClient;
@@ -34,7 +34,7 @@ namespace Updater.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text,priority int,lon float,lat float,building int)"
+                    "CREATE TABLE addrx(title text indexed stored,priority int,lon float,lat float,building int)"
                     + " phrase_boundary='U+2C'"
                     + " phrase_boundary_step='100'"
                     + " min_infix_len='1'"

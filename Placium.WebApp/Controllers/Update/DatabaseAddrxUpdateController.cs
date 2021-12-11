@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
-using Updater.Sphinx;
+using Updater.Addrx.Database;
 
 namespace Placium.WebApp.Controllers.Update
 {
-    public class SphinxUpdateController : UpdateController<SphinxUpdateService>
+    public class DatabaseAddrxUpdateController : UpdateController<DatabaseAddrxUpdateService>
     {
-        public SphinxUpdateController(IConfiguration configuration, SphinxUpdateService updateService,
+        public DatabaseAddrxUpdateController(IConfiguration configuration, DatabaseAddrxUpdateService updateService,
             IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration,
             updateService, progressHub)
         {
@@ -17,14 +17,14 @@ namespace Placium.WebApp.Controllers.Update
         {
             return new UpdateFormInfo
             {
-                Title = "Наполнение Sphinx (OSM)",
-                Label = "Добавление новых записей в Sphinx"
+                Title = "Наполнение Addrx",
+                Label = "Добавление записей Placex в Addrx"
             };
         }
 
         protected override string GetSession()
         {
-            return nameof(SphinxUpdateController);
+            return nameof(DatabaseAddrxUpdateController);
         }
     }
 }

@@ -1,5 +1,5 @@
-﻿using Loader.Fias;
-using Loader.Osm;
+﻿using Loader.Fias.File;
+using Loader.Osm.File;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
@@ -12,9 +12,10 @@ using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
 using Placium.Common;
 using Placium.Services;
-using Updater.Addrx;
-using Updater.Placex;
-using Updater.Sphinx;
+using Updater.Addrobx.Sphinx;
+using Updater.Addrx.Database;
+using Updater.Addrx.Sphinx;
+using Updater.Placex.Database;
 
 namespace Placium.WebApp
 {
@@ -32,20 +33,23 @@ namespace Placium.WebApp
         private void RegisterServices(IServiceCollection services)
         {
             services.AddSingleton<IConnectionsConfig, AppsettingsConnectionsConfig>();
+            services.AddSingleton<IParallelConfig, AppsettingsParallelConfig>();
             services.AddSingleton<IProgressClient, SignalRProgressClient>();
 
             services.Configure<SphinxConfig>(Configuration.GetSection(nameof(SphinxConfig)));
             services.Configure<UploadConfig>(Configuration.GetSection(nameof(UploadConfig)));
             services.Configure<ServerConfig>(Configuration.GetSection(nameof(ServerConfig)));
+            services.Configure<ParallelConfig>(Configuration.GetSection(nameof(ParallelConfig)));
 
             services.AddSingleton<PlacexService>();
             services.AddSingleton<OsmService>();
             services.AddSingleton<FiasService>();
-            services.AddSingleton<FiasUploadService>();
-            services.AddSingleton<OsmUploadService>();
-            services.AddSingleton<PlacexUpdateService>();
-            services.AddSingleton<AddrxUpdateService>();
-            services.AddSingleton<SphinxUpdateService>();
+            services.AddSingleton<FileFiasUploadService>();
+            services.AddSingleton<FileOsmUploadService>();
+            services.AddSingleton<DatabasePlacexUpdateService>();
+            services.AddSingleton<DatabaseAddrxUpdateService>();
+            services.AddSingleton<SphinxAddrxUpdateService>();
+            services.AddSingleton<SphinxAddrobxUpdateService>();
             services.AddSingleton<ProgressHub>();
         }
 
@@ -104,8 +108,6 @@ namespace Placium.WebApp
             app.UseStaticFiles();
 
             app.UseRouting();
-
-            app.Use((context, next) => { return next(); });
 
             app.UseEndpoints(endpoints =>
             {

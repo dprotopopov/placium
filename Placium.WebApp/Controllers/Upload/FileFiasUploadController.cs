@@ -1,4 +1,4 @@
-﻿using Loader.Osm;
+﻿using Loader.Fias.File;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -6,9 +6,9 @@ using Placium.Common;
 
 namespace Placium.WebApp.Controllers.Upload
 {
-    public class OsmUploadController : UploadController<OsmUploadService>
+    public class FileFiasUploadController : UploadController<FileFiasUploadService>
     {
-        public OsmUploadController(IConfiguration configuration, OsmUploadService uploadService,
+        public FileFiasUploadController(IConfiguration configuration, FileFiasUploadService uploadService,
             IOptions<UploadConfig> uploadConfig, IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(
             configuration, uploadService,
             uploadConfig, progressHub)
@@ -19,8 +19,8 @@ namespace Placium.WebApp.Controllers.Upload
         {
             return new UploadFormInfo
             {
-                Title = "Загрузка полной базы OSM",
-                Label = "База данных OSM"
+                Title = "Загрузка полной базы ФИАС",
+                Label = "Полная БД ФИАС (fias_dbf.zip)"
             };
         }
 
@@ -28,14 +28,14 @@ namespace Placium.WebApp.Controllers.Upload
         {
             return new UploadFormInfo
             {
-                Title = "Загрузка добавления базы OSM",
-                Label = "База данных OSM"
+                Title = "Загрузка обновления базы ФИАС",
+                Label = "Обновление БД ФИАС (fias_delta_dbf.zip)"
             };
         }
 
         protected override string GetSession()
         {
-            return nameof(OsmUploadController);
+            return nameof(FileFiasUploadController);
         }
     }
 }

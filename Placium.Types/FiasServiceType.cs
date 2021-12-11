@@ -10,5 +10,7 @@ namespace Placium.Types
         House,
         [PgName("stead")]
         Stead,
+        [PgName("room")]
+        Room,
     }
 }

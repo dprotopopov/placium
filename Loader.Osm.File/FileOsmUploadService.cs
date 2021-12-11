@@ -10,9 +10,9 @@ using OsmSharp;
 using OsmSharp.Streams;
 using Placium.Common;
 
-namespace Loader.Osm
+namespace Loader.Osm.File
 {
-    public class OsmUploadService : BaseAppService, IUploadService
+    public class FileOsmUploadService : BaseAppService, IUploadService
     {
         public enum ElementType
         {
@@ -64,7 +64,7 @@ namespace Loader.Osm
             "nodes"
         };
 
-        public OsmUploadService(IProgressClient progressClient, IConnectionsConfig configuration) : base(configuration)
+        public FileOsmUploadService(IProgressClient progressClient, IConnectionsConfig configuration) : base(configuration)
         {
             _progressClient = progressClient;
         }

@@ -11,9 +11,9 @@ using NDbfReader;
 using Npgsql;
 using Placium.Common;
 
-namespace Loader.Fias
+namespace Loader.Fias.File
 {
-    public class FiasUploadService : BaseAppService, IUploadService
+    public class FileFiasUploadService : BaseAppService, IUploadService
     {
         private readonly Dictionary<string, string> _deleted = new Dictionary<string, string>
         {
@@ -51,7 +51,7 @@ namespace Loader.Fias
 
         private readonly IProgressClient _progressClient;
 
-        public FiasUploadService(IProgressClient progressClient, IConnectionsConfig configuration) : base(configuration)
+        public FileFiasUploadService(IProgressClient progressClient, IConnectionsConfig configuration) : base(configuration)
         {
             _progressClient = progressClient;
         }

@@ -10,11 +10,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Loader.Fias\Loader.Fias.csproj" />
-    <ProjectReference Include="..\Loader.Osm\Loader.Osm.csproj" />
-    <ProjectReference Include="..\Updater.Addrx\Updater.Addrx.csproj" />
-    <ProjectReference Include="..\Updater.Placex\Updater.Placex.csproj" />
-    <ProjectReference Include="..\Updater.Sphinx\Updater.Sphinx.csproj" />
+    <ProjectReference Include="..\Loader.Fias.File\Loader.Fias.File.csproj" />
+    <ProjectReference Include="..\Loader.Osm.File\Loader.Osm.File.csproj" />
+    <ProjectReference Include="..\Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj" />
+    <ProjectReference Include="..\Updater.Addrx.Database\Updater.Addrx.Database.csproj" />
+    <ProjectReference Include="..\Updater.Placex.Database\Updater.Placex.Database.csproj" />
+    <ProjectReference Include="..\Updater.Addrx.Sphinx\Updater.Addrx.Sphinx.csproj" />
   </ItemGroup>
 
   <ItemGroup>

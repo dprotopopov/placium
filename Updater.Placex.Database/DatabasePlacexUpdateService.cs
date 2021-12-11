@@ -11,20 +11,22 @@ using NpgsqlTypes;
 using Placium.Common;
 using Placium.Types;
 
-namespace Updater.Placex
+namespace Updater.Placex.Database
 {
-    public class PlacexUpdateService : BaseAppService, IUpdateService
+    public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
     {
         private readonly GeometryFactory _geometryFactory = new GeometryFactory();
         private readonly NumberFormatInfo _nfi = new NumberFormatInfo {NumberDecimalSeparator = "."};
+        private readonly IParallelConfig _parallelConfig;
         private readonly IProgressClient _progressClient;
         private readonly WKTReader _wktReader = new WKTReader();
         private readonly WKTWriter _wktWriter = new WKTWriter();
 
-        public PlacexUpdateService(IProgressClient progressClient,
-            IConnectionsConfig configuration) : base(configuration)
+        public DatabasePlacexUpdateService(IProgressClient progressClient,
+            IConnectionsConfig configuration, IParallelConfig parallelConfig) : base(configuration)
         {
             _progressClient = progressClient;
+            _parallelConfig = parallelConfig;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -228,7 +230,7 @@ namespace Updater.Placex
                         var obj = new object();
                         var reader_is_empty = false;
 
-                        Parallel.For(0, 12,
+                        Parallel.For(0, _parallelConfig.GetNumberOfThreads(),
                             i =>
                             {
                                 using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
@@ -432,7 +434,7 @@ namespace Updater.Placex
                         var obj = new object();
                         var reader_is_empty = false;
 
-                        Parallel.For(0, 12,
+                        Parallel.For(0, _parallelConfig.GetNumberOfThreads(),
                             i =>
                             {
                                 using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))

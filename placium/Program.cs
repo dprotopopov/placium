@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Loader.Fias;
-using Loader.Osm;
+using Loader.Fias.File;
+using Loader.Osm.File;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Placium.Common;
-using Updater.Addrx;
-using Updater.Placex;
-using Updater.Sphinx;
+using Updater.Addrobx.Sphinx;
+using Updater.Addrx.Database;
+using Updater.Addrx.Sphinx;
+using Updater.Placex.Database;
 
 namespace placium
 {
@@ -18,11 +19,12 @@ namespace placium
     {
         private static readonly Type[] Types =
         {
-            typeof(FiasUploadService),
-            typeof(OsmUploadService),
-            typeof(PlacexUpdateService),
-            typeof(AddrxUpdateService),
-            typeof(SphinxUpdateService),
+            typeof(FileFiasUploadService),
+            typeof(FileOsmUploadService),
+            typeof(DatabasePlacexUpdateService),
+            typeof(DatabaseAddrxUpdateService),
+            typeof(SphinxAddrxUpdateService),
+            typeof(SphinxAddrobxUpdateService),
         };
 
         private static async Task Main(string[] args)
@@ -38,12 +40,14 @@ namespace placium
                 .AddLogging()
                 .AddSingleton<IConfiguration>(config)
                 .AddSingleton<IConnectionsConfig, ArgsConnectionsConfig>()
+                .AddSingleton<IParallelConfig, ArgsParallelConfig>()
                 .AddSingleton<IProgressClient, ShellProgressClient>()
-                .AddSingleton<FiasUploadService>()
-                .AddSingleton<OsmUploadService>()
-                .AddSingleton<PlacexUpdateService>()
-                .AddSingleton<AddrxUpdateService>()
-                .AddSingleton<SphinxUpdateService>()
+                .AddSingleton<FileFiasUploadService>()
+                .AddSingleton<FileOsmUploadService>()
+                .AddSingleton<DatabasePlacexUpdateService>()
+                .AddSingleton<DatabaseAddrxUpdateService>()
+                .AddSingleton<SphinxAddrxUpdateService>()
+                .AddSingleton<SphinxAddrobxUpdateService>()
                 .BuildServiceProvider();
 
             try
