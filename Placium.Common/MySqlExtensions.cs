@@ -13,7 +13,6 @@ namespace Placium.Common
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"error execute mysql command ({ex.Message}).");
             }
         }
 
