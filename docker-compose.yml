@@ -120,3 +120,23 @@ services:
       - placium
     logging:
       driver: none
+
+  mysqlquerytools-placium:
+    container_name: mysqlquerytools-placium
+    build:
+      context: .
+      dockerfile: MySql.QueryTools.WebApp/Dockerfile
+    ports:
+      - "9090:9090"
+      - "9433:9433"
+    depends_on:
+      - manticore-placium
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
+      ServerConfig__BasePath: "/mysql"
+      Kestrel__Endpoints__Http__Url: http://0.0.0.0:9090
+      Kestrel__Endpoints__Https__Url: http://0.0.0.0:9433
+    networks:
+      - placium

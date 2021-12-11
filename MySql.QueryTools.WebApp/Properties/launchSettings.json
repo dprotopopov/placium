@@ -3,35 +3,35 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:18163",
-      "sslPort": 44356
+      "applicationUrl": "http://localhost:60353",
+      "sslPort": 44391
     }
   },
-  "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
       "launchBrowser": true,
-      "launchUrl": "placium",
+      "launchUrl": "mysql",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "Placium": {
+    "MySqlQueryTools": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "placium",
+      "launchUrl": "mysql",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:9977;http://localhost:9966"
+      "applicationUrl": "https://localhost:9433;http://localhost:9090"
     },
     "Docker": {
       "commandName": "Docker",
       "launchBrowser": true,
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/Home",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/mysql",
       "publishAllPorts": true,
-      "useSSL": true
+      "useSSL": true,
+      "DockerfileRunArguments": "-e \"ConnectionStrings__DefaultConnection\"=\"Host=host.docker.internal;Port=9306;Command Timeout=0\""
     }
   }
 }
