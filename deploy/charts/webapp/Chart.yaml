@@ -1,0 +1,13 @@
+apiVersion: v2
+type: application
+description: A Helm chart for placium main web api
+name: placium-webapp
+version: 0.0.0-local
+
+dependencies:
+  - name: visary-application-templates
+    repository: https://chartmuseum.npc.ba
+    version: 0.0.203
+    import-values:
+      - child: global
+        parent: global

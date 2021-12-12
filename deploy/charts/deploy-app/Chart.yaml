@@ -1,0 +1,118 @@
+apiVersion: v2
+type: application
+description: A Helm chart for deploying placium test app
+name: placium-app-deployment
+version: 0.0.0-local
+
+dependencies:
+#------------------
+# Application templates chart
+#------------------
+
+- name: visary-application-templates
+  repository: https://chartmuseum.npc.ba
+  version: 0.0.203
+  import-values:
+    - child: global
+      parent: global
+
+#===================
+
+#------------------
+# Local webapi chart
+#------------------
+
+- name: placium-webapi
+  alias: webapi
+  repository: "file://./../webapi"
+  version: ">= 0.0.0-a"
+
+- name: placium-webapp
+  alias: webapp
+  repository: "file://./../webapp"
+  version: ">= 0.0.0-a"
+
+- name: placium-mysqlquerytools
+  alias: mysqlquerytools
+  repository: "file://./../mysqlquerytools"
+  version: ">= 0.0.0-a"
+
+#===================
+
+#------------------
+# Default account ui
+# If custom account ui project is available should be commented or disabled with
+# # values.yaml
+# visary-account-ui:
+#   enabled: false
+#------------------
+
+# - name: visary-account-ui
+#   repository: https://chartmuseum.npc.ba
+#   version: 0.0.1
+#   condition: visary-account-ui.enabled
+
+#===================
+
+#------------------
+# Visary services
+# Comment unused or unavailable in deployed release
+#------------------
+
+- name: visary-api-gateway
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-audit
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-calendar
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-communication
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-dashboard
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-email-service
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-filestorage
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+# - name: visary-gistracker
+#   repository: "https://chartmuseum.npc.ba"
+#   version: "0.3.516"
+
+- name: visary-identity-server
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-notification
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-office
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-preview
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-reporting
+  repository: "https://chartmuseum.npc.ba"
+  version: "0.3.516"
+
+- name: visary-user-profile
+  version: "0.3.516"
+  repository: "https://chartmuseum.npc.ba"
+
+#===================

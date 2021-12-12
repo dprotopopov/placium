@@ -1,0 +1,26 @@
+image: registry.npc.ba/placium/webapp
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+nameOverride: webapp
+
+migrateJob:
+  enabled: false
+
+ingress:
+  enabled: true
+  hosts:
+    - name: "{{ tpl .Values.global.host.application . }}"
+      path: /
+
+defaultConfig:
+  appsettings.json:
+    ConnectionStrings:
+      OsmConnection: '{{ include "visary.connectionString.postgres" . }}'
+      FiasConnection: '{{ include "visary.connectionString.postgres" . }}'
+      SphinxConnection: '{{ include "visary.connectionString.sphinx" . }}'
+    ServerConfig:
+      BasePath: "/placium"
+    ParallelConfig:
+      NumberOfThreads: 12

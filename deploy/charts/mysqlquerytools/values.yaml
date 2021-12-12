@@ -1,0 +1,22 @@
+image: registry.npc.ba/placium/mysqlquerytools
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+nameOverride: mysqlquerytools
+
+migrateJob:
+  enabled: false
+
+ingress:
+  enabled: true
+  hosts:
+    - name: "{{ tpl .Values.global.host.mysqlquerytools . }}"
+      path: /
+
+defaultConfig:
+  appsettings.json:
+    ConnectionStrings:
+      SphinxConnection: '{{ include "visary.connectionString.sphinx" . }}'
+    ServerConfig:
+      BasePath: "/mysql"

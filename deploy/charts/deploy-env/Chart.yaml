@@ -1,0 +1,13 @@
+apiVersion: v2
+type: application
+description: A Helm chart for deploying placium test env
+name: visary-environment
+version: 0.0.0-local
+appVersion: 0.0.0-local
+
+dependencies:
+  - name: visary-environment
+    alias: visary
+    repository: https://chartmuseum.npc.ba
+    version: 0.3.516
+    # condition: visary.enabled

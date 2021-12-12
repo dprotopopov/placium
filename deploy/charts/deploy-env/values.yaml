@@ -1,0 +1,13 @@
+global:
+  project: placium
+  nfs:
+    defaultRoot: /storage/slow/legacy/postgres
+
+visary:
+  createVolumes: true
+
+  postgresql:
+    enabled: true
+
+  pgAdmin:
+    enabled: true

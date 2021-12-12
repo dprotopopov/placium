@@ -1,0 +1,14 @@
+
+{{ include "visary.hook.migrate" . }}
+---
+{{ include "visary.deployment.aspnetcore" . }}
+---
+{{ include "visary.object.ingress" . }}
+---
+{{ include "visary.object.service" . }}
+---
+{{ include "visary.persistence.claims" . }}
+---
+{{ include "visary.volumes.pvs" . }}
+---
+{{ include "visary.object.configmap" . }}

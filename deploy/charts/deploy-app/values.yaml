@@ -1,0 +1,63 @@
+global:
+  hostAliases:
+    - ip: 10.0.0.51
+      hostnames:
+        - "{{ tpl .Values.global.host.home . }}"
+        - "{{ tpl .Values.global.host.mysqlquerytools . }}"
+  host:
+    pathSeparator: "-"
+    home: "{{ .Release.Namespace -}}.{{- .Values.global.host.base }}"
+    mysqlquerytools: "mysql-{{- .Release.Namespace -}}.{{- .Values.global.host.base }}"
+
+  url:
+    scheme: "https://"
+    gateway: "http://{{ tpl .Values.global.service.gateway .}}"
+
+  defaultConfig:
+    appsettings.json:
+      StartupOptions:
+        Seed: true
+
+      AllowedHosts: "*"
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+mysqlquerytools:
+  migrateJob:
+    enabled: false
+  ingress:
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 100m
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+
+webapp:
+  migrateJob:
+    enabled: false
+  ingress:
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 100m
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+
+webapi:
+  migrateJob:
+    enabled: false
+  ingress:
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 100m
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+
+  defaultConfig:
+    appsettings.json:
+
+visary-api-gateway:
+  ingress:
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: 100m
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+  defaultConfig:
+    appsettings.json: {}

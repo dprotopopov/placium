@@ -115,7 +115,9 @@ WebUI/Content/Images/favicon.ico
 WebUI/Content/Images/favicon.png
 WebUI/Content/Images/bg.png
 #Data/Migrations/*
-.idea
+.idea/*
 
 Visary.Reporting.WebApi/App_Data/Reports/
 ProtectionKeys/
+#SSH
+.ssh/*

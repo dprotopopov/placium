@@ -1,0 +1,24 @@
+image: registry.npc.ba/placium/webapi
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+nameOverride: webapi
+
+migrateJob:
+  enabled: false
+
+ingress:
+  enabled: true
+  hosts:
+    - name: "{{ tpl .Values.global.host.webapi . }}"
+
+defaultConfig:
+  appsettings.json:
+    ConnectionStrings:
+      OsmConnection: '{{ include "visary.connectionString.postgres" . }}'
+      FiasConnection: '{{ include "visary.connectionString.postgres" . }}'
+      SphinxConnection: '{{ include "visary.connectionString.sphinx" . }}'
+    ServerConfig:
+      PathBase: "/placium"
+      
