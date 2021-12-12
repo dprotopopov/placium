@@ -44,15 +44,18 @@ namespace Placium.IO.Osm.PostgreSQL
         r.members
         FROM relation r JOIN (SELECT DISTINCT q.id 
         FROM (SELECT DISTINCT r2.id 
-        FROM relation r2,unnest(r2.members) m2,way w2,node n2 
-        WHERE m2.id=w2.id AND m2.type=2 AND n2.id=ANY(w2.nodes)
+        FROM relation r2,unnest(r2.members) m2
+        JOIN way w2 ON m2.id=w2.id
+        JOIN node n2 ON n2.id=ANY(w2.nodes)
+        WHERE m2.type=2
         AND @lat1<=n2.latitude
         AND n2.latitude<=@lat2
         AND @lon1<=n2.longitude
         AND n2.longitude<=@lon2
         UNION ALL SELECT DISTINCT r1.id 
-        FROM relation r1,unnest(r1.members) m1,node n1 
-        WHERE m1.id=n1.id AND m1.type=1
+        FROM relation r1,unnest(r1.members) m1
+        JOIN node n1 ON m1.id=n1.id
+        WHERE m1.type=1
         AND @lat1<=n1.latitude
         AND n1.latitude<=@lat2
         AND @lon1<=n1.longitude
