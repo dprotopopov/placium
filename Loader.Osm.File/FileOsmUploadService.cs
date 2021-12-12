@@ -323,6 +323,7 @@ namespace Loader.Osm.File
                 new[]
                 {
                     "SELECT CONCAT('ALTER TABLE ', table_name, ' ADD PRIMARY KEY (id);') FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('node','way','relation')",
+                    "SELECT CONCAT('CREATE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('latitude','longitude') AND table_name IN ('node')",
                     "SELECT CONCAT('CREATE INDEX ON ', table_name, ' USING HASH (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('tags') AND table_name IN ('addrx','placex')",
                     "SELECT CONCAT('CREATE INDEX ON ', table_name, ' USING GIST (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('location') AND table_name IN ('addrx','placex')",
                     "SELECT CONCAT('CREATE UNIQUE INDEX ON ', table_name, ' (', column_name, ');') FROM information_schema.columns WHERE table_schema = 'public' AND column_name in ('record_number','record_id') AND table_name IN ('addrx','placex','node','way','relation')",
