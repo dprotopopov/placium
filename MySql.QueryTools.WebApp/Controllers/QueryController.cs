@@ -29,29 +29,25 @@ namespace MySql.QueryTools.WebApp.Controllers
                 model.Items = new ArrayList();
                 model.Headers = new ArrayList();
 
-                using (var connection = new MySqlConnection(_configuration.GetConnectionString("SphinxConnection")))
+                using var connection = new MySqlConnection(_configuration.GetConnectionString("SphinxConnection"));
+                connection.Open();
+                using (var command = new MySqlCommand(model.Query, connection))
                 {
-                    connection.Open();
-                    using (var command = new MySqlCommand(model.Query, connection))
+                    using var reader = command.ExecuteReader();
+                    var first = true;
+                    while (reader.Read())
                     {
-                        using (var reader = command.ExecuteReader())
-                        {
-                            var first = true;
-                            while (reader.Read())
-                            {
-                                var row = new ArrayList();
-                                for (var i = 0; i < reader.FieldCount; i++) row.Add(reader.GetValue(i));
-                                if (first)
-                                    for (var i = 0; i < reader.FieldCount; i++)
-                                        model.Headers.Add(reader.GetName(i));
-                                model.Items.Add(row);
-                                first = false;
-                            }
-                        }
+                        var row = new ArrayList();
+                        for (var i = 0; i < reader.FieldCount; i++) row.Add(reader.GetValue(i));
+                        if (first)
+                            for (var i = 0; i < reader.FieldCount; i++)
+                                model.Headers.Add(reader.GetName(i));
+                        model.Items.Add(row);
+                        first = false;
                     }
-
-                    connection.Close();
                 }
+
+                connection.Close();
             }
             catch (Exception ex)
             {

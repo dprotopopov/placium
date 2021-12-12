@@ -87,6 +87,7 @@ namespace Placium.Common
                 .Replace(")", @"\)")
                 .Replace("\"", @"\""");
         }
+
         public static string Escape2(this string s)
         {
             if (s == null) return string.Empty;
@@ -121,68 +122,65 @@ namespace Placium.Common
         {
             if (s == null) return string.Empty;
 
-            switch (mode)
-            {
-                case 0:
-                    return s.Replace("\\", @"\\")
-                        .Replace("\'", @"\'")
-                        .Replace("\r", @"\r")
-                        .Replace("\n", @"\n")
-                        .Replace("\t", @"\t")
-                        .Replace("\a", @"\a")
-                        .Replace("\b", @"\b")
-                        .Replace("\f", @"\f")
-                        .Replace("\v", @"\v")
-                        .Replace("\0", @"\0");
-                case 1:
-                    return s.Replace("\\", @"\\")
-                        .Replace("\"", @"\""")
-                        .Replace("\'", @"\'")
-                        .Replace("\r", @"\r")
-                        .Replace("\n", @"\n")
-                        .Replace("\t", @"\t")
-                        .Replace("\a", @"\a")
-                        .Replace("\b", @"\b")
-                        .Replace("\f", @"\f")
-                        .Replace("\v", @"\v")
-                        .Replace("\0", @"\0");
-                case 2:
-                    return s.Replace("\\", @"\\\\")
-                        .Replace("\"", @"\\\""")
-                        .Replace("\'", @"\\\'")
-                        .Replace("\r", @"\\\r")
-                        .Replace("\n", @"\\\n")
-                        .Replace("\t", @"\\\t")
-                        .Replace("\a", @"\\\a")
-                        .Replace("\b", @"\\\b")
-                        .Replace("\f", @"\\\f")
-                        .Replace("\v", @"\\\v")
-                        .Replace("\0", @"\\\0");
-                case 4:
-                    return s.Replace("\\", @"\\\\\\\\")
-                        .Replace("\"", @"\\\\\\\""")
-                        .Replace("\'", @"\\\\\\\'")
-                        .Replace("\r", @"\\\\\\\r")
-                        .Replace("\n", @"\\\\\\\n")
-                        .Replace("\t", @"\\\\\\\t")
-                        .Replace("\a", @"\\\\\\\a")
-                        .Replace("\b", @"\\\\\\\b")
-                        .Replace("\f", @"\\\\\\\f")
-                        .Replace("\v", @"\\\\\\\v")
-                        .Replace("\0", @"\\\\\\\0");
-                default:
-                    throw new NotImplementedException();
-            }
+            return mode switch
+                {
+                0 => s.Replace("\\", @"\\")
+                    .Replace("\'", @"\'")
+                    .Replace("\r", @"\r")
+                    .Replace("\n", @"\n")
+                    .Replace("\t", @"\t")
+                    .Replace("\a", @"\a")
+                    .Replace("\b", @"\b")
+                    .Replace("\f", @"\f")
+                    .Replace("\v", @"\v")
+                    .Replace("\0", @"\0"),
+                1 => s.Replace("\\", @"\\")
+                    .Replace("\"", @"\""")
+                    .Replace("\'", @"\'")
+                    .Replace("\r", @"\r")
+                    .Replace("\n", @"\n")
+                    .Replace("\t", @"\t")
+                    .Replace("\a", @"\a")
+                    .Replace("\b", @"\b")
+                    .Replace("\f", @"\f")
+                    .Replace("\v", @"\v")
+                    .Replace("\0", @"\0"),
+                2 => s.Replace("\\", @"\\\\")
+                    .Replace("\"", @"\\\""")
+                    .Replace("\'", @"\\\'")
+                    .Replace("\r", @"\\\r")
+                    .Replace("\n", @"\\\n")
+                    .Replace("\t", @"\\\t")
+                    .Replace("\a", @"\\\a")
+                    .Replace("\b", @"\\\b")
+                    .Replace("\f", @"\\\f")
+                    .Replace("\v", @"\\\v")
+                    .Replace("\0", @"\\\0"),
+                4 => s.Replace("\\", @"\\\\\\\\")
+                    .Replace("\"", @"\\\\\\\""")
+                    .Replace("\'", @"\\\\\\\'")
+                    .Replace("\r", @"\\\\\\\r")
+                    .Replace("\n", @"\\\\\\\n")
+                    .Replace("\t", @"\\\\\\\t")
+                    .Replace("\a", @"\\\\\\\a")
+                    .Replace("\b", @"\\\\\\\b")
+                    .Replace("\f", @"\\\\\\\f")
+                    .Replace("\v", @"\\\\\\\v")
+                    .Replace("\0", @"\\\\\\\0"),
+                _ => throw new NotImplementedException(),
+                };
         }
 
         public static string ValueAsText(this double? value)
         {
             return value?.ToString("G", CultureInfo.InvariantCulture) ?? string.Empty;
         }
+
         public static string ValueAsText(this double value)
         {
             return value.ToString("G", CultureInfo.InvariantCulture);
         }
+
         public static string ValueAsText(this float value)
         {
             return value.ToString("G", CultureInfo.InvariantCulture);

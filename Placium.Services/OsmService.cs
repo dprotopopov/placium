@@ -73,14 +73,12 @@ namespace Placium.Services
 
                             command.Prepare();
 
-                            using (var reader = command.ExecuteReader())
+                            using var reader = command.ExecuteReader();
+                            if (reader.Read())
                             {
-                                if (reader.Read())
-                                {
-                                    var result = new Node();
-                                    result.Fill(reader);
-                                    return result;
-                                }
+                                var result = new Node();
+                                result.Fill(reader);
+                                return result;
                             }
                         }
 
@@ -92,14 +90,12 @@ namespace Placium.Services
 
                             command.Prepare();
 
-                            using (var reader = command.ExecuteReader())
+                            using var reader = command.ExecuteReader();
+                            if (reader.Read())
                             {
-                                if (reader.Read())
-                                {
-                                    var result = new Way();
-                                    result.Fill(reader);
-                                    return result;
-                                }
+                                var result = new Way();
+                                result.Fill(reader);
+                                return result;
                             }
                         }
 
@@ -111,14 +107,12 @@ namespace Placium.Services
 
                             command.Prepare();
 
-                            using (var reader = command.ExecuteReader())
+                            using var reader = command.ExecuteReader();
+                            if (reader.Read())
                             {
-                                if (reader.Read())
-                                {
-                                    var result = new Relation();
-                                    result.Fill(reader);
-                                    return result;
-                                }
+                                var result = new Relation();
+                                result.Fill(reader);
+                                return result;
                             }
                         }
 

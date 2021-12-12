@@ -11,7 +11,7 @@ namespace Placium.Common
             {
                 connection.Open();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
         }

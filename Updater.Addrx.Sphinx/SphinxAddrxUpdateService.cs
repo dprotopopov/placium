@@ -63,76 +63,72 @@ namespace Updater.Addrx.Sphinx
 
         private async Task UpdateAddrxAsync(string session, bool full)
         {
-            using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
+            using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
+            using var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString());
+            var current = 0L;
+            var total = 0L;
+
+            var id = Guid.NewGuid().ToString();
+            await _progressClient.Init(id, session);
+
+            await npgsqlConnection.OpenAsync();
+
+            npgsqlConnection.ReloadTypes();
+            npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+
+            var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, full);
+            var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
+
+            var sql1 =
+                "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
+
+            var sql =
+                "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location)),ST_Y(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
+
+            using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
             {
-                var current = 0L;
-                var total = 0L;
+                command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                var id = Guid.NewGuid().ToString();
-                await _progressClient.Init(id, session);
+                command.Prepare();
 
-                await npgsqlConnection.OpenAsync();
+                using var reader = command.ExecuteReader();
+                if (reader.Read())
+                    total = reader.GetInt64(0);
 
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+                var take = 1000;
 
-                var last_record_number = GetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, full);
-                var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
+                reader.NextResult();
 
-                var sql1 =
-                    "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
-
-                var sql =
-                    "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location)),ST_Y(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
-
-                using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+                while (true)
                 {
-                    command.Parameters.AddWithValue("last_record_number", last_record_number);
+                    var docs = ReadDocs(reader, take);
 
-                    command.Prepare();
 
-                    using (var reader = command.ExecuteReader())
+                    if (docs.Any())
                     {
-                        if (reader.Read())
-                            total = reader.GetInt64(0);
+                        var sb = new StringBuilder(
+                            "REPLACE INTO addrx(id,title,priority,lon,lat,building) VALUES ");
+                        sb.Append(string.Join(",",
+                            docs.Select(x =>
+                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building})")));
 
-                        var take = 1000;
-
-                        reader.NextResult();
-
-                        while (true)
-                        {
-                            var docs = ReadDocs(reader, take);
-
-
-                            if (docs.Any())
-                            {
-                                var sb = new StringBuilder(
-                                    "REPLACE INTO addrx(id,title,priority,lon,lat,building) VALUES ");
-                                sb.Append(string.Join(",",
-                                    docs.Select(x =>
-                                        $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building})")));
-
-                                ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
-                            }
-
-                            current += docs.Count;
-
-                            await _progressClient.Progress(100f * current / total, id, session);
-
-                            if (docs.Count < take) break;
-                        }
+                        ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }
+
+                    current += docs.Count;
+
+                    await _progressClient.Progress(100f * current / total, id, session);
+
+                    if (docs.Count < take) break;
                 }
-
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, next_last_record_number);
-
-                await npgsqlConnection.CloseAsync();
-                mySqlConnection.TryClose();
-
-                await _progressClient.Finalize(id, session);
             }
+
+            SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, next_last_record_number);
+
+            await npgsqlConnection.CloseAsync();
+            mySqlConnection.TryClose();
+
+            await _progressClient.Finalize(id, session);
         }
 
         public List<Doc> ReadDocs(NpgsqlDataReader reader, int take)

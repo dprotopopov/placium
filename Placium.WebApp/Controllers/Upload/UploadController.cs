@@ -133,10 +133,8 @@ namespace Placium.WebApp.Controllers.Upload
                 {
                     using (var webClient = new WebClient())
                     {
-                        using (var streamFile = webClient.OpenRead(url))
-                        {
-                            await streamFile.CopyToAsync(tempFileStream);
-                        }
+                        using var streamFile = webClient.OpenRead(url);
+                        await streamFile.CopyToAsync(tempFileStream);
                     }
 
                     tempFileStream.Position = 0;
@@ -178,10 +176,8 @@ namespace Placium.WebApp.Controllers.Upload
                 {
                     using (var webClient = new WebClient())
                     {
-                        using (var streamFile = webClient.OpenRead(url))
-                        {
-                            await streamFile.CopyToAsync(tempFileStream);
-                        }
+                        using var streamFile = webClient.OpenRead(url);
+                        await streamFile.CopyToAsync(tempFileStream);
                     }
 
                     tempFileStream.Position = 0;

@@ -29,33 +29,29 @@ namespace Placium.Seeker
                 {
                     mySqlConnection.TryOpen();
 
-                    using (var command =
+                    using var command =
                         new MySqlCommand(
                             @"SELECT title,guid FROM addrobx WHERE MATCH(@match) ORDER BY priority ASC LIMIT @skip,@take",
-                            mySqlConnection))
+                            mySqlConnection);
+                    command.Parameters.AddWithValue("skip", skip);
+                    command.Parameters.AddWithValue("take", take);
+                    command.Parameters.AddWithValue("match", match);
+
+                    using var reader = command.ExecuteReader();
+                    var count = 0;
+                    while (limit > 0 && reader.Read())
                     {
-                        command.Parameters.AddWithValue("skip", skip);
-                        command.Parameters.AddWithValue("take", take);
-                        command.Parameters.AddWithValue("match", match);
-
-                        using (var reader = command.ExecuteReader())
+                        count++;
+                        limit--;
+                        var addressString = reader.GetString(0);
+                        var guid = reader.GetString(1);
+                        result.Add(new AddressEntry
                         {
-                            var count = 0;
-                            while (limit > 0 && reader.Read())
-                            {
-                                count++;
-                                limit--;
-                                var addressString = reader.GetString(0);
-                                var guid = reader.GetString(1);
-                                result.Add(new AddressEntry
-                                {
-                                    AddressString = addressString,
-                                });
-                            }
-
-                            if (count < take) break;
-                        }
+                            AddressString = addressString,
+                        });
                     }
+
+                    if (count < take) break;
                 }
             }
 

@@ -48,18 +48,16 @@ namespace Placium.Common
                     MaxDegreeOfParallelism = 4
                 }, cmd =>
                 {
-                    using (var connection = new NpgsqlConnection(connectionString))
+                    using var connection = new NpgsqlConnection(connectionString);
+                    connection.Open();
+                    using (var command = new NpgsqlCommand(cmd, connection))
                     {
-                        connection.Open();
-                        using (var command = new NpgsqlCommand(cmd, connection))
-                        {
-                            command.Prepare();
+                        command.Prepare();
 
-                            command.ExecuteNonQuery();
-                        }
-
-                        connection.Close();
+                        command.ExecuteNonQuery();
                     }
+
+                    connection.Close();
                 });
             }
         }
@@ -78,38 +76,35 @@ namespace Placium.Common
 
         protected async Task ExecuteResourceAsync(Assembly assembly, string resource, NpgsqlConnection connection)
         {
-            using (var stream = assembly.GetManifestResourceStream(resource))
-            using (var sr = new StreamReader(stream, Encoding.UTF8))
-            using (var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection))
-            {
-                command.Prepare();
+            using var stream = assembly.GetManifestResourceStream(resource);
+            using var sr = new StreamReader(stream, Encoding.UTF8);
+            using var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection);
 
-                command.ExecuteNonQuery();
-            }
+            command.Prepare();
+
+            command.ExecuteNonQuery();
         }
 
         protected bool TableIsExists(string tableName, NpgsqlConnection conn)
         {
-            using (var command = new NpgsqlCommand(
+            using var command = new NpgsqlCommand(
                 $"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='{tableName}');"
-                , conn))
-            {
-                command.Prepare();
+                , conn);
 
-                return (bool) command.ExecuteScalar();
-            }
+            command.Prepare();
+
+            return (bool) command.ExecuteScalar();
         }
 
         protected long GetNextLastRecordNumber(NpgsqlConnection connection)
         {
-            using (var command = new NpgsqlCommand(
+            using var command = new NpgsqlCommand(
                 "SELECT last_value FROM record_number_seq"
-                , connection))
-            {
-                command.Prepare();
+                , connection);
 
-                return (long) command.ExecuteScalar();
-            }
+            command.Prepare();
+
+            return (long) command.ExecuteScalar();
         }
 
         protected long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)
@@ -124,11 +119,10 @@ namespace Placium.Common
 
                 command.Prepare();
 
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
+                using var reader = command.ExecuteReader();
+
+                if (reader.Read())
+                    return reader.GetInt64(0);
             }
 
             return 0;
@@ -137,33 +131,31 @@ namespace Placium.Common
         protected void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type,
             long last_record_number)
         {
-            using (var command = new NpgsqlCommand(
+            using var command = new NpgsqlCommand(
                 "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-                command.Parameters.AddWithValue("last_record_number", last_record_number);
+                , connection);
 
-                command.Prepare();
+            command.Parameters.AddWithValue("service_type", service_type);
+            command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                command.ExecuteNonQuery();
-            }
+            command.Prepare();
+
+            command.ExecuteNonQuery();
         }
 
         protected void SetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type,
             long last_record_number)
         {
-            using (var command = new NpgsqlCommand(
+            using var command = new NpgsqlCommand(
                 "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
-                , connection))
-            {
-                command.Parameters.AddWithValue("service_type", service_type);
-                command.Parameters.AddWithValue("last_record_number", last_record_number);
+                , connection);
 
-                command.Prepare();
+            command.Parameters.AddWithValue("service_type", service_type);
+            command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-                command.ExecuteNonQuery();
-            }
+            command.Prepare();
+
+            command.ExecuteNonQuery();
         }
 
         protected long GetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type, bool full)
@@ -178,11 +170,10 @@ namespace Placium.Common
 
                 command.Prepare();
 
-                using (var reader = command.ExecuteReader())
-                {
-                    if (reader.Read())
-                        return reader.GetInt64(0);
-                }
+                using var reader = command.ExecuteReader();
+
+                if (reader.Read())
+                    return reader.GetInt64(0);
             }
 
             return 0;
@@ -194,10 +185,8 @@ namespace Placium.Common
                 try
                 {
                     connection.TryOpen();
-                    using (var mySqlCommand = new MySqlCommand(sql, connection))
-                    {
-                        return mySqlCommand.ExecuteNonQuery();
-                    }
+                    using var mySqlCommand = new MySqlCommand(sql, connection);
+                    return mySqlCommand.ExecuteNonQuery();
                 }
                 catch (Exception ex)
                 {
@@ -212,10 +201,8 @@ namespace Placium.Common
             foreach (var sql in sqls)
             {
                 connection.TryOpen();
-                using (var command = new MySqlCommand(sql, connection))
-                {
-                    command.TryExecuteNonQuery();
-                }
+                using var command = new MySqlCommand(sql, connection);
+                command.TryExecuteNonQuery();
             }
         }
     }
