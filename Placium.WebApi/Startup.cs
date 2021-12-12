@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System.IO;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
@@ -14,12 +16,14 @@ namespace Placium.WebApi
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             Configuration = configuration;
+            WebHostEnvironment = webHostEnvironment;
         }
 
         private IConfiguration Configuration { get; }
+        private IWebHostEnvironment WebHostEnvironment { get; }
 
         private void RegisterServices(IServiceCollection services)
         {
@@ -34,6 +38,10 @@ namespace Placium.WebApi
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(
+                    new DirectoryInfo(Path.Combine(WebHostEnvironment.ContentRootPath, "ProtectionKeys")));
+
             RegisterServices(services);
 
             //services.AddCors(options => options.AddDefaultPolicy(

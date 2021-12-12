@@ -1,4 +1,6 @@
+using System.IO;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,12 +16,16 @@ namespace MySql.QueryTools.WebApp
             WebHostEnvironment = webHostEnvironment;
         }
 
-        public IConfiguration Configuration { get; }
-        public IWebHostEnvironment WebHostEnvironment { get; }
+        private IConfiguration Configuration { get; }
+        private IWebHostEnvironment WebHostEnvironment { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(
+                    new DirectoryInfo(Path.Combine(WebHostEnvironment.ContentRootPath, "ProtectionKeys")));
+
             services.AddControllersWithViews();
         }
 

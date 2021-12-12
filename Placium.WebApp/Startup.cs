@@ -1,6 +1,8 @@
-﻿using Loader.Fias.File;
+﻿using System.IO;
+using Loader.Fias.File;
 using Loader.Osm.File;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -28,7 +30,7 @@ namespace Placium.WebApp
         }
 
         private IConfiguration Configuration { get; }
-        public IWebHostEnvironment WebHostEnvironment { get; }
+        private IWebHostEnvironment WebHostEnvironment { get; }
 
         private void RegisterServices(IServiceCollection services)
         {
@@ -55,6 +57,10 @@ namespace Placium.WebApp
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(
+                    new DirectoryInfo(Path.Combine(WebHostEnvironment.ContentRootPath, "ProtectionKeys")));
+
             RegisterServices(services);
 
             services.AddControllersWithViews()
