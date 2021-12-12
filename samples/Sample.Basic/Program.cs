@@ -41,8 +41,8 @@ namespace Sample.Basic
             // load some routing data and create a router.
             var routerDb = new RouterDb();
 
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(),
-                Vehicle.Car);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
+                    56f, 38f), Vehicle.Car);
 
             // get the profile from the routerdb.
             // this is best-practice in Itinero, to prevent mis-matches.

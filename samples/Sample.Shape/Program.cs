@@ -38,8 +38,8 @@ namespace Sample.Shape
             var vehicle = DynamicVehicle.LoadFromStream(File.OpenRead(
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "car.lua")));
             var routerDb = new RouterDb(EdgeDataSerializer.MAX_DISTANCE);
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(),
-                vehicle);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
+                    56f, 38f), vehicle);
 
             // OPTIONAL: build a contracted version of the routing graph.
             // routerDb.AddContracted(vehicle.Fastest());

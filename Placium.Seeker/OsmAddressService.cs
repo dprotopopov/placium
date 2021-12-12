@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Itinero.LocalGeo;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
@@ -14,7 +15,7 @@ namespace Placium.Seeker
         {
         }
 
-        public async Task<IEnumerable<AddressEntry>> GetByCoordsAsync(double latitude, double longitude, int limit = 20)
+        public async Task<IEnumerable<AddressEntry>> GetByCoordsAsync(Coordinate coords, int limit = 20)
         {
             var result = new List<AddressEntry>();
             using (var mySqlConnection = new MySqlConnection(GetSphinxConnectionString()))
@@ -27,12 +28,12 @@ namespace Placium.Seeker
 
                     using var command =
                         new MySqlCommand(
-                            @"SELECT GEODIST(@lat,@lon,lat,lon,{in=degrees,out=miles}) AS distance,title,lon,lat FROM addrx ORDER BY distance ASC LIMIT @skip,@take",
+                            @"SELECT GEODIST(@lat,@lon,lat,lon) AS distance,title,lon,lat FROM addrx ORDER BY distance ASC LIMIT @skip,@take",
                             mySqlConnection);
                     command.Parameters.AddWithValue("skip", skip);
                     command.Parameters.AddWithValue("take", take);
-                    command.Parameters.AddWithValue("lat", latitude);
-                    command.Parameters.AddWithValue("lon", longitude);
+                    command.Parameters.AddWithValue("lat", coords.Latitude);
+                    command.Parameters.AddWithValue("lon", coords.Longitude);
 
                     using var reader = command.ExecuteReader();
                     var count = 0;

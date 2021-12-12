@@ -1,7 +1,9 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using OsmSharp.Logging;
 using Placium.Common;
 
 namespace Placium.WebApi
@@ -10,6 +12,12 @@ namespace Placium.WebApi
     {
         public static async Task Main(string[] args)
         {
+            // enable logging.
+            Logger.LogAction = (o, level, message, parameters) =>
+                Console.WriteLine("[{0}] {1} - {2}", o, level, message);
+            Itinero.Logging.Logger.LogAction = (o, level, message, parameters) =>
+                Console.WriteLine("[{0}] {1} - {2}", o, level, message);
+
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             using var host = CreateWebHostBuilder(args).Build();
 

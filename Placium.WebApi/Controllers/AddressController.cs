@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Placium.Common;
 using Placium.Seeker;
 
 namespace Placium.WebApi.Controllers
@@ -31,10 +31,7 @@ namespace Placium.WebApi.Controllers
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetByCoords(string coords, int limit = 20)
         {
-            var arr = coords.Split(",");
-            var latitude = double.Parse(arr[0].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            var longitude = double.Parse(arr[1].Trim(), NumberStyles.Any, CultureInfo.InvariantCulture);
-            return Ok(await _osmAddressService.GetByCoordsAsync(latitude, longitude, limit));
+            return Ok(await _osmAddressService.GetByCoordsAsync(coords.ToCoordinate(), limit));
         }
     }
 }

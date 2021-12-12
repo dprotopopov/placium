@@ -29,6 +29,7 @@ namespace Placium.WebApi
         {
             services.Configure<ServerConfig>(Configuration.GetSection(nameof(ServerConfig)));
 
+            services.AddSingleton<OsmRouteService>();
             services.AddSingleton<OsmAddressService>();
             services.AddSingleton<FiasAddressService>();
             services.AddSingleton<PlacexService>();

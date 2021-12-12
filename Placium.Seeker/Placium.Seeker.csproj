@@ -11,10 +11,13 @@
   <ItemGroup>
     <PackageReference Include="Fastenshtein" Version="1.0.0.8" />
     <PackageReference Include="NetTopologySuite" Version="2.4.0" />
+    <PackageReference Include="Itinero" Version="1.5.1" />
+    <PackageReference Include="Itinero.IO.Osm" Version="1.5.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+    <ProjectReference Include="..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
   </ItemGroup>
 
 </Project>

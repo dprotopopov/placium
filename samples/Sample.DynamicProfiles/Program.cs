@@ -42,8 +42,8 @@ namespace Sample.DynamicProfiles
 
             var customCar = DynamicVehicle.Load(File.ReadAllText("custom-car.lua"));
 
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(),
-                customCar);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
+                    56f, 38f), customCar);
 
             // add custom profiles.
             var speed10 = routerDb.EdgeProfiles.Add(new AttributeCollection(
@@ -60,8 +60,8 @@ namespace Sample.DynamicProfiles
                 new Attribute("custom-speed", "40")));
 
             // define locations, profile and router.
-            var location1 = new Coordinate(49.88826851632804f, 5.815232992172241f);
-            var location2 = new Coordinate(49.88775699771737f, 5.8133286237716675f);
+            var location1 = new Coordinate(55.821861f, 37.626996f);
+            var location2 = new Coordinate(55.820427f, 37.639986f);
             var router = new Router(routerDb);
 
             // calculate route before.
@@ -69,7 +69,7 @@ namespace Sample.DynamicProfiles
             var routeBeforeGeoJson = routeBefore.ToGeoJson();
 
             // resolve an edge.
-            var edgeLocation = new Coordinate(49.888040407347006f, 5.8142513036727905f);
+            var edgeLocation = new Coordinate(55.750117f, 37.658210f);
             var resolved = router.Resolve(customCar.Fastest(), edgeLocation);
 
             // update the speed profile of this edge.
@@ -82,7 +82,7 @@ namespace Sample.DynamicProfiles
             var routeAfterGeoJson = routeAfter.ToGeoJson();
 
             // calculate route to middle of edge.
-            var location3 = new Coordinate(49.888035223039466f, 5.814205706119537f);
+            var location3 = new Coordinate(55.732686f, 37.639842f);
             var routeAfter13 = router.Calculate(customCar.Fastest(), location1, location3);
             var routeAfter13GeoJson = routeAfter13.ToGeoJson();
         }

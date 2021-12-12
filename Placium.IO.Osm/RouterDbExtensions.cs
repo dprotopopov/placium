@@ -17,16 +17,7 @@ namespace Placium.IO.Osm
         public static void LoadOsmDataFromPostgreSQL(this RouterDb db, string connectionString, Box box,
             params Vehicle[] vehicles)
         {
-            db.LoadOsmDataFromPostgreSQL(connectionString, box.ToPolygon(), vehicles);
-        }
-
-        /// <summary>
-        ///     Loads a routing network from OSM data downloaded from PostgreSQL.
-        /// </summary>
-        public static void LoadOsmDataFromPostgreSQL(this RouterDb db, string connectionString, Polygon polygon,
-            params Vehicle[] vehicles)
-        {
-            var stream = new PostgresSQLDataSource(connectionString, polygon);
+            var stream = new PostgresSQLDataSource(connectionString, box);
             db.LoadOsmData(stream, vehicles);
         }
     }

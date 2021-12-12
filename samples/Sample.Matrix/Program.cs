@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using Itinero;
 using Itinero.Algorithms.Matrices;
 using Itinero.LocalGeo;
@@ -28,10 +27,10 @@ namespace Sample.Matrix
 
             var connectionsConfig = serviceProvider.GetService<IConnectionsConfig>();
 
-            var routerDb = RouterDb.Deserialize(File.OpenRead("belgium.c.cf.routerdb"));
+            var routerDb = new RouterDb();
             var router = new Router(routerDb);
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(),
-                Vehicle.Car);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
+                56f, 38f), Vehicle.Car);
 
             var locations = new List<Coordinate>(new[]
             {

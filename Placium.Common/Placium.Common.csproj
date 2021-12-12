@@ -16,6 +16,8 @@
     <PackageReference Include="OsmSharp" Version="6.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="ShellProgressBar" Version="5.1.0" />
+    <PackageReference Include="Itinero" Version="1.5.1" />
+    <PackageReference Include="Itinero.IO.Osm" Version="1.5.1" />
   </ItemGroup>
 
   <ItemGroup>
