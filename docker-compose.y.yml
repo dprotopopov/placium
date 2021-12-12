@@ -3,6 +3,15 @@ services:
   webapp-placium:
     volumes:
       - //y/placium/upload:/upload/
+      - //y/placium/ProtectionKeys:/app/ProtectionKeys
+
+  webapi-placium:
+    volumes:
+      - //y/placium/ProtectionKeys:/app/ProtectionKeys
+
+  mysqlquerytools-placium:
+    volumes:
+      - //y/placium/ProtectionKeys:/app/ProtectionKeys
 
   fias-placium:
     volumes:
