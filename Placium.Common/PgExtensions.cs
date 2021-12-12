@@ -235,18 +235,22 @@ namespace Placium.Common
         {
             var result = new TagsCollection();
             var dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(s);
-            foreach (var pair in dictionary) result.AddOrReplace(pair.Key, pair.Value);
+            if (dictionary != null)
+                foreach (var pair in dictionary)
+                    result.AddOrReplace(pair.Key, pair.Value);
             return result;
         }
 
         public static TagsCollection ToTags(this Dictionary<string, string> dictionary)
         {
             var result = new TagsCollection();
-            foreach (var pair in dictionary) result.AddOrReplace(pair.Key, pair.Value);
+            if (dictionary != null)
+                foreach (var pair in dictionary)
+                    result.AddOrReplace(pair.Key, pair.Value);
             return result;
         }
 
-        public static void Fill(this Node node, NpgsqlDataReader reader)
+        public static Node Fill(this Node node, NpgsqlDataReader reader)
         {
             node.Id = reader.SafeGetInt64(0);
             node.Version = reader.SafeGetInt32(1);
@@ -258,9 +262,10 @@ namespace Placium.Common
             node.UserName = reader.SafeGetString(7);
             node.Visible = reader.SafeGetBoolean(8);
             node.Tags = ((Dictionary<string, string>) reader.SafeGetValue(9)).ToTags();
+            return node;
         }
 
-        public static void Fill(this Way way, NpgsqlDataReader reader)
+        public static Way Fill(this Way way, NpgsqlDataReader reader)
         {
             way.Id = reader.SafeGetInt64(0);
             way.Version = reader.SafeGetInt32(1);
@@ -271,9 +276,10 @@ namespace Placium.Common
             way.Visible = reader.SafeGetBoolean(6);
             way.Tags = ((Dictionary<string, string>) reader.SafeGetValue(7)).ToTags();
             way.Nodes = (long[]) reader.SafeGetValue(8);
+            return way;
         }
 
-        public static void Fill(this Relation relation, NpgsqlDataReader reader)
+        public static Relation Fill(this Relation relation, NpgsqlDataReader reader)
         {
             relation.Id = reader.SafeGetInt64(0);
             relation.Version = reader.SafeGetInt32(1);
@@ -285,6 +291,7 @@ namespace Placium.Common
             relation.Tags = ((Dictionary<string, string>) reader.SafeGetValue(7)).ToTags();
             relation.Members = ((OsmRelationMember[]) reader.SafeGetValue(8))
                 .Select(x => new RelationMember(x.Id, x.Role, (OsmGeoType) x.Type)).ToArray();
+            return relation;
         }
     }
 }

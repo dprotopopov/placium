@@ -75,11 +75,7 @@ namespace Placium.Services
 
                             using var reader = command.ExecuteReader();
                             if (reader.Read())
-                            {
-                                var result = new Node();
-                                result.Fill(reader);
-                                return result;
-                            }
+                                return new Node().Fill(reader);
                         }
 
                         break;
@@ -92,11 +88,7 @@ namespace Placium.Services
 
                             using var reader = command.ExecuteReader();
                             if (reader.Read())
-                            {
-                                var result = new Way();
-                                result.Fill(reader);
-                                return result;
-                            }
+                                return new Way().Fill(reader);
                         }
 
                         break;
@@ -109,11 +101,7 @@ namespace Placium.Services
 
                             using var reader = command.ExecuteReader();
                             if (reader.Read())
-                            {
-                                var result = new Relation();
-                                result.Fill(reader);
-                                return result;
-                            }
+                                return new Relation().Fill(reader);
                         }
 
                         break;

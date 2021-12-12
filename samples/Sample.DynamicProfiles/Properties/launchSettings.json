@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Sample.DynamicProfiles": {
+      "commandName": "Project",
+      "commandLineArgs": "--OsmConnection=\"Host=localhost;Port=5432;Database=Osm;Username=postgres;Password=password;Command Timeout=0\""
+    }
+  }
+}
