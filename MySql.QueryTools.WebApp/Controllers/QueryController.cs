@@ -29,7 +29,7 @@ namespace MySql.QueryTools.WebApp.Controllers
                 model.Items = new ArrayList();
                 model.Headers = new ArrayList();
 
-                using (var connection = new MySqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                using (var connection = new MySqlConnection(_configuration.GetConnectionString("SphinxConnection")))
                 {
                     connection.Open();
                     using (var command = new MySqlCommand(model.Query, connection))
