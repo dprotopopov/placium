@@ -44,7 +44,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "placium", "placium\placium.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AstraUtils", "AstraUtils\AstraUtils.csproj", "{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Updater.Addrobx.Sphinx", "Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj", "{0206B60C-011C-4ED2-84C0-E9ED005C053C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addrobx.Sphinx", "Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj", "{0206B60C-011C-4ED2-84C0-E9ED005C053C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySql.QueryTools.WebApp", "MySql.QueryTools.WebApp\MySql.QueryTools.WebApp.csproj", "{5A2837E5-D502-486C-A477-194C4FBADCB7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -112,6 +114,10 @@ Global
 		{0206B60C-011C-4ED2-84C0-E9ED005C053C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0206B60C-011C-4ED2-84C0-E9ED005C053C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0206B60C-011C-4ED2-84C0-E9ED005C053C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A2837E5-D502-486C-A477-194C4FBADCB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A2837E5-D502-486C-A477-194C4FBADCB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A2837E5-D502-486C-A477-194C4FBADCB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A2837E5-D502-486C-A477-194C4FBADCB7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
