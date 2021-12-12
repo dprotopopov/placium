@@ -12,7 +12,7 @@
     <PackageReference Include="NDbfReader" Version="2.4.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="MySql.Data" Version="8.0.27" />
-    <PackageReference Include="Npgsql" Version="6.0.0" />
+    <PackageReference Include="Npgsql" Version="6.0.1" />
     <PackageReference Include="OsmSharp" Version="6.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="ShellProgressBar" Version="5.1.0" />
