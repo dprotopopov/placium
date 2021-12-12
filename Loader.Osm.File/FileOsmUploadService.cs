@@ -71,253 +71,249 @@ namespace Loader.Osm.File
 
         public async Task InstallAsync(Stream uploadStream, Dictionary<string, string> options, string session)
         {
-            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+            using var connection = new NpgsqlConnection(GetOsmConnectionString());
+            await connection.OpenAsync();
+
+            var id = Guid.NewGuid().ToString();
+            await _progressClient.Init(id, session);
+
+            DropTables(connection);
+
+            await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTables.pgsql",
+                connection);
+
+            long count = 0;
+            using (var source = new PBFOsmStreamSource(uploadStream))
             {
-                await connection.OpenAsync();
+                TextWriter writer = null;
+                var lastType = ElementType.None;
 
-                var id = Guid.NewGuid().ToString();
-                await _progressClient.Init(id, session);
-
-                DropTables(connection);
-
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTables.pgsql",
-                    connection);
-
-                long count = 0;
-                using (var source = new PBFOsmStreamSource(uploadStream))
+                foreach (var element in source)
                 {
-                    TextWriter writer = null;
-                    var lastType = ElementType.None;
-
-                    foreach (var element in source)
+                    switch (element)
                     {
-                        switch (element)
-                        {
-                            case Node node:
-                                if (lastType != ElementType.Node)
-                                {
-                                    lastType = ElementType.Node;
-                                    writer?.Dispose();
-                                    writer = connection.BeginTextImport(
-                                        $"COPY node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
-                                }
+                        case Node node:
+                            if (lastType != ElementType.Node)
+                            {
+                                lastType = ElementType.Node;
+                                writer?.Dispose();
+                                writer = connection.BeginTextImport(
+                                    $"COPY node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
+                            }
 
-                                var nodeValues = new[]
-                                {
-                                    node.Id.ToString(),
-                                    node.Version.ToString(),
-                                    node.Latitude.ValueAsText(),
-                                    node.Longitude.ValueAsText(),
-                                    node.ChangeSetId.ToString(),
-                                    node.TimeStamp.ValueAsText(),
-                                    node.UserId.ToString(),
-                                    node.UserName.ValueAsText(),
-                                    node.Visible.ToString(),
-                                    $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
-                                };
+                            var nodeValues = new[]
+                            {
+                                node.Id.ToString(),
+                                node.Version.ToString(),
+                                node.Latitude.ValueAsText(),
+                                node.Longitude.ValueAsText(),
+                                node.ChangeSetId.ToString(),
+                                node.TimeStamp.ValueAsText(),
+                                node.UserId.ToString(),
+                                node.UserName.ValueAsText(),
+                                node.Visible.ToString(),
+                                $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
+                            };
 
-                                Debug.Assert(writer != null);
+                            Debug.Assert(writer != null);
 
-                                writer.WriteLine(string.Join("\t", nodeValues));
+                            writer.WriteLine(string.Join("\t", nodeValues));
 
-                                break;
-                            case Way way:
-                                if (lastType != ElementType.Way)
-                                {
-                                    lastType = ElementType.Way;
-                                    writer?.Dispose();
-                                    writer = connection.BeginTextImport(
-                                        $"COPY way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
-                                }
+                            break;
+                        case Way way:
+                            if (lastType != ElementType.Way)
+                            {
+                                lastType = ElementType.Way;
+                                writer?.Dispose();
+                                writer = connection.BeginTextImport(
+                                    $"COPY way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
+                            }
 
-                                var wayValues = new[]
-                                {
-                                    way.Id.ToString(),
-                                    way.Version.ToString(),
-                                    way.ChangeSetId.ToString(),
-                                    way.TimeStamp.ValueAsText(),
-                                    way.UserId.ToString(),
-                                    way.UserName.ValueAsText(),
-                                    way.Visible.ToString(),
-                                    $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                    $"{{{string.Join(",", way.Nodes.Select(t => $"{t.ToString()}"))}}}"
-                                };
+                            var wayValues = new[]
+                            {
+                                way.Id.ToString(),
+                                way.Version.ToString(),
+                                way.ChangeSetId.ToString(),
+                                way.TimeStamp.ValueAsText(),
+                                way.UserId.ToString(),
+                                way.UserName.ValueAsText(),
+                                way.Visible.ToString(),
+                                $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                $"{{{string.Join(",", way.Nodes.Select(t => $"{t}"))}}}"
+                            };
 
-                                Debug.Assert(writer != null);
+                            Debug.Assert(writer != null);
 
-                                writer.WriteLine(string.Join("\t", wayValues));
+                            writer.WriteLine(string.Join("\t", wayValues));
 
-                                break;
-                            case Relation relation:
-                                if (lastType != ElementType.Relation)
-                                {
-                                    lastType = ElementType.Relation;
-                                    writer?.Dispose();
-                                    writer = connection.BeginTextImport(
-                                        $"COPY relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
-                                }
+                            break;
+                        case Relation relation:
+                            if (lastType != ElementType.Relation)
+                            {
+                                lastType = ElementType.Relation;
+                                writer?.Dispose();
+                                writer = connection.BeginTextImport(
+                                    $"COPY relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
+                            }
 
-                                var relationValues = new[]
-                                {
-                                    relation.Id.ToString(),
-                                    relation.Version.ToString(),
-                                    relation.ChangeSetId.ToString(),
-                                    relation.TimeStamp.ValueAsText(),
-                                    relation.UserId.ToString(),
-                                    relation.UserName.ValueAsText(),
-                                    relation.Visible.ToString(),
-                                    $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                    $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id.ToString()},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{((int) t.Type).ToString()})\\\""))}}}"
-                                };
+                            var relationValues = new[]
+                            {
+                                relation.Id.ToString(),
+                                relation.Version.ToString(),
+                                relation.ChangeSetId.ToString(),
+                                relation.TimeStamp.ValueAsText(),
+                                relation.UserId.ToString(),
+                                relation.UserName.ValueAsText(),
+                                relation.Visible.ToString(),
+                                $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{(int) t.Type})\\\""))}}}"
+                            };
 
-                                Debug.Assert(writer != null);
+                            Debug.Assert(writer != null);
 
-                                writer.WriteLine(string.Join("\t", relationValues));
+                            writer.WriteLine(string.Join("\t", relationValues));
 
-                                break;
-                            default:
-                                throw new NotImplementedException();
-                        }
-
-                        if (count++ % 1000 == 0)
-                            await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
-                                session);
+                            break;
+                        default:
+                            throw new NotImplementedException();
                     }
 
-                    writer?.Dispose();
+                    if (count++ % 1000 == 0)
+                        await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
+                            session);
                 }
 
-                BuildIndices(connection);
-
-                await _progressClient.Finalize(id, session);
-
-                await connection.CloseAsync();
+                writer?.Dispose();
             }
+
+            BuildIndices(connection);
+
+            await _progressClient.Finalize(id, session);
+
+            await connection.CloseAsync();
         }
 
         public async Task UpdateAsync(Stream uploadStream, Dictionary<string, string> options, string session)
         {
-            using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+            using var connection = new NpgsqlConnection(GetOsmConnectionString());
+            await connection.OpenAsync();
+
+            var id = Guid.NewGuid().ToString();
+            await _progressClient.Init(id, session);
+
+            await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.pgsql",
+                connection);
+
+            long count = 0;
+            using (var source = new PBFOsmStreamSource(uploadStream))
             {
-                await connection.OpenAsync();
+                TextWriter writer = null;
+                var lastType = ElementType.None;
 
-                var id = Guid.NewGuid().ToString();
-                await _progressClient.Init(id, session);
-
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.CreateTempTables.pgsql",
-                    connection);
-
-                long count = 0;
-                using (var source = new PBFOsmStreamSource(uploadStream))
+                foreach (var element in source)
                 {
-                    TextWriter writer = null;
-                    var lastType = ElementType.None;
-
-                    foreach (var element in source)
+                    switch (element)
                     {
-                        switch (element)
-                        {
-                            case Node node:
-                                if (lastType != ElementType.Node)
-                                {
-                                    lastType = ElementType.Node;
-                                    writer?.Dispose();
-                                    writer = connection.BeginTextImport(
-                                        $"COPY temp_node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
-                                }
+                        case Node node:
+                            if (lastType != ElementType.Node)
+                            {
+                                lastType = ElementType.Node;
+                                writer?.Dispose();
+                                writer = connection.BeginTextImport(
+                                    $"COPY temp_node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
+                            }
 
-                                var nodeValues = new[]
-                                {
-                                    node.Id.ToString(),
-                                    node.Version.ToString(),
-                                    node.Latitude.ValueAsText(),
-                                    node.Longitude.ValueAsText(),
-                                    node.ChangeSetId.ToString(),
-                                    node.TimeStamp.ValueAsText(),
-                                    node.UserId.ToString(),
-                                    node.UserName.ValueAsText(),
-                                    node.Visible.ToString(),
-                                    $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
-                                };
+                            var nodeValues = new[]
+                            {
+                                node.Id.ToString(),
+                                node.Version.ToString(),
+                                node.Latitude.ValueAsText(),
+                                node.Longitude.ValueAsText(),
+                                node.ChangeSetId.ToString(),
+                                node.TimeStamp.ValueAsText(),
+                                node.UserId.ToString(),
+                                node.UserName.ValueAsText(),
+                                node.Visible.ToString(),
+                                $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
+                            };
 
-                                Debug.Assert(writer != null);
+                            Debug.Assert(writer != null);
 
-                                writer.WriteLine(string.Join("\t", nodeValues));
+                            writer.WriteLine(string.Join("\t", nodeValues));
 
-                                break;
-                            case Way way:
-                                if (lastType != ElementType.Way)
-                                {
-                                    lastType = ElementType.Way;
-                                    writer?.Dispose();
-                                    writer = connection.BeginTextImport(
-                                        $"COPY temp_way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
-                                }
+                            break;
+                        case Way way:
+                            if (lastType != ElementType.Way)
+                            {
+                                lastType = ElementType.Way;
+                                writer?.Dispose();
+                                writer = connection.BeginTextImport(
+                                    $"COPY temp_way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
+                            }
 
-                                var wayValues = new[]
-                                {
-                                    way.Id.ToString(),
-                                    way.Version.ToString(),
-                                    way.ChangeSetId.ToString(),
-                                    way.TimeStamp.ValueAsText(),
-                                    way.UserId.ToString(),
-                                    way.UserName.ValueAsText(),
-                                    way.Visible.ToString(),
-                                    $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                    $"{{{string.Join(",", way.Nodes.Select(t => $"{t.ToString()}"))}}}"
-                                };
+                            var wayValues = new[]
+                            {
+                                way.Id.ToString(),
+                                way.Version.ToString(),
+                                way.ChangeSetId.ToString(),
+                                way.TimeStamp.ValueAsText(),
+                                way.UserId.ToString(),
+                                way.UserName.ValueAsText(),
+                                way.Visible.ToString(),
+                                $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                $"{{{string.Join(",", way.Nodes.Select(t => $"{t}"))}}}"
+                            };
 
-                                Debug.Assert(writer != null);
+                            Debug.Assert(writer != null);
 
-                                writer.WriteLine(string.Join("\t", wayValues));
+                            writer.WriteLine(string.Join("\t", wayValues));
 
-                                break;
-                            case Relation relation:
-                                if (lastType != ElementType.Relation)
-                                {
-                                    lastType = ElementType.Relation;
-                                    writer?.Dispose();
-                                    writer = connection.BeginTextImport(
-                                        $"COPY temp_relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
-                                }
+                            break;
+                        case Relation relation:
+                            if (lastType != ElementType.Relation)
+                            {
+                                lastType = ElementType.Relation;
+                                writer?.Dispose();
+                                writer = connection.BeginTextImport(
+                                    $"COPY temp_relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
+                            }
 
-                                var relationValues = new[]
-                                {
-                                    relation.Id.ToString(),
-                                    relation.Version.ToString(),
-                                    relation.ChangeSetId.ToString(),
-                                    relation.TimeStamp.ValueAsText(),
-                                    relation.UserId.ToString(),
-                                    relation.UserName.ValueAsText(),
-                                    relation.Visible.ToString(),
-                                    $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                    $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id.ToString()},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{((int) t.Type).ToString()})\\\""))}}}"
-                                };
+                            var relationValues = new[]
+                            {
+                                relation.Id.ToString(),
+                                relation.Version.ToString(),
+                                relation.ChangeSetId.ToString(),
+                                relation.TimeStamp.ValueAsText(),
+                                relation.UserId.ToString(),
+                                relation.UserName.ValueAsText(),
+                                relation.Visible.ToString(),
+                                $"{string.Join(",", relation.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                $"{{{string.Join(",", relation.Members.Select(t => $"\\\"({t.Id},\\\\\\\"{t.Role.TextEscape(4)}\\\\\\\",{(int) t.Type})\\\""))}}}"
+                            };
 
-                                Debug.Assert(writer != null);
+                            Debug.Assert(writer != null);
 
-                                writer.WriteLine(string.Join("\t", relationValues));
+                            writer.WriteLine(string.Join("\t", relationValues));
 
-                                break;
-                            default:
-                                throw new NotImplementedException();
-                        }
-
-                        if (count++ % 1000 == 0)
-                            await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
-                                session);
+                            break;
+                        default:
+                            throw new NotImplementedException();
                     }
 
-                    writer?.Dispose();
+                    if (count++ % 1000 == 0)
+                        await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id,
+                            session);
                 }
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.pgsql",
-                    connection);
-
-                await _progressClient.Finalize(id, session);
-
-                await connection.CloseAsync();
+                writer?.Dispose();
             }
+
+            await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Osm.InsertFromTempTables.pgsql",
+                connection);
+
+            await _progressClient.Finalize(id, session);
+
+            await connection.CloseAsync();
         }
 
         private void BuildIndices(NpgsqlConnection conn)
