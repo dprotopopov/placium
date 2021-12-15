@@ -3,7 +3,7 @@ using Route.LocalGeo;
 
 namespace Placium.Common
 {
-    public static class ItineroExtensions
+    public static class RouteExtensions
     {
         public static Coordinate ToCoordinate(this string coords)
         {
