@@ -1,15 +1,15 @@
 ﻿using System;
 using System.IO;
-using Itinero;
-using Itinero.Attributes;
-using Itinero.LocalGeo;
-using Itinero.Profiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OsmSharp.Logging;
 using Placium.Common;
 using Placium.IO.Osm;
-using Attribute = Itinero.Attributes.Attribute;
+using Route;
+using Route.Attributes;
+using Route.LocalGeo;
+using Route.Profiles;
+using Attribute = Route.Attributes.Attribute;
 
 namespace Sample.DynamicProfiles
 {
@@ -32,7 +32,7 @@ namespace Sample.DynamicProfiles
 
             // enable logging.
             Logger.LogAction = (o, level, message, parameters) => { Console.WriteLine($"[{o}] {level} - {message}"); };
-            Itinero.Logging.Logger.LogAction = (o, level, message, parameters) =>
+            Route.Logging.Logger.LogAction = (o, level, message, parameters) =>
             {
                 Console.WriteLine($"[{o}] {level} - {message}");
             };
@@ -42,8 +42,7 @@ namespace Sample.DynamicProfiles
 
             var customCar = DynamicVehicle.Load(File.ReadAllText("custom-car.lua"));
 
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
-                    56f, 38f), customCar);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), customCar);
 
             // add custom profiles.
             var speed10 = routerDb.EdgeProfiles.Add(new AttributeCollection(

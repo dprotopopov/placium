@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <AssemblyName>Route.Geo</AssemblyName>
+    <PackageId>Route.Geo</PackageId>
+    <LangVersion>default</LangVersion>
+    <Title>Route.Geo</Title>
+    <Description>Route.Geo - A bridge between Route and NTS.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="NetTopologySuite" Version="2.1.0" />
+    <PackageReference Include="NetTopologySuite.Features" Version="2.1.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Route\Route.csproj" />
+  </ItemGroup>
+</Project>

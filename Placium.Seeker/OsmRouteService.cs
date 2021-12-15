@@ -1,10 +1,10 @@
 ﻿using System.Threading.Tasks;
-using Itinero;
-using Itinero.LocalGeo;
-using Itinero.Osm.Vehicles;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
 using Placium.IO.Osm;
+using Route;
+using Route.LocalGeo;
+using Route.Osm.Vehicles;
 
 namespace Placium.Seeker
 {
@@ -14,11 +14,11 @@ namespace Placium.Seeker
         {
         }
 
-        public async Task<string> CalculateAsync(Coordinate source, Coordinate target, Box box)
+        public async Task<string> CalculateAsync(Coordinate source, Coordinate target)
         {
             var routerDb = new RouterDb();
 
-            routerDb.LoadOsmDataFromPostgreSQL(GetOsmConnectionString(), box, Vehicle.Car);
+            routerDb.LoadOsmDataFromPostgreSQL(GetOsmConnectionString(), Vehicle.Car);
 
             // get the profile from the routerdb.
             // this is best-practice in Itinero, to prevent mis-matches.

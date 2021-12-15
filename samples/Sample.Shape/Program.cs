@@ -1,14 +1,14 @@
 ﻿using System;
 using System.IO;
-using Itinero;
-using Itinero.Data.Edges;
-using Itinero.LocalGeo;
-using Itinero.Logging;
-using Itinero.Profiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Placium.Common;
 using Placium.IO.Osm;
+using Route;
+using Route.Data.Edges;
+using Route.LocalGeo;
+using Route.Logging;
+using Route.Profiles;
 
 namespace Sample.Shape
 {
@@ -38,8 +38,7 @@ namespace Sample.Shape
             var vehicle = DynamicVehicle.LoadFromStream(File.OpenRead(
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "car.lua")));
             var routerDb = new RouterDb(EdgeDataSerializer.MAX_DISTANCE);
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
-                    56f, 38f), vehicle);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), vehicle);
 
             // OPTIONAL: build a contracted version of the routing graph.
             // routerDb.AddContracted(vehicle.Fastest());

@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
-using Itinero;
-using Itinero.Algorithms.Matrices;
-using Itinero.LocalGeo;
-using Itinero.Osm.Vehicles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Placium.Common;
 using Placium.IO.Osm;
+using Route;
+using Route.Algorithms.Matrices;
+using Route.LocalGeo;
+using Route.Osm.Vehicles;
 
 namespace Sample.Matrix
 {
@@ -29,8 +29,7 @@ namespace Sample.Matrix
 
             var routerDb = new RouterDb();
             var router = new Router(routerDb);
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
-                56f, 38f), Vehicle.Car);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 
             var locations = new List<Coordinate>(new[]
             {

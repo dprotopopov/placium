@@ -15,7 +15,7 @@ namespace Placium.WebApi
             // enable logging.
             Logger.LogAction = (o, level, message, parameters) =>
                 Console.WriteLine("[{0}] {1} - {2}", o, level, message);
-            Itinero.Logging.Logger.LogAction = (o, level, message, parameters) =>
+            Route.Logging.Logger.LogAction = (o, level, message, parameters) =>
                 Console.WriteLine("[{0}] {1} - {2}", o, level, message);
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

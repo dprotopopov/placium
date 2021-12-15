@@ -1,21 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Itinero" Version="1.5.1" />
-    <PackageReference Include="Itinero.IO.Shape" Version="1.5.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="6.0.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Placium.Common\Placium.Common.csproj" />
-    <ProjectReference Include="..\..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="car.lua">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="6.0.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\Placium.Common\Placium.Common.csproj" />
+		<ProjectReference Include="..\..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
+		<ProjectReference Include="..\..\Route.IO.Shape\Route.IO.Shape.csproj" />
+		<ProjectReference Include="..\..\Route\Route.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="car.lua">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>

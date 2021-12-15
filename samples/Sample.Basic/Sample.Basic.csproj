@@ -6,14 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Itinero" Version="1.5.1" />
-    <PackageReference Include="Itinero.IO.Osm" Version="1.5.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Placium.Common\Placium.Common.csproj" />
     <ProjectReference Include="..\..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
+    <ProjectReference Include="..\..\Route.IO.Osm\Route.IO.Osm.csproj" />
+    <ProjectReference Include="..\..\Route\Route.csproj" />
   </ItemGroup>
 
 </Project>

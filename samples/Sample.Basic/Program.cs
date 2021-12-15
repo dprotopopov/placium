@@ -1,13 +1,13 @@
 ﻿using System;
 using System.IO;
-using Itinero;
-using Itinero.LocalGeo;
-using Itinero.Osm.Vehicles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OsmSharp.Logging;
 using Placium.Common;
 using Placium.IO.Osm;
+using Route;
+using Route.LocalGeo;
+using Route.Osm.Vehicles;
 
 namespace Sample.Basic
 {
@@ -33,7 +33,7 @@ namespace Sample.Basic
             {
                 Console.WriteLine("[{0}] {1} - {2}", o, level, message);
             };
-            Itinero.Logging.Logger.LogAction = (o, level, message, parameters) =>
+            Route.Logging.Logger.LogAction = (o, level, message, parameters) =>
             {
                 Console.WriteLine("[{0}] {1} - {2}", o, level, message);
             };
@@ -41,8 +41,7 @@ namespace Sample.Basic
             // load some routing data and create a router.
             var routerDb = new RouterDb();
 
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
-                    56f, 38f), Vehicle.Car);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 
             // get the profile from the routerdb.
             // this is best-practice in Itinero, to prevent mis-matches.

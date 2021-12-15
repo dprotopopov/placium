@@ -10,6 +10,7 @@ namespace Placium.Common
         Task Complete(string session);
         Task Error(string message, string session);
     }
+
     public class ProgressHub : Hub<IProgressHubClient>
     {
     }

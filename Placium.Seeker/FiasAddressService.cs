@@ -47,7 +47,7 @@ namespace Placium.Seeker
                         var guid = reader.GetString(1);
                         result.Add(new AddressEntry
                         {
-                            AddressString = addressString,
+                            AddressString = addressString
                         });
                     }
 

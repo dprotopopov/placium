@@ -1,15 +1,15 @@
 ﻿using System;
 using System.IO;
-using Itinero;
-using Itinero.Elevation;
-using Itinero.LocalGeo;
-using Itinero.LocalGeo.Elevation;
-using Itinero.Osm.Vehicles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OsmSharp.Logging;
 using Placium.Common;
 using Placium.IO.Osm;
+using Route;
+using Route.Elevation;
+using Route.LocalGeo;
+using Route.LocalGeo.Elevation;
+using Route.Osm.Vehicles;
 using SRTM;
 
 namespace Sample.Elevation
@@ -36,7 +36,7 @@ namespace Sample.Elevation
             {
                 Console.WriteLine("[{0}] {1} - {2}", o, level, message);
             };
-            Itinero.Logging.Logger.LogAction = (o, level, message, parameters) =>
+            Route.Logging.Logger.LogAction = (o, level, message, parameters) =>
             {
                 Console.WriteLine("[{0}] {1} - {2}", o, level, message);
             };
@@ -45,8 +45,7 @@ namespace Sample.Elevation
             var routerDb = new RouterDb();
             var router = new Router(routerDb);
 
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), new Box(55f, 37f,
-                    56f, 38f), Vehicle.Car);
+            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 
             // create a new srtm data instance.
             // it accepts a folder to download and cache data into.

@@ -2,7 +2,8 @@
   "profiles": {
     "Sample.Shape": {
       "commandName": "Project",
-      "commandLineArgs": "--OsmConnection=\"Host=localhost;Port=5432;Database=Osm;Username=postgres;Password=password;Command Timeout=0\""
+      "commandLineArgs":
+        "--OsmConnection=\"Host=localhost;Port=5432;Database=Osm;Username=postgres;Password=password;Command Timeout=0\""
     }
   }
 }

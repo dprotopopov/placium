@@ -1,23 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <NoWarn>1701;1702;1998</NoWarn>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<NoWarn>1701;1702;1998</NoWarn>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Fastenshtein" Version="1.0.0.8" />
-    <PackageReference Include="NetTopologySuite" Version="2.4.0" />
-    <PackageReference Include="Itinero" Version="1.5.1" />
-    <PackageReference Include="Itinero.IO.Osm" Version="1.5.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Fastenshtein" Version="1.0.0.8" />
+		<PackageReference Include="NetTopologySuite" Version="2.4.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
-    <ProjectReference Include="..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+		<ProjectReference Include="..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
+		<ProjectReference Include="..\Route.IO.Osm\Route.IO.Osm.csproj" />
+		<ProjectReference Include="..\Route\Route.csproj" />
+	</ItemGroup>
 
 </Project>

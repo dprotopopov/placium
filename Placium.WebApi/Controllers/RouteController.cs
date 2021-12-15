@@ -17,9 +17,9 @@ namespace Placium.WebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Calculate(string source, string target, string box = "55,37,56,38")
+        public async Task<IActionResult> Calculate(string source, string target)
         {
-            return Ok(await _osmRouteService.CalculateAsync(source.ToCoordinate(), target.ToCoordinate(), box.ToBox()));
+            return Ok(await _osmRouteService.CalculateAsync(source.ToCoordinate(), target.ToCoordinate()));
         }
     }
 }

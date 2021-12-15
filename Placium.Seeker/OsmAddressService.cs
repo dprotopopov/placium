@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Itinero.LocalGeo;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Placium.Common;
+using Coordinate = Route.LocalGeo.Coordinate;
 
 namespace Placium.Seeker
 {

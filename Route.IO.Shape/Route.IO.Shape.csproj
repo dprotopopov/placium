@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0</TargetFrameworks>
+        <AssemblyName>Route.IO.Shape</AssemblyName>
+        <PackageId>Route.IO.Shape</PackageId>
+        <LangVersion>default</LangVersion>
+        <Title>Route.IO.Shape</Title>
+        <Description>Route.IO.Shape - Reads routing networks from shapefiles.</Description>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="NetTopologySuite.IO.ShapeFile" Version="2.0.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Route.Geo\Route.Geo.csproj" />
+    </ItemGroup>
+</Project>
