@@ -28,7 +28,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Returns true if this array contains the given sequence.
         /// </summary>
-        public static bool Contains(this uint[] array, uint[] sequence, out int start)
+        public static bool Contains(this long[] array, long[] sequence, out int start)
         {
             var s = 0;
             for(var i = 0; i < array.Length; i++)
@@ -66,7 +66,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Returns true if this array contains the given sequence.
         /// </summary>
-        public static bool Contains(this uint[] array, List<uint> sequence, out int start)
+        public static bool Contains(this long[] array, List<long> sequence, out int start)
         {
             var s = 0;
             for (var i = 0; i < array.Length; i++)

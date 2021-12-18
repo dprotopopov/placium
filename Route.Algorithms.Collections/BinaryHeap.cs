@@ -28,7 +28,7 @@ namespace Route.Algorithms.Collections
         private T[] _heap; // The objects per priority.
         private float[] _priorities; // Holds the priorities of this heap.
         private int _count; // The current count of elements.
-        private uint _latestIndex; // The latest unused index
+        private long _latestIndex; // The latest unused index
 
         /// <summary>
         /// Creates a new binairy heap.
@@ -42,7 +42,7 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Creates a new binairy heap.
         /// </summary>
-        public BinaryHeap(uint initialSize)
+        public BinaryHeap(long initialSize)
         {
             _heap = new T[initialSize];
             _priorities = new float[initialSize];
@@ -82,7 +82,7 @@ namespace Route.Algorithms.Collections
             _latestIndex++;
             while (bubbleIndex != 1)
             { // bubble until the indx is one.
-                uint parentIdx = bubbleIndex / 2;
+                long parentIdx = bubbleIndex / 2;
                 if (_priorities[bubbleIndex] < _priorities[parentIdx])
                 { // the parent priority is higher; do the swap.
                     var tempPriority = _priorities[parentIdx];

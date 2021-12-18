@@ -34,13 +34,13 @@ namespace Route.Graphs.Directed
         private const int FIRST_EDGE = 0;
         private const int EDGE_COUNT = 1;
         private const int MINIMUM_EDGE_SIZE = 1; // holds only the target vertex.
-        private const uint NO_EDGE = uint.MaxValue; // a dummy value indication that there is no edge.
+        private const long NO_EDGE = long.MaxValue; // a dummy value indication that there is no edge.
 
         private readonly int _edgeSize = -1;
         private readonly int _edgeDataSize = -1;
-        private readonly Action<uint, uint> _switchEdge;
-        private readonly ArrayBase<uint> _vertices; // Holds all vertices pointing to it's first edge.
-        private readonly ArrayBase<uint> _edges;
+        private readonly Action<long, long> _switchEdge;
+        private readonly ArrayBase<long> _vertices; // Holds all vertices pointing to it's first edge.
+        private readonly ArrayBase<long> _edges;
 
         private long _nextEdgePointer;
         private bool _readonly = false;
@@ -57,7 +57,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Creates a new graph.
         /// </summary>
-        public DirectedGraph(int edgeDataSize, Action<uint, uint> switchEdge)
+        public DirectedGraph(int edgeDataSize, Action<long, long> switchEdge)
             : this(edgeDataSize, 1000, switchEdge)
         {
 
@@ -75,10 +75,10 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Creates a new graph.
         /// </summary>
-        public DirectedGraph(int edgeDataSize, long sizeEstimate, Action<uint, uint> switchEdge)
+        public DirectedGraph(int edgeDataSize, long sizeEstimate, Action<long, long> switchEdge)
             : this(edgeDataSize, sizeEstimate,
-            Context.ArrayFactory.CreateMemoryBackedArray<uint>(sizeEstimate),
-            Context.ArrayFactory.CreateMemoryBackedArray<uint>(sizeEstimate * 3 * edgeDataSize + MINIMUM_EDGE_SIZE), switchEdge)
+            Context.ArrayFactory.CreateMemoryBackedArray<long>(sizeEstimate),
+            Context.ArrayFactory.CreateMemoryBackedArray<long>(sizeEstimate * 3 * edgeDataSize + MINIMUM_EDGE_SIZE), switchEdge)
         {
 
         }
@@ -86,14 +86,14 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Creates a new graph using the given memorymapped file.
         /// </summary>
-        public DirectedGraph(MemoryMap file, int edgeDataSize, long sizeEstimate, Action<uint, uint> switchEdge)
+        public DirectedGraph(MemoryMap file, int edgeDataSize, long sizeEstimate, Action<long, long> switchEdge)
         {
-            _vertices = new Array<uint>(file, sizeEstimate);
+            _vertices = new Array<long>(file, sizeEstimate);
             for (var idx = 0; idx < sizeEstimate; idx++)
             {
                 _vertices[idx] = 0;
             }
-            _edges = new Array<uint>(file, sizeEstimate);
+            _edges = new Array<long>(file, sizeEstimate);
             _edgeCount = 0;
             _edgeDataSize = edgeDataSize;
             _switchEdge = switchEdge;
@@ -102,8 +102,8 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Creates a new graph using the existing data in the given arrays.
         /// </summary>
-        private DirectedGraph(int edgeDataSize, long edgeCount, ArrayBase<uint> vertices,
-            ArrayBase<uint> edges)
+        private DirectedGraph(int edgeDataSize, long edgeCount, ArrayBase<long> vertices,
+            ArrayBase<long> edges)
         {
             _edgeSize = edgeDataSize + MINIMUM_EDGE_SIZE;
             _edgeDataSize = edgeDataSize;
@@ -118,7 +118,7 @@ namespace Route.Graphs.Directed
         /// Creates a graph.
         /// </summary>
         private DirectedGraph(int edgeDataSize, long sizeEstimate,
-            ArrayBase<uint> vertices, ArrayBase<uint> edges, Action<uint, uint> switchEdge)
+            ArrayBase<long> vertices, ArrayBase<long> edges, Action<long, long> switchEdge)
         {
             _edgeSize = edgeDataSize + MINIMUM_EDGE_SIZE;
             _edgeDataSize = edgeDataSize;
@@ -152,25 +152,25 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Adds an edge with the associated data.
         /// </summary>
-        public uint AddEdge(uint vertex1, uint vertex2, uint data)
+        public long AddEdge(long vertex1, long vertex2, long data)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 == vertex2) { throw new ArgumentException("Given vertices must be different."); }
             _vertices.EnsureMinimumSize(Math.Max(vertex1, vertex2) * VERTEX_SIZE + EDGE_COUNT + 1);
             if (_edgeDataSize != 1) { throw new ArgumentOutOfRangeException("Dimension of data doesn't match."); }
             
-            if ((_nextEdgePointer / _edgeSize) > uint.MaxValue) { throw new Exception($"Cannot add another edge, this graph can only handle a max of {uint.MaxValue} edges.");}
+            if ((_nextEdgePointer / _edgeSize) > long.MaxValue) { throw new Exception($"Cannot add another edge, this graph can only handle a max of {long.MaxValue} edges.");}
             
             var vertexPointer = vertex1 * VERTEX_SIZE;
             var edgeCount = _vertices[vertexPointer + EDGE_COUNT];
             var edgePointer = _vertices[vertexPointer + FIRST_EDGE] * _edgeSize;
-            var edgeId = uint.MaxValue;
+            var edgeId = long.MaxValue;
 
             if (edgeCount == 0)
             { // no edge yet, just add the end.
                 _vertices[vertexPointer + EDGE_COUNT] = 1;
-                _vertices[vertexPointer + FIRST_EDGE] = (uint)(_nextEdgePointer / _edgeSize);
-                edgeId = (uint)(_nextEdgePointer / _edgeSize);
+                _vertices[vertexPointer + FIRST_EDGE] = (long)(_nextEdgePointer / _edgeSize);
+                edgeId = (long)(_nextEdgePointer / _edgeSize);
 
                 // make sure we can add another edge.
                 _edges.EnsureMinimumSize(_nextEdgePointer + (1 * _edgeSize) + 1);
@@ -187,14 +187,14 @@ namespace Route.Graphs.Directed
                 if (edgePointer == (_nextEdgePointer - (edgeCount * _edgeSize)))
                 { // these edge are at the end of the edge-array, don't copy just increase size.
                     _edges[_nextEdgePointer] = vertex2;
-                    edgeId = (uint)(_nextEdgePointer / _edgeSize);
+                    edgeId = (long)(_nextEdgePointer / _edgeSize);
                     _edges[_nextEdgePointer + MINIMUM_EDGE_SIZE + 0] = data;
                     _nextEdgePointer += (edgeCount * _edgeSize); // duplicate space for this vertex.
                     _vertices[vertexPointer + EDGE_COUNT] = edgeCount + 1;
                 }
                 else
                 { // not at the end, copy edges to the end.
-                    _vertices[vertexPointer + FIRST_EDGE] = (uint)(_nextEdgePointer / _edgeSize);
+                    _vertices[vertexPointer + FIRST_EDGE] = (long)(_nextEdgePointer / _edgeSize);
                     _vertices[vertexPointer + EDGE_COUNT] = edgeCount + 1;
 
                     // keep new pointer & duplicate space for this vertex.
@@ -206,15 +206,15 @@ namespace Route.Graphs.Directed
                     for (var edge = 0; edge < edgeCount; edge++)
                     {
                         _edges[_nextEdgePointer] = _edges[edgePointer + (edge * _edgeSize)];
-                        for (uint i = 0; i < _edgeDataSize; i++)
+                        for (long i = 0; i < _edgeDataSize; i++)
                         {
                             _edges[_nextEdgePointer + MINIMUM_EDGE_SIZE + i] =
                                 _edges[edgePointer + MINIMUM_EDGE_SIZE + i + (edge * _edgeSize)];
                         }
                         if (_switchEdge != null)
                         { // report on the edge switch.
-                            _switchEdge((uint)((edgePointer + (edge * _edgeSize)) / (long)_edgeSize),
-                                (uint)(_nextEdgePointer / _edgeSize));
+                            _switchEdge((long)((edgePointer + (edge * _edgeSize)) / (long)_edgeSize),
+                                (long)(_nextEdgePointer / _edgeSize));
                         }
                         _nextEdgePointer += _edgeSize;
 
@@ -227,7 +227,7 @@ namespace Route.Graphs.Directed
 
                     // add at the end.
                     _edges[_nextEdgePointer] = vertex2;
-                    edgeId = (uint)(_nextEdgePointer / _edgeSize);
+                    edgeId = (long)(_nextEdgePointer / _edgeSize);
                     _edges[_nextEdgePointer + MINIMUM_EDGE_SIZE + 0] = data;
                     _nextEdgePointer = newNextEdgePointer;
                 }
@@ -235,7 +235,7 @@ namespace Route.Graphs.Directed
             else
             { // just add the edge.
                 _edges[edgePointer + (edgeCount * _edgeSize)] = vertex2;
-                edgeId = (uint)((edgePointer + (edgeCount * _edgeSize)) / _edgeSize);
+                edgeId = (long)((edgePointer + (edgeCount * _edgeSize)) / _edgeSize);
                 _edges[edgePointer + (edgeCount * _edgeSize) + MINIMUM_EDGE_SIZE + 0] = data;
 
                 _vertices[vertexPointer + EDGE_COUNT] = edgeCount + 1;
@@ -248,30 +248,30 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Adds an edge with the associated data.
         /// </summary>
-        public uint AddEdge(uint vertex1, uint vertex2, params uint[] data)
+        public long AddEdge(long vertex1, long vertex2, params long[] data)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 == vertex2) { throw new ArgumentException("Given vertices must be different."); }
             _vertices.EnsureMinimumSize(Math.Max(vertex1, vertex2) * VERTEX_SIZE + EDGE_COUNT + 1);
             
-            if ((_nextEdgePointer / _edgeSize) > uint.MaxValue) { throw new Exception($"Cannot add another edge, this graph can only handle a max of {uint.MaxValue} edges.");}
+            if ((_nextEdgePointer / _edgeSize) > long.MaxValue) { throw new Exception($"Cannot add another edge, this graph can only handle a max of {long.MaxValue} edges.");}
 
             var vertexPointer = vertex1 * VERTEX_SIZE;
             var edgeCount = _vertices[vertexPointer + EDGE_COUNT];
-            var edgePointer = _vertices[vertexPointer + FIRST_EDGE] * (uint)_edgeSize;
-            var edgeId = uint.MaxValue;
+            var edgePointer = _vertices[vertexPointer + FIRST_EDGE] * (long)_edgeSize;
+            var edgeId = long.MaxValue;
 
             if (edgeCount == 0)
             { // no edge yet, just add the end.
                 _vertices[vertexPointer + EDGE_COUNT] = 1;
-                _vertices[vertexPointer + FIRST_EDGE] = (uint)(_nextEdgePointer / _edgeSize);
-                edgeId = (uint)(_nextEdgePointer / _edgeSize);
+                _vertices[vertexPointer + FIRST_EDGE] = (long)(_nextEdgePointer / _edgeSize);
+                edgeId = (long)(_nextEdgePointer / _edgeSize);
 
                 // make sure we can add another edge.
                 _edges.EnsureMinimumSize(_nextEdgePointer + (1 * _edgeSize) + 1);
 
                 _edges[_nextEdgePointer] = vertex2;
-                for (uint i = 0; i < _edgeDataSize; i++)
+                for (long i = 0; i < _edgeDataSize; i++)
                 {
                     _edges[_nextEdgePointer + MINIMUM_EDGE_SIZE + i] =
                         data[i];
@@ -286,8 +286,8 @@ namespace Route.Graphs.Directed
                 if (edgePointer == (_nextEdgePointer - (edgeCount * _edgeSize)))
                 { // these edge are at the end of the edge-array, don't copy just increase size.
                     _edges[_nextEdgePointer] = vertex2;
-                    edgeId = (uint)(_nextEdgePointer / _edgeSize);
-                    for (uint i = 0; i < _edgeDataSize; i++)
+                    edgeId = (long)(_nextEdgePointer / _edgeSize);
+                    for (long i = 0; i < _edgeDataSize; i++)
                     {
                         _edges[_nextEdgePointer + MINIMUM_EDGE_SIZE + i] =
                             data[i];
@@ -297,7 +297,7 @@ namespace Route.Graphs.Directed
                 }
                 else
                 { // not at the end, copy edges to the end.
-                    _vertices[vertexPointer + FIRST_EDGE] = (uint)(_nextEdgePointer / _edgeSize);
+                    _vertices[vertexPointer + FIRST_EDGE] = (long)(_nextEdgePointer / _edgeSize);
                     _vertices[vertexPointer + EDGE_COUNT] = edgeCount + 1;
 
                     // keep new pointer & duplicate space for this vertex.
@@ -309,15 +309,15 @@ namespace Route.Graphs.Directed
                     for (var edge = 0; edge < edgeCount; edge++)
                     {
                         _edges[_nextEdgePointer] = _edges[edgePointer + (edge * _edgeSize)];
-                        for (uint i = 0; i < _edgeDataSize; i++)
+                        for (long i = 0; i < _edgeDataSize; i++)
                         {
                             _edges[_nextEdgePointer + MINIMUM_EDGE_SIZE + i] =
                                 _edges[edgePointer + MINIMUM_EDGE_SIZE + i + (edge * _edgeSize)];
                         }
                         if (_switchEdge != null)
                         { // report on the edge switch.
-                            _switchEdge((uint)((edgePointer + (edge * _edgeSize)) / (long)_edgeSize),
-                                (uint)(_nextEdgePointer / _edgeSize));
+                            _switchEdge((long)((edgePointer + (edge * _edgeSize)) / (long)_edgeSize),
+                                (long)(_nextEdgePointer / _edgeSize));
                         }
                         _nextEdgePointer += _edgeSize;
 
@@ -330,8 +330,8 @@ namespace Route.Graphs.Directed
 
                     // add at the end.
                     _edges[_nextEdgePointer] = vertex2;
-                    edgeId = (uint)(_nextEdgePointer / _edgeSize);
-                    for (uint i = 0; i < _edgeDataSize; i++)
+                    edgeId = (long)(_nextEdgePointer / _edgeSize);
+                    for (long i = 0; i < _edgeDataSize; i++)
                     {
                         _edges[_nextEdgePointer + MINIMUM_EDGE_SIZE + i] =
                             data[i];
@@ -341,11 +341,11 @@ namespace Route.Graphs.Directed
             }
             else
             { // just add the edge.
-                _edges[edgePointer + (edgeCount * (uint)_edgeSize)] = vertex2;
-                edgeId = (edgePointer + (edgeCount * (uint)_edgeSize)) / (uint)_edgeSize;
-                for (uint i = 0; i < _edgeDataSize; i++)
+                _edges[edgePointer + (edgeCount * (long)_edgeSize)] = vertex2;
+                edgeId = (edgePointer + (edgeCount * (long)_edgeSize)) / (long)_edgeSize;
+                for (long i = 0; i < _edgeDataSize; i++)
                 {
-                    _edges[edgePointer + (edgeCount * (uint)_edgeSize) + MINIMUM_EDGE_SIZE + i] =
+                    _edges[edgePointer + (edgeCount * (long)_edgeSize) + MINIMUM_EDGE_SIZE + i] =
                         data[i];
                 }
 
@@ -359,7 +359,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Updates and edge's associated data.
         /// </summary>
-        public uint UpdateEdge(uint vertex1, uint vertex2, Func<uint[], bool> update, params uint[] data)
+        public long UpdateEdge(long vertex1, long vertex2, Func<long[], bool> update, params long[] data)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 == vertex2) { throw new ArgumentException("Given vertices must be different."); }
@@ -370,10 +370,10 @@ namespace Route.Graphs.Directed
             var edgePointer = _vertices[vertexPointer + FIRST_EDGE] * _edgeSize;
             var lastEdgePointer = edgePointer + (edgeCount * _edgeSize);
 
-            var currentData = new uint[_edgeDataSize];
+            var currentData = new long[_edgeDataSize];
             while (edgePointer < lastEdgePointer)
             {
-                for (uint i = 0; i < _edgeDataSize; i++)
+                for (long i = 0; i < _edgeDataSize; i++)
                 {
                     currentData[i] = _edges[edgePointer + MINIMUM_EDGE_SIZE + i];
                 }
@@ -381,12 +381,12 @@ namespace Route.Graphs.Directed
                 {
                     if (update(currentData))
                     { // yes, update here.
-                        for (uint i = 0; i < _edgeDataSize; i++)
+                        for (long i = 0; i < _edgeDataSize; i++)
                         {
                             _edges[edgePointer + MINIMUM_EDGE_SIZE + i] =
                                 data[i];
                         }
-                        return (uint)(edgePointer / _edgeSize);
+                        return (long)(edgePointer / _edgeSize);
                     }
                 }
                 edgePointer += _edgeSize;
@@ -397,7 +397,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Updates and edge's associated data.
         /// </summary>
-        public uint UpdateEdgeIfBetter(uint vertex1, uint vertex2, Func<uint[], bool> update, params uint[] data)
+        public long UpdateEdgeIfBetter(long vertex1, long vertex2, Func<long[], bool> update, params long[] data)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 == vertex2) { throw new ArgumentException("Given vertices must be different."); }
@@ -412,10 +412,10 @@ namespace Route.Graphs.Directed
             var edgePointer = _vertices[vertexPointer + FIRST_EDGE] * _edgeSize;
             var lastEdgePointer = edgePointer + (edgeCount * _edgeSize);
 
-            var currentData = new uint[_edgeDataSize];
+            var currentData = new long[_edgeDataSize];
             while (edgePointer < lastEdgePointer)
             {
-                for (uint i = 0; i < _edgeDataSize; i++)
+                for (long i = 0; i < _edgeDataSize; i++)
                 {
                     currentData[i] = _edges[edgePointer + MINIMUM_EDGE_SIZE + i];
                 }
@@ -423,13 +423,13 @@ namespace Route.Graphs.Directed
                 {
                     if (update(currentData))
                     { // yes, update here.
-                        for (uint i = 0; i < _edgeDataSize; i++)
+                        for (long i = 0; i < _edgeDataSize; i++)
                         {
                             _edges[edgePointer + MINIMUM_EDGE_SIZE + i] =
                                 data[i];
                         }
                     }
-                    return (uint)(edgePointer / _edgeSize);
+                    return (long)(edgePointer / _edgeSize);
                 }
                 edgePointer += _edgeSize;
             }
@@ -440,7 +440,7 @@ namespace Route.Graphs.Directed
         /// Deletes all edges leading from/to the given vertex. 
         /// </summary>
         /// <remarks>Only deletes all edges vertex->* NOT *->vertex</remarks>
-        public int RemoveEdges(uint vertex)
+        public int RemoveEdges(long vertex)
         {
             var removed = 0;
             var edges = this.GetEdgeEnumerator(vertex);
@@ -455,7 +455,7 @@ namespace Route.Graphs.Directed
         /// Deletes the edge between the two given vertices.
         /// </summary>
         /// <remarks>Only deletes edge vertex1->vertex2 NOT vertex2 -> vertex1.</remarks>
-        public int RemoveEdge(uint vertex1, uint vertex2)
+        public int RemoveEdge(long vertex1, long vertex2)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 >= _vertices.Length) { return 0; }
@@ -466,7 +466,7 @@ namespace Route.Graphs.Directed
             var edgeCount = _vertices[vertexPointer + EDGE_COUNT];
             var edgePointer = _vertices[vertexPointer + FIRST_EDGE] * _edgeSize;
 
-            for (var removeEdgePointer = edgePointer; removeEdgePointer < edgePointer + (edgeCount * (uint)_edgeSize);
+            for (var removeEdgePointer = edgePointer; removeEdgePointer < edgePointer + (edgeCount * (long)_edgeSize);
                 removeEdgePointer += _edgeSize)
             {
                 if (_edges[removeEdgePointer] == vertex2)
@@ -492,8 +492,8 @@ namespace Route.Graphs.Directed
                     // report on the move.
                     if (_switchEdge != null)
                     {
-                        _switchEdge((uint)((edgePointer + (edgeCount * _edgeSize)) / _edgeSize),
-                            (uint)(removeEdgePointer / _edgeSize));
+                        _switchEdge((long)((edgePointer + (edgeCount * _edgeSize)) / _edgeSize),
+                            (long)(removeEdgePointer / _edgeSize));
                     }
 
                     removeEdgePointer -= _edgeSize;
@@ -517,7 +517,7 @@ namespace Route.Graphs.Directed
         /// </summary>
         /// <param name="vertex"></param>
         /// <returns></returns>
-        public EdgeEnumerator GetEdgeEnumerator(uint vertex)
+        public EdgeEnumerator GetEdgeEnumerator(long vertex)
         {
             var enumerator = new EdgeEnumerator(this);
             enumerator.MoveTo(vertex);
@@ -527,25 +527,25 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns the number of vertices in this graph.
         /// </summary>
-        public uint VertexCount
+        public long VertexCount
         {
-            get { return (uint)(_vertices.Length / VERTEX_SIZE); }
+            get { return (long)(_vertices.Length / VERTEX_SIZE); }
         }
 
         /// <summary>
         /// Returns the number of edges in this graph.
         /// </summary>
-        public uint EdgeCount
+        public long EdgeCount
         {
-            get { return (uint)_edgeCount; }
+            get { return (long)_edgeCount; }
         }
         
         /// <summary>
         /// Returns the space used in edges.
         /// </summary>
-        public uint EdgeSpaceCount
+        public long EdgeSpaceCount
         {
-            get { return (uint)(_edges.Length / (this.EdgeDataSize + 1)); }
+            get { return (long)(_edges.Length / (this.EdgeDataSize + 1)); }
         }
 
         /// <summary>
@@ -562,8 +562,8 @@ namespace Route.Graphs.Directed
         public void Trim(out long maxEdgeId)
         {
             // remove all vertices without edges at the end.
-            var maxVertexId = uint.MinValue;
-            for (uint i = 0; i < _vertices.Length / VERTEX_SIZE; i++)
+            var maxVertexId = long.MinValue;
+            for (long i = 0; i < _vertices.Length / VERTEX_SIZE; i++)
             {
                 var pointer = _vertices[i * VERTEX_SIZE + FIRST_EDGE] * _edgeSize;
                 var count = _vertices[i * VERTEX_SIZE + EDGE_COUNT];
@@ -611,8 +611,8 @@ namespace Route.Graphs.Directed
             this.Trim();
 
             // build a list of all vertices sorted by their first position.
-            var sortedVertices = Context.ArrayFactory.CreateMemoryBackedArray<uint>(_vertices.Length / VERTEX_SIZE);
-            for (uint i = 0; i < sortedVertices.Length; i++)
+            var sortedVertices = Context.ArrayFactory.CreateMemoryBackedArray<long>(_vertices.Length / VERTEX_SIZE);
+            for (long i = 0; i < sortedVertices.Length; i++)
             {
                 sortedVertices[i] = i;
             }
@@ -629,14 +629,14 @@ namespace Route.Graphs.Directed
 
             // move data down.
             long pointer = 0;
-            for (uint i = 0; i < sortedVertices.Length; i++)
+            for (long i = 0; i < sortedVertices.Length; i++)
             {
                 // move data.
                 var vertexPointer = sortedVertices[i] * VERTEX_SIZE;
                 var count = _vertices[vertexPointer + EDGE_COUNT];
                 var edgePointer = _vertices[vertexPointer + FIRST_EDGE] * _edgeSize;
-                _vertices[vertexPointer + FIRST_EDGE] = (uint)(pointer / _edgeSize);
-                for (uint e = 0; e < count * _edgeSize; e += (uint)_edgeSize)
+                _vertices[vertexPointer + FIRST_EDGE] = (long)(pointer / _edgeSize);
+                for (long e = 0; e < count * _edgeSize; e += (long)_edgeSize)
                 {
                     if (pointer != edgePointer)
                     {
@@ -650,8 +650,8 @@ namespace Route.Graphs.Directed
                         // report on the move.
                         if (_switchEdge != null)
                         {
-                            _switchEdge((uint)((edgePointer + e) / _edgeSize),
-                                (uint)((pointer + e) / _edgeSize));
+                            _switchEdge((long)((edgePointer + e) / _edgeSize),
+                                (long)((pointer + e) / _edgeSize));
                         }
                     }
                 }
@@ -693,8 +693,8 @@ namespace Route.Graphs.Directed
             private long _currentEdgePointer;
             private int _currentCount;
             private long _startEdgeId;
-            private uint _count;
-            private uint _neighbour;
+            private long _count;
+            private long _neighbour;
 
             /// <summary>
             /// Creates a new edge enumerator.
@@ -748,7 +748,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the current neighbour.
             /// </summary>
-            public uint Neighbour
+            public long Neighbour
             {
                 get { return _graph._edges[_currentEdgePointer]; }
             }
@@ -756,11 +756,11 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the current edge data.
             /// </summary>
-            public uint[] Data
+            public long[] Data
             {
                 get
                 {
-                    var data = new uint[_graph._edgeDataSize];
+                    var data = new long[_graph._edgeDataSize];
                     for (var i = 0; i < _graph._edgeDataSize; i++)
                     {
                         data[i] = _graph._edges[_currentEdgePointer + MINIMUM_EDGE_SIZE + i];
@@ -772,7 +772,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the first entry in the edge data.
             /// </summary>
-            public uint Data0
+            public long Data0
             {
                 get
                 {
@@ -783,7 +783,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the second entry in the edge data.
             /// </summary>
-            public uint Data1
+            public long Data1
             {
                 get
                 {
@@ -794,11 +794,11 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the edge id.
             /// </summary>
-            public uint Id
+            public long Id
             {
                 get
                 {
-                    return (uint)(_currentEdgePointer / _graph._edgeSize);
+                    return (long)(_currentEdgePointer / _graph._edgeSize);
                 }
             }
 
@@ -848,7 +848,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Moves this enumerator to the given vertex.
             /// </summary>
-            public bool MoveTo(uint vertex)
+            public bool MoveTo(long vertex)
             {
                 var vertexId = vertex * VERTEX_SIZE;
                 var edgeCountPointer = vertexId + EDGE_COUNT;
@@ -968,27 +968,27 @@ namespace Route.Graphs.Directed
             size = size + 4;
             var edgeSize = BitConverter.ToInt32(bytes, 0);
 
-            ArrayBase<uint> vertices;
-            ArrayBase<uint> edges;
+            ArrayBase<long> vertices;
+            ArrayBase<long> edges;
             if (profile == null)
             { // just create arrays and read the data.
-                vertices = Context.ArrayFactory.CreateMemoryBackedArray<uint>(vertexLength * vertexSize);
+                vertices = Context.ArrayFactory.CreateMemoryBackedArray<long>(vertexLength * vertexSize);
                 vertices.CopyFrom(stream);
-                size += vertexLength * vertexSize * 4;
-                edges = Context.ArrayFactory.CreateMemoryBackedArray<uint>(edgeLength * edgeSize);
+                size += vertexLength * vertexSize * 8;
+                edges = Context.ArrayFactory.CreateMemoryBackedArray<long>(edgeLength * edgeSize);
                 edges.CopyFrom(stream);
-                size += edgeLength * edgeSize * 4;
+                size += edgeLength * edgeSize * 8;
             }
             else
             { // create accessors over the exact part of the stream that represents vertices/edges.
                 var position = stream.Position;
-                var map1 = new MemoryMapStream(new CappedStream(stream, position, vertexLength * vertexSize * 4));
-                vertices = new Array<uint>(map1.CreateUInt32(vertexLength * vertexSize), profile.VertexProfile);
-                size += vertexLength * vertexSize * 4;
-                var map2 = new MemoryMapStream(new CappedStream(stream, position + vertexLength * vertexSize * 4,
-                    edgeLength * edgeSize * 4));
-                edges = new Array<uint>(map2.CreateUInt32(edgeLength * edgeSize), profile.EdgeProfile);
-                size += edgeLength * edgeSize * 4;
+                var map1 = new MemoryMapStream(new CappedStream(stream, position, vertexLength * vertexSize * 8));
+                vertices = new Array<long>(map1.CreateInt64(vertexLength * vertexSize), profile.VertexProfile);
+                size += vertexLength * vertexSize * 8;
+                var map2 = new MemoryMapStream(new CappedStream(stream, position + vertexLength * vertexSize * 8,
+                    edgeLength * edgeSize * 8));
+                edges = new Array<long>(map2.CreateInt64(edgeLength * edgeSize), profile.EdgeProfile);
+                size += edgeLength * edgeSize * 8;
             }
 
             // make sure stream is positioned at the correct location.

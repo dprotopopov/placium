@@ -90,10 +90,10 @@ namespace Route.Algorithms.Search
             var longitudeOffset = System.Math.Abs(_longitude - offsettedLocation.Longitude);
 
             // get the closest edge.
-            uint[] edgeIds = null;
+            long[] edgeIds = null;
             if(_isBetter == null)
             { // do not evaluate both, just isOk.
-                edgeIds = new uint[2];
+                edgeIds = new long[2];
                 edgeIds[0] = _graph.SearchClosestEdge(_latitude, _longitude,
                     latitudeOffset, longitudeOffset, _maxDistance, _isAcceptable, cancellationToken);
             }

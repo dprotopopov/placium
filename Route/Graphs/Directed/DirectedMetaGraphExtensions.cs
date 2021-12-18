@@ -31,12 +31,12 @@ namespace Route.Graphs.Directed
         /// <param name="graph">The graph.</param>
         /// <param name="transform">The transform function, returns Constant.NO_VERTEX when a vertex needs to be skipped.</param>
         /// <returns></returns>
-        public static DirectedMetaGraph Extract(this DirectedMetaGraph graph, Func<uint, uint> transform)
+        public static DirectedMetaGraph Extract(this DirectedMetaGraph graph, Func<long, long> transform)
         {
             var newGraph = new DirectedMetaGraph(graph.Graph.EdgeDataSize, graph.EdgeDataSize);
 
             var enumerator = graph.GetEdgeEnumerator();
-            for (uint v = 0; v < graph.VertexCount; v++)
+            for (long v = 0; v < graph.VertexCount; v++)
             {
                 var newV = transform(v);
                 if (newV == Constants.NO_VERTEX)

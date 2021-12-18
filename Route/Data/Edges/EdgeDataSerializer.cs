@@ -33,20 +33,20 @@ namespace Route.Data.Edges
         /// <summary>
         /// Holds the maxium distance that can be stored on an edge.
         /// </summary>
-        public const float MAX_DISTANCE = (((uint.MaxValue - 1) >> 14) / 10.0f);
+        public const float MAX_DISTANCE = (((long.MaxValue - 1) >> 14) / 10.0f);
 
         /// <summary>
         /// Parses the profile id.
         /// </summary>
         /// <returns></returns>
-        public static void Deserialize(uint value, out float distance, out ushort profile)
+        public static void Deserialize(long value, out float distance, out ushort profile)
         {
             distance = (value >> 14) / 10f;
-            profile = (ushort)(value & (uint)((1 << 14) - 1));
+            profile = (ushort)(value & (long)((1 << 14) - 1));
         }
 
         /// <summary>
-        /// Returns the size of a the data in uint's when serialized.
+        /// Returns the size of a the data in long's when serialized.
         /// </summary>
         public static int Size
         {
@@ -57,7 +57,7 @@ namespace Route.Data.Edges
         /// Deserializes edges data.
         /// </summary>
         /// <returns></returns>
-        public static EdgeData Deserialize(uint[] data)
+        public static EdgeData Deserialize(long[] data)
         {
             float distance;
             ushort profile;
@@ -74,7 +74,7 @@ namespace Route.Data.Edges
         /// Serializes edge data.
         /// </summary>
         /// <returns></returns>
-        public static uint[] Serialize(float distance, ushort profile)
+        public static long[] Serialize(float distance, ushort profile)
         {
             if (distance > MAX_DISTANCE)
             {
@@ -89,16 +89,16 @@ namespace Route.Data.Edges
                 throw new ArgumentOutOfRangeException("Cannot store profile id on edge, too big.");
             }
 
-            var serDistance = (uint)(distance * 10) << 14;
-            uint value = profile + serDistance;
-            return new uint[] { value };
+            var serDistance = (long)(distance * 10) << 14;
+            long value = profile + serDistance;
+            return new long[] { value };
         }
 
         /// <summary>
         /// Serializes edge data.
         /// </summary>
         /// <returns></returns>
-        public static uint[] Serialize(EdgeData data)
+        public static long[] Serialize(EdgeData data)
         {
             return EdgeDataSerializer.Serialize(data.Distance, data.Profile);
         }

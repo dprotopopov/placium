@@ -32,17 +32,17 @@ namespace Route.IO.Osm.Restrictions
     /// </summary>
     public class RestrictionProcessor : ITwoPassProcessor
     {
-        private readonly Func<long, uint> _getVertex; // holds a function that gets a vertex for a given node.
+        private readonly Func<long, long> _getVertex; // holds a function that gets a vertex for a given node.
         private readonly HashSet<string> _vehicleTypes; // holds the set of vehicle types to take into account.
         private readonly SparseLongIndex _restrictedWayIds; // ways to keep to process restrictions.
         private readonly Dictionary<long, Way> _restrictedWays; // ways kept to process restrictions.
-        private readonly Action<string, List<uint>> _foundRestriction; // restriction found action.
-        private readonly Func<Node, uint> _markCore; // marks the node as core.
+        private readonly Action<string, List<long>> _foundRestriction; // restriction found action.
+        private readonly Func<Node, long> _markCore; // marks the node as core.
 
         /// <summary>
         /// Creates a new restriction processor.
         /// </summary>
-        public RestrictionProcessor(IEnumerable<string> vehicleTypes, Func<long, uint> getVertex, Func<Node, uint> markCore, Action<string, List<uint>> foundRestriction)
+        public RestrictionProcessor(IEnumerable<string> vehicleTypes, Func<long, long> getVertex, Func<Node, long> markCore, Action<string, List<long>> foundRestriction)
         {
             _vehicleTypes = new HashSet<string>(vehicleTypes);
             _getVertex = getVertex;
@@ -153,7 +153,7 @@ namespace Route.IO.Osm.Restrictions
                 var vertex = _markCore(node);
                 if (vertex != global::Route.Constants.NO_VERTEX)
                 {
-                    var r = new List<uint>();
+                    var r = new List<long>();
                     r.Add(vertex);
                     _foundRestriction("motorcar", r);
                 }
@@ -335,7 +335,7 @@ namespace Route.IO.Osm.Restrictions
 
             if (from.HasValue && to.HasValue && via.HasValue)
             {
-                var sequence = new List<uint>(3);
+                var sequence = new List<long>(3);
 
                 // get from/to ways.
                 Way fromWay = null;
@@ -401,7 +401,7 @@ namespace Route.IO.Osm.Restrictions
 
                     // add via vertex.
                     var viaVertex = _getVertex(via.Value);
-                    if (viaVertex == uint.MaxValue)
+                    if (viaVertex == long.MaxValue)
                     {
                         Logger.Log("RouterDbStreamTarget", TraceEventType.Warning,
                             "No vertex found for via node for restriction relation {0}!", relation.Id.Value);
@@ -457,7 +457,7 @@ namespace Route.IO.Osm.Restrictions
 
                     // add via vertices.
                     var viaVertex = _getVertex(viaNodes[0]);
-                    if (viaVertex == uint.MaxValue)
+                    if (viaVertex == long.MaxValue)
                     {
                         Logger.Log("RouterDbStreamTarget", TraceEventType.Warning,
                             "No vertex found for first node of via way for restriction relation {0}!", relation.Id.Value);
@@ -467,7 +467,7 @@ namespace Route.IO.Osm.Restrictions
                     for (var i = 1; i < viaNodes.Length - 1; i++)
                     {
                         viaVertex = _getVertex(viaNodes[i]);
-                        if (viaVertex != uint.MaxValue)
+                        if (viaVertex != long.MaxValue)
                         {
                             sequence.Add(viaVertex);
                         }
@@ -475,7 +475,7 @@ namespace Route.IO.Osm.Restrictions
                     if (viaNodes.Length > 1)
                     {
                         viaVertex = _getVertex(viaNodes[viaNodes.Length - 1]);
-                        if (viaVertex == uint.MaxValue)
+                        if (viaVertex == long.MaxValue)
                         {
                             Logger.Log("RouterDbStreamTarget", TraceEventType.Warning,
                                 "No vertex found for last node of via way for restriction relation {0}!", relation.Id.Value);
@@ -490,7 +490,7 @@ namespace Route.IO.Osm.Restrictions
                 for(var i = fromNodes.Length - 2; i >= 0; i--)
                 {
                     var fromVertex = _getVertex(fromNodes[i]);
-                    if (fromVertex != uint.MaxValue)
+                    if (fromVertex != long.MaxValue)
                     {
                         sequence.Insert(0, fromVertex);
                         found = true;
@@ -509,7 +509,7 @@ namespace Route.IO.Osm.Restrictions
                 for(var i = 1; i < toNodes.Length; i++)
                 {
                     var toVertex = _getVertex(toNodes[i]);
-                    if (toVertex != uint.MaxValue)
+                    if (toVertex != long.MaxValue)
                     {
                         sequence.Add(toVertex);
                         found = true;

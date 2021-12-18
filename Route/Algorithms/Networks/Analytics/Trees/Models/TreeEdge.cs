@@ -26,7 +26,7 @@ namespace Route.Algorithms.Networks.Analytics.Trees.Models
         /// <summary>
         /// Gets or sets the edge id.
         /// </summary>
-        public uint EdgeId { get; set; }
+        public long EdgeId { get; set; }
         
         /// <summary>
         /// Gets or sets the edge direction.
@@ -36,7 +36,7 @@ namespace Route.Algorithms.Networks.Analytics.Trees.Models
         /// <summary>
         /// Gets or sets the previous edge id.
         /// </summary>
-        public uint PreviousEdgeId { get; set; }
+        public long PreviousEdgeId { get; set; }
         
         /// <summary>
         /// Gets or sets the previous edge direction.

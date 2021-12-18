@@ -49,7 +49,7 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
         /// A delegate to notify listeners of a new vertex.
         /// </summary>
         /// <param name="newVertexId">The new vertex id.</param>
-        public delegate void NewVertexDelegate(uint newVertexId);
+        public delegate void NewVertexDelegate(long newVertexId);
         
         /// <summary>
         /// Gets or sets a listener to listen to new vertex notifications.
@@ -62,7 +62,7 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
         /// <param name="oldEdgeId">The old id.</param>
         /// <param name="newEdgeId">The new edge id, a part of the old edge.</param>
         /// <remarks>A this time both old and new edges exist.</remarks>
-        public delegate void NewEdgeDelegate(uint oldEdgeId, uint newEdgeId);
+        public delegate void NewEdgeDelegate(long oldEdgeId, long newEdgeId);
         
         /// <summary>
         /// Gets or sets a listener to listen to new edge nofications.
@@ -73,7 +73,7 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
         /// A delegate to notify listeners that an edge was found inside the area.
         /// </summary>
         /// <param name="edgeId">The edge id.</param>
-        public delegate void EdgeInsideDelegate(uint edgeId);
+        public delegate void EdgeInsideDelegate(long edgeId);
         
         /// <summary>
         /// Gets or sets a listener to listen to edge inside notifications.
@@ -92,7 +92,7 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
             var currentShape = new List<Coordinate>();
 
             var edgeEnumerator = _network.GetEdgeEnumerator();
-            for (uint v = 0; v < _network.VertexCount; v++)
+            for (long v = 0; v < _network.VertexCount; v++)
             {
                 if (v >= vertexCountAtStart)
                 { // all new vertices from now on.
@@ -236,9 +236,9 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
                         { // this needs to become a new vertex and we need a new edge.
                             // add the new vertex.
                             current.Vertex = _network.VertexCount;
-                            _network.AddVertex((uint) current.Vertex, current.Location.Latitude,
+                            _network.AddVertex((long) current.Vertex, current.Location.Latitude,
                                 current.Location.Longitude);
-                            this.NewVertex?.Invoke((uint) current.Vertex);
+                            this.NewVertex?.Invoke((long) current.Vertex);
                         }
 
                         // add the new edge for the segment.                  
@@ -248,7 +248,7 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
                         {
                             newEdgeData.Distance = _network.MaxEdgeDistance;
                         }
-                        long edgeId = _network.AddEdge((uint) previousRelevant.Vertex, (uint) current.Vertex,
+                        long edgeId = _network.AddEdge((long) previousRelevant.Vertex, (long) current.Vertex,
                             newEdgeData, currentShape);
                         if (!previousRelevant.Inside)
                         {
@@ -267,11 +267,11 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
                     {
                         if (newEdgeId < 0)
                         {
-                            this.NewEdge?.Invoke(edgeEnumerator.Id, (uint)-newEdgeId);
+                            this.NewEdge?.Invoke(edgeEnumerator.Id, (long)-newEdgeId);
                         }
                         else
                         {
-                            this.NewEdge?.Invoke(edgeEnumerator.Id, (uint)newEdgeId);
+                            this.NewEdge?.Invoke(edgeEnumerator.Id, (long)newEdgeId);
                         }
                     }
 
@@ -285,7 +285,7 @@ namespace Route.Algorithms.Networks.Preprocessing.Areas
                     {
                         if (newEdgeId > 0)
                         {
-                            this.EdgeInside?.Invoke((uint)newEdgeId);
+                            this.EdgeInside?.Invoke((long)newEdgeId);
                         }
                     }
                 }

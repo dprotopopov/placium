@@ -13,13 +13,13 @@ namespace Route.IO.Osm.Restrictions
     /// </remarks>
     public class NodeRestrictionProcessor : ITwoPassProcessor
     {
-        private readonly Action<string, List<uint>> _foundRestriction; // restriction found action.
-        private readonly Func<Node, uint> _markCore; // marks the node as core.
+        private readonly Action<string, List<long>> _foundRestriction; // restriction found action.
+        private readonly Func<Node, long> _markCore; // marks the node as core.
 
         /// <summary>
         /// Creates a new restriction processor.
         /// </summary>
-        public NodeRestrictionProcessor(Func<Node, uint> markCore, Action<string, List<uint>> foundRestriction)
+        public NodeRestrictionProcessor(Func<Node, long> markCore, Action<string, List<long>> foundRestriction)
         {
             _foundRestriction = foundRestriction;
             _markCore = markCore;
@@ -54,7 +54,7 @@ namespace Route.IO.Osm.Restrictions
                 var vertex = _markCore(node);
                 if (vertex != global::Route.Constants.NO_VERTEX)
                 {
-                    var r = new List<uint>();
+                    var r = new List<long>();
                     r.Add(vertex);
                     _foundRestriction("motorcar", r);
                 }

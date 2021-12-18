@@ -46,7 +46,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
     /// </remarks>
     public static class DirectedDynamicGraphExtensions
     {
-        private static uint[] EMPTY = new uint[0];
+        private static long[] EMPTY = new long[0];
 
         /// <summary>
         /// Returns a directed version of the edge-id. Smaller than 0 if inverted, as-is if not inverted.
@@ -81,14 +81,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             enumerator.MoveToEdge(edgeId);
         }
@@ -116,10 +116,10 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the contracted id, returns null if this edge is not a shortcut.
         /// </summary>
-        public static uint? GetContracted(this DirectedDynamicGraph.EdgeEnumerator edge)
+        public static long? GetContracted(this DirectedDynamicGraph.EdgeEnumerator edge)
         {
             var dynamicO = edge.DynamicData0;
-            if (dynamicO == uint.MaxValue)
+            if (dynamicO == long.MaxValue)
             {
                 return null;
             }
@@ -129,7 +129,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the contracted id, returns null if this edge is not a shortcut.
         /// </summary>
-        public static uint? GetContracted(this DynamicEdge edge)
+        public static long? GetContracted(this DynamicEdge edge)
         {
             if (edge.DynamicData == null)
             {
@@ -145,7 +145,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the sequence at the source.
         /// </summary>
-        public static uint[] GetSequence1(this DynamicEdge edge)
+        public static long[] GetSequence1(this DynamicEdge edge)
         {
             if (edge.IsOriginal())
             {
@@ -159,14 +159,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
             }
             if (dynamicData.Length < 2)
             { // only a contracted id, the contracted is is the sequence.
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
             var size = dynamicData[1];
             if (size == 0)
             {
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
-            var sequence = new uint[size];
+            var sequence = new long[size];
             for (var i = 0; i < size; i++)
             {
                 sequence[i] = dynamicData[i + 2];
@@ -177,7 +177,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the sequence at the source.
         /// </summary>
-        public static uint[] GetSequence1(this DirectedDynamicGraph.EdgeEnumerator edge)
+        public static long[] GetSequence1(this DirectedDynamicGraph.EdgeEnumerator edge)
         {
             if (edge.IsOriginal())
             {
@@ -191,14 +191,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
             }
             if (dynamicData.Length < 2)
             { // only a contracted id, the contracted is is the sequence.
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
             var size = dynamicData[1];
             if (size == 0)
             {
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
-            var sequence = new uint[size];
+            var sequence = new long[size];
             for (var i = 0; i < size; i++)
             {
                 sequence[i] = dynamicData[i + 2];
@@ -210,7 +210,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Gets the sequence at the source.
         /// </summary>
         /// <returns>The number of elements in the array that represent the sequence.</returns>
-        public static int GetSequence1(this DirectedDynamicGraph.EdgeEnumerator edge, ref uint[] sequence1)
+        public static int GetSequence1(this DirectedDynamicGraph.EdgeEnumerator edge, ref long[] sequence1)
         {
             if (edge.IsOriginal())
             {
@@ -243,7 +243,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the sequence at the target.
         /// </summary>
-        public static uint[] GetSequence2(this DynamicEdge edge)
+        public static long[] GetSequence2(this DynamicEdge edge)
         {
             if (edge.IsOriginal())
             { // sequence is the source 
@@ -257,14 +257,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
             }
             if (dynamicData.Length < 2)
             { // only a contracted id, the contracted is is the sequence.
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
             var size = dynamicData[1];
             if (dynamicData.Length - size - 2 == 0)
             {
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
-            var sequence = new uint[dynamicData.Length - 2 - size];
+            var sequence = new long[dynamicData.Length - 2 - size];
             for (var i = 0; i < sequence.Length; i++)
             {
                 sequence[i] = dynamicData[size + 2];
@@ -275,7 +275,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the sequence at the target.
         /// </summary>
-        public static uint[] GetSequence2(this DirectedDynamicGraph.EdgeEnumerator edge)
+        public static long[] GetSequence2(this DirectedDynamicGraph.EdgeEnumerator edge)
         {
             if (edge.IsOriginal())
             { // sequence is the source 
@@ -289,14 +289,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
             }
             if (dynamicData.Length < 2)
             { // only a contracted id, the contracted is the sequence.
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
             var size = dynamicData[1];
             if (dynamicData.Length - size - 2 == 0)
             {
-                return new uint[] { dynamicData[0] };
+                return new long[] { dynamicData[0] };
             }
-            var sequence = new uint[dynamicData.Length - 2 - size];
+            var sequence = new long[dynamicData.Length - 2 - size];
             for (var i = 0; i < sequence.Length; i++)
             {
                 sequence[i] = dynamicData[size + 2 + i];
@@ -307,7 +307,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Moves the enumerator to the target vertex of the given edge id.
         /// </summary>
-        public static bool MoveToTargetVertex(this DirectedDynamicGraph.EdgeEnumerator enumerator, uint edgeId)
+        public static bool MoveToTargetVertex(this DirectedDynamicGraph.EdgeEnumerator enumerator, long edgeId)
         {
             if(!enumerator.MoveToEdge(edgeId))
             {
@@ -320,7 +320,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Gets the shortest edge between two vertices.
         /// </summary>
         /// <returns></returns>
-        public static DynamicEdge GetShortestEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, Func<uint[], float?> getWeight)
+        public static DynamicEdge GetShortestEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, Func<long[], float?> getWeight)
         {
             var minWeight = float.MaxValue;
             var edges = graph.GetEdgeEnumerator(vertex1);
@@ -343,7 +343,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Expands a the shortest edge between the two given vertices.
         /// </summary>
-        public static void ExpandEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, List<uint> vertices, bool inverted,
+        public static void ExpandEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, List<long> vertices, bool inverted,
             bool forward)
         {
             // check if expansion is needed.
@@ -398,7 +398,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Adds an edge.
         /// </summary>
-        public static uint AddEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction)
+        public static long AddEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction)
         {
             return graph.AddEdge(vertex1, vertex2, ContractedEdgeDataSerializer.Serialize(weight, direction));
         }
@@ -406,7 +406,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Adds an edge.
         /// </summary>
-        public static uint AddEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, float distance, float time)
+        public static long AddEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction, float distance, float time)
         {
             return graph.AddEdge(vertex1, vertex2, ContractedEdgeDataSerializer.SerializeDynamicAugmented(weight, direction, distance, time));
         }
@@ -422,8 +422,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <param name="weight">The weight.</param>
         /// <param name="sequence1">The relevant sequence starting but not including vertex1; vertex1->(0->1...).</param>
         /// <param name="sequence2">The relevant sequence starting but not including vertex2; (0->1...)->vertex2.</param>
-        public static uint AddEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, uint contractedId, 
-            uint[] sequence1, uint[] sequence2)
+        public static long AddEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction, long contractedId, 
+            long[] sequence1, long[] sequence2)
         {
             if (sequence1 != null && sequence1.Length == 1 &&
                 sequence1[0] == contractedId)
@@ -450,12 +450,12 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 }
                 dataSize += sequence2.Length;
             }
-            var data = new uint[dataSize];
+            var data = new long[dataSize];
             data[0] = ContractedEdgeDataSerializer.Serialize(weight, direction);
             data[1] = contractedId;
             if (sequence1 != null && sequence1.Length != 0)
             {
-                data[2] = (uint)sequence1.Length;
+                data[2] = (long)sequence1.Length;
                 sequence1.CopyTo(data, 3);
             }
             if (sequence2 != null && sequence2.Length != 0)
@@ -487,8 +487,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <param name="weight">The weight.</param>
         /// <param name="sequence1">The relevant sequence starting but not including vertex1; vertex1->(0->1...).</param>
         /// <param name="sequence2">The relevant sequence starting but not including vertex2; (0->1...)->vertex2.</param>
-        public static uint AddEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, uint contractedId,
-            float distance, float time, uint[] sequence1, uint[] sequence2)
+        public static long AddEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction, long contractedId,
+            float distance, float time, long[] sequence1, long[] sequence2)
         {
             if (sequence1 != null && sequence1.Length == 1 &&
                 sequence1[0] == contractedId)
@@ -515,14 +515,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 }
                 dataSize += sequence2.Length;
             }
-            var data = new uint[dataSize];
+            var data = new long[dataSize];
             data[0] = ContractedEdgeDataSerializer.Serialize(weight, direction);
             data[1] = ContractedEdgeDataSerializer.SerializeDistance(distance);
             data[2] = ContractedEdgeDataSerializer.SerializeTime(time);
             data[3] = contractedId;
             if (sequence1 != null && sequence1.Length != 0)
             {
-                data[4] = (uint)sequence1.Length;
+                data[4] = (long)sequence1.Length;
                 sequence1.CopyTo(data, 5);
             }
             if (sequence2 != null && sequence2.Length != 0)
@@ -545,8 +545,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Add or update edge.
         /// </summary>
         /// <returns></returns>
-        public static void AddOrUpdateEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight,
-            bool? direction, uint contractedId, uint[] s1, uint[] s2)
+        public static void AddOrUpdateEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight,
+            bool? direction, long contractedId, long[] s1, long[] s2)
         {
             if ((vertex1 == 2692 && vertex2 == 2730)  ||
                 (vertex1 == 2730 && vertex2 == 2692))
@@ -556,12 +556,12 @@ namespace Route.Algorithms.Contracted.EdgeBased
 
             var forward = false;
             var forwardWeight = float.MaxValue;
-            var forwardContractedId = uint.MaxValue;
+            var forwardContractedId = long.MaxValue;
             var forwardS1 = Constants.EMPTY_SEQUENCE;
             var forwardS2 = Constants.EMPTY_SEQUENCE;
             var backward = false;
             var backwardWeight = float.MaxValue;
-            var backwardContractedId = uint.MaxValue;
+            var backwardContractedId = long.MaxValue;
             var backwardS1 = Constants.EMPTY_SEQUENCE;
             var backwardS2 = Constants.EMPTY_SEQUENCE;
 
@@ -589,7 +589,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 {
                     float localWeight;
                     bool? localDirection;
-                    uint localContractedId = Constants.NO_VERTEX;
+                    long localContractedId = Constants.NO_VERTEX;
                     var localS1 = Constants.EMPTY_SEQUENCE;
                     var localS2 = Constants.EMPTY_SEQUENCE;
                     ContractedEdgeDataSerializer.Deserialize(edgeEnumerator.Data0,
@@ -673,19 +673,19 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Add or update edge.
         /// </summary>
         /// <returns></returns>
-        public static void AddOrUpdateEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight,
-            bool? direction, uint contractedId, float distance, float time, uint[] s1, uint[] s2)
+        public static void AddOrUpdateEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight,
+            bool? direction, long contractedId, float distance, float time, long[] s1, long[] s2)
         {
             var forward = false;
             var forwardWeight = float.MaxValue;
-            var forwardContractedId = uint.MaxValue;
+            var forwardContractedId = long.MaxValue;
             var forwardDistance = float.MaxValue;
             var forwardTime = float.MaxValue;
             var forwardS1 = Constants.EMPTY_SEQUENCE;
             var forwardS2 = Constants.EMPTY_SEQUENCE;
             var backward = false;
             var backwardWeight = float.MaxValue;
-            var backwardContractedId = uint.MaxValue;
+            var backwardContractedId = long.MaxValue;
             var backwardDistance = float.MaxValue;
             var backwardTime = float.MaxValue;
             var backwardS1 = Constants.EMPTY_SEQUENCE;
@@ -719,7 +719,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 {
                     float localWeight;
                     bool? localDirection;
-                    uint localContractedId = Constants.NO_VERTEX;
+                    long localContractedId = Constants.NO_VERTEX;
                     float localDistance;
                     float localTime;
                     var localS1 = Constants.EMPTY_SEQUENCE;
@@ -809,15 +809,15 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Tries adding or updating an edge and returns #added and #removed edges.
         /// </summary>
         /// <returns></returns>
-        public static void TryAddOrUpdateEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, uint contractedId,
+        public static void TryAddOrUpdateEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction, long contractedId,
             out int added, out int removed)
         {
             var forward = false;
             var forwardWeight = float.MaxValue;
-            var forwardContractedId = uint.MaxValue;
+            var forwardContractedId = long.MaxValue;
             var backward = false;
             var backwardWeight = float.MaxValue;
-            var backwardContractedId = uint.MaxValue;
+            var backwardContractedId = long.MaxValue;
 
             if (direction == null || direction.Value)
             {
@@ -841,7 +841,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                     edgeCount++;
                     float localWeight;
                     bool? localDirection;
-                    uint localContractedId = Constants.NO_VERTEX;
+                    long localContractedId = Constants.NO_VERTEX;
                     ContractedEdgeDataSerializer.Deserialize(edgeEnumerator.Data0,
                         out localWeight, out localDirection);
                     if (!edgeEnumerator.IsOriginal())
@@ -902,8 +902,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
         ///// <param name="weight">The weight.</param>
         ///// <param name="sequence1">The relevant sequence starting but not including vertex1; vertex1->(0->1...).</param>
         ///// <param name="sequence2">The relevant sequence starting but not including vertex2; (0->1...)->vertex2.</param>
-        //public static void AddEdgeOrUpdate(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, uint contractedId,
-        //    uint[] sequence1, uint[] sequence2)
+        //public static void AddEdgeOrUpdate(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction, long contractedId,
+        //    long[] sequence1, long[] sequence2)
         //{
         //    var ignoreSequences = true;
 
@@ -916,7 +916,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         //        throw new ArgumentOutOfRangeException("sequence2");
         //    }
 
-        //    Func<uint[], uint[], bool> sequenceEquals = (s1, s2) =>
+        //    Func<long[], long[], bool> sequenceEquals = (s1, s2) =>
         //    {
         //        if (s1 == null || s1.Length == 0)
         //        {
@@ -942,8 +942,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
 
         //    float forwardWeight = float.MaxValue;
         //    float backwardWeight = float.MaxValue;
-        //    uint? forwardContractedId = null;
-        //    uint? backwardContractedId = null;
+        //    long? forwardContractedId = null;
+        //    long? backwardContractedId = null;
         //    var forwardSequence1 = sequence1;
         //    var forwardSequence2 = sequence2;
         //    var backwardSequence1 = sequence1;
@@ -1062,10 +1062,10 @@ namespace Route.Algorithms.Contracted.EdgeBased
         ///// <param name="weight">The weight.</param>
         ///// <param name="sequence1">The relevant sequence starting but not including vertex1; vertex1->(0->1...).</param>
         ///// <param name="sequence2">The relevant sequence starting but not including vertex2; (0->1...)->vertex2.</param>
-        //public static int TryAddEdgeOrUpdate(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, uint contractedId,
-        //    uint[] sequence1, uint[] sequence2)
+        //public static int TryAddEdgeOrUpdate(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction, long contractedId,
+        //    long[] sequence1, long[] sequence2)
         //{
-        //    Func<uint[], uint[], bool> sequenceEquals = (s1, s2) =>
+        //    Func<long[], long[], bool> sequenceEquals = (s1, s2) =>
         //    {
         //        if (s1 == null || s1.Length == 0)
         //        {
@@ -1094,8 +1094,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
         //    enumerator.MoveTo(vertex1);
         //    float forwardWeight = float.MaxValue;
         //    float backwardWeight = float.MaxValue;
-        //    uint? forwardContractedId = null;
-        //    uint? backwardContractedId = null;
+        //    long? forwardContractedId = null;
+        //    long? backwardContractedId = null;
         //    if (direction != null)
         //    {
         //        if (direction.Value)
@@ -1203,7 +1203,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <param name="weight">The weight.</param>
         /// <param name="sequence1">The relevant sequence starting but not including vertex1; vertex1->(0->1...).</param>
         /// <param name="sequence2">The relevant sequence starting but not including vertex2; (0->1...)->vertex2.</param>
-        public static uint AddEdge(this DirectedDynamicGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, uint? contractedId, uint[] sequence1, uint[] sequence2)
+        public static long AddEdge(this DirectedDynamicGraph graph, long vertex1, long vertex2, float weight, bool? direction, long? contractedId, long[] sequence1, long[] sequence2)
         {
             if (!contractedId.HasValue)
             {
@@ -1233,7 +1233,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the weight for the given original sequence.
         /// </summary>
-        public static float GetOriginalWeight(this DirectedDynamicGraph graph, uint[] sequence)
+        public static float GetOriginalWeight(this DirectedDynamicGraph graph, long[] sequence)
         {
             float weight = 0;
             for(var i = 0; i < sequence.Length - 1; i++)
@@ -1246,7 +1246,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the best original weight between the two given vertices.
         /// </summary>
-        public static float GetOriginalWeight(this DirectedDynamicGraph graph, uint vertex1, uint vertex2)
+        public static float GetOriginalWeight(this DirectedDynamicGraph graph, long vertex1, long vertex2)
         {
             var enumerator = graph.GetEdgeEnumerator();
             if (enumerator.MoveTo(vertex1))
@@ -1297,7 +1297,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Moves the enumerator to the edge representing the original edge between the two given vertices that can form a path from vertex1 -> vertex2. When returned true, the edge is vertex1 -> vertex2 when false vertex2 -> vertex1.
         /// </summary>
-        public static bool MoveToOriginal(this DirectedDynamicGraph.EdgeEnumerator enumerator, uint vertex1, uint vertex2)
+        public static bool MoveToOriginal(this DirectedDynamicGraph.EdgeEnumerator enumerator, long vertex1, long vertex2)
         {
             if (enumerator.MoveTo(vertex1))
             {
@@ -1344,7 +1344,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the original edge.
         /// </summary>
-        public static DynamicEdge GetOriginal(this DirectedDynamicGraph graph, uint vertex1, uint vertex2)
+        public static DynamicEdge GetOriginal(this DirectedDynamicGraph graph, long vertex1, long vertex2)
         {
             return graph.GetEdgeEnumerator().GetOriginal(vertex1, vertex2);
         }
@@ -1352,7 +1352,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets the original edge.
         /// </summary>
-        public static DynamicEdge GetOriginal(this DirectedDynamicGraph.EdgeEnumerator enumerator, uint vertex1, uint vertex2)
+        public static DynamicEdge GetOriginal(this DirectedDynamicGraph.EdgeEnumerator enumerator, long vertex1, long vertex2)
         {
             if (enumerator.MoveTo(vertex1))
             {
@@ -1398,7 +1398,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Moves this enumerator to an edge (vertex1->vertex2) that has an end sequence that matches the given sequence.
         /// </summary>
-        public static bool MoveToEdge<T>(this DirectedDynamicGraph.EdgeEnumerator enumerator, uint vertex1, uint vertex2, uint[] sequence2, Weights.WeightHandler<T> weightHandler, 
+        public static bool MoveToEdge<T>(this DirectedDynamicGraph.EdgeEnumerator enumerator, long vertex1, long vertex2, long[] sequence2, Weights.WeightHandler<T> weightHandler, 
             bool direction, out T weight)
             where T : struct
         {
@@ -1452,7 +1452,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets all edges starting at this edges.
         /// </summary>
-        public static List<DynamicEdge> GetEdges(this DirectedDynamicGraph graph, uint vertex)
+        public static List<DynamicEdge> GetEdges(this DirectedDynamicGraph graph, long vertex)
         {
             return new List<DynamicEdge>(graph.GetEdgeEnumerator(vertex));
         }
@@ -1464,7 +1464,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <param name="originalPath">The sequence."</param>
         /// <param name="reverse">The sequence has to be used in reverse, for performance reasons to avoid creating another array.</param>
         /// <param name="pathIsBackwards">When the resulting path is a backwards path agains the direction of the direction flags.</param>
-        public static EdgePath<float> BuildPath(this DirectedDynamicGraph.EdgeEnumerator enumerator, uint[] originalPath, bool reverse = false, bool pathIsBackwards = false)
+        public static EdgePath<float> BuildPath(this DirectedDynamicGraph.EdgeEnumerator enumerator, long[] originalPath, bool reverse = false, bool pathIsBackwards = false)
         {
             if (!pathIsBackwards)
             {
@@ -1583,7 +1583,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <param name="originalPath">The sequence."</param>
         /// <param name="reverse">The sequence has to be used in reverse, for performance reasons to avoid creating another array.</param>
         /// <param name="pathIsBackwards">When the resulting path is a backwards path agains the direction of the direction flags.</param>
-        public static EdgePath<float> BuildPath(this DirectedDynamicGraph graph, uint[] originalPath, bool reverse = false, bool pathIsBackwards = false)
+        public static EdgePath<float> BuildPath(this DirectedDynamicGraph graph, long[] originalPath, bool reverse = false, bool pathIsBackwards = false)
         {
             return graph.GetEdgeEnumerator().BuildPath(originalPath, reverse);
         }

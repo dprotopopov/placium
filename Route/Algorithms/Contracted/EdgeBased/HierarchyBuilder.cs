@@ -39,7 +39,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         private readonly IPriorityCalculator _priorityCalculator;
         private readonly IWitnessCalculator<T> _witnessCalculator;
         private readonly static Logger _logger = Logger.Create("HierarchyBuilder");
-        private readonly Func<uint, IEnumerable<uint[]>> _getRestrictions;
+        private readonly Func<long, IEnumerable<long[]>> _getRestrictions;
         private const float E = 0.1f;
         private readonly WeightHandler<T> _weightHandler;
 
@@ -47,7 +47,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Creates a new hierarchy builder.
         /// </summary>
         public HierarchyBuilder(DirectedDynamicGraph graph, IPriorityCalculator priorityCalculator, IWitnessCalculator<T> witnessCalculator,
-            WeightHandler<T> weightHandler, Func<uint, IEnumerable<uint[]>> getRestrictions)
+            WeightHandler<T> weightHandler, Func<long, IEnumerable<long[]>> getRestrictions)
         {
             weightHandler.CheckCanUse(graph);
 
@@ -58,22 +58,22 @@ namespace Route.Algorithms.Contracted.EdgeBased
             _weightHandler = weightHandler;
         }
 
-        private BinaryHeap<uint> _queue; // the vertex-queue.
-        private BitArray32 _contractedFlags; // contains flags for contracted vertices.
-        private BitArray32 _restrictionFlags; // contains flags for restricted vertices.
+        private BinaryHeap<long> _queue; // the vertex-queue.
+        private BitArray64 _contractedFlags; // contains flags for contracted vertices.
+        private BitArray64 _restrictionFlags; // contains flags for restricted vertices.
 
         /// <summary>
         /// Excutes the actual run.
         /// </summary>
         protected override void DoRun(CancellationToken cancellationToken)
         {
-            _queue = new BinaryHeap<uint>((uint)_graph.VertexCount);
-            _contractedFlags = new BitArray32(_graph.VertexCount);
-            _restrictionFlags = new BitArray32(_graph.VertexCount);
+            _queue = new BinaryHeap<long>((long)_graph.VertexCount);
+            _contractedFlags = new BitArray64(_graph.VertexCount);
+            _restrictionFlags = new BitArray64(_graph.VertexCount);
             _missesQueue = new Queue<bool>();
 
             // build restrictions flags.
-            for(uint i= 0; i < _graph.VertexCount; i++)
+            for(long i= 0; i < _graph.VertexCount; i++)
             {
                 var restrictions = _getRestrictions(i);
                 if (restrictions != null && restrictions.Any())
@@ -114,8 +114,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
                     int totaEdges = 0;
                     int totalUncontracted = 0;
                     int maxCardinality = 0;
-                    var neighbourCount = new Dictionary<uint, int>();
-                    for (uint v = 0; v < _graph.VertexCount; v++)
+                    var neighbourCount = new Dictionary<long, int>();
+                    for (long v = 0; v < _graph.VertexCount; v++)
                     {
                         if (!_contractedFlags[v])
                         {
@@ -150,7 +150,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
             _logger.Log(TraceEventType.Information, "Calculating queue...");
 
             _queue.Clear();
-            for (uint v = 0; v < _graph.VertexCount; v++)
+            for (long v = 0; v < _graph.VertexCount; v++)
             {
                 if (!_contractedFlags[v])
                 {
@@ -169,8 +169,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
 
             //var edges = new List<DynamicEdge>();
             //var weights = new List<float>();
-            //var targets = new List<uint>();
-            //for (uint vertex = 0; vertex < _graph.VertexCount; vertex++)
+            //var targets = new List<long>();
+            //for (long vertex = 0; vertex < _graph.VertexCount; vertex++)
             //{
             //    if (_restrictionFlags[vertex])
             //    { // don't remove witnessed edges when there is a potential restriction.
@@ -220,7 +220,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
 
             //    // calculate all witness paths.
             //    _witnessCalculator.Calculate(_graph, _getRestrictions, vertex, targets, weights,
-            //        ref forwardWitnesses, ref backwardWitnesses, uint.MaxValue);
+            //        ref forwardWitnesses, ref backwardWitnesses, long.MaxValue);
 
             //    // check witness paths.
             //    for (var i = 0; i < edges.Count; i++)
@@ -252,7 +252,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Select the next vertex to contract.
         /// </summary>
         /// <returns></returns>
-        private uint? SelectNext()
+        private long? SelectNext()
         {
             // first check the first of the current queue.
             while (_queue.Count > 0)
@@ -313,7 +313,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Contracts the given vertex.
         /// </summary>
-        private void Contract(uint vertex)
+        private void Contract(long vertex)
         {
             // get and keep edges.
             var enumerator = _graph.GetEdgeEnumerator(vertex);
@@ -329,7 +329,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 var edge1Sequence2 = edges[j].GetSequence2();
                 if (edge1Sequence2.Length == 0)
                 {
-                    edge1Sequence2 = new uint[] { vertex };
+                    edge1Sequence2 = new long[] { vertex };
                 }
                 
                 bool? edge1Direction;
@@ -340,7 +340,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 // figure out what witness paths to calculate.
                 var forwardWitnesses = new EdgePath<T>[j];
                 var backwardWitnesses = new EdgePath<T>[j];
-                var targets = new List<uint>(j);
+                var targets = new List<long>(j);
                 var targetWeights = new List<T>(j);
                 for (var k = 0; k < j; k++)
                 {
@@ -377,16 +377,16 @@ namespace Route.Algorithms.Contracted.EdgeBased
                     ref backwardWitnesses, Constants.NO_VERTEX);
 
                 // get all sequences where needed.
-                var s1forward = new uint[forwardWitnesses.Length][];
-                var s2forward = new uint[forwardWitnesses.Length][];
-                var s1backward = new uint[backwardWitnesses.Length][];
-                var s2backward = new uint[backwardWitnesses.Length][];
+                var s1forward = new long[forwardWitnesses.Length][];
+                var s2forward = new long[forwardWitnesses.Length][];
+                var s1backward = new long[backwardWitnesses.Length][];
+                var s2backward = new long[backwardWitnesses.Length][];
                 for (var k = 0; k < j; k++)
                 {
                     var edge2Sequence2 = edges[k].GetSequence2();
                     if (edge2Sequence2.Length == 0)
                     {
-                        edge2Sequence2 = new uint[] { vertex };
+                        edge2Sequence2 = new long[] { vertex };
                     }
 
                     if (forwardWitnesses[k].HasVertex(vertex))
@@ -502,7 +502,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Creates a new hierarchy builder.
         /// </summary>
         public HierarchyBuilder(DirectedDynamicGraph graph, IPriorityCalculator priorityCalculator, IWitnessCalculator<float> witnessCalculator,
-            Func<uint, IEnumerable<uint[]>> getRestrictions)
+            Func<long, IEnumerable<long[]>> getRestrictions)
             : base(graph, priorityCalculator, witnessCalculator, new DefaultWeightHandler(null), getRestrictions)
         {
 

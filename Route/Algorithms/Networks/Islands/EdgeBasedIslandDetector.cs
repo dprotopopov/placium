@@ -44,7 +44,7 @@ namespace Route.Algorithms.Networks.Islands
         /// <param name="network">The network.</param>
         /// <param name="profile">The profile.</param>
         /// <param name="restrictions">The restrictions.</param>
-        public EdgeBasedIslandDetector(RoutingNetwork network, Func<ushort, uint, Factor> profile, 
+        public EdgeBasedIslandDetector(RoutingNetwork network, Func<ushort, long, Factor> profile, 
             RestrictionCollection restrictions = null)
         {
             _network = network;
@@ -76,10 +76,10 @@ namespace Route.Algorithms.Networks.Islands
             _islandLabels = new IslandLabels();
 
             // do a run over each vertex and connect islands with bidirectional edges where possible.
-            uint currentVertex = 0;
+            long currentVertex = 0;
             var edgeEnumerator1 = _network.GetEdgeEnumerator();
             var edgeEnumerator2 = _network.GetEdgeEnumerator();
-            var bestLabels = new Dictionary<uint, uint>();
+            var bestLabels = new Dictionary<long, long>();
             while (currentVertex < _network.VertexCount)
             {
                 if (!edgeEnumerator1.MoveTo(currentVertex))
@@ -94,7 +94,7 @@ namespace Route.Algorithms.Networks.Islands
                 // log all connections.
                 bestLabels.Clear();
                 var incomingOneWayEdge = -1L;
-                uint incomingVertex = 0;
+                long incomingVertex = 0;
                 var edges = 0;
                 while (edgeEnumerator1.MoveNext())
                 {
@@ -209,7 +209,7 @@ namespace Route.Algorithms.Networks.Islands
                     incomingOneWayEdge >= 0 && 
                     edges == 2)
                 { // link sequences of oneways together.
-                    var edge1Id = (uint)incomingOneWayEdge;
+                    var edge1Id = (long)incomingOneWayEdge;
                     // we can also update neighbours if there is only one incoming edge.
                     
                     // get label or provisionally set label to own id.
@@ -290,7 +290,7 @@ namespace Route.Algorithms.Networks.Islands
                 }
 
                 // update labels based on best labels.
-                var labelsToUpdate = new HashSet<uint>();
+                var labelsToUpdate = new HashSet<long>();
                 foreach (var pair in bestLabels)
                 {
                     var edgeId = pair.Key; // the edge key.
@@ -316,7 +316,7 @@ namespace Route.Algorithms.Networks.Islands
             }
 
             // update all labels to lowest possible.
-            for (uint e = 0; e < _islandLabels.Count; e++)
+            for (long e = 0; e < _islandLabels.Count; e++)
             {
                 _islandLabels.UpdateLowest(e);
             }
@@ -420,7 +420,7 @@ namespace Route.Algorithms.Networks.Islands
                 "Built directional graph.");
             
             // calculate all loops with increasing max settle settings until they are unlimited and all loops are removed.
-            uint maxSettles = 1;
+            long maxSettles = 1;
             Logger.Log($"{nameof(EdgeBasedIslandDetector)}.{nameof(Run)}", TraceEventType.Verbose,
                 $"Label graph has {islandLabelGraph.LabelCount} labels.");
             while (true)
@@ -437,7 +437,7 @@ namespace Route.Algorithms.Networks.Islands
                 });
                 
                 // update all labels to lowest possible.
-                for (uint e = 0; e < _islandLabels.Count; e++)
+                for (long e = 0; e < _islandLabels.Count; e++)
                 {
                     _islandLabels.UpdateLowest(e);
                 }
@@ -451,7 +451,7 @@ namespace Route.Algorithms.Networks.Islands
                 var labelCount = islandLabelGraph.Reduce(_islandLabels);       
                 Logger.Log($"{nameof(EdgeBasedIslandDetector)}.{nameof(Run)}", TraceEventType.Verbose,
                     $"Label graph now has {labelCount} non-empty labels.");     
-                maxSettles = (uint) _network.EdgeCount;
+                maxSettles = (long) _network.EdgeCount;
             }
 
             this.HasSucceeded = true;

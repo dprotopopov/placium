@@ -10,8 +10,8 @@ namespace Route.Algorithms.Contracted.Dual.Cache
     public class SearchSpaceCache<T>
         where T : struct
     {
-        private readonly LRUCache<Tuple<uint, T, uint, T>, SearchSpace<T>> _forwardCache = new LRUCache<Tuple<uint, T, uint, T>, SearchSpace<T>>(65536);
-        private readonly LRUCache<Tuple<uint, T, uint, T>, SearchSpace<T>> _backwardCache = new LRUCache<Tuple<uint, T, uint, T>, SearchSpace<T>>(65536);
+        private readonly LRUCache<Tuple<long, T, long, T>, SearchSpace<T>> _forwardCache = new LRUCache<Tuple<long, T, long, T>, SearchSpace<T>>(65536);
+        private readonly LRUCache<Tuple<long, T, long, T>, SearchSpace<T>> _backwardCache = new LRUCache<Tuple<long, T, long, T>, SearchSpace<T>>(65536);
 
         /// <summary>
         /// Tries to get a search space from cache.
@@ -23,7 +23,7 @@ namespace Route.Algorithms.Contracted.Dual.Cache
         public bool TryGet(DykstraSource<T> source, bool backward, out SearchSpace<T> space)
         {
             var sourceTuple =
-                new Tuple<uint, T, uint, T>(source.Vertex1, source.Weight1, source.Vertex2, source.Weight2);
+                new Tuple<long, T, long, T>(source.Vertex1, source.Weight1, source.Vertex2, source.Weight2);
             if (backward)
             {
                 return _backwardCache.TryGet(sourceTuple, out space);
@@ -40,7 +40,7 @@ namespace Route.Algorithms.Contracted.Dual.Cache
         public void Add(DykstraSource<T> source, bool backward, SearchSpace<T> space)
         {
             var sourceTuple =
-                new Tuple<uint, T, uint, T>(source.Vertex1, source.Weight1, source.Vertex2, source.Weight2);
+                new Tuple<long, T, long, T>(source.Vertex1, source.Weight1, source.Vertex2, source.Weight2);
             if (backward)
             {
                 _backwardCache.Add(sourceTuple, space);

@@ -32,7 +32,7 @@ namespace Route.Algorithms
         /// <param name="vertex1"></param>
         /// <param name="vertex2"></param>
         /// <param name="vertex3"></param>
-        public Turn(uint vertex1, uint vertex2, uint vertex3)
+        public Turn(long vertex1, long vertex2, long vertex3)
         {
             this.Vertex1 = vertex1;
             this.Vertex2 = vertex2;
@@ -42,7 +42,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Creates a turn from an original and a third vertex.
         /// </summary>
-        public Turn(OriginalEdge edge, uint to)
+        public Turn(OriginalEdge edge, long to)
         {
             this.Vertex1 = edge.Vertex1;
             this.Vertex2 = edge.Vertex2;
@@ -52,24 +52,24 @@ namespace Route.Algorithms
         /// <summary>
         /// First vertex.
         /// </summary>
-        public uint Vertex1 { get; set; }
+        public long Vertex1 { get; set; }
 
         /// <summary>
         /// Second vertex.
         /// </summary>
-        public uint Vertex2 { get; set; }
+        public long Vertex2 { get; set; }
 
         /// <summary>
         /// Third vertex.
         /// </summary>
-        public uint Vertex3 { get; set; }
+        public long Vertex3 { get; set; }
 
         /// <summary>
         /// Gets the n-th vertex in this turn.
         /// </summary>
         /// <param name="i"></param>
         /// <returns></returns>
-        public uint this[int i]
+        public long this[int i]
         {
             get
             {

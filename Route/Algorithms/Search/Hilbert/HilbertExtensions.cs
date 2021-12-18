@@ -62,7 +62,7 @@ namespace Route.Algorithms.Search.Hilbert
             {
                 QuickSort.Sort((vertex) =>
                 {
-                    return graph.Distance(n, (uint)vertex);
+                    return graph.Distance(n, (long)vertex);
                 },
                 (vertex1, vertex2) =>
                 {
@@ -72,7 +72,7 @@ namespace Route.Algorithms.Search.Hilbert
                         {
                             swap(vertex1, vertex2);
                         }
-                        graph.Switch((uint)vertex1, (uint)vertex2);
+                        graph.Switch((long)vertex1, (long)vertex2);
                     }
                 }, 0, graph.VertexCount - 1);
             }
@@ -87,7 +87,7 @@ namespace Route.Algorithms.Search.Hilbert
             {
                 QuickSort.Sort((vertex) =>
                 {
-                    return graph.Distance(n, (uint)vertex);
+                    return graph.Distance(n, (long)vertex);
                 },
                 (vertex1, vertex2) =>
                 {
@@ -97,7 +97,7 @@ namespace Route.Algorithms.Search.Hilbert
                         {
                             swap(vertex1, vertex2);
                         }
-                        graph.Switch((uint)vertex1, (uint)vertex2);
+                        graph.Switch((long)vertex1, (long)vertex2);
                     }
                 }, 0, graph.VertexCount - 1);
             }
@@ -115,11 +115,11 @@ namespace Route.Algorithms.Search.Hilbert
                 {
                     foreach(var restrictionDb in restrictionDbs)
                     {
-                        restrictionDb.RestrictionsDb.Switch((uint)vertex1, (uint)vertex2);
+                        restrictionDb.RestrictionsDb.Switch((long)vertex1, (long)vertex2);
                     }
 
-                    db.VertexMeta.Switch((uint)vertex1, (uint)vertex2);
-                    db.VertexData.Switch((uint)vertex1, (uint)vertex2);
+                    db.VertexMeta.Switch((long)vertex1, (long)vertex2);
+                    db.VertexData.Switch((long)vertex1, (long)vertex2);
                 }
             });
         }
@@ -127,7 +127,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Returns the hibert distance for n and the given vertex.
         /// </summary>
-        public static long Distance(this GeometricGraph graph, int n, uint vertex)
+        public static long Distance(this GeometricGraph graph, int n, long vertex)
         {
             float latitude, longitude;
             if (!graph.GetVertex(vertex, out latitude, out longitude))
@@ -141,7 +141,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Returns the hibert distance for n and the given vertex.
         /// </summary>
-        public static long Distance(this RoutingNetwork graph, int n, uint vertex)
+        public static long Distance(this RoutingNetwork graph, int n, long vertex)
         {
             float latitude, longitude;
             if (!graph.GetVertex(vertex, out latitude, out longitude))
@@ -155,7 +155,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Searches the graph for nearby vertices assuming it has been sorted.
         /// </summary>
-        public static HashSet<uint> Search(this GeometricGraph graph, float latitude, float longitude,
+        public static HashSet<long> Search(this GeometricGraph graph, float latitude, float longitude,
             float offset)
         {
             return HilbertExtensions.Search(graph, HilbertExtensions.DefaultHilbertSteps, latitude - offset, longitude - offset, 
@@ -165,7 +165,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Searches the graph for nearby vertices assuming it has been sorted.
         /// </summary>
-        public static HashSet<uint> Search(this GeometricGraph graph, float minLatitude, float minLongitude, 
+        public static HashSet<long> Search(this GeometricGraph graph, float minLatitude, float minLongitude, 
             float maxLatitude, float maxLongitude)
         {
             return HilbertExtensions.Search(graph, HilbertExtensions.DefaultHilbertSteps, minLatitude, minLongitude,
@@ -175,10 +175,10 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Searches the graph for nearby vertices assuming it has been sorted.
         /// </summary>
-        public static HashSet<uint> Search(this GeometricGraph graph, int n, float minLatitude, float minLongitude,
+        public static HashSet<long> Search(this GeometricGraph graph, int n, float minLatitude, float minLongitude,
             float maxLatitude, float maxLongitude)
         {
-            var vertices = new HashSet<uint>();
+            var vertices = new HashSet<long>();
             if (!Coordinate.Validate(minLatitude, minLongitude) ||
                 !Coordinate.Validate(maxLatitude, maxLongitude)) return vertices;
             
@@ -190,8 +190,8 @@ namespace Route.Algorithms.Search.Hilbert
             targets.Sort();
 
             var targetIdx = 0;
-            var vertex1 = (uint)0;
-            var vertex2 = (uint)graph.VertexCount - 1;
+            var vertex1 = (long)0;
+            var vertex2 = (long)graph.VertexCount - 1;
             float vertexLat, vertexLon;
             while (targetIdx < targets.Count &&
                 vertex1 < graph.VertexCount)
@@ -206,7 +206,7 @@ namespace Route.Algorithms.Search.Hilbert
                     targetIdx++;
                 }
 
-                uint vertex;
+                long vertex;
                 int count;
                 if (distance == upper)
                 {
@@ -215,14 +215,14 @@ namespace Route.Algorithms.Search.Hilbert
                         var foundCount = count;
                         while (count > 0)
                         { // there have been vertices found.
-                            if (graph.GetVertex((uint)vertex + (uint)(count - 1), out vertexLat, out vertexLon))
+                            if (graph.GetVertex((long)vertex + (long)(count - 1), out vertexLat, out vertexLon))
                             { // the vertex was found.
                                 if (minLatitude < vertexLat &&
                                     minLongitude < vertexLon &&
                                     maxLatitude > vertexLat &&
                                     maxLongitude > vertexLon)
                                 { // within offset.
-                                    vertices.Add((uint)vertex + (uint)(count - 1));
+                                    vertices.Add((long)vertex + (long)(count - 1));
                                 }
                             }
                             count--;
@@ -230,7 +230,7 @@ namespace Route.Algorithms.Search.Hilbert
 
                         // update vertex1.
                         //vertex1 = vertex;
-                        vertex1 = vertex + (uint)foundCount;
+                        vertex1 = vertex + (long)foundCount;
                     }
                 }
                 else
@@ -240,14 +240,14 @@ namespace Route.Algorithms.Search.Hilbert
                         var foundCount = count;
                         while (count > 0)
                         { // there have been vertices found.
-                            if (graph.GetVertex((uint)vertex + (uint)(count - 1), out vertexLat, out vertexLon))
+                            if (graph.GetVertex((long)vertex + (long)(count - 1), out vertexLat, out vertexLon))
                             { // the vertex was found.
                                 if (minLatitude < vertexLat &&
                                     minLongitude < vertexLon &&
                                     maxLatitude > vertexLat &&
                                     maxLongitude > vertexLon)
                                 { // within offset.
-                                    vertices.Add((uint)vertex + (uint)(count - 1));
+                                    vertices.Add((long)vertex + (long)(count - 1));
                                 }
                             }
                             count--;
@@ -255,7 +255,7 @@ namespace Route.Algorithms.Search.Hilbert
 
                         // update vertex1.
                         //vertex1 = vertex;
-                        vertex1 = vertex + (uint)foundCount;
+                        vertex1 = vertex + (long)foundCount;
                     }
                 }
 
@@ -269,7 +269,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// Searches the graph for nearby vertices assuming it has been sorted.
         /// </summary>
         public static bool Search(this GeometricGraph graph, long hilbert, int n,
-            uint vertex1, uint vertex2, out uint vertex, out int count)
+            long vertex1, long vertex2, out long vertex, out int count)
         {
             var hilbert1 = HilbertExtensions.Distance(graph, n, vertex1);
             var hilbert2 = HilbertExtensions.Distance(graph, n, vertex2);
@@ -344,7 +344,7 @@ namespace Route.Algorithms.Search.Hilbert
                 }
 
                 // Binary search: calculate hilbert distance of the middle.
-                var vertexMiddle = vertex1 + (uint)((vertex2 - vertex1) / 2);
+                var vertexMiddle = vertex1 + (long)((vertex2 - vertex1) / 2);
                 var hilbertMiddle = HilbertExtensions.Distance(graph, n, vertexMiddle);
                 if (hilbert <= hilbertMiddle)
                 { // target is in first part.
@@ -366,14 +366,14 @@ namespace Route.Algorithms.Search.Hilbert
         /// Searches the graph for nearby vertices assuming it has been sorted.
         /// </summary>
         public static bool SearchRange(this GeometricGraph graph, long minHilbert, long maxHilbert, int n,
-            uint vertex1, uint vertex2, out uint vertex, out int count)
+            long vertex1, long vertex2, out long vertex, out int count)
         {
             var hilbert1 = HilbertExtensions.Distance(graph, n, vertex1);
             var hilbert2 = HilbertExtensions.Distance(graph, n, vertex2);
             while (vertex1 <= vertex2)
             {
                 // check if both min and max are above or below half.
-                var vertexMiddle = vertex1 + (uint)((vertex2 - vertex1) / 2);
+                var vertexMiddle = vertex1 + (long)((vertex2 - vertex1) / 2);
                 var hilbertMiddle = HilbertExtensions.Distance(graph, n, vertexMiddle);
                 if (maxHilbert <= hilbertMiddle)
                 { // both targets in the first part.
@@ -391,8 +391,8 @@ namespace Route.Algorithms.Search.Hilbert
                     //  => it's somewhere there!
                     var minVertex1 = vertex1;
                     var maxVertex1 = vertexMiddle;
-                    var minHilbertVertex = uint.MaxValue;
-                    while (minHilbertVertex == uint.MaxValue)
+                    var minHilbertVertex = long.MaxValue;
+                    while (minHilbertVertex == long.MaxValue)
                     {
                         if (HilbertExtensions.Distance(graph, n, minVertex1) == minHilbert)
                         {
@@ -406,7 +406,7 @@ namespace Route.Algorithms.Search.Hilbert
                         {
                             while (minVertex1 <= maxVertex1)
                             {
-                                var middleVertex1 = minVertex1 + (uint)((maxVertex1 - minVertex1) / 2);
+                                var middleVertex1 = minVertex1 + (long)((maxVertex1 - minVertex1) / 2);
                                 var middleVertex1Hilbert = HilbertExtensions.Distance(graph, n, middleVertex1);
 
                                 if (middleVertex1Hilbert > minHilbert)
@@ -431,7 +431,7 @@ namespace Route.Algorithms.Search.Hilbert
                                 }
                             }
 
-                            if (minHilbertVertex == uint.MaxValue)
+                            if (minHilbertVertex == long.MaxValue)
                             { // min hilbert doesn't exist.
                                 minHilbert += 1;
                                 if (minHilbert == maxHilbert)
@@ -448,8 +448,8 @@ namespace Route.Algorithms.Search.Hilbert
                     //  => it's somewhere there!
                     var minVertex2 = vertexMiddle;
                     var maxVertex2 = vertex2;
-                    var maxHilbertVertex = uint.MaxValue;
-                    while (maxHilbertVertex == uint.MaxValue)
+                    var maxHilbertVertex = long.MaxValue;
+                    while (maxHilbertVertex == long.MaxValue)
                     {
                         if (HilbertExtensions.Distance(graph, n, minVertex2) == maxHilbert)
                         {
@@ -463,7 +463,7 @@ namespace Route.Algorithms.Search.Hilbert
                         {
                             while (minVertex2 <= maxVertex2)
                             {
-                                var middleVertex2 = minVertex2 + (uint)((maxVertex2 - minVertex2) / 2);
+                                var middleVertex2 = minVertex2 + (long)((maxVertex2 - minVertex2) / 2);
                                 var middleVertex2Hilbert = HilbertExtensions.Distance(graph, n, middleVertex2);
 
                                 if (middleVertex2Hilbert > maxHilbert)
@@ -488,7 +488,7 @@ namespace Route.Algorithms.Search.Hilbert
                                 }
                             }
 
-                            if (maxHilbertVertex == uint.MaxValue)
+                            if (maxHilbertVertex == long.MaxValue)
                             { // max hilbert doesn't exist.
                                 maxHilbert -= 1;
                                 if (minHilbert == maxHilbert)
@@ -570,7 +570,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Searches for the closest vertex.
         /// </summary>
-        public static uint SearchClosest(this GeometricGraph graph, float latitude, float longitude,
+        public static long SearchClosest(this GeometricGraph graph, float latitude, float longitude,
             float latitudeOffset, float longitudeOffset)
         {
             // search for all nearby vertices.
@@ -598,7 +598,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Searches for the closest vertex with at least one edge that passes the isOk function check.
         /// </summary>
-        public static uint SearchClosest(this GeometricGraph graph, float latitude, float longitude,
+        public static long SearchClosest(this GeometricGraph graph, float latitude, float longitude,
             float latitudeOffset, float longitudeOffset, Func<GeometricEdge, bool> isOk)
         {
             // search for all nearby vertices.
@@ -636,7 +636,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// Searches for the closest edge.
         /// </summary>
         /// <returns></returns>
-        public static uint SearchClosestEdge(this GeometricGraph graph, float latitude, float longitude,
+        public static long SearchClosestEdge(this GeometricGraph graph, float latitude, float longitude,
             float latitudeOffset, float longitudeOffset, float maxDistanceMeter, Func<GeometricEdge, bool> isOk)
         {
             return graph.SearchClosestEdge(latitude, longitude, latitudeOffset, longitudeOffset, maxDistanceMeter, isOk, CancellationToken.None);
@@ -646,7 +646,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// Searches for the closest edge.
         /// </summary>
         /// <returns></returns>
-        public static uint SearchClosestEdge(this GeometricGraph graph, float latitude, float longitude,
+        public static long SearchClosestEdge(this GeometricGraph graph, float latitude, float longitude,
             float latitudeOffset, float longitudeOffset, float maxDistanceMeter, Func<GeometricEdge, bool> isOk,
             CancellationToken cancellationToken)
         {
@@ -695,7 +695,7 @@ namespace Route.Algorithms.Search.Hilbert
                 (new Coordinate(latitude, longitude)).OffsetWithDirection(maxDistanceMeter, 
                     DirectionEnum.SouthEast));
 
-            var checkedEdges = new HashSet<uint>();
+            var checkedEdges = new HashSet<long>();
             foreach (var vertex in vertices)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -834,7 +834,7 @@ namespace Route.Algorithms.Search.Hilbert
         /// Searches for the closest edges under given conditions.
         /// </summary>
         /// <returns></returns>
-        public static uint[] SearchClosestEdges(this GeometricGraph graph, float latitude, float longitude,
+        public static long[] SearchClosestEdges(this GeometricGraph graph, float latitude, float longitude,
             float latitudeOffset, float longitudeOffset, float maxDistanceMeter, Func<GeometricEdge, bool>[] isOks)
         {
             var coordinate = new Coordinate(latitude, longitude);
@@ -844,7 +844,7 @@ namespace Route.Algorithms.Search.Hilbert
                 latitude + latitudeOffset, longitude + longitudeOffset);
 
             // build result-structure.
-            var bestEdges = new uint[isOks.Length];
+            var bestEdges = new long[isOks.Length];
             var bestDistances = new float[isOks.Length];
             for (var i = 0; i < bestEdges.Length; i++)
             {
@@ -891,7 +891,7 @@ namespace Route.Algorithms.Search.Hilbert
                         DirectionEnum.SouthEast));
             }
 
-            var checkedEdges = new HashSet<uint>();
+            var checkedEdges = new HashSet<long>();
             foreach (var vertex in vertices)
             {
                 var sourceLocation = graph.GetVertex(vertex);
@@ -1040,10 +1040,10 @@ namespace Route.Algorithms.Search.Hilbert
         /// <summary>
         /// Searches for all edges closer than max distance.
         /// </summary>
-        public static List<uint> SearchCloserThan(this GeometricGraph graph, float latitude, float longitude,
+        public static List<long> SearchCloserThan(this GeometricGraph graph, float latitude, float longitude,
             float offset, float maxDistanceMeter, Func<GeometricEdge, bool> isOk)
         {
-            var result = new HashSet<uint>();
+            var result = new HashSet<long>();
 
             var coordinate = new Coordinate(latitude, longitude);
 
@@ -1082,7 +1082,7 @@ namespace Route.Algorithms.Search.Hilbert
                 (new Coordinate(latitude, longitude)).OffsetWithDirection(maxDistanceMeter,
                     DirectionEnum.SouthEast));
 
-            var checkedEdges = new HashSet<uint>();
+            var checkedEdges = new HashSet<long>();
             foreach (var vertex in vertices)
             {
                 var sourceLocation = graph.GetVertex(vertex);
@@ -1219,7 +1219,7 @@ namespace Route.Algorithms.Search.Hilbert
                     }
                 }
             }
-            return new List<uint>(result);
+            return new List<long>(result);
         }
 
         /// <summary>

@@ -49,7 +49,7 @@ namespace Route.Algorithms.Networks
         protected override void DoRun(CancellationToken cancellationToken)
         {
             var edgeEnumerator = _network.GetEdgeEnumerator();
-            for(uint vertex = 0;  vertex < _network.VertexCount; vertex++)
+            for(long vertex = 0;  vertex < _network.VertexCount; vertex++)
             {
                 edgeEnumerator.MoveTo(vertex);
                 while (edgeEnumerator.MoveNext())

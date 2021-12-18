@@ -105,7 +105,7 @@ namespace Route.IO.Osm.Streams
         // store all the things for when profile translation is enabled, when normalization is turned off.
         private AttributesIndex _profileIndex = new AttributesIndex(AttributesIndexMode.IncreaseOne
                                                                     | AttributesIndexMode.ReverseAll);
-        private readonly Dictionary<uint, ushort> _translatedPerOriginal = new Dictionary<uint, ushort>();
+        private readonly Dictionary<long, ushort> _translatedPerOriginal = new Dictionary<long, ushort>();
 
         /// <summary>
         /// Setups default add-on processors.
@@ -141,14 +141,14 @@ namespace Route.IO.Osm.Streams
                 {
                     if (!_nodeIndex.TryGetCoreNode(node, out var vertex))
                     {
-                        return uint.MaxValue;
+                        return long.MaxValue;
                     }
                     return vertex;
                 }, MarkCore, FoundRestriction));
             }
 
             // a function to handle callbacks from processors handling restrictions.
-            void FoundRestriction(string vehicleType, List<uint> sequence)
+            void FoundRestriction(string vehicleType, List<long> sequence)
             {
                 if (vehicleType == null)
                 {
@@ -164,7 +164,7 @@ namespace Route.IO.Osm.Streams
             }
 
             // a function to handle callbacks from processor that want to mark nodes as core.
-            uint MarkCore(Node node)
+            long MarkCore(Node node)
             {
                 var index = _nodeIndex.TryGetIndex(node.Id.Value);
                 if (index == long.MaxValue)
@@ -525,7 +525,7 @@ namespace Route.IO.Osm.Streams
                         var previousCoordinate = coordinate;
                         node++;
 
-                        var toVertex = uint.MaxValue;
+                        var toVertex = long.MaxValue;
                         var toNode = long.MaxValue;
                         while (true)
                         {
@@ -563,7 +563,7 @@ namespace Route.IO.Osm.Streams
 
         private bool TryGetValue(long node, out Coordinate coordinate, out bool isCore)
         {
-            uint vertex;
+            long vertex;
             float latitude, longitude;
             if (!_nodeIndex.TryGetValue(node, out latitude, out longitude, out isCore, out vertex))
             { // an incomplete way, node not in source.
@@ -571,7 +571,7 @@ namespace Route.IO.Osm.Streams
                 isCore = false;
                 return false;
             }
-            if (vertex != uint.MaxValue)
+            if (vertex != long.MaxValue)
             {
                 coordinate = _db.Network.GetVertex(vertex);
                 isCore = true;
@@ -589,9 +589,9 @@ namespace Route.IO.Osm.Streams
         /// Adds a core-node.
         /// </summary>
         /// <returns></returns>
-        private uint AddCoreNode(long node, float latitude, float longitude)
+        private long AddCoreNode(long node, float latitude, float longitude)
         {
-            var vertex = uint.MaxValue;
+            var vertex = long.MaxValue;
             if (_nodeIndex.TryGetCoreNode(node, out vertex))
             { // node was already added.
                 return vertex;
@@ -602,7 +602,7 @@ namespace Route.IO.Osm.Streams
         /// <summary>
         /// Adds a new core-node, doesn't check if there is already a vertex.
         /// </summary>
-        private uint AddNewCoreNode(long node, float latitude, float longitude)
+        private long AddNewCoreNode(long node, float latitude, float longitude)
         {
             var vertex = _db.Network.VertexCount;
             _db.Network.AddVertex(vertex, latitude, longitude);
@@ -618,7 +618,7 @@ namespace Route.IO.Osm.Streams
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        public void AddCoreEdge(uint vertex1, uint vertex2, EdgeData data, List<Coordinate> shape, long wayId, ushort nodeIdx)
+        public void AddCoreEdge(long vertex1, long vertex2, EdgeData data, List<Coordinate> shape, long wayId, ushort nodeIdx)
         {
             if (data.Distance >= _db.Network.MaxEdgeDistance)
             { // distance is too big to fit into the graph's data field.

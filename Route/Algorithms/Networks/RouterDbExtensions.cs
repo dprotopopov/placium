@@ -159,7 +159,7 @@ namespace Route.Algorithms.Networks
         /// <summary>
         /// Runs the max distance splitter algorithm to make edge comply with the max distance setting in the routerdb.
         /// </summary>
-        public static void SplitLongEdges(this RouterDb db, Action<uint> newVertex = null)
+        public static void SplitLongEdges(this RouterDb db, Action<long> newVertex = null)
         {
             db.SplitLongEdges(newVertex, CancellationToken.None);
         }
@@ -167,7 +167,7 @@ namespace Route.Algorithms.Networks
         /// <summary>
         /// Runs the max distance splitter algorithm to make edge comply with the max distance setting in the routerdb.
         /// </summary>
-        public static void SplitLongEdges(this RouterDb db, Action<uint> newVertex, CancellationToken cancellationToken)
+        public static void SplitLongEdges(this RouterDb db, Action<long> newVertex, CancellationToken cancellationToken)
         {
             var splitter = new Preprocessing.MaxDistanceSplitter(db.Network, (originalEdgeId, newEdgeId) => 
             {
@@ -194,7 +194,7 @@ namespace Route.Algorithms.Networks
         /// <summary>
         /// Runs the algorithm to make sure the loaded graph is a 'simple' graph.
         /// </summary>
-        public static void ConvertToSimple(this RouterDb db, Action<uint> newVertex = null)
+        public static void ConvertToSimple(this RouterDb db, Action<long> newVertex = null)
         {
             db.ConvertToSimple(newVertex, CancellationToken.None);
         }
@@ -202,7 +202,7 @@ namespace Route.Algorithms.Networks
         /// <summary>
         /// Runs the algorithm to make sure the loaded graph is a 'simple' graph.
         /// </summary>
-        public static void ConvertToSimple(this RouterDb db, Action<uint> newVertex, CancellationToken cancellationToken)
+        public static void ConvertToSimple(this RouterDb db, Action<long> newVertex, CancellationToken cancellationToken)
         {
             var converter = new Preprocessing.SimpleGraphConverter(db.Network, (originalEdgeId, newEdgeId) => 
             {

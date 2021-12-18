@@ -284,7 +284,7 @@ namespace Route
         /// <summary>
         /// Returns one attribute collection containing both the profile and meta tags.
         /// </summary>
-        public static IAttributeCollection GetProfileAndMeta(this RouterDb db, uint profileId, uint meta)
+        public static IAttributeCollection GetProfileAndMeta(this RouterDb db, long profileId, long meta)
         {
             var tags = new AttributeCollection();
 
@@ -358,7 +358,7 @@ namespace Route
         /// <param name="db">The router db.</param>
         /// <param name="profile">The vehicle profile.</param>
         /// <returns></returns>
-        public static Func<uint, uint> GetGetSimpleRestrictions(this RouterDb db, Profile profile)
+        public static Func<long, long> GetGetSimpleRestrictions(this RouterDb db, Profile profile)
         {
             var getRestrictions = db.GetGetRestrictions(profile, true);
             return (v) =>
@@ -384,7 +384,7 @@ namespace Route
         /// Gets the has any restriction function.
         /// </summary>
         /// <param name="db">The router db.</param>
-        public static Func<uint, bool> GetHasAnyRestriction(this RouterDb db)
+        public static Func<long, bool> GetHasAnyRestriction(this RouterDb db)
         {
             return (vertex) =>
             {
@@ -411,7 +411,7 @@ namespace Route
         /// <param name="db">The router db.</param>
         /// <param name="profile">The vehicle profile.</param>
         /// <param name="first">When true, only restrictions starting with given vertex, when false only restrictions ending with given vertex already reversed, when null all restrictions are returned.</param>
-        public static Func<uint, IEnumerable<uint[]>> GetGetRestrictions(this RouterDb db, Profiles.Profile profile, bool? first)
+        public static Func<long, IEnumerable<long[]>> GetGetRestrictions(this RouterDb db, Profiles.Profile profile, bool? first)
         {
             var vehicleTypes = new List<string>(profile.VehicleTypes);
             vehicleTypes.Insert(0, string.Empty);
@@ -428,7 +428,7 @@ namespace Route
 
             return (vertex) =>
             {
-                var restrictionList = new List<uint[]>();
+                var restrictionList = new List<long[]>();
                 for (var i = 0; i < restrictionDbs.Length; i++)
                 {
                     var restrictionsDb = restrictionDbs[i];
@@ -534,7 +534,7 @@ namespace Route
         /// <summary>
         /// Builds an edge path from a path consisiting of only vertices.
         /// </summary>
-        public static EdgePath<T> BuildEdgePath<T>(this RouterDb routerDb, WeightHandler<T> weightHandler, RouterPoint source, RouterPoint target, List<uint> vertexPath)
+        public static EdgePath<T> BuildEdgePath<T>(this RouterDb routerDb, WeightHandler<T> weightHandler, RouterPoint source, RouterPoint target, List<long> vertexPath)
             where T : struct
         {
             if (vertexPath == null || vertexPath.Count == 0)
@@ -595,7 +595,7 @@ namespace Route
             EdgePath<T> top = null;
             EdgePath<T> path = null;
             var edgeEnumerator = routerDb.Network.GeometricGraph.Graph.GetEdgeEnumerator();
-            uint other = Constants.NO_VERTEX;
+            long other = Constants.NO_VERTEX;
             while (dualPath != null)
             {
                 var directedEdgeId = DirectedEdgeId.FromRaw(dualPath.Vertex);
@@ -637,7 +637,7 @@ namespace Route
             EdgePath<T> top = null;
             EdgePath<T> path = null;
             var edgeEnumerator = routerDb.Network.GeometricGraph.Graph.GetEdgeEnumerator();
-            uint other = Constants.NO_VERTEX;
+            long other = Constants.NO_VERTEX;
             while (dualPath != null)
             {
                 var directedEdgeId = DirectedEdgeId.FromRaw(dualPath.Vertex);
@@ -684,7 +684,7 @@ namespace Route
         /// <summary>
         /// Adds the router point as a vertex.
         /// </summary>
-        public static uint AddAsVertex(this RouterDb routerDb, RouterPoint point)
+        public static long AddAsVertex(this RouterDb routerDb, RouterPoint point)
         {
             if (routerDb.HasContracted)
             {
@@ -731,11 +731,11 @@ namespace Route
             {
                 if (vertex == v1)
                 {
-                    vertex = (uint)v2;
+                    vertex = (long)v2;
                 }
                 else if (vertex == v2)
                 {
-                    vertex = (uint)v1;
+                    vertex = (long)v1;
                 }
             });
             return vertex;
@@ -744,14 +744,14 @@ namespace Route
         /// <summary>
         /// Adds the router point as a vertex.
         /// </summary>
-        public static uint[] AddAsVertices(this RouterDb routerDb, RouterPoint[] points)
+        public static long[] AddAsVertices(this RouterDb routerDb, RouterPoint[] points)
         {
             if (routerDb.HasContracted)
             {
                 throw new InvalidOperationException("Cannot add new vertices to a routerDb with contracted versions of the network.");
             }
 
-            var edges = new HashSet<uint>();
+            var edges = new HashSet<long>();
             for (var i = 0; i < points.Length; i++)
             {
                 var point = points[i];
@@ -765,7 +765,7 @@ namespace Route
                 }
             }
 
-            var newVertices = new uint[points.Length];
+            var newVertices = new long[points.Length];
             var newEdges = new List<EdgeToSplit>();
             for (var i = 0; i < points.Length; i++)
             {
@@ -850,9 +850,9 @@ namespace Route
         {
             public Coordinate Coordinate { get; set; }
 
-            public uint From { get; set; }
+            public long From { get; set; }
 
-            public uint To { get; set; }
+            public long To { get; set; }
 
             public float DistanceFrom { get; set; }
 
@@ -862,7 +862,7 @@ namespace Route
 
             public List<LocalGeo.Coordinate> ShapeTo { get; set; }
 
-            public uint MetaId { get; set; }
+            public long MetaId { get; set; }
 
             public ushort Profile { get; set; }
         }
@@ -934,7 +934,7 @@ namespace Route
         /// <summary>
         /// Gets all features around the given vertex as geojson.
         /// </summary>
-        public static string GetGeoJsonAround(this RouterDb db, uint vertex, float distanceInMeter = 250,
+        public static string GetGeoJsonAround(this RouterDb db, long vertex, float distanceInMeter = 250,
             bool includeEdges = true, bool includeVertices = true, bool includeProfileDetails = true)
         {
             var coordinate = db.Network.GetVertex(vertex);
@@ -989,7 +989,7 @@ namespace Route
             var edges = new HashSet<long>();
 
             var edgeEnumerator = db.Network.GetEdgeEnumerator();
-            for (uint vertex = 0; vertex < db.Network.VertexCount; vertex++)
+            for (long vertex = 0; vertex < db.Network.VertexCount; vertex++)
             {
                 if (includeVertices)
                 {
@@ -1107,7 +1107,7 @@ namespace Route
         /// <param name="vertexIds">The vertices to get.</param>
         /// <param name="neighbours">Flag to get neighbours or not.</param>
         /// <param name="includeProfileDetails">Flag to get profile details or not.</param>
-        public static string GetGeoJsonVertices(this RouterDb db, bool neighbours = false, bool includeProfileDetails = false, params uint[] vertexIds)
+        public static string GetGeoJsonVertices(this RouterDb db, bool neighbours = false, bool includeProfileDetails = false, params long[] vertexIds)
         {
             var edgeEnumerator = db.Network.GetEdgeEnumerator();
 
@@ -1122,9 +1122,9 @@ namespace Route
             jsonWriter.WriteArrayOpen();
 
             // collect all edges and vertices to write.
-            var vertices = new HashSet<uint>();
-            var originalVertices = new HashSet<uint>(vertexIds);
-            var edges = new HashSet<uint>();
+            var vertices = new HashSet<long>();
+            var originalVertices = new HashSet<long>(vertexIds);
+            var edges = new HashSet<long>();
             foreach (var vertex in vertexIds)
             {
                 vertices.Add(vertex);
@@ -1181,7 +1181,7 @@ namespace Route
         /// <param name="neighbours">Flag to get neighbours or not.</param>
         /// <param name="includeVertices">Flag to get vertices or not.</param>
         public static string GetGeoJsonEdges(this RouterDb db, bool neighbours = false,
-            bool includeVertices = true, bool includeProfileDetails = true, params uint[] edgeIds)
+            bool includeVertices = true, bool includeProfileDetails = true, params long[] edgeIds)
         {
             var edgeEnumerator = db.Network.GetEdgeEnumerator();
             
@@ -1196,8 +1196,8 @@ namespace Route
             jsonWriter.WriteArrayOpen();
 
             // collect all edges and vertices to write.
-            HashSet<uint> vertices = null;
-            var edges = new HashSet<uint>();
+            HashSet<long> vertices = null;
+            var edges = new HashSet<long>();
             foreach (var edgeId in edgeIds)
             {
                 edges.Add(edgeId);
@@ -1207,7 +1207,7 @@ namespace Route
                     edgeEnumerator.MoveToEdge(edgeId);
                     if (vertices == null)
                     {
-                        vertices = new HashSet<uint>();
+                        vertices = new HashSet<long>();
                     }
 
                     vertices.Add(edgeEnumerator.From);
@@ -1273,7 +1273,7 @@ namespace Route
         /// <summary>
         /// Writes a point-geometry for the given vertex.
         /// </summary>
-        internal static void WriteVertex(this RouterDb db, JsonWriter jsonWriter, uint vertex)
+        internal static void WriteVertex(this RouterDb db, JsonWriter jsonWriter, long vertex)
         {
             var coordinate = db.Network.GetVertex(vertex);
             
@@ -1455,18 +1455,18 @@ namespace Route
         /// <param name="isInside">The is inside function.</param>
         /// <param name="insideOnly">Don't keep vertices outside, even if they have a neighbour that is inside.</param>
         /// <returns></returns>
-        public static RouterDb ExtractArea(this RouterDb db, Func<uint, bool> isInside, bool insideOnly = false)
+        public static RouterDb ExtractArea(this RouterDb db, Func<long, bool> isInside, bool insideOnly = false)
         {
             var newDb = new RouterDb(db.Network.MaxEdgeDistance);
             // maps vertices old -> new.
-            var idMap = new Dictionary<uint, uint>();
+            var idMap = new Dictionary<long, long>();
             // maps edges old -> new.
-            var edgeIdMap = new Dictionary<uint, uint>();
+            var edgeIdMap = new Dictionary<long, long>();
             // keeps a set of vertices not inside but are needed for an edge that is partially inside.
-            var boundaryVertices = new HashSet<uint>();
+            var boundaryVertices = new HashSet<long>();
 
             // copy over all profiles.
-            for (uint p = 0; p < db.EdgeProfiles.Count; p++)
+            for (long p = 0; p < db.EdgeProfiles.Count; p++)
             {
                 var newP = newDb.EdgeProfiles.Add(db.EdgeProfiles.Get(p));
 
@@ -1475,8 +1475,8 @@ namespace Route
 
             // loop over vertices and copy over relevant vertices and edges.
             var edgeEnumerator = db.Network.GetEdgeEnumerator();
-            uint newV = 0;
-            for (uint v = 0; v < db.Network.VertexCount; v++)
+            long newV = 0;
+            for (long v = 0; v < db.Network.VertexCount; v++)
             {
                 if (!isInside(v))
                 {
@@ -1543,7 +1543,7 @@ namespace Route
                     }
 
                     // lower vertices should always have a mapping already.
-                    uint newTo;
+                    long newTo;
                     if (!idMap.TryGetValue(to, out newTo))
                     { // edge not inside.
                         continue;
@@ -1564,7 +1564,7 @@ namespace Route
                             db.EdgeMeta.Get(currentEdgeData.MetaId))
                     };
                     var shape = edgeEnumerator.Shape;
-                    uint newEdgeId;
+                    long newEdgeId;
                     if (!edgeEnumerator.DataInverted)
                     {
                         newEdgeId = newDb.Network.AddEdge(newV, newTo, newEdgeData, shape);
@@ -1597,7 +1597,7 @@ namespace Route
                     var collection = db.VertexData.Get(name);
                     var newCollection = newDb.VertexData.Add(name, collection.ElementType);
 
-                    for (uint v = 0; v < db.Network.VertexCount; v++)
+                    for (long v = 0; v < db.Network.VertexCount; v++)
                     {
                         if (idMap.TryGetValue(v, out newV))
                         {
@@ -1624,9 +1624,9 @@ namespace Route
                     var collection = db.EdgeData.Get(name);
                     var newCollection = newDb.EdgeData.Add(name, collection.ElementType);
 
-                    for (uint e = 0; e < db.Network.EdgeCount; e++)
+                    for (long e = 0; e < db.Network.EdgeCount; e++)
                     {
-                        uint newEdgeId;
+                        long newEdgeId;
                         if (edgeIdMap.TryGetValue(e, out newEdgeId))
                         {
                             newCollection.CopyFrom(collection, newEdgeId, e);
@@ -1642,7 +1642,7 @@ namespace Route
                 newDb.AddRestrictions(r.Vehicle, newR);
 
                 var enumerator = r.RestrictionsDb.GetEnumerator();
-                var restrictionsSet = new HashSet<uint>();
+                var restrictionsSet = new HashSet<long>();
                 foreach(var pair in idMap)
                 {
                     if (!enumerator.MoveTo(pair.Key))
@@ -1659,7 +1659,7 @@ namespace Route
                         restrictionsSet.Add(enumerator.Id);
 
                         var restriction = enumerator.ToArray();
-                        var newRestriction = new uint[restriction.Length];
+                        var newRestriction = new long[restriction.Length];
                         for (var i = 0; i < restriction.Length; i++)
                         {
                             if (!idMap.TryGetValue(restriction[i], out newV))
@@ -1705,7 +1705,7 @@ namespace Route
                     {
                         var edgeId = DirectedEdgeId.FromRaw(v);
 
-                        uint newEdgeId;
+                        long newEdgeId;
                         if (!edgeIdMap.TryGetValue(edgeId.EdgeId, out newEdgeId))
                         {
                             return Constants.NO_VERTEX;
@@ -1746,19 +1746,19 @@ namespace Route
         /// <param name="isInside">The is inside function, is the vertex to be included. Vertex won't be included if none of it's edge are.</param>
         /// <param name="isEdgeInside">The is inside function, is the edge to be included.</param>
         /// <returns></returns>
-        public static RouterDb ExtractArea(this RouterDb db, Func<uint, bool> isInside, 
-            Func<uint, uint, bool> isEdgeInside)
+        public static RouterDb ExtractArea(this RouterDb db, Func<long, bool> isInside, 
+            Func<long, long, bool> isEdgeInside)
         {
             var newDb = new RouterDb(db.Network.MaxEdgeDistance);
             // maps vertices old -> new.
-            var idMap = new Dictionary<uint, uint>();
+            var idMap = new Dictionary<long, long>();
             // maps edges old -> new.
-            var edgeIdMap = new Dictionary<uint, uint>();
+            var edgeIdMap = new Dictionary<long, long>();
             // keeps a set of vertices not inside but are needed for an edge that is partially inside.
-            var boundaryVertices = new HashSet<uint>();
+            var boundaryVertices = new HashSet<long>();
 
             // copy over all profiles.
-            for (uint p = 0; p < db.EdgeProfiles.Count; p++)
+            for (long p = 0; p < db.EdgeProfiles.Count; p++)
             {
                 var newP = newDb.EdgeProfiles.Add(db.EdgeProfiles.Get(p));
 
@@ -1767,8 +1767,8 @@ namespace Route
 
             // loop over vertices and copy over relevant vertices and edges.
             var edgeEnumerator = db.Network.GetEdgeEnumerator();
-            uint newV = 0;
-            for (uint v = 0; v < db.Network.VertexCount; v++)
+            long newV = 0;
+            for (long v = 0; v < db.Network.VertexCount; v++)
             {
                 if (!isInside(v))
                 {
@@ -1835,7 +1835,7 @@ namespace Route
                     }
 
                     // lower vertices should always have a mapping already.
-                    uint newTo;
+                    long newTo;
                     if (!idMap.TryGetValue(to, out newTo))
                     { // edge not inside.
                         continue;
@@ -1856,7 +1856,7 @@ namespace Route
                             db.EdgeMeta.Get(edgeData.MetaId))
                     };
                     var shape = edgeEnumerator.Shape;
-                    uint newEdgeId;
+                    long newEdgeId;
                     if (!edgeEnumerator.DataInverted)
                     {
                         newEdgeId = newDb.Network.AddEdge(newV, newTo, newEdgeData, shape);
@@ -1889,7 +1889,7 @@ namespace Route
                     var collection = db.VertexData.Get(name);
                     var newCollection = newDb.VertexData.Add(name, collection.ElementType);
 
-                    for (uint v = 0; v < db.Network.VertexCount; v++)
+                    for (long v = 0; v < db.Network.VertexCount; v++)
                     {
                         if (idMap.TryGetValue(v, out newV))
                         {
@@ -1915,9 +1915,9 @@ namespace Route
                     var collection = db.EdgeData.Get(name);
                     var newCollection = newDb.EdgeData.Add(name, collection.ElementType);
 
-                    for (uint e = 0; e < db.Network.EdgeCount; e++)
+                    for (long e = 0; e < db.Network.EdgeCount; e++)
                     {
-                        uint newEdgeId;
+                        long newEdgeId;
                         if (edgeIdMap.TryGetValue(e, out newEdgeId))
                         {
                             newCollection.CopyFrom(collection, newEdgeId, e);
@@ -1933,7 +1933,7 @@ namespace Route
                 newDb.AddRestrictions(r.Vehicle, newR);
 
                 var enumerator = r.RestrictionsDb.GetEnumerator();
-                var restrictionsSet = new HashSet<uint>();
+                var restrictionsSet = new HashSet<long>();
                 foreach (var pair in idMap)
                 {
                     if (!enumerator.MoveTo(pair.Key))
@@ -1950,7 +1950,7 @@ namespace Route
                         restrictionsSet.Add(enumerator.Id);
 
                         var restriction = enumerator.ToArray();
-                        var newRestriction = new uint[restriction.Length];
+                        var newRestriction = new long[restriction.Length];
                         for (var i = 0; i < restriction.Length; i++)
                         {
                             if (!idMap.TryGetValue(restriction[i], out newV))
@@ -1996,7 +1996,7 @@ namespace Route
                     {
                         var edgeId = DirectedEdgeId.FromRaw(v);
 
-                        uint newEdgeId;
+                        long newEdgeId;
                         if (!edgeIdMap.TryGetValue(edgeId.EdgeId, out newEdgeId))
                         {
                             return Constants.NO_VERTEX;
@@ -2083,7 +2083,7 @@ namespace Route
             // add the data to the routerdb.
             var name = "islands_" + profile.FullName;
             var meta = db.VertexData.AddUInt16(name);
-            for (uint i = 0; i < islands.Length; i++)
+            for (long i = 0; i < islands.Length; i++)
             {
                 var island = islands[i];
                 if (island == IslandDetector.SINGLETON_ISLAND)
@@ -2096,7 +2096,7 @@ namespace Route
                 }
                 else
                 {
-                    uint size;
+                    long size;
                     if (islandDetector.IslandSizes.TryGetValue(island, out size))
                     {
                         var originalSize = size;
@@ -2123,7 +2123,7 @@ namespace Route
                 var edgeMeta = db.EdgeData.AddUInt16(name);
 
                 var enumerator = db.Network.GeometricGraph.Graph.GetEdgeEnumerator();
-                for (uint v = 0; v < db.Network.VertexCount; v++)
+                for (long v = 0; v < db.Network.VertexCount; v++)
                 {
                     if (!enumerator.MoveTo(v))
                     {
@@ -2173,7 +2173,7 @@ namespace Route
         /// <summary>
         /// Returns the location on the network.
         /// </summary>
-        public static Coordinate LocationOnNetwork(this RouterDb db, uint edgeId, ushort offset)
+        public static Coordinate LocationOnNetwork(this RouterDb db, long edgeId, ushort offset)
         {
             return db.Network.LocationOnNetwork(edgeId, offset);
         }

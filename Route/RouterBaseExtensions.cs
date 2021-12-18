@@ -1778,7 +1778,7 @@ namespace Route
 
                     // path has at least two vertices, strip first and last vertex.
                     // TODO: optimize this, this can be done without converting to a vertex-list.
-                    var vertices = new List<uint>();
+                    var vertices = new List<long>();
                     while (path != null)
                     {
                         vertices.Add(path.Vertex);

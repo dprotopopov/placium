@@ -35,12 +35,12 @@ namespace Route.Algorithms.Default.EdgeBased
         private readonly IList<RouterPoint> _targets;
         private readonly WeightHandler<T> _weightHandler;
         private readonly T _maxSearch;
-        private readonly Func<uint, IEnumerable<uint[]>> _getRestrictions;
+        private readonly Func<long, IEnumerable<long[]>> _getRestrictions;
 
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public OneToMany(RouterDb routerDb, WeightHandler<T> weightHandler, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public OneToMany(RouterDb routerDb, WeightHandler<T> weightHandler, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint source, IList<RouterPoint> targets, T maxSearch)
         {
             _routerDb = routerDb;
@@ -62,7 +62,7 @@ namespace Route.Algorithms.Default.EdgeBased
 
             // register the targets and determine one-edge-paths.
             var sourcePaths = _source.ToEdgePaths(_routerDb, _weightHandler, true);
-            var targetIndexesPerEdge = new Dictionary<uint, LinkedTarget>();
+            var targetIndexesPerEdge = new Dictionary<long, LinkedTarget>();
             var targetPaths = new IEnumerable<EdgePath<T>>[_targets.Count];
             for (var i = 0; i < _targets.Count; i++)
             {
@@ -195,7 +195,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public OneToMany(Router router, Profile profile, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public OneToMany(Router router, Profile profile, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint source, IList<RouterPoint> targets, float maxSearch)
             : base(router.Db, profile.DefaultWeightHandler(router), getRestrictions, source, targets, maxSearch)
         {
@@ -205,7 +205,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public OneToMany(RouterDb routerDb, Func<ushort, Factor> getFactor, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public OneToMany(RouterDb routerDb, Func<ushort, Factor> getFactor, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint source, IList<RouterPoint> targets, float maxSearch)
             : base(routerDb, new DefaultWeightHandler(getFactor), getRestrictions, source, targets, maxSearch)
         {
@@ -215,7 +215,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public OneToMany(RouterDb routerDb, DefaultWeightHandler weightHandler, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public OneToMany(RouterDb routerDb, DefaultWeightHandler weightHandler, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint source, IList<RouterPoint> targets, float maxSearch)
             : base(routerDb, weightHandler, getRestrictions, source, targets, maxSearch)
         {

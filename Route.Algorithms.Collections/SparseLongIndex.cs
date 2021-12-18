@@ -27,20 +27,20 @@ namespace Route.Algorithms.Collections
     /// </summary>
     public class SparseLongIndex : IEnumerable<long>
     {
-        private readonly long _size = (long)(1024 * 1024) * (long)(1024 * 32); // Holds the total size.
-        private readonly int _blockSize = 32; // Holds the block size.
+        private readonly long _size = (long)(1024 * 1024) * (long)(1024 * 64); // Holds the total size.
+        private readonly int _blockSize = 64; // Holds the block size.
 
         /// <summary>
         /// Creates a new longindex.
         /// </summary>
-        public SparseLongIndex(int blockSize = 32)
+        public SparseLongIndex(int blockSize = 64)
         {
             _blockSize = blockSize;
         }
 
         private long _count = 0; // Holds the number of flags.
-        private SparseBitArray32 _negativeFlags = null; // Holds the negative flags array
-        private SparseBitArray32 _positiveFlags = null; // Holds the positive flags array.
+        private SparseBitArray64 _negativeFlags = null; // Holds the negative flags array
+        private SparseBitArray64 _positiveFlags = null; // Holds the positive flags array.
 
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace Route.Algorithms.Collections
         {
             if (_positiveFlags == null)
             {
-                _positiveFlags = new SparseBitArray32(_size, _blockSize);
+                _positiveFlags = new SparseBitArray64(_size, _blockSize);
             }
 
             if (!_positiveFlags[number])
@@ -114,7 +114,7 @@ namespace Route.Algorithms.Collections
         {
             if (_positiveFlags == null)
             {
-                _positiveFlags = new SparseBitArray32(_size, _blockSize);
+                _positiveFlags = new SparseBitArray64(_size, _blockSize);
             }
 
             if (_positiveFlags[number])
@@ -148,7 +148,7 @@ namespace Route.Algorithms.Collections
         {
             if (_negativeFlags == null)
             {
-                _negativeFlags = new SparseBitArray32(_size, _blockSize);
+                _negativeFlags = new SparseBitArray64(_size, _blockSize);
             }
 
             if (!_negativeFlags[number])
@@ -165,7 +165,7 @@ namespace Route.Algorithms.Collections
         {
             if (_negativeFlags == null)
             {
-                _negativeFlags = new SparseBitArray32(_size, _blockSize);
+                _negativeFlags = new SparseBitArray64(_size, _blockSize);
             }
 
             if (_negativeFlags[number])

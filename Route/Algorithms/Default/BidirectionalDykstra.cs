@@ -165,7 +165,7 @@ namespace Route.Algorithms.Default
         /// <summary>
         /// Gets the best vertex.
         /// </summary>
-        public uint BestVertex
+        public long BestVertex
         {
             get
             {

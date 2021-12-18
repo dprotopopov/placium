@@ -33,7 +33,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         where T : struct
     {
         private readonly DirectedDynamicGraph _graph;
-        private readonly Dictionary<uint, int> _contractionCount;
+        private readonly Dictionary<long, int> _contractionCount;
         private readonly Dictionary<long, int> _depth;
         private readonly IWitnessCalculator<T> _witnessCalculator;
         private readonly WeightHandler<T> _weightHandler;
@@ -45,7 +45,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         {
             _graph = graph;
             _witnessCalculator = witnessCalculator;
-            _contractionCount = new Dictionary<uint, int>();
+            _contractionCount = new Dictionary<long, int>();
             _depth = new Dictionary<long, int>();
             _weightHandler = weightHandler;
 
@@ -57,7 +57,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Calculates the priority of the given vertex.
         /// </summary>
-        public float Calculate(BitArray32 contractedFlags, Func<uint, IEnumerable<uint[]>> getRestrictions, uint vertex)
+        public float Calculate(BitArray64 contractedFlags, Func<long, IEnumerable<long[]>> getRestrictions, long vertex)
         {
             var removed = 0;
             var added = 0;
@@ -115,7 +115,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 // figure out what witness paths to calculate.
                 var forwardWitnesses = new EdgePath<T>[j];
                 var backwardWitnesses = new EdgePath<T>[j];
-                var targets = new List<uint>(j);
+                var targets = new List<long>(j);
                 var targetWeights = new List<T>(j);
                 for (var k = 0; k < j; k++)
                 {
@@ -218,7 +218,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Notifies this calculator that the given vertex was contracted.
         /// </summary>
-        public void NotifyContracted(uint vertex)
+        public void NotifyContracted(long vertex)
         {
             // removes the contractions count.
             _contractionCount.Remove(vertex);

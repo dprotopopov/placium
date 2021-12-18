@@ -39,7 +39,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Creates a new contracted bidirectional router.
         /// </summary>
-        public BidirectionalDykstra(DirectedMetaGraph graph, WeightHandler<T> weightHandler, uint source, uint target)
+        public BidirectionalDykstra(DirectedMetaGraph graph, WeightHandler<T> weightHandler, long source, long target)
             : this(graph, weightHandler, new DykstraSource<T>(source), new DykstraSource<T>(target))
         {
 
@@ -58,10 +58,10 @@ namespace Route.Algorithms.Contracted.Dual
             _weightHandler = weightHandler;
         }
 
-        private Tuple<uint, uint, T> _best;
+        private Tuple<long, long, T> _best;
         private PathTree _pathTree;
-        private Dictionary<uint, uint> _forwardVisits = new Dictionary<uint, uint>();
-        private Dictionary<uint, uint> _backwardVisits = new Dictionary<uint, uint>();
+        private Dictionary<long, long> _forwardVisits = new Dictionary<long, long>();
+        private Dictionary<long, long> _backwardVisits = new Dictionary<long, long>();
 
         /// <summary>
         /// Executes the actual run.
@@ -72,31 +72,31 @@ namespace Route.Algorithms.Contracted.Dual
             _pathTree = new PathTree();
 
             // initialize the queues.
-            var forwardQueue = new BinaryHeap<uint>();
-            var backwardQueue = new BinaryHeap<uint>();
+            var forwardQueue = new BinaryHeap<long>();
+            var backwardQueue = new BinaryHeap<long>();
 
             // queue sources.
             if (_source.Vertex1 != Constants.NO_VERTEX)
             {
-                forwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex1, _source.Weight1, uint.MaxValue), 0);
+                forwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex1, _source.Weight1, long.MaxValue), 0);
             }
             if (_source.Vertex2 != Constants.NO_VERTEX)
             {
-                forwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex2, _source.Weight2, uint.MaxValue), 0);
+                forwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex2, _source.Weight2, long.MaxValue), 0);
             }
 
             // queue targets.
             if (_target.Vertex1 != Constants.NO_VERTEX)
             {
-                backwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _target.Vertex1, _target.Weight1, uint.MaxValue), 0);
+                backwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _target.Vertex1, _target.Weight1, long.MaxValue), 0);
             }
             if (_target.Vertex2 != Constants.NO_VERTEX)
             {
-                backwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _target.Vertex2, _target.Weight2, uint.MaxValue), 0);
+                backwardQueue.Push(_weightHandler.AddPathTree(_pathTree, _target.Vertex2, _target.Weight2, long.MaxValue), 0);
             }
 
             // update best with current visits.
-            _best = new Tuple<uint, uint, T>(uint.MaxValue, uint.MaxValue, _weightHandler.Infinite);
+            _best = new Tuple<long, long, T>(long.MaxValue, long.MaxValue, _weightHandler.Infinite);
 
             // calculate stopping conditions.
             var queueBackwardWeight = backwardQueue.PeekWeight();
@@ -118,14 +118,14 @@ namespace Route.Algorithms.Contracted.Dual
                 { // first check for better path.
                     // get the current queued with the smallest weight that hasn't been visited yet.
                     var cPointer = forwardQueue.Pop();
-                    uint cVertex, cPreviousPointer;
+                    long cVertex, cPreviousPointer;
                     T cWeight;
                     _weightHandler.GetPathTree(_pathTree, cPointer, out cVertex, out cWeight, out cPreviousPointer);
                     while (_forwardVisits.ContainsKey(cVertex))
                     { // keep trying.
                         if (forwardQueue.Count == 0)
                         {
-                            cPointer = uint.MaxValue;
+                            cPointer = long.MaxValue;
                         }
                         else
                         {
@@ -134,18 +134,18 @@ namespace Route.Algorithms.Contracted.Dual
                         }
                     }
 
-                    if (cPointer != uint.MaxValue)
+                    if (cPointer != long.MaxValue)
                     {
-                        uint bPointer;
+                        long bPointer;
                         if (_backwardVisits.TryGetValue(cVertex, out bPointer))
                         { // check for a new best.
-                            uint bVertex, bPreviousPointer;
+                            long bVertex, bPreviousPointer;
                             T bWeight;
                             _weightHandler.GetPathTree(_pathTree, bPointer, out bVertex, out bWeight, out bPreviousPointer);
                             var total = _weightHandler.Add(cWeight, bWeight);
                             if (_weightHandler.IsSmallerThan(total, _best.Item2))
                             { // a better path was found.
-                                _best = new Tuple<uint, uint, T>(cPointer, bPointer, total);
+                                _best = new Tuple<long, long, T>(cPointer, bPointer, total);
                                 this.HasSucceeded = true;
                             }
                         }
@@ -159,14 +159,14 @@ namespace Route.Algorithms.Contracted.Dual
                 {// first check for better path.
                     // get the current queued with the smallest weight that hasn't been visited yet.
                     var cPointer = backwardQueue.Pop();
-                    uint cVertex, cPreviousPointer;
+                    long cVertex, cPreviousPointer;
                     T cWeight;
                     _weightHandler.GetPathTree(_pathTree, cPointer, out cVertex, out cWeight, out cPreviousPointer);
                     while (_backwardVisits.ContainsKey(cVertex))
                     { // keep trying.
                         if (backwardQueue.Count == 0)
                         {
-                            cPointer = uint.MaxValue;
+                            cPointer = long.MaxValue;
                         }
                         else
                         {
@@ -175,18 +175,18 @@ namespace Route.Algorithms.Contracted.Dual
                         }
                     }
 
-                    if (cPointer != uint.MaxValue)
+                    if (cPointer != long.MaxValue)
                     {
-                        uint bPointer; // best pointer.
+                        long bPointer; // best pointer.
                         if (_forwardVisits.TryGetValue(cVertex, out bPointer))
                         { // check for a new best.
-                            uint bVertex, bPreviousPointer;
+                            long bVertex, bPreviousPointer;
                             T bWeight;
                             _weightHandler.GetPathTree(_pathTree, bPointer, out bVertex, out bWeight, out bPreviousPointer);
                             var total = _weightHandler.Add(cWeight, bWeight);
                             if (_weightHandler.IsSmallerThan(total, _best.Item2))
                             { // a better path was found.
-                                _best = new Tuple<uint, uint, T>(bPointer, cPointer, total);
+                                _best = new Tuple<long, long, T>(bPointer, cPointer, total);
                                 this.HasSucceeded = true;
                             }
                         }
@@ -211,16 +211,16 @@ namespace Route.Algorithms.Contracted.Dual
         /// Search forward from one vertex.
         /// </summary>
         /// <returns></returns>
-        private void SearchForward(BinaryHeap<uint> queue, uint cPointer, uint cVertex, T cWeight)
+        private void SearchForward(BinaryHeap<long> queue, long cPointer, long cVertex, T cWeight)
         {
-            if (cPointer != uint.MaxValue)
+            if (cPointer != long.MaxValue)
             { // there is a next vertex found.
 
                 // add to the settled vertices.
-                uint ePointer; // the existing pointer.
+                long ePointer; // the existing pointer.
                 if (_forwardVisits.TryGetValue(cVertex, out ePointer))
                 {
-                    uint eVertex, ePreviousPointer;
+                    long eVertex, ePreviousPointer;
                     T eWeight;
                     _weightHandler.GetPathTree(_pathTree, ePointer, out eVertex, out eWeight, out ePreviousPointer);
                     if (_weightHandler.IsLargerThan(eWeight, cWeight))
@@ -264,15 +264,15 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Search backward from one vertex.
         /// </summary>
-        private void SearchBackward(BinaryHeap<uint> queue, uint cPointer, uint cVertex, T cWeight)
+        private void SearchBackward(BinaryHeap<long> queue, long cPointer, long cVertex, T cWeight)
         {
-            if (cPointer != uint.MaxValue)
+            if (cPointer != long.MaxValue)
             {
                 // add to the settled vertices.
-                uint ePointer; // the existing pointer.
+                long ePointer; // the existing pointer.
                 if (_backwardVisits.TryGetValue(cVertex, out ePointer))
                 {
-                    uint eVertex, ePreviousPointer;
+                    long eVertex, ePreviousPointer;
                     T eWeight;
                     _weightHandler.GetPathTree(_pathTree, ePointer, out eVertex, out eWeight, out ePreviousPointer);
                     if (_weightHandler.IsLargerThan(eWeight, cWeight))
@@ -327,7 +327,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Returns the vertex on the best path.
         /// </summary>
-        public uint Best
+        public long Best
         {
             get
             {
@@ -341,11 +341,11 @@ namespace Route.Algorithms.Contracted.Dual
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetForwardVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetForwardVisit(long vertex, out EdgePath<T> visit)
         {
             this.CheckHasRunAndHasSucceeded();
 
-            uint vertexPointer;
+            long vertexPointer;
             if (!_forwardVisits.TryGetValue(vertex, out vertexPointer))
             {
                 visit = null;
@@ -359,13 +359,13 @@ namespace Route.Algorithms.Contracted.Dual
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetBackwardVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetBackwardVisit(long vertex, out EdgePath<T> visit)
         {
             this.CheckHasRunAndHasSucceeded();
 
             this.CheckHasRunAndHasSucceeded();
 
-            uint vertexPointer;
+            long vertexPointer;
             if (!_backwardVisits.TryGetValue(vertex, out vertexPointer))
             {
                 visit = null;

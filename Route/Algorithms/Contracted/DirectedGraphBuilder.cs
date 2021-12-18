@@ -60,7 +60,7 @@ namespace Route.Algorithms.Contracted
             
             var factors = new Dictionary<ushort, Factor>();
             var edgeEnumerator = _source.GetEdgeEnumerator();
-            for(uint vertex = 0; vertex < _source.VertexCount; vertex++)
+            for(long vertex = 0; vertex < _source.VertexCount; vertex++)
             {
                 edgeEnumerator.MoveTo(vertex);
                 edgeEnumerator.Reset();

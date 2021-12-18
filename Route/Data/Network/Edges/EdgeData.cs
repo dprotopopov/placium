@@ -36,6 +36,6 @@ namespace Route.Data.Network.Edges
         /// <summary>
         /// Gets or sets the attributes id.
         /// </summary>
-        public uint MetaId { get; set; }
+        public long MetaId { get; set; }
     }
 }

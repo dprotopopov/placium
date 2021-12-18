@@ -58,7 +58,7 @@ namespace Route.Algorithms.Dual
 
             var enumerator1 = _source.GetEdgeEnumerator();
             var enumerator2 = _source.GetEdgeEnumerator();
-            for (uint v = 0; v < _source.VertexCount; v++)
+            for (long v = 0; v < _source.VertexCount; v++)
             {
                 enumerator1.MoveTo(v);
                 while (enumerator1.MoveNext())

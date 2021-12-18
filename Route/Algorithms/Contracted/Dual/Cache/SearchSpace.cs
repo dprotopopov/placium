@@ -17,11 +17,11 @@ namespace Route.Algorithms.Contracted.Dual.Cache
         /// <summary>
         /// Gets or sets the visits per vertex.
         /// </summary>
-        public Dictionary<uint, Tuple<uint, T>> Visits { get; set; }    
+        public Dictionary<long, Tuple<long, T>> Visits { get; set; }    
         
         /// <summary>
         /// Gets or sets the visits in one set.
         /// </summary>
-        public HashSet<uint> VisitSet { get; set; }      
+        public HashSet<long> VisitSet { get; set; }      
     }
 }

@@ -28,7 +28,7 @@ namespace Route.Attributes
         /// <summary>
         /// Adds a new attributes collection.
         /// </summary>
-        public static uint Add(this AttributesIndex index, IEnumerable<Attribute> attributes)
+        public static long Add(this AttributesIndex index, IEnumerable<Attribute> attributes)
         {
             return index.Add(new AttributeCollection(attributes));
         }
@@ -36,7 +36,7 @@ namespace Route.Attributes
         /// <summary>
         /// Adds a new tag collection.
         /// </summary>
-        public static uint Add(this AttributesIndex index, params Attribute[] attributes)
+        public static long Add(this AttributesIndex index, params Attribute[] attributes)
         {
             return index.Add(new AttributeCollection(attributes));
         }

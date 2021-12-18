@@ -35,12 +35,12 @@ namespace Route.Algorithms.Default.EdgeBased
         private readonly RouterPoint[] _sources;
         private readonly RouterPoint[] _targets;
         private readonly T _maxSearch;
-        private readonly Func<uint, IEnumerable<uint[]>> _getRestrictions;
+        private readonly Func<long, IEnumerable<long[]>> _getRestrictions;
         
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public ManyToMany(Router router, WeightHandler<T> weightHandler, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public ManyToMany(Router router, WeightHandler<T> weightHandler, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint[] sources, RouterPoint[] targets, T maxSearch)
         {
             _routerDb = router.Db;
@@ -125,7 +125,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public ManyToMany(Router router, Profile profile, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public ManyToMany(Router router, Profile profile, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint[] sources, RouterPoint[] targets,
             float maxSearch)
             : base(router, profile.DefaultWeightHandler(router), getRestrictions, sources, targets, maxSearch)
@@ -136,7 +136,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public ManyToMany(Router router, Func<ushort, Factor> getFactor, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public ManyToMany(Router router, Func<ushort, Factor> getFactor, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint[] sources, RouterPoint[] targets,
             float maxSearch)
             : base(router, new DefaultWeightHandler(getFactor), getRestrictions, sources, targets, maxSearch)
@@ -147,7 +147,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new algorithm.
         /// </summary>
-        public ManyToMany(Router router, DefaultWeightHandler weightHandler, Func<uint, IEnumerable<uint[]>> getRestrictions,
+        public ManyToMany(Router router, DefaultWeightHandler weightHandler, Func<long, IEnumerable<long[]>> getRestrictions,
             RouterPoint[] sources, RouterPoint[] targets,
             float maxSearch)
             : base(router, weightHandler, getRestrictions, sources, targets, maxSearch)

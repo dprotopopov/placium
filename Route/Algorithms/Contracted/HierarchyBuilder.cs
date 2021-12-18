@@ -55,16 +55,16 @@ namespace Route.Algorithms.Contracted
             _restrictions = restrictions;
         }
 
-        private BinaryHeap<uint> _queue; // the vertex-queue.
-        private BitArray32 _contractedFlags; // contains flags for contracted vertices.
+        private BinaryHeap<long> _queue; // the vertex-queue.
+        private BitArray64 _contractedFlags; // contains flags for contracted vertices.
 
         /// <summary>
         /// Excutes the actual run.
         /// </summary>
         protected override void DoRun(CancellationToken cancellationToken)
         {
-            _queue = new BinaryHeap<uint>((uint)_graph.VertexCount);
-            _contractedFlags = new BitArray32(_graph.VertexCount);
+            _queue = new BinaryHeap<long>((long)_graph.VertexCount);
+            _contractedFlags = new BitArray64(_graph.VertexCount);
             _missesQueue = new Queue<bool>();
 
             // remove all edges that have witness paths, meaning longer than the shortest path
@@ -99,8 +99,8 @@ namespace Route.Algorithms.Contracted
                     int totaEdges = 0;
                     int totalUncontracted = 0;
                     int maxCardinality = 0;
-                    var neighbourCount = new Dictionary<uint, int>();
-                    for (uint v = 0; v < _graph.VertexCount; v++)
+                    var neighbourCount = new Dictionary<long, int>();
+                    for (long v = 0; v < _graph.VertexCount; v++)
                     {
                         if (!_contractedFlags[v])
                         {
@@ -135,7 +135,7 @@ namespace Route.Algorithms.Contracted
             _logger.Log(TraceEventType.Information, "Calculating queue...");
 
             _queue.Clear();
-            for (uint v = 0; v < _graph.VertexCount; v++)
+            for (long v = 0; v < _graph.VertexCount; v++)
             {
                 if(!_contractedFlags[v])
                 {
@@ -155,8 +155,8 @@ namespace Route.Algorithms.Contracted
             var edges = new List<MetaEdge>();
             var weights = new List<T>();
             var metrics = new List<float>();
-            var targets = new List<uint>();
-            for (uint vertex = 0; vertex < _graph.VertexCount; vertex++)
+            var targets = new List<long>();
+            for (long vertex = 0; vertex < _graph.VertexCount; vertex++)
             {
                 edges.Clear();
                 weights.Clear();
@@ -186,7 +186,7 @@ namespace Route.Algorithms.Contracted
 
                 // calculate all witness paths.
                 _witnessCalculator.Calculate(_graph.Graph, vertex, targets, metrics, 
-                    ref forwardWitnesses, ref backwardWitnesses, uint.MaxValue);
+                    ref forwardWitnesses, ref backwardWitnesses, long.MaxValue);
 
                 // check witness paths.
                 for (var i = 0; i < edges.Count; i++)
@@ -218,7 +218,7 @@ namespace Route.Algorithms.Contracted
         /// Select the next vertex to contract.
         /// </summary>
         /// <returns></returns>
-        private uint? SelectNext()
+        private long? SelectNext()
         {
             // first check the first of the current queue.
             while (_queue.Count > 0)
@@ -279,7 +279,7 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Contracts the given vertex.
         /// </summary>
-        private void Contract(uint vertex)
+        private void Contract(long vertex)
         {
             // get and keep edges.
             var edges = new List<MetaEdge>(_graph.GetEdgeEnumerator(vertex));
@@ -324,7 +324,7 @@ namespace Route.Algorithms.Contracted
                 // figure out what witness paths to calculate.
                 var forwardWitnesses = new bool[j];
                 var backwardWitnesses = new bool[j];
-                var targets = new List<uint>(j);
+                var targets = new List<long>(j);
                 var targetWeights = new List<T>(j);
                 var targetMetrics = new List<float>(j);
                 for (var k = 0; k < j; k++)

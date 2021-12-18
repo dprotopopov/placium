@@ -105,7 +105,7 @@ namespace Route.Profiles
                     edgeProfileFactors[p] = new FactorAndSpeed[(int) _db.EdgeProfiles.Count];
                 }
 
-                for (uint edgeProfile = 0; edgeProfile < _db.EdgeProfiles.Count; edgeProfile++)
+                for (long edgeProfile = 0; edgeProfile < _db.EdgeProfiles.Count; edgeProfile++)
                 {
                     var edgeProfileTags = _db.EdgeProfiles.Get(edgeProfile);
                     for (var p = 0; p < profiles.Length; p++)

@@ -33,16 +33,16 @@ namespace Route.Algorithms.Networks.Islands
 	{
 		private readonly Func<ushort, Factor>[] _profiles;
         private readonly ushort[] _islands; // holds the island ID per vertex.
-        private readonly Dictionary<ushort, uint> _islandSizes; // holds the size per island.
+        private readonly Dictionary<ushort, long> _islandSizes; // holds the size per island.
         private readonly RouterDb _routerDb;
-        private const uint NO_DATA = uint.MaxValue;
-        private const uint NO_ISLAND = uint.MaxValue - 1;
+        private const long NO_DATA = long.MaxValue;
+        private const long NO_ISLAND = long.MaxValue - 1;
 
         /// <summary>
         /// A value representing a restricted vertex, could be part of multiple islands.
         /// </summary>
         public const ushort RESTRICTED = ushort.MaxValue - 2;
-        private const uint RESTRICTED_FULL = uint.MaxValue - 2;
+        private const long RESTRICTED_FULL = long.MaxValue - 2;
 
         private readonly Restrictions.RestrictionCollection _restrictionCollection;
 
@@ -50,7 +50,7 @@ namespace Route.Algorithms.Networks.Islands
         /// A value representing a singleton island.
         /// </summary>
         public const ushort SINGLETON_ISLAND = ushort.MaxValue;
-        private const uint SINGLETON_ISLAND_FULL = uint.MaxValue;
+        private const long SINGLETON_ISLAND_FULL = long.MaxValue;
         
         private const ushort OVERFLOW_ISLAND = ushort.MaxValue - 1; // A value representing an island when there is overflow.
 
@@ -64,31 +64,31 @@ namespace Route.Algorithms.Networks.Islands
             _restrictionCollection = restrictionCollection;
 
             _islands = new ushort[_routerDb.Network.VertexCount];
-            _islandSizes = new Dictionary<ushort, uint>();
+            _islandSizes = new Dictionary<ushort, long>();
 		}
 
-        private uint[] _fullIslands;
-        private Dictionary<uint, uint> _fullIslandSizes;
-        private ArrayBase<uint> _index;
-        private Collections.Stack<uint> _stack;
+        private long[] _fullIslands;
+        private Dictionary<long, long> _fullIslandSizes;
+        private ArrayBase<long> _index;
+        private Collections.Stack<long> _stack;
         private SparseLongIndex _onStack;
 
-        private uint _nextIndex = 0;
-        private uint _nextIsland = 0;
+        private long _nextIndex = 0;
+        private long _nextIsland = 0;
 
         /// <summary>
         /// Runs the island detection.
         /// </summary>
 		protected override void DoRun(CancellationToken cancellationToken)
         {
-            _fullIslands = new uint[_islands.Length];
-            _fullIslandSizes = new Dictionary<uint, uint>();
+            _fullIslands = new long[_islands.Length];
+            _fullIslandSizes = new Dictionary<long, long>();
             
             _onStack = new SparseLongIndex();
             var vertexCount = _routerDb.Network.GeometricGraph.Graph.VertexCount;
 
             // initialize all islands to NO_ISLAND.
-            for (uint i = 0; i < _islands.Length; i++)
+            for (long i = 0; i < _islands.Length; i++)
             {
                 _fullIslands[i] = NO_ISLAND;
 
@@ -115,15 +115,15 @@ namespace Route.Algorithms.Networks.Islands
             }
 
             // build index data structure and stack.
-            _index = Context.ArrayFactory.CreateMemoryBackedArray<uint>(vertexCount * 2);
+            _index = Context.ArrayFactory.CreateMemoryBackedArray<long>(vertexCount * 2);
             for (var i = 0; i < _index.Length; i++)
             {
                 _index[i] = NO_DATA;
             }
-            _stack = new Collections.Stack<uint>();
+            _stack = new Collections.Stack<long>();
 
             // https://en.wikipedia.org/wiki/Tarjan's_strongly_connected_components_algorithm
-            for (uint v = 0; v < vertexCount; v++)
+            for (long v = 0; v < vertexCount; v++)
             {
                 var vIndex = _index[v * 2];
                 if (vIndex != NO_DATA)
@@ -135,10 +135,10 @@ namespace Route.Algorithms.Networks.Islands
             }
             
             // sort islands.
-            var sortedIslands = new List<KeyValuePair<uint, uint>>(_fullIslandSizes);
+            var sortedIslands = new List<KeyValuePair<long, long>>(_fullIslandSizes);
             sortedIslands.Sort((x, y) => -x.Value.CompareTo(y.Value));
-            var newIds = new Dictionary<uint, ushort>();
-            for (uint i = 0; i < sortedIslands.Count; i++)
+            var newIds = new Dictionary<long, ushort>();
+            for (long i = 0; i < sortedIslands.Count; i++)
             {
                 var id = i;
                 if (id > OVERFLOW_ISLAND) id = OVERFLOW_ISLAND;
@@ -168,9 +168,9 @@ namespace Route.Algorithms.Networks.Islands
             }
         }
 
-        private void StrongConnect(uint v)
+        private void StrongConnect(long v)
         {
-            var nextStack = new Collections.Stack<uint>();
+            var nextStack = new Collections.Stack<long>();
             nextStack.Push(Constants.NO_VERTEX);
             nextStack.Push(v);
 
@@ -203,8 +203,8 @@ namespace Route.Algorithms.Networks.Islands
                         var island = _nextIsland;
                         _nextIsland++;
 
-                        uint size = 0;
-                        uint islandVertex = Constants.NO_VERTEX;
+                        long size = 0;
+                        long islandVertex = Constants.NO_VERTEX;
                         do
                         {
                             islandVertex = _stack.Pop();
@@ -308,7 +308,7 @@ namespace Route.Algorithms.Networks.Islands
         /// <summary>
         /// Gets the island sizes.
         /// </summary>
-        public Dictionary<ushort, uint> IslandSizes
+        public Dictionary<ushort, long> IslandSizes
         {
             get
             {

@@ -114,7 +114,7 @@ namespace Route.IO.Shape.Reader
                 _routerDb.AddSupportedVehicle(vehicle);
             }
 
-            var nodeToVertex = new Dictionary<long, uint>();
+            var nodeToVertex = new Dictionary<long, long>();
 
             // read all vertices.
             var startTicks = DateTime.Now.Ticks;
@@ -218,7 +218,7 @@ namespace Route.IO.Shape.Reader
                     // read nodes
                     long vertex1Shape = reader.GetInt64(header[_sourceVertexColumn]);
                     long vertex2Shape = reader.GetInt64(header[_targetVertexColumn]);
-                    uint vertex1, vertex2;
+                    long vertex1, vertex2;
                     if (nodeToVertex.TryGetValue(vertex1Shape, out vertex1) &&
                         nodeToVertex.TryGetValue(vertex2Shape, out vertex2))
                     { // the node has not been processed yet.
@@ -325,7 +325,7 @@ namespace Route.IO.Shape.Reader
                                 var i = 0;
                                 var shortShape = new List<Coordinate>();
                                 var shortDistance = 0.0f;
-                                uint shortVertex = Constants.NO_VERTEX;
+                                long shortVertex = Constants.NO_VERTEX;
                                 Coordinate? shortPoint;
                                 i++;
                                 while (i < shape.Count)
@@ -414,7 +414,7 @@ namespace Route.IO.Shape.Reader
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        private void AddEdge(uint vertex1, uint vertex2, EdgeData edgeData, List<Coordinate> intermediates)
+        private void AddEdge(long vertex1, long vertex2, EdgeData edgeData, List<Coordinate> intermediates)
         {
             var edge = _routerDb.Network.GetEdgeEnumerator(vertex1).FirstOrDefault(x => x.To == vertex2);
             if (edge == null)

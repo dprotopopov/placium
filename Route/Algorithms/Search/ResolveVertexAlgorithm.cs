@@ -73,7 +73,7 @@ namespace Route.Algorithms.Search
             var longitudeOffset = System.Math.Abs(_longitude - offsettedLocation.Longitude);
 
             // get the closest edge.
-            uint vertexId = _graph.SearchClosest(_latitude, _longitude,
+            long vertexId = _graph.SearchClosest(_latitude, _longitude,
                     latitudeOffset, longitudeOffset, _isAcceptable);
 
             if (vertexId == Constants.NO_EDGE)

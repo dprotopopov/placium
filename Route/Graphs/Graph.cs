@@ -41,8 +41,8 @@ namespace Route.Graphs
 
         private readonly int _edgeSize = -1;
         private readonly int _edgeDataSize = -1;
-        private readonly ArrayBase<uint> _vertices; // Holds all vertices pointing to it's first edge.
-        private readonly ArrayBase<uint> _edges; // Holds all edges and their data converted to uint's.
+        private readonly ArrayBase<long> _vertices; // Holds all vertices pointing to it's first edge.
+        private readonly ArrayBase<long> _edges; // Holds all edges and their data converted to long's.
 
         /// <summary>
         /// Creates a new graph.
@@ -58,8 +58,8 @@ namespace Route.Graphs
         /// </summary>
         public Graph(int edgeDataSize, long sizeEstimate)
             : this(edgeDataSize, sizeEstimate, 
-            Context.ArrayFactory.CreateMemoryBackedArray<uint>(sizeEstimate),
-            Context.ArrayFactory.CreateMemoryBackedArray<uint>(sizeEstimate * 3 * (MINIMUM_EDGE_SIZE + edgeDataSize)))
+            Context.ArrayFactory.CreateMemoryBackedArray<long>(sizeEstimate),
+            Context.ArrayFactory.CreateMemoryBackedArray<long>(sizeEstimate * 3 * (MINIMUM_EDGE_SIZE + edgeDataSize)))
         {
 
         }
@@ -68,8 +68,8 @@ namespace Route.Graphs
         /// Creates a graph using the existing data in the given arrays.
         /// </summary>
         private Graph(int edgeDataSize,
-            ArrayBase<uint> vertices,
-            ArrayBase<uint> edges)
+            ArrayBase<long> vertices,
+            ArrayBase<long> edges)
         {
             _edgeDataSize = edgeDataSize;
             _edgeSize = MINIMUM_EDGE_SIZE + edgeDataSize;
@@ -78,10 +78,10 @@ namespace Route.Graphs
             _maxVertex = null;
             if (_vertices.Length > 0)
             {
-                _maxVertex = (uint)(vertices.Length - 1);
+                _maxVertex = (long)(vertices.Length - 1);
             }
             _edges = edges;
-            _nextEdgeId = (uint)(edges.Length);
+            _nextEdgeId = (long)(edges.Length);
             _edgeCount = _nextEdgeId / _edgeSize;
         }
 
@@ -89,8 +89,8 @@ namespace Route.Graphs
         /// Creates a new empty graph using the given arrays.
         /// </summary>
         private Graph(int edgeDataSize, long sizeEstimate,
-            ArrayBase<uint> vertices,
-            ArrayBase<uint> edges)
+            ArrayBase<long> vertices,
+            ArrayBase<long> edges)
         {
             _edgeDataSize = edgeDataSize;
             _edgeSize = MINIMUM_EDGE_SIZE + edgeDataSize;
@@ -118,12 +118,12 @@ namespace Route.Graphs
             _edgeDataSize = edgeDataSize;
             _edgeSize = MINIMUM_EDGE_SIZE + edgeDataSize;
 
-            _vertices = new Array<uint>(map, estimatedSize);
+            _vertices = new Array<long>(map, estimatedSize);
             for (int i = 0; i < _vertices.Length; i++)
             {
                 _vertices[i] = Constants.NO_VERTEX;
             }
-            _edges = new Array<uint>(map, estimatedSize * 3 * _edgeSize);
+            _edges = new Array<long>(map, estimatedSize * 3 * _edgeSize);
             for (int i = 0; i < _edges.Length; i++)
             { 
                 _edges[i] = Constants.NO_EDGE;
@@ -137,21 +137,21 @@ namespace Route.Graphs
         {
             _edgeDataSize = edgeDataSize;
             _edgeSize = MINIMUM_EDGE_SIZE + edgeDataSize;
-            _vertices = new Array<uint>(map, estimatedSize, profile.VertexProfile);
+            _vertices = new Array<long>(map, estimatedSize, profile.VertexProfile);
             for (int i = 0; i < _vertices.Length; i++)
             {
                 _vertices[i] = Constants.NO_VERTEX;
             }
-            _edges = new Array<uint>(map, estimatedSize * 3 * _edgeSize, profile.EdgeProfile);
+            _edges = new Array<long>(map, estimatedSize * 3 * _edgeSize, profile.EdgeProfile);
             for (int i = 0; i < _edges.Length; i++)
             {
                 _edges[i] = Constants.NO_EDGE;
             }
         }
 
-        private uint _nextEdgeId;
+        private long _nextEdgeId;
         private long _edgeCount = 0;
-        private uint? _maxVertex = null;
+        private long? _maxVertex = null;
         
         /// <summary>
         /// Returns true if this graph is simple (max one edge between any two vertices).
@@ -182,9 +182,9 @@ namespace Route.Graphs
         /// </remarks>
         public bool MarkAsSimple()
         {
-            var neighbours = new HashSet<uint>();
+            var neighbours = new HashSet<long>();
             var enumerator = this.GetEdgeEnumerator();
-            for (uint v = 0; v < this.VertexCount; v++)
+            for (long v = 0; v < this.VertexCount; v++)
             {
                 if (!enumerator.MoveTo(v))
                 { // no edge here!
@@ -214,7 +214,7 @@ namespace Route.Graphs
         /// <summary>
         /// Adds a new vertex.
         /// </summary>
-        public void AddVertex(uint vertex)
+        public void AddVertex(long vertex)
         {
             if (_maxVertex == null || _maxVertex.Value < vertex)
             { // update max vertex.
@@ -232,7 +232,7 @@ namespace Route.Graphs
         /// <summary>
         /// Returns true if this graph has the given vertex.
         /// </summary>
-        public bool HasVertex(uint vertex)
+        public bool HasVertex(long vertex)
         {
             if (vertex > _vertices.Length - 1)
             {
@@ -249,7 +249,7 @@ namespace Route.Graphs
         /// <summary>
         /// Removes the given vertex.
         /// </summary>
-        public bool RemoveVertex(uint vertex)
+        public bool RemoveVertex(long vertex)
         {
             if (vertex > _vertices.Length - 1)
             { // vertex does not exist.
@@ -287,7 +287,7 @@ namespace Route.Graphs
         /// <summary>
         /// Adds an edge with the associated data.
         /// </summary>
-        public uint AddEdge(uint vertex1, uint vertex2, params uint[] data)
+        public long AddEdge(long vertex1, long vertex2, params long[] data)
         {
             if (_isSimple)
             { // no single-edge loops in a simple graph.
@@ -304,11 +304,11 @@ namespace Route.Graphs
             { // check for an existing edge first.
                 // check if the arc exists already.
                 edgeId = _vertices[vertex1];
-                uint nextEdgeSlot = 0;
+                long nextEdgeSlot = 0;
                 while (edgeId != Constants.NO_EDGE)
                 { // keep looping.
-                    uint otherVertexId = 0;
-                    uint previousEdgeId = edgeId;
+                    long otherVertexId = 0;
+                    long previousEdgeId = edgeId;
                     //bool forward = true;
                     if (_edges[edgeId + NODEA] == vertex1)
                     {
@@ -349,7 +349,7 @@ namespace Route.Graphs
                         //        _edges[previousEdgeId + MINIMUM_EDGE_SIZE + i] =
                         //            data[i];
                         //    }
-                        //    return (uint)(previousEdgeId / _edgeSize);
+                        //    return (long)(previousEdgeId / _edgeSize);
                         //}
                     }
                 }
@@ -363,7 +363,7 @@ namespace Route.Graphs
                 _edges[_nextEdgeId + NODEB] = vertex2;
                 _edges[_nextEdgeId + NEXTNODEA] = Constants.NO_EDGE;
                 _edges[_nextEdgeId + NEXTNODEB] = Constants.NO_EDGE;
-                _nextEdgeId = (uint)(_nextEdgeId + _edgeSize);
+                _nextEdgeId = (long)(_nextEdgeId + _edgeSize);
 
                 // append the new edge to the from list.
                 _edges[nextEdgeSlot] = edgeId;
@@ -387,7 +387,7 @@ namespace Route.Graphs
                 _edges[_nextEdgeId + NODEB] = vertex2;
                 _edges[_nextEdgeId + NEXTNODEA] = Constants.NO_EDGE;
                 _edges[_nextEdgeId + NEXTNODEB] = Constants.NO_EDGE;
-                _nextEdgeId = (uint)(_nextEdgeId + _edgeSize);
+                _nextEdgeId = (long)(_nextEdgeId + _edgeSize);
 
                 // set data.
                 for (var i = 0; i < _edgeDataSize; i++)
@@ -403,10 +403,10 @@ namespace Route.Graphs
                 var toEdgeId = _vertices[vertex2];
                 if (toEdgeId != Constants.NO_EDGE)
                 { // there are existing edges.
-                    uint nextEdgeSlot = 0;
+                    long nextEdgeSlot = 0;
                     while (toEdgeId != Constants.NO_EDGE)
                     { // keep looping.
-                        uint otherVertexId = 0;
+                        long otherVertexId = 0;
                         if (_edges[toEdgeId + NODEA] == vertex2)
                         {
                             otherVertexId = _edges[toEdgeId + NODEB];
@@ -428,13 +428,13 @@ namespace Route.Graphs
                 }
             }
 
-            return (uint)(edgeId / _edgeSize);
+            return (long)(edgeId / _edgeSize);
         }
         
         /// <summary>
         /// Updates the data associated with this edge.
         /// </summary>
-        public void UpdateEdgeData(uint edgeId, params uint[] data)
+        public void UpdateEdgeData(long edgeId, params long[] data)
         {
             var internalEdgeId = edgeId * _edgeSize;
             for (var i = 0; i < _edgeDataSize; i++)
@@ -448,15 +448,15 @@ namespace Route.Graphs
         /// Returns the edge with the given id.
         /// </summary>
         /// <returns></returns>
-        public Edge GetEdge(uint edgeId)
+        public Edge GetEdge(long edgeId)
         {
-            var edgePointer = edgeId * (uint)_edgeSize;
-            if (_edges.Length < edgePointer + (uint)_edgeSize)
+            var edgePointer = edgeId * (long)_edgeSize;
+            if (_edges.Length < edgePointer + (long)_edgeSize)
             { // edge not part of graph.
                 throw new ArgumentOutOfRangeException();
             }
 
-            var data = new uint[_edgeDataSize];
+            var data = new long[_edgeDataSize];
             for(var i = 0; i < _edgeDataSize; i++)
             {
                 data[i] =
@@ -473,7 +473,7 @@ namespace Route.Graphs
         /// <summary>
         /// Deletes all edges leading from/to the given vertex. 
         /// </summary>
-        public int RemoveEdges(uint vertex)
+        public int RemoveEdges(long vertex)
         {
             var removed = 0;
             var edges = this.GetEdgeEnumerator(vertex);
@@ -488,10 +488,10 @@ namespace Route.Graphs
         /// Deletes the edge with the given id.
         /// </summary>
         /// <returns></returns>
-        public bool RemoveEdge(uint edgeId)
+        public bool RemoveEdge(long edgeId)
         {
-            edgeId = edgeId * (uint)_edgeSize;
-            if (_edges.Length < edgeId + (uint)_edgeSize)
+            edgeId = edgeId * (long)_edgeSize;
+            if (_edges.Length < edgeId + (long)_edgeSize)
             { // edge not part of graph.
                 return false;
             }
@@ -502,15 +502,15 @@ namespace Route.Graphs
         /// <summary>
         /// Deletes the edge between the two given vertices.
         /// </summary>
-        public int RemoveEdges(uint vertex1, uint vertex2)
+        public int RemoveEdges(long vertex1, long vertex2)
         {
-            return this.RemoveEdges(vertex1, vertex2, uint.MaxValue);
+            return this.RemoveEdges(vertex1, vertex2, long.MaxValue);
         }
 
         /// <summary>
         /// Deletes the edge between the two given vertices.
         /// </summary>
-        private int RemoveEdges(uint vertex1, uint vertex2, uint edgeId = uint.MaxValue)
+        private int RemoveEdges(long vertex1, long vertex2, long edgeId = long.MaxValue)
         {
             if (_isSimple)
             { // this can happen on non-simple graphs.
@@ -530,12 +530,12 @@ namespace Route.Graphs
             // remove for vertex1.
             var removed = 0;
             var nextEdgeId = _vertices[vertex1];
-            uint nextEdgeSlot = 0;
-            uint previousEdgeSlot = 0;
-            uint currentEdgeId = 0;
+            long nextEdgeSlot = 0;
+            long previousEdgeSlot = 0;
+            long currentEdgeId = 0;
             while (nextEdgeId != Constants.NO_EDGE)
             { // keep looping.
-                uint otherVertexId = 0;
+                long otherVertexId = 0;
                 currentEdgeId = nextEdgeId;
                 previousEdgeSlot = nextEdgeSlot;
                 if (_edges[nextEdgeId + NODEA] == vertex1)
@@ -551,7 +551,7 @@ namespace Route.Graphs
                     nextEdgeId = _edges[nextEdgeId + NEXTNODEB];
                 }
                 if (otherVertexId == vertex2 && 
-                    (edgeId == uint.MaxValue || edgeId == currentEdgeId))
+                    (edgeId == long.MaxValue || edgeId == currentEdgeId))
                 { // this is the edge we need.
                     if (_vertices[vertex1] == currentEdgeId)
                     { // the edge being remove if the 'first' edge.
@@ -579,7 +579,7 @@ namespace Route.Graphs
 
                     removed++;
                     _edgeCount--;
-                    if (_isSimple || edgeId != uint.MaxValue)
+                    if (_isSimple || edgeId != long.MaxValue)
                     { // is the graph is simple, there's only one edge.
                         // if we seek only one edge also break.
                         break;
@@ -596,7 +596,7 @@ namespace Route.Graphs
                 currentEdgeId = 0;
                 while (nextEdgeId != Constants.NO_EDGE)
                 { // keep looping.
-                    uint otherVertexId = 0;
+                    long otherVertexId = 0;
                     currentEdgeId = nextEdgeId;
                     previousEdgeSlot = nextEdgeSlot;
                     if (_edges[nextEdgeId + NODEA] == vertex2)
@@ -612,7 +612,7 @@ namespace Route.Graphs
                         nextEdgeId = _edges[nextEdgeId + NEXTNODEB];
                     }
                     if (otherVertexId == vertex1 &&
-                        (edgeId == uint.MaxValue || edgeId == currentEdgeId))
+                        (edgeId == long.MaxValue || edgeId == currentEdgeId))
                     { // this is the edge we need.
                         if (_vertices[vertex2] == currentEdgeId)
                         { // the edge being remove if the 'first' edge.
@@ -634,7 +634,7 @@ namespace Route.Graphs
                         {
                             _edges[currentEdgeId + MINIMUM_EDGE_SIZE + i] = Constants.NO_EDGE;
                         }
-                        if (_isSimple || edgeId != uint.MaxValue)
+                        if (_isSimple || edgeId != long.MaxValue)
                         { // is the graph is simple, there's only one edge.
                             // if we seek only one edge also break.
                             return removed;
@@ -648,7 +648,7 @@ namespace Route.Graphs
         /// <summary>
         /// Switches the two vertices.
         /// </summary>
-        public void Switch(uint vertex1, uint vertex2)
+        public void Switch(long vertex1, long vertex2)
         {
             if (vertex1 == vertex2) { throw new ArgumentException("Given vertices must be different."); }
             if (vertex1 > _vertices.Length - 1) { throw new ArgumentException(string.Format("Vertex {0} does not exist.", vertex1)); }
@@ -739,7 +739,7 @@ namespace Route.Graphs
         /// Returns all edges starting at the given vertex.
         /// </summary>
         /// <returns></returns>
-        public EdgeEnumerator GetEdgeEnumerator(uint vertex)
+        public EdgeEnumerator GetEdgeEnumerator(long vertex)
         {
             if (vertex >= _vertices.Length) { throw new ArgumentOutOfRangeException("vertex", "vertex is not part of this graph."); }
 
@@ -752,7 +752,7 @@ namespace Route.Graphs
         /// Relocates data internally in the most compact way possible.
         /// </summary>
         /// <param name="updateEdgeId">The edge id's may change. This action can be used to hook into every change.</param>
-        public void Compress(Action<uint, uint> updateEdgeId)
+        public void Compress(Action<long, long> updateEdgeId)
         {
             // check if compression is needed.
             if (_edgeCount == _edges.Length / _edgeSize)
@@ -761,8 +761,8 @@ namespace Route.Graphs
             }
 
             // move edges down.
-            uint maxAllocatedEdgeId = 0;
-            for (uint edgePointer = 0; edgePointer < _nextEdgeId; edgePointer = (uint)(edgePointer + _edgeSize))
+            long maxAllocatedEdgeId = 0;
+            for (long edgePointer = 0; edgePointer < _nextEdgeId; edgePointer = (long)(edgePointer + _edgeSize))
             {
                 if (_edges[edgePointer] != Constants.NO_EDGE)
                 { // this edge is allocated.
@@ -771,10 +771,10 @@ namespace Route.Graphs
                         this.MoveEdge(edgePointer, maxAllocatedEdgeId);
                         if (updateEdgeId != null)
                         { // report that this edge id has changed.
-                            updateEdgeId.Invoke((uint)(edgePointer / _edgeSize), (uint)(maxAllocatedEdgeId / _edgeSize));
+                            updateEdgeId.Invoke((long)(edgePointer / _edgeSize), (long)(maxAllocatedEdgeId / _edgeSize));
                         }
                     }
-                    maxAllocatedEdgeId = (uint)(maxAllocatedEdgeId + _edgeSize);
+                    maxAllocatedEdgeId = (long)(maxAllocatedEdgeId + _edgeSize);
                 }
             }
             _nextEdgeId = maxAllocatedEdgeId;
@@ -818,7 +818,7 @@ namespace Route.Graphs
         /// <summary>
         /// Returns the number of vertices in this graph.
         /// </summary>
-        public uint VertexCount
+        public long VertexCount
         {
             get
             {
@@ -866,13 +866,13 @@ namespace Route.Graphs
         public class EdgeEnumerator : IEnumerable<Edge>, IEnumerator<Edge>
         {
             private readonly Graph _graph;
-            private uint _nextEdgePointer;
-            private uint _vertex;
-            private uint _currentEdgePointer;
+            private long _nextEdgePointer;
+            private long _vertex;
+            private long _currentEdgePointer;
             private bool _currentEdgeInverted = false;
-            private uint _startVertex;
-            private uint _startEdgePointer;
-            private uint _neighbour;
+            private long _startVertex;
+            private long _startEdgePointer;
+            private long _neighbour;
 
             /// <summary>
             /// Creates a new edge enumerator.
@@ -930,7 +930,7 @@ namespace Route.Graphs
             /// <summary>
             /// Returns the vertex at the beginning.
             /// </summary>
-            public uint From
+            public long From
             {
                 get
                 {
@@ -941,7 +941,7 @@ namespace Route.Graphs
             /// <summary>
             /// Returns the vertex at the end.
             /// </summary>
-            public uint To
+            public long To
             {
                 get { return _neighbour; }
             }
@@ -949,11 +949,11 @@ namespace Route.Graphs
             /// <summary>
             /// Returns the edge data.
             /// </summary>
-            public uint[] Data
+            public long[] Data
             {
                 get
                 {
-                    var data = new uint[_graph._edgeDataSize];
+                    var data = new long[_graph._edgeDataSize];
                     for (var i = 0; i < _graph._edgeDataSize; i++)
                     {
                         data[i] = _graph._edges[_currentEdgePointer + MINIMUM_EDGE_SIZE + i];
@@ -965,7 +965,7 @@ namespace Route.Graphs
             /// <summary>
             /// Returns the first data element.
             /// </summary>
-            public uint Data0
+            public long Data0
             {
                 get
                 {
@@ -976,7 +976,7 @@ namespace Route.Graphs
             /// <summary>
             /// Returns the second data element.
             /// </summary>
-            public uint Data1
+            public long Data1
             {
                 get
                 {
@@ -995,11 +995,11 @@ namespace Route.Graphs
             /// <summary>
             /// Gets the current edge id.
             /// </summary>
-            public uint Id
+            public long Id
             {
                 get
                 {
-                    return (uint)(_currentEdgePointer / _graph._edgeSize);
+                    return (long)(_currentEdgePointer / _graph._edgeSize);
                 }
             }
 
@@ -1042,7 +1042,7 @@ namespace Route.Graphs
             /// <summary>
             /// Moves this enumerator to the given vertex.
             /// </summary>
-            public bool MoveTo(uint vertex)
+            public bool MoveTo(long vertex)
             {
                 var edgePointer = _graph._vertices[vertex];
                 _nextEdgePointer = edgePointer;
@@ -1059,9 +1059,9 @@ namespace Route.Graphs
             /// <summary>
             /// Moves this enumerator to the given edge.
             /// </summary>
-            public void MoveToEdge(uint edge)
+            public void MoveToEdge(long edge)
             {
-                var edgePointer = edge * (uint)_graph._edgeSize;
+                var edgePointer = edge * (long)_graph._edgeSize;
 
                 _nextEdgePointer = edgePointer;
                 _currentEdgePointer = _nextEdgePointer;
@@ -1095,7 +1095,7 @@ namespace Route.Graphs
         /// <summary>
         /// Sorts the graph based on the given transformations.
         /// </summary>
-        public void Sort(ArrayBase<uint> transformations)
+        public void Sort(ArrayBase<long> transformations)
         {
             // update edges.
             for (var i = 0; i < _nextEdgeId; i = i + _edgeSize)
@@ -1153,7 +1153,7 @@ namespace Route.Graphs
             {
                 return 1 + 8 + 8 + 4 + 4 + // the header: two longs representing vertex and edge count and one int for edge size and one for vertex size.
                     this.VertexCount * 4 + // the bytes for the vertex-index: 2 vertices, pointing to 0.
-                    this.EdgeCount * 4 * (4 + 1); // the bytes for the one edge: one edge = 4 uints + edge data size.
+                    this.EdgeCount * 4 * (4 + 1); // the bytes for the one edge: one edge = 4 longs + edge data size.
             }
         }
 
@@ -1220,14 +1220,14 @@ namespace Route.Graphs
             size = size + 4;
             var edgeSize = BitConverter.ToInt32(bytes, 0);
 
-            ArrayBase<uint> vertices;
-            ArrayBase<uint> edges;
+            ArrayBase<long> vertices;
+            ArrayBase<long> edges;
             if (profile == null)
             { // just create arrays and read the data.
-                vertices = Context.ArrayFactory.CreateMemoryBackedArray<uint>(vertexLength * vertexSize);
+                vertices = Context.ArrayFactory.CreateMemoryBackedArray<long>(vertexLength * vertexSize);
                 vertices.CopyFrom(stream);
                 size += vertexLength * vertexSize * 4;
-                edges = Context.ArrayFactory.CreateMemoryBackedArray<uint>(edgeLength * edgeSize);
+                edges = Context.ArrayFactory.CreateMemoryBackedArray<long>(edgeLength * edgeSize);
                 edges.CopyFrom(stream);
                 size += edgeLength * edgeSize * 4;
             }
@@ -1235,11 +1235,11 @@ namespace Route.Graphs
             { // create accessors over the exact part of the stream that represents vertices/edges.
                 var position = stream.Position;
                 var map1 = new MemoryMapStream(new CappedStream(stream, position, vertexLength * vertexSize * 4));
-                vertices = new Array<uint>(map1.CreateUInt32(vertexLength * vertexSize), profile.VertexProfile);
+                vertices = new Array<long>(map1.CreateInt64(vertexLength * vertexSize), profile.VertexProfile);
                 size += vertexLength * vertexSize * 4;
                 var map2 = new MemoryMapStream(new CappedStream(stream, position + vertexLength * vertexSize * 4, 
                     edgeLength * edgeSize * 4));
-                edges = new Array<uint>(map2.CreateUInt32(edgeLength * edgeSize), profile.EdgeProfile);
+                edges = new Array<long>(map2.CreateInt64(edgeLength * edgeSize), profile.EdgeProfile);
                 size += edgeLength * edgeSize * 4;
             }
 
@@ -1254,7 +1254,7 @@ namespace Route.Graphs
         /// <summary>
         /// Moves an edge from one location to another.
         /// </summary>
-        private void MoveEdge(uint oldEdgeId, uint newEdgeId)
+        private void MoveEdge(long oldEdgeId, long newEdgeId)
         {
             // first copy the data.
             _edges[newEdgeId + NODEA] = _edges[oldEdgeId + NODEA];
@@ -1268,7 +1268,7 @@ namespace Route.Graphs
             }
 
             // loop over all edges of vertex1 and replace the oldEdgeId with the new one.
-            uint vertex1 = _edges[oldEdgeId + NODEA];
+            long vertex1 = _edges[oldEdgeId + NODEA];
             var edgeId = _vertices[vertex1];
             if (edgeId == oldEdgeId)
             { // edge is the first one, easy!
@@ -1293,7 +1293,7 @@ namespace Route.Graphs
             }
 
             // loop over all edges of vertex2 and replace the oldEdgeId with the new one.
-            uint vertex2 = _edges[oldEdgeId + NODEB];
+            long vertex2 = _edges[oldEdgeId + NODEB];
             edgeId = _vertices[vertex2];
             if (edgeId == oldEdgeId)
             { // edge is the first one, easy!

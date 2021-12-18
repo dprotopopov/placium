@@ -29,7 +29,7 @@
 //    public class EdgeDifferencePriorityCalculator : IPriorityCalculator
 //    {
 //        private readonly DirectedMetaGraph _graph;
-//        private readonly Dictionary<uint, int> _contractionCount;
+//        private readonly Dictionary<long, int> _contractionCount;
 //        private readonly Dictionary<long, int> _depth;
 //        private readonly IWitnessCalculator _witnessCalculator;
 
@@ -40,7 +40,7 @@
 //        {
 //            _graph = graph;
 //            _witnessCalculator = witnessCalculator;
-//            _contractionCount = new Dictionary<uint, int>();
+//            _contractionCount = new Dictionary<long, int>();
 //            _depth = new Dictionary<long, int>();
 
 //            this.DifferenceFactor = 1;
@@ -51,7 +51,7 @@
 //        /// <summary>
 //        /// Calculates the priority of the given vertex.
 //        /// </summary>
-//        public float Calculate(BitArray32 contractedFlags, uint vertex)
+//        public float Calculate(BitArray32 contractedFlags, long vertex)
 //        {
 //            var removed = 0;
 //            var added = 0;
@@ -107,7 +107,7 @@
 //                // figure out what witness paths to calculate.
 //                var forwardWitnesses = new bool[j];
 //                var backwardWitnesses = new bool[j];
-//                var targets = new List<uint>(j);
+//                var targets = new List<long>(j);
 //                var targetWeights = new List<float>(j);
 //                for (var k = 0; k < j; k++)
 //                {
@@ -199,7 +199,7 @@
 //        /// <summary>
 //        /// Notifies this calculator that the given vertex was contracted.
 //        /// </summary>
-//        public void NotifyContracted(uint vertex)
+//        public void NotifyContracted(long vertex)
 //        {
 //            // removes the contractions count.
 //            _contractionCount.Remove(vertex);

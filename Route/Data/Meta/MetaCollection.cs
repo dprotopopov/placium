@@ -55,7 +55,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Gets the data.
         /// </summary>
-        public abstract object GetRaw(uint idx);
+        public abstract object GetRaw(long idx);
 
         /// <summary>
         /// Gets the type of the elements in this meta collection.
@@ -73,27 +73,27 @@ namespace Route.Data.Meta
         /// <summary>
         /// Copies an element from the other collection to this one. Collections must have the same type.
         /// </summary>
-        public abstract void CopyFrom(MetaCollection other, uint idx, uint otherIdx);
+        public abstract void CopyFrom(MetaCollection other, long idx, long otherIdx);
 
         /// <summary>
         /// Switches the two items around.
         /// </summary>
-        public abstract void Switch(uint item1, uint item2);
+        public abstract void Switch(long item1, long item2);
 
         /// <summary>
         /// Returns true if the data in the two given items is identical.
         /// </summary>
-        public abstract bool Equal(uint item1, uint item2);
+        public abstract bool Equal(long item1, long item2);
 
         /// <summary>
         /// Copies whatever data is in 'from' to 'to'.
         /// </summary>
-        public abstract void Copy(uint to, uint from);
+        public abstract void Copy(long to, long from);
 
         /// <summary>
         /// Sets the item to the default empty value.
         /// </summary>
-        public abstract void SetEmpty(uint item);
+        public abstract void SetEmpty(long item);
 
         /// <summary>
         /// Deserializes a meta-collection from the given stream.
@@ -118,9 +118,9 @@ namespace Route.Data.Meta
                 return new MetaCollection<int>(MetaCollection.DeserializeArray<int>(
                     stream, profile, length, 4), version >= 3);
             }
-            if (type == typeof(uint))
+            if (type == typeof(long))
             {
-                return new MetaCollection<uint>(MetaCollection.DeserializeArray<uint>(
+                return new MetaCollection<long>(MetaCollection.DeserializeArray<long>(
                     stream, profile, length, 4), version >= 3);
             }
             if (type == typeof(short))
@@ -245,7 +245,7 @@ namespace Route.Data.Meta
     {
         private readonly ArrayBase<T> _data;
         private readonly T _empty;
-        private uint _length;
+        private long _length;
         private const int BLOCK_SIZE = 1024;
 
         /// <summary>
@@ -266,11 +266,11 @@ namespace Route.Data.Meta
         internal MetaCollection(ArrayBase<T> data, bool lastIsEmpty)
         {
             _data = data;
-            _length = (uint)data.Length;
+            _length = (long)data.Length;
             _empty = default(T);
             if (lastIsEmpty)
             {
-                _length = (uint)data.Length - 1;
+                _length = (long)data.Length - 1;
                 _empty = _data[_length];
 
                 _data.Resize(_data.Length - 1);
@@ -297,7 +297,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Copies elements from the other collection to this collection.
         /// </summary>
-        public override void CopyFrom(MetaCollection other, uint idx, uint otherIdx)
+        public override void CopyFrom(MetaCollection other, long idx, long otherIdx)
         {
             if (other.ElementType != this.ElementType)
             {
@@ -313,7 +313,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Gets the raw data.
         /// </summary>
-        public override object GetRaw(uint idx)
+        public override object GetRaw(long idx)
         {
             return this[idx];
         }
@@ -323,7 +323,7 @@ namespace Route.Data.Meta
         /// </summary>
         /// <param name="i"></param>
         /// <returns></returns>
-        public T this[uint i]
+        public T this[long i]
         {
             get
             {
@@ -361,7 +361,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Switches the two items around.
         /// </summary>
-        public override void Switch(uint item1, uint item2)
+        public override void Switch(long item1, long item2)
         {
             if (item1 < this.Count &&
                 item2 < this.Count)
@@ -387,7 +387,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Returns true if the data in the two given items is identical.
         /// </summary>
-        public override bool Equal(uint item1, uint item2)
+        public override bool Equal(long item1, long item2)
         {
             if (item1 >= this.Count || item2 >= this.Count) return false;
             return EqualityComparer<T>.Default.Equals(this[item1], this[item2]);
@@ -396,7 +396,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Copies whatever data is in 'from' to 'to'.
         /// </summary>
-        public override void Copy(uint to, uint from)
+        public override void Copy(long to, long from)
         {
             if (from < this.Count)
             {
@@ -411,7 +411,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Sets the item to the default empty value.
         /// </summary>
-        public override void SetEmpty(uint item)
+        public override void SetEmpty(long item)
         {
             if (item < this.Count)
             {

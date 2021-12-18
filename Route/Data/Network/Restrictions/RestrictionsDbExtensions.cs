@@ -26,14 +26,14 @@ namespace Route.Data.Network.Restrictions
         /// <summary>
         /// Returns an array representing the current restriction.
         /// </summary>
-        public static uint[] ToArray(this RestrictionsDb.RestrictionEnumerator enumerator, bool reverse = false)
+        public static long[] ToArray(this RestrictionsDb.RestrictionEnumerator enumerator, bool reverse = false)
         {
             if (reverse)
             {
                 return enumerator.ToArrayReverse();
             }
 
-            var restriction = new uint[enumerator.Count];
+            var restriction = new long[enumerator.Count];
             for(var i = 0; i < enumerator.Count; i++)
             {
                 restriction[i] = enumerator[i];
@@ -44,9 +44,9 @@ namespace Route.Data.Network.Restrictions
         /// <summary>
         /// Returns an array representing the current restriction but reversed.
         /// </summary>
-        public static uint[] ToArrayReverse(this RestrictionsDb.RestrictionEnumerator enumerator)
+        public static long[] ToArrayReverse(this RestrictionsDb.RestrictionEnumerator enumerator)
         {
-            var restriction = new uint[enumerator.Count];
+            var restriction = new long[enumerator.Count];
             for (var i = 0; i < enumerator.Count; i++)
             {
                 restriction[i] = enumerator[(int)enumerator.Count - i - 1];
@@ -57,7 +57,7 @@ namespace Route.Data.Network.Restrictions
         ///// <summary>
         ///// Moves to the restrictions for the given vertex.
         ///// </summary>
-        //public static bool MoveTo(this RestrictionsDb.RestrictionEnumerator enumerator, uint vertex, bool first)
+        //public static bool MoveTo(this RestrictionsDb.RestrictionEnumerator enumerator, long vertex, bool first)
         //{
         //    if (first)
         //    {

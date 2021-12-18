@@ -54,8 +54,8 @@ namespace Route.IO.Osm.Streams
             {
                 block = new Block()
                 {
-                    Start = (uint)offset,
-                    End = (uint)offset,
+                    Start = (long)offset,
+                    End = (long)offset,
                     Data = new T[] { vertex }
                 };
                 _blocks[blockIdx] = block;
@@ -111,9 +111,9 @@ namespace Route.IO.Osm.Streams
 
         private struct Block
         {
-            public uint Start { get; set; }
+            public long Start { get; set; }
 
-            public uint End { get; set; }
+            public long End { get; set; }
 
             public T[] Data { get; set; }
 
@@ -141,7 +141,7 @@ namespace Route.IO.Osm.Streams
                         newData[i] = _defaultValue;
                     }
                     Data = newData;
-                    Start = (uint)offset;
+                    Start = (long)offset;
                     Data[0] = value;
                 }
                 else if (End < offset)
@@ -153,7 +153,7 @@ namespace Route.IO.Osm.Streams
                         newData[i] = _defaultValue;
                     }
                     Data = newData;
-                    End = (uint)offset;
+                    End = (long)offset;
                     Data[offset - Start] = value;
                 }
                 else

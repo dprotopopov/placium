@@ -26,7 +26,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Creates an original edge.
         /// </summary>
-        public OriginalEdge(uint vertex1, uint vertex2)
+        public OriginalEdge(long vertex1, long vertex2)
         {
             this.Vertex1 = vertex1;
             this.Vertex2 = vertex2;
@@ -35,12 +35,12 @@ namespace Route.Algorithms
         /// <summary>
         /// Gets or sets vertex1.
         /// </summary>
-        public uint Vertex1 { get; set; }
+        public long Vertex1 { get; set; }
 
         /// <summary>
         /// Gets or sets vertex2.
         /// </summary>
-        public uint Vertex2 { get; set; }
+        public long Vertex2 { get; set; }
 
         /// <summary>
         /// Converts this original edge to an edge path.

@@ -28,7 +28,7 @@ namespace Route.Profiles
     /// </summary>
     public class VehicleCache
     {
-        private readonly Dictionary<uint, WhitelistAndFlags> _cache;
+        private readonly Dictionary<long, WhitelistAndFlags> _cache;
         private readonly Vehicle[] _vehicles;
         private readonly AttributesIndex _edgeProfiles;
 
@@ -37,7 +37,7 @@ namespace Route.Profiles
         /// </summary>
         public VehicleCache(Vehicle[] vehicles)
         {
-            _cache = new Dictionary<uint, WhitelistAndFlags>();
+            _cache = new Dictionary<long, WhitelistAndFlags>();
             _vehicles = vehicles;
             _edgeProfiles = new AttributesIndex(AttributesIndexMode.IncreaseOne
                  | AttributesIndexMode.ReverseAll);

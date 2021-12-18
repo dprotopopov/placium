@@ -37,7 +37,7 @@ namespace Route.Data.Network
     {
         private readonly float _maxEdgeDistance;
         private readonly GeometricGraph _graph;
-        private readonly ArrayBase<uint> _edgeData;
+        private readonly ArrayBase<long> _edgeData;
         private readonly int _edgeDataSize = 2;
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace Route.Data.Network
         public RoutingNetwork(float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
             _graph = new GeometricGraph(1);
-            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<uint>(_edgeDataSize * _graph.EdgeCount);
+            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<long>(_edgeDataSize * _graph.EdgeCount);
             _maxEdgeDistance = maxEdgeDistance;
         }
         
@@ -58,7 +58,7 @@ namespace Route.Data.Network
             float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
             _graph = new GeometricGraph(map, 1);
-            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<uint>(_edgeDataSize * _graph.EdgeCount);
+            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<long>(_edgeDataSize * _graph.EdgeCount);
             _maxEdgeDistance = maxEdgeDistance;
         }
 
@@ -72,12 +72,12 @@ namespace Route.Data.Network
             if (profile == null)
             {
                 _graph = new GeometricGraph(map, 1);
-                _edgeData = new Array<uint>(map, _edgeDataSize * _graph.EdgeCount);
+                _edgeData = new Array<long>(map, _edgeDataSize * _graph.EdgeCount);
             }
             else
             {
                 _graph = new GeometricGraph(map, profile.GeometricGraphProfile, 1);
-                _edgeData = new Array<uint>(map, _edgeDataSize * _graph.EdgeCount, profile.EdgeDataProfile);
+                _edgeData = new Array<long>(map, _edgeDataSize * _graph.EdgeCount, profile.EdgeDataProfile);
             }
         }
 
@@ -88,7 +88,7 @@ namespace Route.Data.Network
             float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
             _graph = graph;
-            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<uint>(_edgeDataSize * graph.EdgeCount);
+            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<long>(_edgeDataSize * graph.EdgeCount);
             _maxEdgeDistance = maxEdgeDistance;
         }
 
@@ -99,14 +99,14 @@ namespace Route.Data.Network
             float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
             _graph = graph;
-            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<uint>(_edgeDataSize * graph.EdgeCount);
+            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<long>(_edgeDataSize * graph.EdgeCount);
             _maxEdgeDistance = maxEdgeDistance;
         }
 
         /// <summary>
         /// Creates a new routing network from existing data.
         /// </summary>
-        private RoutingNetwork(GeometricGraph graph, ArrayBase<uint> edgeData, 
+        private RoutingNetwork(GeometricGraph graph, ArrayBase<long> edgeData, 
             float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
             _graph = graph;
@@ -151,7 +151,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Adds a new vertex.
         /// </summary>
-        public void AddVertex(uint vertex, float latitude, float longitude)
+        public void AddVertex(long vertex, float latitude, float longitude)
         {
             _graph.AddVertex(vertex, latitude, longitude);
         }
@@ -159,7 +159,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Adds a new vertex.
         /// </summary>
-        public void AddVertex(uint vertex, float latitude, float longitude, short? elevation)
+        public void AddVertex(long vertex, float latitude, float longitude, short? elevation)
         {
             _graph.AddVertex(vertex, latitude, longitude, elevation);
         }
@@ -167,7 +167,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Gets the vertex.
         /// </summary>
-        public Coordinate GetVertex(uint vertex)
+        public Coordinate GetVertex(long vertex)
         {
             return _graph.GetVertex(vertex);
         }
@@ -176,7 +176,7 @@ namespace Route.Data.Network
         /// Gets the vertex.
         /// </summary>
         /// <returns></returns>
-        public bool GetVertex(uint vertex, out float latitude, out float longitude)
+        public bool GetVertex(long vertex, out float latitude, out float longitude)
         {
             return _graph.GetVertex(vertex, out latitude, out longitude);
         }
@@ -185,7 +185,7 @@ namespace Route.Data.Network
         /// Gets the vertex.
         /// </summary>
         /// <returns></returns>
-        public bool RemoveVertex(uint vertex)
+        public bool RemoveVertex(long vertex)
         {
             return _graph.RemoveVertex(vertex);
         }
@@ -194,7 +194,7 @@ namespace Route.Data.Network
         /// Adds a new edge.
         /// </summary>
         /// <returns></returns>
-        public uint AddEdge(uint vertex1, uint vertex2, EdgeData data, ShapeBase shape)
+        public long AddEdge(long vertex1, long vertex2, EdgeData data, ShapeBase shape)
         {
             if(data.Distance > _maxEdgeDistance) { throw new ArgumentException("data.Distance too big for this network."); }
 
@@ -209,7 +209,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Updates the data associated with the given edge.
         /// </summary>
-        public void UpdateEdgeData(uint edgeId, EdgeData data)
+        public void UpdateEdgeData(long edgeId, EdgeData data)
         {
             if (edgeId >= _edgeData.Length)
             {
@@ -224,7 +224,7 @@ namespace Route.Data.Network
         /// Gets the edge with the given id.
         /// </summary>
         /// <returns></returns>
-        public RoutingEdge GetEdge(uint edgeId)
+        public RoutingEdge GetEdge(long edgeId)
         {
             var edge = _graph.GetEdge(edgeId);
 
@@ -243,7 +243,7 @@ namespace Route.Data.Network
         /// Removes all edges from/to the given vertex.
         /// </summary>
         /// <returns></returns>
-        public int RemoveEdges(uint vertex)
+        public int RemoveEdges(long vertex)
         {
             return _graph.RemoveEdges(vertex);
         }
@@ -252,7 +252,7 @@ namespace Route.Data.Network
         /// Removes the given edge.
         /// </summary>
         /// <returns></returns>
-        public bool RemoveEdge(uint edgeId)
+        public bool RemoveEdge(long edgeId)
         {
             return _graph.RemoveEdge(edgeId);
         }
@@ -261,7 +261,7 @@ namespace Route.Data.Network
         /// Removes the given edge.
         /// </summary>
         /// <returns></returns>
-        public int RemoveEdges(uint vertex1, uint vertex2)
+        public int RemoveEdges(long vertex1, long vertex2)
         {
             return _graph.RemoveEdges(vertex1, vertex2);
         }
@@ -269,7 +269,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Switches the two vertices.
         /// </summary>
-        public void Switch(uint vertex1, uint vertex2)
+        public void Switch(long vertex1, long vertex2)
         {
             // switch vertices, edges do not change id's.
             _graph.Switch(vertex1, vertex2);
@@ -288,7 +288,7 @@ namespace Route.Data.Network
         /// Gets an edge enumerator for the given vertex.
         /// </summary>
         /// <returns></returns>
-        public EdgeEnumerator GetEdgeEnumerator(uint vertex)
+        public EdgeEnumerator GetEdgeEnumerator(long vertex)
         {
             return new EdgeEnumerator(this, _graph.GetEdgeEnumerator(vertex));
         }
@@ -308,7 +308,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Relocates data internally in the most compact way possible.
         /// </summary>
-        public void Compress(Action<uint, uint> updateEdgeId)
+        public void Compress(Action<long, long> updateEdgeId)
         {
             _graph.Compress((originalId, newId) =>
                 {
@@ -337,7 +337,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Returns the number of vertices in this graph.
         /// </summary>
-        public uint VertexCount
+        public long VertexCount
         {
             get
             {
@@ -390,7 +390,7 @@ namespace Route.Data.Network
             /// <summary>
             /// Returns the id of the current edge.
             /// </summary>
-            public uint Id
+            public long Id
             {
                 get
                 {
@@ -401,7 +401,7 @@ namespace Route.Data.Network
             /// <summary>
             /// Returns the vertex at the beginning.
             /// </summary>
-            public uint From
+            public long From
             {
                 get
                 {
@@ -412,7 +412,7 @@ namespace Route.Data.Network
             /// <summary>
             /// Returns the vertex at the end.
             /// </summary>
-            public uint To
+            public long To
             {
                 get
                 {
@@ -464,7 +464,7 @@ namespace Route.Data.Network
             /// Moves to the given vertex.
             /// </summary>
             /// <returns></returns>
-            public bool MoveTo(uint vertex)
+            public bool MoveTo(long vertex)
             {
                 return _enumerator.MoveTo(vertex);
             }
@@ -473,7 +473,7 @@ namespace Route.Data.Network
             /// Moves to the given edge.
             /// </summary>
             /// <returns></returns>
-            public void MoveToEdge(uint edgeId)
+            public void MoveToEdge(long edgeId)
             {
                 _enumerator.MoveToEdge(edgeId);
             }
@@ -550,7 +550,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Serializes to a stream.
         /// </summary>
-        public long Serialize(System.IO.Stream stream, Action<uint, uint> updateEdgeId)
+        public long Serialize(System.IO.Stream stream, Action<long, long> updateEdgeId)
         {
             this.Compress(updateEdgeId);
 
@@ -570,7 +570,7 @@ namespace Route.Data.Network
 
             // serialize edge data.
             _edgeData.CopyTo(stream);
-            size += _edgeData.Length * 4;
+            size += _edgeData.Length * 8;
 
             return size;
         }
@@ -605,20 +605,20 @@ namespace Route.Data.Network
             var edgeLength = graph.EdgeCount;
             var edgeSize = 1;
 
-            ArrayBase<uint> edgeData;
+            ArrayBase<long> edgeData;
             if (profile == null)
             { // just create arrays and read the data.
-                edgeData = Context.ArrayFactory.CreateMemoryBackedArray<uint>(edgeLength * edgeSize);
+                edgeData = Context.ArrayFactory.CreateMemoryBackedArray<long>(edgeLength * edgeSize);
                 edgeData.CopyFrom(stream);
-                size += edgeLength * edgeSize * 4;
+                size += edgeLength * edgeSize * 8;
             }
             else
             { // create accessors over the exact part of the stream that represents vertices/edges.
                 position = stream.Position;
                 var map = new MemoryMapStream(new CappedStream(stream, position,
-                    edgeLength * edgeSize * 4));
-                edgeData = new Array<uint>(map.CreateUInt32(edgeLength * edgeSize), profile.EdgeDataProfile);
-                size += edgeLength * edgeSize * 4;
+                    edgeLength * edgeSize * 8));
+                edgeData = new Array<long>(map.CreateInt64(edgeLength * edgeSize), profile.EdgeDataProfile);
+                size += edgeLength * edgeSize * 8;
             }
 
             // make stream is positioned correctly.

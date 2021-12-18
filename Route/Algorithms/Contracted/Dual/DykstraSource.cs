@@ -28,7 +28,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Creates a new source.
         /// </summary>
-        public DykstraSource(uint vertex1)
+        public DykstraSource(long vertex1)
         {
             this.Vertex1 = vertex1;
             this.Weight1 = default(T);
@@ -39,7 +39,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Creates a new source.
         /// </summary>
-        public DykstraSource(uint vertex1, T weight1)
+        public DykstraSource(long vertex1, T weight1)
         {
             this.Vertex1 = vertex1;
             this.Weight1 = weight1;
@@ -50,7 +50,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Creates a new source.
         /// </summary>
-        public DykstraSource(uint vertex1, T weight1, uint vertex2, T weight2)
+        public DykstraSource(long vertex1, T weight1, long vertex2, T weight2)
         {
             this.Vertex1 = vertex1;
             this.Weight1 = weight1;
@@ -61,7 +61,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Gets or sets the vertex1.
         /// </summary>
-        public uint Vertex1 { get; set; }
+        public long Vertex1 { get; set; }
 
         /// <summary>
         /// Gets or sets the weight1.
@@ -71,7 +71,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Gets or sets the vertex2.
         /// </summary>
-        public uint Vertex2 { get; set; }
+        public long Vertex2 { get; set; }
 
         /// <summary>
         /// Gets or sets the weight2.

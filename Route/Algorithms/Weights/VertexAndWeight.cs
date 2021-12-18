@@ -27,7 +27,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Creates a new vertex and weight with weight zero.
         /// </summary>
-        public VertexAndWeight(uint vertex)
+        public VertexAndWeight(long vertex)
         {
             this.Vertex = vertex;
             this.Weight = default(T);
@@ -36,7 +36,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Gets or sets the vertex.
         /// </summary>
-        public uint Vertex { get; set; }
+        public long Vertex { get; set; }
 
         /// <summary>
         /// Gets or sets the weight.

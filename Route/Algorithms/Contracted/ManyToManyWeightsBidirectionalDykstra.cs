@@ -36,7 +36,7 @@ namespace Route.Algorithms.Contracted
         private readonly DirectedMetaGraph _graph;
         private readonly RouterPoint[] _sources;
         private readonly RouterPoint[] _targets;
-        private readonly Dictionary<uint, Dictionary<int, T>> _buckets;
+        private readonly Dictionary<long, Dictionary<int, T>> _buckets;
         private readonly WeightHandler<T> _weightHandler;
         private readonly T _max;
 
@@ -66,7 +66,7 @@ namespace Route.Algorithms.Contracted
             _graph = contractedDb.NodeBasedGraph;
             weightHandler.CheckCanUse(contractedDb);
 
-            _buckets = new Dictionary<uint, Dictionary<int, T>>();
+            _buckets = new Dictionary<long, Dictionary<int, T>>();
         }
 
         private T[][] _weights;
@@ -137,7 +137,7 @@ namespace Route.Algorithms.Contracted
         /// Called when a forward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool ForwardVertexFound(int i, uint vertex, T weight)
+        private bool ForwardVertexFound(int i, long vertex, T weight)
         {
             Dictionary<int, T> bucket;
             if(!_buckets.TryGetValue(vertex, out bucket))
@@ -168,7 +168,7 @@ namespace Route.Algorithms.Contracted
         /// Called when a backward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool BackwardVertexFound(int i, uint vertex, T weight)
+        private bool BackwardVertexFound(int i, long vertex, T weight)
         {
             Dictionary<int, T> bucket;
             if(_buckets.TryGetValue(vertex, out bucket))

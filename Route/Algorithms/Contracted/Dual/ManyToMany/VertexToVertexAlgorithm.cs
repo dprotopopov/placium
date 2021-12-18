@@ -32,7 +32,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
         private readonly DirectedMetaGraph _graph;
         private readonly DykstraSource<T>[] _sources;
         private readonly DykstraSource<T>[] _targets;
-        private readonly Dictionary<uint, Dictionary<int, EdgePath<T>>> _buckets;
+        private readonly Dictionary<long, Dictionary<int, EdgePath<T>>> _buckets;
         private readonly WeightHandler<T> _weightHandler;
         private readonly T _max;
 
@@ -48,7 +48,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
             _weightHandler = weightHandler;
             _max = max;
 
-            _buckets = new Dictionary<uint, Dictionary<int, EdgePath<T>>>();
+            _buckets = new Dictionary<long, Dictionary<int, EdgePath<T>>>();
         }
 
         private struct Solution
@@ -119,7 +119,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
 
                 var fromSource = solution.Path1;
                 var toTarget = solution.Path2;
-                var vertices = new List<uint>();
+                var vertices = new List<long>();
 
                 // add vertices from source.
                 vertices.Add(fromSource.Vertex);
@@ -166,7 +166,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
         /// Called when a forward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool ForwardVertexFound(Dykstra<T> dykstra, int i, uint pointer, uint vertex, T weight)
+        private bool ForwardVertexFound(Dykstra<T> dykstra, int i, long pointer, long vertex, T weight)
         {
             Dictionary<int, EdgePath<T>> bucket;
             if (!_buckets.TryGetValue(vertex, out bucket))
@@ -197,7 +197,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
         /// Called when a backward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool BackwardVertexFound(Dykstra<T> dykstra, int i, uint pointer, uint vertex, T weight)
+        private bool BackwardVertexFound(Dykstra<T> dykstra, int i, long pointer, long vertex, T weight)
         {
             Dictionary<int, EdgePath<T>> bucket;
             if (_buckets.TryGetValue(vertex, out bucket))

@@ -28,7 +28,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Creates a new geometric edge.
         /// </summary>
-        public GeometricEdge(uint id, uint from, uint to, uint[] data, bool edgeDataInverted,
+        public GeometricEdge(long id, long from, long to, long[] data, bool edgeDataInverted,
             ShapeBase shape)
         {
             this.Id = id;
@@ -55,7 +55,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the edge id.
         /// </summary>
-        public uint Id
+        public long Id
         {
             get;
             private set;
@@ -64,7 +64,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the vertex at the beginning of this edge.
         /// </summary>
-        public uint From
+        public long From
         {
             get;
             private set;
@@ -73,7 +73,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the vertex at the end of this edge.
         /// </summary>
-        public uint To
+        public long To
         {
             get;
             private set;
@@ -91,7 +91,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the edge data.
         /// </summary>
-        public uint[] Data
+        public long[] Data
         {
             get;
             private set;

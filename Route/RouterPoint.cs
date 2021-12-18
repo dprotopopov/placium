@@ -32,7 +32,7 @@ namespace Route
         /// <param name="offset">The offset.</param>
         /// <param name="latitude">The latitude of the original location.</param>
         /// <param name="longitude">The longitude of the original location.</param>
-        public RouterPoint(float latitude, float longitude, uint edgeId, ushort offset)
+        public RouterPoint(float latitude, float longitude, long edgeId, ushort offset)
         {
             this.Latitude = latitude;
             this.Longitude = longitude;
@@ -49,7 +49,7 @@ namespace Route
         /// <param name="latitude">The latitude of the original location.</param>
         /// <param name="longitude">The longitude of the original location.</param>
         /// <param name="attributes">Meta-data about this point.</param>
-        public RouterPoint(float latitude, float longitude, uint edgeId, ushort offset,
+        public RouterPoint(float latitude, float longitude, long edgeId, ushort offset,
             params Attribute[] attributes)
         {
             this.Latitude = latitude;
@@ -62,7 +62,7 @@ namespace Route
         /// <summary>
         /// Gets the edge id.
         /// </summary>
-        public uint EdgeId
+        public long EdgeId
         {
             get;
             private set;

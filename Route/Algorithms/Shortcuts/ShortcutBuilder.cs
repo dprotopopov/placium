@@ -59,7 +59,7 @@ namespace Route.Algorithms.Shortcuts
         }
 
         private ShortcutsDb _shortcutsDb;
-        private uint[][] _shortcutIds;
+        private long[][] _shortcutIds;
         
         /// <summary>
         /// Executes the actual run.
@@ -105,17 +105,17 @@ namespace Route.Algorithms.Shortcuts
                 _shortcutsDb.AddStop(points[i].VertexId(_db), _locationsMeta[i]);
             }
             var routes = new EdgePath<float>[_locations.Length][];
-            _shortcutIds = new uint[_locations.Length][];
-            var pathList = new List<uint>();
+            _shortcutIds = new long[_locations.Length][];
+            var pathList = new List<long>();
             var shortcutProfile = _db.EdgeProfiles.Add(new AttributeCollection(
                 new Attribute(ShortcutExtensions.SHORTCUT_KEY, _name)));
             var edgeEnumerator = _db.Network.GetEdgeEnumerator();
             for (var i = 0; i < _locations.Length; i++)
             {
-                _shortcutIds[i] = new uint[_locations.Length];
+                _shortcutIds[i] = new long[_locations.Length];
                 for (var j = 0; j < _locations.Length; j++)
                 {
-                    _shortcutIds[i][j] = uint.MaxValue;
+                    _shortcutIds[i][j] = long.MaxValue;
                     if (i == j)
                     {
                         continue;
@@ -183,7 +183,7 @@ namespace Route.Algorithms.Shortcuts
         /// <summary>
         /// Gets the shortcut ids.
         /// </summary>
-        public uint[][] ShortcutIds
+        public long[][] ShortcutIds
         {
             get
             {

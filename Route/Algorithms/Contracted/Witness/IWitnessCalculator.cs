@@ -29,7 +29,7 @@ namespace Route.Algorithms.Contracted.Witness
         /// <summary>
         /// Calculates witnesses.
         /// </summary>
-        void Calculate(DirectedGraph graph, uint source, List<uint> targets, List<float> weights,
-            ref bool[] forwardWitness, ref bool[] backwardWitness, uint vertexToSkip);
+        void Calculate(DirectedGraph graph, long source, List<long> targets, List<float> weights,
+            ref bool[] forwardWitness, ref bool[] backwardWitness, long vertexToSkip);
     }
 }

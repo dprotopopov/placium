@@ -31,7 +31,7 @@ namespace Route.Algorithms.Dual
         /// Returns the path.
         /// </summary>
         /// <returns></returns>
-        public static List<uint> GetDualPath<T>(this BidirectionalDykstra<T> dykstra)
+        public static List<long> GetDualPath<T>(this BidirectionalDykstra<T> dykstra)
             where T : struct
         {
             dykstra.CheckHasRunAndHasSucceeded();
@@ -41,7 +41,7 @@ namespace Route.Algorithms.Dual
             if (dykstra.TryGetForwardVisit(dykstra.Best, out fromSource) &&
                 dykstra.TryGetBackwardVisit(dykstra.Best, out toTarget))
             {
-                var vertices = new List<uint>();
+                var vertices = new List<long>();
 
                 // add vertices from source.
                 vertices.Add(fromSource.Vertex);

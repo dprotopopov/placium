@@ -81,14 +81,14 @@ namespace Route.Graphs
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             enumerator.MoveToEdge(edgeId);
         }
@@ -96,7 +96,7 @@ namespace Route.Graphs
         /// <summary>
         /// Gets the target vertex.
         /// </summary>
-        public static uint GetTargetVertex(this Graph.EdgeEnumerator enumerator, long directedEdgeId)
+        public static long GetTargetVertex(this Graph.EdgeEnumerator enumerator, long directedEdgeId)
         {
             enumerator.MoveToEdge(directedEdgeId);
 
@@ -127,7 +127,7 @@ namespace Route.Graphs
         /// <summary>
         /// Gets the source vertex.
         /// </summary>
-        public static uint GetSourceVertex(this Graph.EdgeEnumerator enumerator, long directedEdgeId)
+        public static long GetSourceVertex(this Graph.EdgeEnumerator enumerator, long directedEdgeId)
         {
             enumerator.MoveToEdge(directedEdgeId);
 

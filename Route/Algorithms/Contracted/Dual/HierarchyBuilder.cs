@@ -36,7 +36,7 @@ namespace Route.Algorithms.Contracted.Dual
         private readonly DykstraWitnessCalculator<T> _witnessCalculator;
         private readonly static Logger _logger = Logger.Create("HierarchyBuilder");
         private readonly WeightHandler<T> _weightHandler;
-        private readonly Dictionary<uint, int> _contractionCount;
+        private readonly Dictionary<long, int> _contractionCount;
         private readonly Dictionary<long, int> _depth;
         private readonly VertexInfo<T> _vertexInfo;
         public const float E = 0.1f;
@@ -55,15 +55,15 @@ namespace Route.Algorithms.Contracted.Dual
 
             _vertexInfo = new VertexInfo<T>();
             _depth = new Dictionary<long, int>();
-            _contractionCount = new Dictionary<uint, int>();
+            _contractionCount = new Dictionary<long, int>();
 
             this.DifferenceFactor = 5;
             this.DepthFactor = 5;
             this.ContractedFactor = 5;
         }
 
-        private BinaryHeap<uint> _queue; // the vertex-queue.
-        private BitArray32 _contractedFlags; // contains flags for contracted vertices.
+        private BinaryHeap<long> _queue; // the vertex-queue.
+        private BitArray64 _contractedFlags; // contains flags for contracted vertices.
 
         /// <summary>
         /// Gets or sets the difference factor.
@@ -83,7 +83,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Updates the vertex info object with the given vertex.
         /// </summary>
-        private void UpdateVertexInfo(uint v)
+        private void UpdateVertexInfo(long v)
         {
             // update vertex info.
             _vertexInfo.Clear();
@@ -106,8 +106,8 @@ namespace Route.Algorithms.Contracted.Dual
         /// </summary>
         protected override void DoRun(CancellationToken cancellationToken)
         {
-            _queue = new BinaryHeap<uint>((uint)_graph.VertexCount);
-            _contractedFlags = new BitArray32(_graph.VertexCount);
+            _queue = new BinaryHeap<long>((long)_graph.VertexCount);
+            _contractedFlags = new BitArray64(_graph.VertexCount);
             _missesQueue = new Queue<bool>();
 
             // remove all edges that have witness paths, meaning longer than the shortest path
@@ -142,8 +142,8 @@ namespace Route.Algorithms.Contracted.Dual
                     int totaEdges = 0;
                     int totalUncontracted = 0;
                     int maxCardinality = 0;
-                    var neighbourCount = new Dictionary<uint, int>();
-                    for (uint v = 0; v < _graph.VertexCount; v++)
+                    var neighbourCount = new Dictionary<long, int>();
+                    for (long v = 0; v < _graph.VertexCount; v++)
                     {
                         if (!_contractedFlags[v])
                         {
@@ -178,7 +178,7 @@ namespace Route.Algorithms.Contracted.Dual
             _logger.Log(TraceEventType.Information, "Calculating queue...");
 
             _queue.Clear();
-            for (uint v = 0; v < _graph.VertexCount; v++)
+            for (long v = 0; v < _graph.VertexCount; v++)
             {
                 if (!_contractedFlags[v])
                 {
@@ -202,7 +202,7 @@ namespace Route.Algorithms.Contracted.Dual
             //_logger.Log(TraceEventType.Information, "Removing witnessed edges...");
 
             //var enumerator = _graph.GetEdgeEnumerator();
-            //for (uint v = 0; v < _graph.VertexCount; v++)
+            //for (long v = 0; v < _graph.VertexCount; v++)
             //{
             //    // update vertex info.
             //    _vertexInfo.Clear();
@@ -416,7 +416,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Notifies this calculator that the given vertex was contracted.
         /// </summary>
-        public void NotifyContracted(uint vertex)
+        public void NotifyContracted(long vertex)
         {
             // removes the contractions count.
             _contractionCount.Remove(vertex);

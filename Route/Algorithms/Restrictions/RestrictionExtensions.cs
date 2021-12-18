@@ -28,7 +28,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Adds a new restriction.
         /// </summary>
-        public static void Add(this RestrictionCollection restrictions, uint vertex1)
+        public static void Add(this RestrictionCollection restrictions, long vertex1)
         {
             restrictions.Add(new Restriction(vertex1));
         }
@@ -36,7 +36,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Adds a new restriction.
         /// </summary>
-        public static void Add(this RestrictionCollection restrictions, uint vertex1, uint vertex2)
+        public static void Add(this RestrictionCollection restrictions, long vertex1, long vertex2)
         {
             restrictions.Add(new Restriction(vertex1, vertex2));
         }
@@ -44,7 +44,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Adds a new restriction.
         /// </summary>
-        public static void Add(this RestrictionCollection restrictions, uint vertex1, uint vertex2, uint vertex3)
+        public static void Add(this RestrictionCollection restrictions, long vertex1, long vertex2, long vertex3)
         {
             restrictions.Add(new Restriction(vertex1, vertex2, vertex3));
         }
@@ -52,7 +52,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns true if one of the restrictions restricts the one vertex.
         /// </summary>
-        public static bool Restricts(this RestrictionCollection restrictions, uint vertex)
+        public static bool Restricts(this RestrictionCollection restrictions, long vertex)
         {
             for(var r = 0; r < restrictions.Count; r++)
             {
@@ -68,7 +68,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns true if the restriction restricts the one vertex.
         /// </summary>
-        public static bool Restricts(this Restriction restriction, uint vertex)
+        public static bool Restricts(this Restriction restriction, long vertex)
         {
             if (restriction.Vertex2 != Constants.NO_VERTEX ||
                 restriction.Vertex3 != Constants.NO_VERTEX)
@@ -89,7 +89,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Compares two non-null sequences and checks if they have identical elements.
         /// </summary>
-        public static bool IsSequenceIdentical(this uint[] s1, uint[] s2)
+        public static bool IsSequenceIdentical(this long[] s1, long[] s2)
         {
             if (s1.Length != s2.Length)
             {
@@ -108,7 +108,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns true if the given seqence is allowed for the given restriction.
         /// </summary>
-        public static bool IsSequenceAllowed(this uint[] restriction, uint[] sequence)
+        public static bool IsSequenceAllowed(this long[] restriction, long[] sequence)
         {
             int start;
             // restriction restricts the sequence only if the entire restriction is part of the sequance.
@@ -118,7 +118,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns true if the given sequence is allowed for all the given restrictions.
         /// </summary>
-        public static bool IsSequenceAllowed(this IEnumerable<uint[]> restrictions, uint[] sequence)
+        public static bool IsSequenceAllowed(this IEnumerable<long[]> restrictions, long[] sequence)
         {
             if (restrictions == null)
             {
@@ -138,7 +138,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns true if the given seqence is allowed for the given restriction.
         /// </summary>
-        public static bool IsSequenceAllowed(this uint[] restriction, List<uint> sequence)
+        public static bool IsSequenceAllowed(this long[] restriction, List<long> sequence)
         {
             int start;
             // restriction restricts the sequence only if the entire restriction is part of the sequance.
@@ -148,7 +148,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns true if the given sequence is allowed for all the given restrictions.
         /// </summary>
-        public static bool IsSequenceAllowed(this IEnumerable<uint[]> restrictions, List<uint> sequence)
+        public static bool IsSequenceAllowed(this IEnumerable<long[]> restrictions, List<long> sequence)
         {
             foreach (var restriction in restrictions)
             {
@@ -163,7 +163,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the number of vertices in the sequence starting at the beginning that matches any part of the given restriction.
         /// </summary>
-        public static int Match(this uint[] sequence, uint[] restriction)
+        public static int Match(this long[] sequence, long[] restriction)
         {
             var c = 0;
             for(var i = 0; i < restriction.Length; i++)
@@ -187,7 +187,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the largest number of vertices in the sequence starting at the beginning that matches any part of any of the given restrictions.
         /// </summary>
-        public static int MatchAny(this uint[] sequence, IEnumerable<uint[]> restrictions)
+        public static int MatchAny(this long[] sequence, IEnumerable<long[]> restrictions)
         {
             var c = 0;
             foreach (var restriction in restrictions)
@@ -204,7 +204,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the number of vertices in the sequence starting at the beginning that matches any part of the given restriction in reverse direction.
         /// </summary>
-        public static int MatchReverse(this uint[] sequence, uint[] restriction)
+        public static int MatchReverse(this long[] sequence, long[] restriction)
         {
             var c = 0;
             for (var i = restriction.Length - 1; i >= 0; i--)
@@ -228,7 +228,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the largest number of vertices in the sequence starting at the beginning that matches any part of any of the given restrictions.
         /// </summary>
-        public static int MatchAnyReverse(this uint[] sequence, IEnumerable<uint[]> restrictions)
+        public static int MatchAnyReverse(this long[] sequence, IEnumerable<long[]> restrictions)
         {
             var c = 0;
             foreach (var restriction in restrictions)
@@ -245,7 +245,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the number of vertices in the sequence starting at the beginning that matches any part of the given restriction.
         /// </summary>
-        public static int Match(this List<uint> sequence, uint[] restriction)
+        public static int Match(this List<long> sequence, long[] restriction)
         {
             var c = 0;
             for (var i = 0; i < restriction.Length; i++)
@@ -268,7 +268,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the largest number of vertices in the sequence starting at the beginning that matches any part of any of the given restrictions.
         /// </summary>
-        public static int MatchAny(this List<uint> sequence, IEnumerable<uint[]> restrictions)
+        public static int MatchAny(this List<long> sequence, IEnumerable<long[]> restrictions)
         {
             var c = 0;
             foreach (var restriction in restrictions)
@@ -285,7 +285,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the number of vertices in the sequence starting at the beginning that matches any part of the given restriction in reverse direction.
         /// </summary>
-        public static int MatchReverse(this List<uint> sequence, uint[] restriction)
+        public static int MatchReverse(this List<long> sequence, long[] restriction)
         {
             var c = 0;
             for (var i = restriction.Length - 1; i >= 0; i--)
@@ -309,7 +309,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the largest number of vertices in the sequence starting at the beginning that matches any part of any of the given restrictions.
         /// </summary>
-        public static int MatchAnyReverse(this List<uint> sequence, IEnumerable<uint[]> restrictions)
+        public static int MatchAnyReverse(this List<long> sequence, IEnumerable<long[]> restrictions)
         {
             var c = 0;
             foreach (var restriction in restrictions)
@@ -330,7 +330,7 @@ namespace Route.Algorithms.Restrictions
         /// [0, 1, 2, 3] for sequence [0, 2] returns []
         /// [0, 1, 2, 3] for sequence [1, 2] returns []
         /// </summary>
-        public static uint[] ShrinkFor(this uint[] restriction, uint[] sequence)
+        public static long[] ShrinkFor(this long[] restriction, long[] sequence)
         {
             if (sequence.Length == 0)
             {
@@ -357,7 +357,7 @@ namespace Route.Algorithms.Restrictions
         /// [0, 1, 2, 3] for sequence [0, 2] returns []
         /// [0, 1, 2, 3] for sequence [1, 2] returns []
         /// </summary>
-        public static uint[] ShrinkFor(this uint[] restriction, List<uint> sequence)
+        public static long[] ShrinkFor(this long[] restriction, List<long> sequence)
         {
             if (sequence.Count == 0)
             {
@@ -385,9 +385,9 @@ namespace Route.Algorithms.Restrictions
         /// [0, 1, 2, 3] for sequence [0, 2] returns [] because no matches.
         /// [0, 1, 2, 3] for sequence [1, 2] returns [] because no matches.
         /// [0, 1, 2, 3] for sequence [3, 0, 1] returns [1, 2, 3] because [0, 1] matches.
-        public static uint[] ShrinkForPart(this uint[] restriction, uint[] sequence)
+        public static long[] ShrinkForPart(this long[] restriction, long[] sequence)
         {
-            return restriction.ShrinkForPart(new List<uint>(sequence));
+            return restriction.ShrinkForPart(new List<long>(sequence));
         }
 
         /// <summary>
@@ -398,7 +398,7 @@ namespace Route.Algorithms.Restrictions
         /// [0, 1, 2, 3] for sequence [0, 2] returns [] because no matches.
         /// [0, 1, 2, 3] for sequence [1, 2] returns [] because no matches.
         /// [0, 1, 2, 3] for sequence [3, 0, 1] returns [1, 2, 3] because [0, 1] matches.
-        public static uint[] ShrinkForPart(this uint[] restriction, List<uint> sequence)
+        public static long[] ShrinkForPart(this long[] restriction, List<long> sequence)
         {
             for(var m = System.Math.Min(sequence.Count, restriction.Length); m >= 1 ; m--)
             {
@@ -416,7 +416,7 @@ namespace Route.Algorithms.Restrictions
                     return restriction.SubArray(m - 1, restriction.Length - m + 1);
                 }
             }
-            return new uint[0];
+            return new long[0];
         }
     }
 }

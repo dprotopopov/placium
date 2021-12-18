@@ -109,23 +109,23 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a new edge to a graph with the given direction and weight.
         /// </summary>
-        public abstract void AddEdge(DirectedMetaGraph graph, uint vertex1, uint vertex2, uint contractedId,
+        public abstract void AddEdge(DirectedMetaGraph graph, long vertex1, long vertex2, long contractedId,
             bool? direction, T weight);
 
         /// <summary>
         /// Adds or updates an edge.
         /// </summary>
-        public abstract void AddOrUpdateEdge(DirectedMetaGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, T weight);
+        public abstract void AddOrUpdateEdge(DirectedMetaGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, T weight);
 
         /// <summary>
         /// Adds a new edge to a graph with the given direction and weight.
         /// </summary>
-        public abstract void AddEdge(DirectedDynamicGraph graph, uint vertex1, uint vertex2, bool? direction, T weight);
+        public abstract void AddEdge(DirectedDynamicGraph graph, long vertex1, long vertex2, bool? direction, T weight);
 
         /// <summary>
         /// Adds or updates an edge.
         /// </summary>
-        public abstract void AddOrUpdateEdge(DirectedDynamicGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, T weight, uint[] s1, uint[] s2);
+        public abstract void AddOrUpdateEdge(DirectedDynamicGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, T weight, long[] s1, long[] s2);
 
         /// <summary>
         /// Gets the weight from a meta-edge.
@@ -160,7 +160,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a new vertex to the given path tree with the given weight and pointer.
         /// </summary>
-        public uint AddPathTree(PathTree tree, uint vertex, WeightAndDir<T> weight, uint previous)
+        public long AddPathTree(PathTree tree, long vertex, WeightAndDir<T> weight, long previous)
         {
             return this.AddPathTree(tree, vertex, weight.Weight, previous);
         }
@@ -168,12 +168,12 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a new vertex to the given path tree with the given weight and pointer.
         /// </summary>
-        public abstract uint AddPathTree(PathTree tree, uint vertex, T weight, uint previous);
+        public abstract long AddPathTree(PathTree tree, long vertex, T weight, long previous);
 
         /// <summary>
         /// Gets a vertex from the given path tree using the given pointer.
         /// </summary>
-        public abstract void GetPathTree(PathTree tree, uint pointer, out uint vertex, out T weight, out uint previous);
+        public abstract void GetPathTree(PathTree tree, long pointer, out long vertex, out T weight, out long previous);
 
         /// <summary>
         /// Returns the weight that represents 'zero'.
@@ -302,20 +302,20 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds the given vertex and weight to the path tree.
         /// </summary>
-        public sealed override uint AddPathTree(PathTree tree, uint vertex, Weight weight, uint previous)
+        public sealed override long AddPathTree(PathTree tree, long vertex, Weight weight, long previous)
         {
-            uint data1 = (uint)(weight.Value * 10.0f);
-            uint data2 = (uint)(weight.Distance * 10.0f);
-            uint data3 = (uint)(weight.Time * 10.0f);
+            long data1 = (long)(weight.Value * 10.0f);
+            long data2 = (long)(weight.Distance * 10.0f);
+            long data3 = (long)(weight.Time * 10.0f);
             return tree.Add(vertex, data1, data2, data3, previous);
         }
 
         /// <summary>
         /// Gets the path tree.
         /// </summary>
-        public sealed override void GetPathTree(PathTree tree, uint pointer, out uint vertex, out Weight weight, out uint previous)
+        public sealed override void GetPathTree(PathTree tree, long pointer, out long vertex, out Weight weight, out long previous)
         {
-            uint data1, data2, data3;
+            long data1, data2, data3;
             tree.Get(pointer, out vertex, out data1, out data2, out data3, out previous);
             weight = new Weight()
             {
@@ -403,7 +403,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a new edge to a graph with the given direction and weight.
         /// </summary>
-        public sealed override void AddEdge(DirectedDynamicGraph graph, uint vertex1, uint vertex2, bool? direction, Weight weight)
+        public sealed override void AddEdge(DirectedDynamicGraph graph, long vertex1, long vertex2, bool? direction, Weight weight)
         {
             if (graph.FixedEdgeDataSize != 3)
             {
@@ -418,7 +418,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds or updates and edge.
         /// </summary>
-        public override void AddOrUpdateEdge(DirectedDynamicGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, Weight weight, uint[] s1, uint[] s2)
+        public override void AddOrUpdateEdge(DirectedDynamicGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, Weight weight, long[] s1, long[] s2)
         {
             graph.AddOrUpdateEdge(vertex1, vertex2, weight.Value, direction, contractedId, weight.Distance, weight.Time, s1, s2);
         }
@@ -426,7 +426,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds or updates and edge.
         /// </summary>
-        public override void AddOrUpdateEdge(DirectedMetaGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, Weight weight)
+        public override void AddOrUpdateEdge(DirectedMetaGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, Weight weight)
         {
             graph.AddOrUpdateEdge(vertex1, vertex2, weight.Value, direction, contractedId, weight.Distance, weight.Time);
         }
@@ -434,13 +434,13 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a new edge to a graph with the given direction and weight.
         /// </summary>
-        public sealed override void AddEdge(DirectedMetaGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, Weight weight)
+        public sealed override void AddEdge(DirectedMetaGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, Weight weight)
         {
             if (graph.EdgeDataSize != 3)
             {
                 throw new InvalidOperationException("The given graph cannot handle augmented weights. Initialize the graph with a edge meta data size of 3.");
             }
-            graph.AddEdge(vertex1, vertex2, new uint[] { Data.Contracted.Edges.ContractedEdgeDataSerializer.Serialize(weight.Value, direction) },
+            graph.AddEdge(vertex1, vertex2, new long[] { Data.Contracted.Edges.ContractedEdgeDataSerializer.Serialize(weight.Value, direction) },
                 Data.Contracted.Edges.ContractedEdgeDataSerializer.SerializeMetaAugmented(contractedId, weight.Distance, weight.Time));
         }
 
@@ -452,7 +452,7 @@ namespace Route.Algorithms.Weights
             float weight;
             float time;
             float distance;
-            uint contractedId;
+            long contractedId;
             Data.Contracted.Edges.ContractedEdgeDataSerializer.Deserialize(edge.Data[0],
                 out weight, out direction);
             Data.Contracted.Edges.ContractedEdgeDataSerializer.DeserializeMetaAgumented(edge.MetaData,
@@ -472,7 +472,7 @@ namespace Route.Algorithms.Weights
         {
             float time;
             float distance;
-            uint contractedId;
+            long contractedId;
             var baseWeight = Data.Contracted.Edges.ContractedEdgeDataSerializer.Deserialize(edge.Data[0]);
             Data.Contracted.Edges.ContractedEdgeDataSerializer.DeserializeMetaAgumented(edge.MetaData,
                 out contractedId, out distance, out time);
@@ -496,7 +496,7 @@ namespace Route.Algorithms.Weights
             float weight;
             float time;
             float distance;
-            uint contractedId;
+            long contractedId;
             Data.Contracted.Edges.ContractedEdgeDataSerializer.Deserialize(edge.Data0,
                 out weight, out direction);
             Data.Contracted.Edges.ContractedEdgeDataSerializer.DeserializeMetaAgumented(edge.MetaData,
@@ -516,7 +516,7 @@ namespace Route.Algorithms.Weights
         {
             float time;
             float distance;
-            uint contractedId;
+            long contractedId;
             var baseWeight = Data.Contracted.Edges.ContractedEdgeDataSerializer.Deserialize(edge.Data0);
             Data.Contracted.Edges.ContractedEdgeDataSerializer.DeserializeMetaAgumented(edge.MetaData,
                 out contractedId, out distance, out time);

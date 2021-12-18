@@ -30,7 +30,7 @@ namespace Route.Graphs.Directed
     public sealed class DirectedMetaGraph
     {
         private readonly DirectedGraph _graph;
-        private readonly ArrayBase<uint> _edgeData;
+        private readonly ArrayBase<long> _edgeData;
         private readonly int _edgeDataSize = int.MaxValue;
 
         /// <summary>
@@ -52,13 +52,13 @@ namespace Route.Graphs.Directed
             {
                 this.SwitchEdge(x, y);
             });
-            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<uint>(_edgeDataSize * _graph.EdgeCount);
+            _edgeData = Context.ArrayFactory.CreateMemoryBackedArray<long>(_edgeDataSize * _graph.EdgeCount);
         }
 
         /// <summary>
         /// Creates a new graph based on existing data.
         /// </summary>
-        private DirectedMetaGraph(DirectedGraph graph, int edgeDataSize, ArrayBase<uint> edgeData)
+        private DirectedMetaGraph(DirectedGraph graph, int edgeDataSize, ArrayBase<long> edgeData)
         {
             _graph = graph;
             _edgeData = edgeData;
@@ -90,7 +90,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Switched two edges.
         /// </summary>
-        private void SwitchEdge(uint oldId, uint newId)
+        private void SwitchEdge(long oldId, long newId)
         {
             var oldEdgePointer = oldId * _edgeDataSize;
             var newEdgePointer = newId * _edgeDataSize;
@@ -105,7 +105,7 @@ namespace Route.Graphs.Directed
         /// Adds a new edge.
         /// </summary>
         /// <returns></returns>
-        public uint AddEdge(uint vertex1, uint vertex2, uint data, uint metaData)
+        public long AddEdge(long vertex1, long vertex2, long data, long metaData)
         {
             if (_edgeDataSize != 1) { throw new ArgumentOutOfRangeException("Dimension of meta-data doesn't match."); }
 
@@ -120,7 +120,7 @@ namespace Route.Graphs.Directed
         /// Adds a new edge.
         /// </summary>
         /// <returns></returns>
-        public uint AddEdge(uint vertex1, uint vertex2, uint[] data, params uint[] metaData)
+        public long AddEdge(long vertex1, long vertex2, long[] data, params long[] metaData)
         {
             var edgeId = _graph.AddEdge(vertex1, vertex2, data);
             var edgePointer = edgeId * _edgeDataSize;
@@ -135,7 +135,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Updates and edge's associated data.
         /// </summary>
-        public uint UpdateEdge(uint vertex1, uint vertex2, Func<uint[], bool> update, uint[] data, params uint[] metaData)
+        public long UpdateEdge(long vertex1, long vertex2, Func<long[], bool> update, long[] data, params long[] metaData)
         {
             var edgeId = _graph.UpdateEdge(vertex1, vertex2, update, data);
             if(edgeId == Constants.NO_EDGE)
@@ -154,7 +154,7 @@ namespace Route.Graphs.Directed
         /// Removes all edges from/to the given vertex.
         /// </summary>
         /// <returns></returns>
-        public int RemoveEdges(uint vertex)
+        public int RemoveEdges(long vertex)
         {
             return _graph.RemoveEdges(vertex);
         }
@@ -163,7 +163,7 @@ namespace Route.Graphs.Directed
         /// Removes the given edge.
         /// </summary>
         /// <returns></returns>
-        public int RemoveEdge(uint vertex1, uint vertex2)
+        public int RemoveEdge(long vertex1, long vertex2)
         {
             return _graph.RemoveEdge(vertex1, vertex2);
         }
@@ -181,7 +181,7 @@ namespace Route.Graphs.Directed
         /// Gets an edge enumerator for the given vertex.
         /// </summary>
         /// <returns></returns>
-        public EdgeEnumerator GetEdgeEnumerator(uint vertex)
+        public EdgeEnumerator GetEdgeEnumerator(long vertex)
         {
             return new EdgeEnumerator(this, _graph.GetEdgeEnumerator(vertex));
         }
@@ -271,7 +271,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the current neighbour.
             /// </summary>
-            public uint Neighbour
+            public long Neighbour
             {
                 get { return _enumerator.Neighbour; }
             }
@@ -279,7 +279,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the current edge data.
             /// </summary>
-            public uint[] Data
+            public long[] Data
             {
                 get
                 {
@@ -290,7 +290,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the first entry in the edge data.
             /// </summary>
-            public uint Data0
+            public long Data0
             {
                 get
                 {
@@ -301,11 +301,11 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the current edge meta-data.
             /// </summary>
-            public uint[] MetaData
+            public long[] MetaData
             {
                 get
                 {
-                    var metaData = new uint[_graph._edgeDataSize];
+                    var metaData = new long[_graph._edgeDataSize];
                     var edgePointer = _enumerator.Id * _graph._edgeDataSize;
                     for(var i = 0; i < _graph._edgeDataSize; i++)
                     {
@@ -318,7 +318,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the current edge meta-data.
             /// </summary>
-            public uint MetaData0
+            public long MetaData0
             {
                 get
                 {
@@ -329,7 +329,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the edge id.
             /// </summary>
-            public uint Id
+            public long Id
             {
                 get
                 {
@@ -382,7 +382,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Moves this enumerator to the given vertex.
             /// </summary>
-            public bool MoveTo(uint vertex)
+            public bool MoveTo(long vertex)
             {
                 return _enumerator.MoveTo(vertex);
             }
@@ -458,20 +458,20 @@ namespace Route.Graphs.Directed
 
             var edgeLength = graph.EdgeCount;
 
-            ArrayBase<uint> edges;
+            ArrayBase<long> edges;
             if (profile == null)
             { // just create arrays and read the data.
-                edges = Context.ArrayFactory.CreateMemoryBackedArray<uint>(edgeLength * edgeSize);
+                edges = Context.ArrayFactory.CreateMemoryBackedArray<long>(edgeLength * edgeSize);
                 edges.CopyFrom(stream);
-                size += edgeLength * edgeSize * 4;
+                size += edgeLength * edgeSize * 8;
             }
             else
             { // create accessors over the exact part of the stream that represents vertices/edges.
                 var position = stream.Position;
                 var map1 = new MemoryMapStream(new CappedStream(stream, position,
-                    edgeLength * edgeSize * 4));
-                edges = new Array<uint>(map1.CreateUInt32(edgeLength * edgeSize), profile.EdgeMetaProfile);
-                size += edgeLength * edgeSize * 4;
+                    edgeLength * edgeSize * 8));
+                edges = new Array<long>(map1.CreateInt64(edgeLength * edgeSize), profile.EdgeMetaProfile);
+                size += edgeLength * edgeSize * 8;
             }
 
             // make sure stream is positioned at the correct location.

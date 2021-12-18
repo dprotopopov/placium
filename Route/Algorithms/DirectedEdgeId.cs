@@ -26,7 +26,7 @@ namespace Route.Algorithms
         /// <summary>
         /// The raw value, not be confused with an undirected id!
         /// </summary>
-        public uint Raw;
+        public long Raw;
 
         /// <summary>
         /// Creates a new directed id.
@@ -38,14 +38,14 @@ namespace Route.Algorithms
                 Raw = Constants.NO_EDGE;
                 return;
             }
-            uint edgeId = Constants.NO_EDGE;
+            long edgeId = Constants.NO_EDGE;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)(directedEdgeId - 1);
+                edgeId = (long)(directedEdgeId - 1);
             }
             else
             {
-                edgeId = (uint)(-directedEdgeId - 1);
+                edgeId = (long)(-directedEdgeId - 1);
             }
 
             Raw = edgeId * 2;
@@ -58,7 +58,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Creates a new directed id.
         /// </summary>
-        public DirectedEdgeId(uint edgeId, bool forward)
+        public DirectedEdgeId(long edgeId, bool forward)
         {
             Raw = edgeId * 2;
             if (!forward)
@@ -70,7 +70,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Creates a directed edge id structure.
         /// </summary>
-        public static DirectedEdgeId FromRaw(uint rawDirectedEdgeId)
+        public static DirectedEdgeId FromRaw(long rawDirectedEdgeId)
         {
             return new DirectedEdgeId()
             {
@@ -104,7 +104,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Gets the undirected edge id.
         /// </summary>
-        public uint EdgeId
+        public long EdgeId
         {
             get
             {
@@ -133,7 +133,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Reverse the raw id.
         /// </summary>
-        public static uint ReverseRaw(uint id)
+        public static long ReverseRaw(long id)
         {
             var a = new DirectedEdgeId()
             {

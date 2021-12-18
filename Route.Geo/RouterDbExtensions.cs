@@ -43,7 +43,7 @@ namespace Route.Geo
             var edges = new HashSet<long>();
 
             var edgeEnumerator = network.GetEdgeEnumerator();
-            for (uint vertex = 0; vertex < network.VertexCount; vertex++)
+            for (long vertex = 0; vertex < network.VertexCount; vertex++)
             {
                 var vertexLocation = network.GeometricGraph.GetVertex(vertex);
                 var attributes = new AttributesTable();
@@ -137,7 +137,7 @@ namespace Route.Geo
         /// <summary>
         /// Gets a feature representing the edge with the given id.
         /// </summary>
-        public static Feature GetFeatureForEdge(this RouterDb routerDb, uint edgeId)
+        public static Feature GetFeatureForEdge(this RouterDb routerDb, long edgeId)
         {
             var edge = routerDb.Network.GetEdge(edgeId);
 
@@ -154,7 +154,7 @@ namespace Route.Geo
         /// <summary>
         /// Gets a features representing the vertex with the given id.
         /// </summary>
-        public static Feature GetFeatureForVertex(this RouterDb routerDb, uint vertex)
+        public static Feature GetFeatureForVertex(this RouterDb routerDb, long vertex)
         {
             var coordinate = routerDb.Network.GetVertex(vertex).ToCoordinate();
 

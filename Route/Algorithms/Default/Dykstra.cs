@@ -36,7 +36,7 @@ namespace Route.Algorithms.Default
     {
         private readonly Graph _graph;
         private readonly IEnumerable<EdgePath<T>> _sources;
-        private readonly Func<uint, uint> _getRestriction;
+        private readonly Func<long, long> _getRestriction;
         private readonly T _sourceMax;
         private readonly bool _backward;
         private readonly WeightHandler<T> _weightHandler;
@@ -44,7 +44,7 @@ namespace Route.Algorithms.Default
         /// <summary>
         /// Creates a new one-to-all dykstra algorithm instance.
         /// </summary>
-        public Dykstra(Graph graph, Func<uint, uint> getRestriction, WeightHandler<T> weightHandler,
+        public Dykstra(Graph graph, Func<long, long> getRestriction, WeightHandler<T> weightHandler,
             IEnumerable<EdgePath<T>> sources, T sourceMax, bool backward)
         {
             _graph = graph;
@@ -56,7 +56,7 @@ namespace Route.Algorithms.Default
         }
 
         private Graph.EdgeEnumerator _edgeEnumerator;
-        private Dictionary<uint, EdgePath<T>> _visits;
+        private Dictionary<long, EdgePath<T>> _visits;
         private EdgePath<T> _current;
         private BinaryHeap<EdgePath<T>> _heap;
 
@@ -81,7 +81,7 @@ namespace Route.Algorithms.Default
             this.HasSucceeded = true;
 
             // initialize dykstra data structures.
-            _visits = new Dictionary<uint, EdgePath<T>>();
+            _visits = new Dictionary<long, EdgePath<T>>();
             _heap = new BinaryHeap<EdgePath<T>>(1000);
 
             // queue all sources.
@@ -238,7 +238,7 @@ namespace Route.Algorithms.Default
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetVisit(long vertex, out EdgePath<T> visit)
         {
             return _visits.TryGetValue(vertex, out visit);
         }
@@ -252,7 +252,7 @@ namespace Route.Algorithms.Default
         /// <summary>
         /// The was found delegate.
         /// </summary>
-        public delegate bool WasFoundDelegate(uint vertex, T weight);
+        public delegate bool WasFoundDelegate(long vertex, T weight);
 
         /// <summary>
         /// Gets or sets the wasfound function to be called when a new vertex is found.
@@ -334,7 +334,7 @@ namespace Route.Algorithms.Default
         /// <summary>
         /// Creates a new one-to-all dykstra algorithm instance.
         /// </summary>
-        public Dykstra(Graph graph, Func<ushort, Factor> getFactor, Func<uint, uint> getRestriction,
+        public Dykstra(Graph graph, Func<ushort, Factor> getFactor, Func<long, long> getRestriction,
             IEnumerable<EdgePath<float>> sources, float sourceMax, bool backward)
             : base(graph, getRestriction, new DefaultWeightHandler(getFactor), sources, sourceMax, backward)
         {
@@ -344,7 +344,7 @@ namespace Route.Algorithms.Default
         /// <summary>
         /// Creates a new one-to-all dykstra algorithm instance.
         /// </summary>
-        public Dykstra(Graph graph, DefaultWeightHandler weightHandler, Func<uint, uint> getRestriction,
+        public Dykstra(Graph graph, DefaultWeightHandler weightHandler, Func<long, long> getRestriction,
             IEnumerable<EdgePath<float>> sources, float sourceMax, bool backward)
             : base(graph, getRestriction, weightHandler, sources, sourceMax, backward)
         {

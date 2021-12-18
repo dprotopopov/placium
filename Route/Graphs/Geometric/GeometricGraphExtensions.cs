@@ -222,7 +222,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the shape points starting at the given vertex until the max distance.
         /// </summary>
-        public static List<Coordinate> GetShape(this GeometricGraph graph, GeometricEdge geometricEdge, uint vertex, float maxDistance)
+        public static List<Coordinate> GetShape(this GeometricGraph graph, GeometricEdge geometricEdge, long vertex, float maxDistance)
         {
             var points = new List<Coordinate>();
             if(geometricEdge.Shape == null)
@@ -275,7 +275,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the vertex on this edge that is not the given vertex.
         /// </summary>
-        public static uint GetOther(this GeometricEdge edge, uint vertex)
+        public static long GetOther(this GeometricEdge edge, long vertex)
         {
             if (edge.From == vertex)
             {
@@ -292,7 +292,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        public static uint AddEdge(this GeometricGraph graph, uint vertex1, uint vertex2, uint[] data, params Coordinate[] shape)
+        public static long AddEdge(this GeometricGraph graph, long vertex1, long vertex2, long[] data, params Coordinate[] shape)
         {
             return graph.AddEdge(vertex1, vertex2, data, new ShapeEnumerable(shape));
         }
@@ -300,7 +300,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        public static uint AddEdge(this GeometricGraph graph, uint vertex1, uint vertex2, uint[] data, IEnumerable<Coordinate> shape)
+        public static long AddEdge(this GeometricGraph graph, long vertex1, long vertex2, long[] data, IEnumerable<Coordinate> shape)
         {
             return graph.AddEdge(vertex1, vertex2, data, new ShapeEnumerable(shape));
         }
@@ -336,14 +336,14 @@ namespace Route.Graphs.Geometric
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             enumerator.MoveToEdge(edgeId);
         }
@@ -355,14 +355,14 @@ namespace Route.Graphs.Geometric
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             return graph.GetEdge(edgeId);
         }
@@ -374,14 +374,14 @@ namespace Route.Graphs.Geometric
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             return graph.GetShape(edgeId);
         }
@@ -389,7 +389,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Returns the location on the graph.
         /// </summary>
-        public static Coordinate LocationOnGraph(this GeometricGraph graph, uint edgeId, ushort offset)
+        public static Coordinate LocationOnGraph(this GeometricGraph graph, long edgeId, ushort offset)
         {
             var geometricEdge = graph.GetEdge(edgeId);
             var shape = graph.GetShape(geometricEdge);

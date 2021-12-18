@@ -113,7 +113,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets sequence 1, the first vertices right after the start vertex.
         /// </summary>
-        public static uint[] GetSequence1<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator)
+        public static long[] GetSequence1<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator)
             where T : struct
         {
             return path.GetSequence1(enumerator, int.MaxValue);
@@ -122,7 +122,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets sequence 1, the first vertices right after the start vertex with a maximum of n.
         /// </summary>
-        public static uint[] GetSequence1<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator, int n)
+        public static long[] GetSequence1<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator, int n)
             where T : struct
         {
             if (path.From == null)
@@ -130,7 +130,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 return Constants.EMPTY_SEQUENCE;
             }
 
-            var s = new List<uint>();
+            var s = new List<long>();
             s.Add(path.Vertex);
             while (true)
             {
@@ -138,7 +138,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 { // current segment is original.
                     if (s == null)
                     {
-                        s = new List<uint>();
+                        s = new List<long>();
                     }
                     if (path.From.From != null)
                     { // we need more vertices and there are some more available.
@@ -179,7 +179,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets sequence 2, the last vertices right before the end vertex.
         /// </summary>
-        public static uint[] GetSequence2<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator)
+        public static long[] GetSequence2<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator)
             where T : struct
         {
             return path.GetSequence2(enumerator, int.MaxValue);
@@ -188,7 +188,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Gets sequence 2, the last vertices right before the end vertex with a maximum of n.
         /// </summary>
-        public static uint[] GetSequence2<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator, int n)
+        public static long[] GetSequence2<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator, int n)
             where T : struct
         {
             if (path.From == null)
@@ -196,14 +196,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
                 return Constants.EMPTY_SEQUENCE;
             }
 
-            return path.GetSequence2<T>(enumerator, n, new List<uint>());
+            return path.GetSequence2<T>(enumerator, n, new List<long>());
         }
 
         /// <summary>
         /// Gets sequence 2, the last vertices right before the end vertex with a maximum of n.
         /// </summary>
-        public static uint[] GetSequence2<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator, int n,
-            List<uint> s)
+        public static long[] GetSequence2<T>(this EdgePath<T> path, DirectedDynamicGraph.EdgeEnumerator enumerator, int n,
+            List<long> s)
             where T : struct
         {
             if (path.From == null)
@@ -233,7 +233,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                     if (s.Count > 0)
                     {
                         var s2 = enumerator.GetSequence2();
-                        var result = new uint[s.Count + s2.Length];
+                        var result = new long[s.Count + s2.Length];
                         for (var i = 0; i < s.Count; i++)
                         {
                             result[result.Length - 1 - i] = s[i];

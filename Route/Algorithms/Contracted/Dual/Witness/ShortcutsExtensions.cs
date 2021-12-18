@@ -26,7 +26,7 @@ namespace Route.Algorithms.Contracted.Dual.Witness
         /// <summary>
         /// Removes witnessed shortcuts.
         /// </summary>
-        public static void RemoveWitnessed<T>(this Shortcuts<T> shortcuts, uint vertex, DykstraWitnessCalculator<T> witnessCalculator)
+        public static void RemoveWitnessed<T>(this Shortcuts<T> shortcuts, long vertex, DykstraWitnessCalculator<T> witnessCalculator)
             where T : struct
         {
             witnessCalculator.Calculate(vertex, shortcuts);

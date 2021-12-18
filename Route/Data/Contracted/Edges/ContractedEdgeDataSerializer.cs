@@ -41,11 +41,11 @@ namespace Route.Data.Contracted.Edges
         /// Deserializes edges data.
         /// </summary>
         /// <returns></returns>
-        public static ContractedEdgeData Deserialize(uint data, uint metaData)
+        public static ContractedEdgeData Deserialize(long data, long metaData)
         {
             float weight;
             bool? direction;
-            uint contractedId;
+            long contractedId;
             ContractedEdgeDataSerializer.Deserialize(data, metaData,
                 out weight, out direction, out contractedId);
 
@@ -61,8 +61,8 @@ namespace Route.Data.Contracted.Edges
         /// Parses the edge data.
         /// </summary>
         /// <returns></returns>
-        public static void Deserialize(uint data0, uint data1, out float weight, out bool? direction,
-            out uint contractedId)
+        public static void Deserialize(long data0, long data1, out float weight, out bool? direction,
+            out long contractedId)
         {
             var dirFlags = (data0 & 3);
             direction = null;
@@ -81,7 +81,7 @@ namespace Route.Data.Contracted.Edges
         /// <summary>
         /// Parses the edge data.
         /// </summary>
-        public static void DeserializeDynamic(uint[] data, out float weight, out bool? direction, out float distance, out float time)
+        public static void DeserializeDynamic(long[] data, out float weight, out bool? direction, out float distance, out float time)
         {
             ContractedEdgeDataSerializer.Deserialize(data[0], out weight, out direction);
             distance = data[1] / 10.0f;
@@ -92,7 +92,7 @@ namespace Route.Data.Contracted.Edges
         /// Parses the edge data.
         /// </summary>
         /// <returns></returns>
-        public static void Deserialize(uint data0, out float weight, out bool? direction)
+        public static void Deserialize(long data0, out float weight, out bool? direction)
         {
             var dirFlags = (data0 & 3);
             direction = null;
@@ -110,7 +110,7 @@ namespace Route.Data.Contracted.Edges
         /// <summary>
         /// Deserializes the agugmented data.
         /// </summary>
-        public static void DeserializeMetaAgumented(uint[] data, out uint contractedId, out float distance, out float time)
+        public static void DeserializeMetaAgumented(long[] data, out long contractedId, out float distance, out float time)
         {
             contractedId = data[0];
             distance = data[1] / 10.0f;
@@ -121,7 +121,7 @@ namespace Route.Data.Contracted.Edges
         /// Parses the edge data.
         /// </summary>
         /// <returns></returns>
-        public static Func<uint[], float> DeserializeWeightFunc = (data) =>
+        public static Func<long[], float> DeserializeWeightFunc = (data) =>
             {
                 return ContractedEdgeDataSerializer.DeserializeWeight(data[0]);
             };
@@ -130,7 +130,7 @@ namespace Route.Data.Contracted.Edges
         /// Parses the edge data.
         /// </summary>
         /// <returns></returns>
-        public static float DeserializeWeight(uint data)
+        public static float DeserializeWeight(long data)
         {
             float weight;
             bool? direction;
@@ -142,7 +142,7 @@ namespace Route.Data.Contracted.Edges
         /// Returns true if the data represents the same direction.
         /// </summary>
         /// <returns></returns>
-        public static bool HasDirection(uint data, bool? direction)
+        public static bool HasDirection(long data, bool? direction)
         {
             float weight;
             bool? currentDirection;
@@ -151,7 +151,7 @@ namespace Route.Data.Contracted.Edges
         }
 
         /// <summary>
-        /// Returns the size of a the meta data in uint's when serialized.
+        /// Returns the size of a the meta data in long's when serialized.
         /// </summary>
         public static int MetaSize
         {
@@ -159,7 +159,7 @@ namespace Route.Data.Contracted.Edges
         }
 
         /// <summary>
-        /// Returns the size of a the meta data in uint's when serialized and including augmented weights.
+        /// Returns the size of a the meta data in long's when serialized and including augmented weights.
         /// </summary>
         public static int MetaAugmentedSize
         {
@@ -183,7 +183,7 @@ namespace Route.Data.Contracted.Edges
         }
 
         /// <summary>
-        /// Returns the size of a the data in uint's when serialized.
+        /// Returns the size of a the data in long's when serialized.
         /// </summary>
         public static int Size
         {
@@ -194,7 +194,7 @@ namespace Route.Data.Contracted.Edges
         /// Serializes edge data.
         /// </summary>
         /// <returns></returns>
-        public static uint Serialize(float weight, bool? direction)
+        public static long Serialize(float weight, bool? direction)
         {
             if (weight > MAX_DISTANCE)
             {
@@ -215,34 +215,34 @@ namespace Route.Data.Contracted.Edges
                 dirFlags = 2;
             }
 
-            var data0 = (uint)dirFlags;
-            data0 = data0 + ((uint)(weight * PRECISION_FACTOR) * 4);
+            var data0 = (long)dirFlags;
+            data0 = data0 + ((long)(weight * PRECISION_FACTOR) * 4);
             return data0;
         }
 
         /// <summary>
         /// Serializes time.
         /// </summary>
-        public static uint SerializeTime(float time)
+        public static long SerializeTime(float time)
         {
-            return (uint)time;
+            return (long)time;
         }
 
         /// <summary>
         /// Serializes distance.
         /// </summary>
-        public static uint SerializeDistance(float distance)
+        public static long SerializeDistance(float distance)
         {
-            return (uint)(distance * 10);
+            return (long)(distance * 10);
         }
 
         /// <summary>
         /// Serializes augmented edge data.
         /// </summary>
         /// <returns></returns>
-        public static uint[] SerializeDynamicAugmented(float weight, bool? direction, float distance, float time)
+        public static long[] SerializeDynamicAugmented(float weight, bool? direction, float distance, float time)
         { // precision of 0.1m and 1 second.
-            return new uint[] {
+            return new long[] {
                 Serialize(weight, direction),
                 SerializeDistance(distance),
                 SerializeTime(time)
@@ -253,12 +253,12 @@ namespace Route.Data.Contracted.Edges
         /// Serializes augmented edge data.
         /// </summary>
         /// <returns></returns>
-        public static uint[] SerializeMetaAugmented(uint contractedId, float distance, float time)
+        public static long[] SerializeMetaAugmented(long contractedId, float distance, float time)
         { // precision of 0.1m and 1 second.
-            return new uint[] {
+            return new long[] {
                 contractedId,
                 SerializeDistance(distance),
-                (uint)time
+                (long)time
             };
         }
 
@@ -266,9 +266,9 @@ namespace Route.Data.Contracted.Edges
         /// Serializes edge data.
         /// </summary>
         /// <returns></returns>
-        public static uint[] SerializeMeta(ContractedEdgeData data)
+        public static long[] SerializeMeta(ContractedEdgeData data)
         {
-            return new uint[]
+            return new long[]
             {
                 ContractedEdgeDataSerializer.Serialize(data.Weight, data.Direction),
                 data.ContractedId
@@ -283,7 +283,7 @@ namespace Route.Data.Contracted.Edges
         {
             float weight;
             bool? direction;
-            uint contractedId;
+            long contractedId;
             ContractedEdgeDataSerializer.Deserialize(edge.Data[0], edge.MetaData[0],
                 out weight, out direction, out contractedId);
             return new ContractedEdgeData()
@@ -298,7 +298,7 @@ namespace Route.Data.Contracted.Edges
         /// Gets contracted id.
         /// </summary>
         /// <returns></returns>
-        public static uint GetContractedId(this MetaEdge edge)
+        public static long GetContractedId(this MetaEdge edge)
         {
             return edge.MetaData[0];
         }
@@ -307,7 +307,7 @@ namespace Route.Data.Contracted.Edges
         /// Gets contracted id.
         /// </summary>
         /// <returns></returns>
-        public static uint GetContractedId(this DirectedMetaGraph.EdgeEnumerator edge)
+        public static long GetContractedId(this DirectedMetaGraph.EdgeEnumerator edge)
         {
             return edge.MetaData0;
         }
@@ -316,7 +316,7 @@ namespace Route.Data.Contracted.Edges
         /// Gets contracted id.
         /// </summary>
         /// <returns></returns>
-        public static uint GetContractedId(this uint[] metaData)
+        public static long GetContractedId(this long[] metaData)
         {
             return metaData[0];
         }
@@ -325,7 +325,7 @@ namespace Route.Data.Contracted.Edges
         /// Parses the edge data.
         /// </summary>
         /// <returns></returns>
-        public static void Deserialize(uint data0, out Dir direction, out float weight)
+        public static void Deserialize(long data0, out Dir direction, out float weight)
         {
             // TODO: change layout in future version to simplify this.
             var dirFlags = (data0 & 3);
@@ -348,7 +348,7 @@ namespace Route.Data.Contracted.Edges
         /// Parses the edge data.
         /// </summary>
         /// <returns></returns>
-        public static void Deserialize(uint data0, out Dir direction, out uint weight)
+        public static void Deserialize(long data0, out Dir direction, out long weight)
         {
             // TODO: change layout in future version to simplify this.
             var dirFlags = (data0 & 3);
@@ -371,7 +371,7 @@ namespace Route.Data.Contracted.Edges
         /// Parses the edge data.
         /// </summary>
         /// <returns></returns>
-        public static WeightAndDir<float> Deserialize(uint data0)
+        public static WeightAndDir<float> Deserialize(long data0)
         {
             // TODO: change layout in future version to simplify this.
             Dir direction;

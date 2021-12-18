@@ -28,17 +28,17 @@ namespace Route.Algorithms.Collections
         /// </summary>
         public PathTree()
         {
-            _data = new uint[1024];
+            _data = new long[1024];
         }
 
-        private uint[] _data;
-        private uint _pointer;
+        private long[] _data;
+        private long _pointer;
 
         /// <summary>
         /// Adds a new segment.
         /// </summary>
         /// <returns></returns>
-        public uint Add(uint data0, uint data1)
+        public long Add(long data0, long data1)
         {
             var id = _pointer;
             if (_data.Length <= _pointer + 2)
@@ -55,7 +55,7 @@ namespace Route.Algorithms.Collections
         /// Adds a new segment.
         /// </summary>
         /// <returns></returns>
-        public uint Add(uint data0, uint data1, uint data2)
+        public long Add(long data0, long data1, long data2)
         {
             var id = _pointer;
             if (_data.Length <= _pointer + 3)
@@ -73,7 +73,7 @@ namespace Route.Algorithms.Collections
         /// Adds a new segment.
         /// </summary>
         /// <returns></returns>
-        public uint Add(uint data0, uint data1, uint data2, uint data3)
+        public long Add(long data0, long data1, long data2, long data3)
         {
             var id = _pointer;
             if (_data.Length <= _pointer + 4)
@@ -92,7 +92,7 @@ namespace Route.Algorithms.Collections
         /// Adds a new segment.
         /// </summary>
         /// <returns></returns>
-        public uint Add(uint data0, uint data1, uint data2, uint data3, uint data4)
+        public long Add(long data0, long data1, long data2, long data3, long data4)
         {
             var id = _pointer;
             if (_data.Length <= _pointer + 5)
@@ -112,7 +112,7 @@ namespace Route.Algorithms.Collections
         /// Adds a new segment.
         /// </summary>
         /// <returns></returns>
-        public uint Add(uint data0, uint data1, uint data2, uint data3, uint data4, uint data5)
+        public long Add(long data0, long data1, long data2, long data3, long data4, long data5)
         {
             var id = _pointer;
             if (_data.Length <= _pointer + 6)
@@ -133,7 +133,7 @@ namespace Route.Algorithms.Collections
         /// Adds a new segment.
         /// </summary>
         /// <returns></returns>
-        public uint Add(uint data0, uint data1, uint data2, uint data3, uint data4, uint data5, uint data6)
+        public long Add(long data0, long data1, long data2, long data3, long data4, long data5, long data6)
         {
             var id = _pointer;
             if (_data.Length <= _pointer + 7)
@@ -154,7 +154,7 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Gets the data at the given pointer.
         /// </summary>
-        public void Get(uint pointer, out uint data0, out uint data1)
+        public void Get(long pointer, out long data0, out long data1)
         {
             data0 = _data[pointer + 0];
             data1 = _data[pointer + 1];
@@ -163,7 +163,7 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Gets the data at the given pointer.
         /// </summary>
-        public void Get(uint pointer, out uint data0, out uint data1, out uint data2)
+        public void Get(long pointer, out long data0, out long data1, out long data2)
         {
             data0 = _data[pointer + 0];
             data1 = _data[pointer + 1];
@@ -173,8 +173,8 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Gets the data at the given pointer.
         /// </summary>
-        public void Get(uint pointer, out uint data0, out uint data1, out uint data2,
-            out uint data3)
+        public void Get(long pointer, out long data0, out long data1, out long data2,
+            out long data3)
         {
             data0 = _data[pointer + 0];
             data1 = _data[pointer + 1];
@@ -185,8 +185,8 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Gets the data at the given pointer.
         /// </summary>
-        public void Get(uint pointer, out uint data0, out uint data1, out uint data2,
-            out uint data3, out uint data4)
+        public void Get(long pointer, out long data0, out long data1, out long data2,
+            out long data3, out long data4)
         {
             data0 = _data[pointer + 0];
             data1 = _data[pointer + 1];
@@ -198,8 +198,8 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Gets the data at the given pointer.
         /// </summary>
-        public void Get(uint pointer, out uint data0, out uint data1, out uint data2,
-            out uint data3, out uint data4, out uint data5)
+        public void Get(long pointer, out long data0, out long data1, out long data2,
+            out long data3, out long data4, out long data5)
         {
             data0 = _data[pointer + 0];
             data1 = _data[pointer + 1];
@@ -212,8 +212,8 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Gets the data at the given pointer.
         /// </summary>
-        public void Get(uint pointer, out uint data0, out uint data1, out uint data2,
-            out uint data3, out uint data4, out uint data5, out uint data6)
+        public void Get(long pointer, out long data0, out long data1, out long data2,
+            out long data3, out long data4, out long data5, out long data6)
         {
             data0 = _data[pointer + 0];
             data1 = _data[pointer + 1];

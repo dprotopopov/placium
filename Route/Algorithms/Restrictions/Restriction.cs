@@ -26,7 +26,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Creates a restriction of size 1.
         /// </summary>
-        public Restriction(uint vertex)
+        public Restriction(long vertex)
         {
             this.Vertex1 = vertex;
             this.Vertex2 = Constants.NO_VERTEX;
@@ -36,7 +36,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Creates a restriction of size 2.
         /// </summary>
-        public Restriction(uint vertex1, uint vertex2)
+        public Restriction(long vertex1, long vertex2)
         {
             this.Vertex1 = vertex1;
             this.Vertex2 = vertex2;
@@ -46,7 +46,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Creates a restriction of size 3.
         /// </summary>
-        public Restriction(uint vertex1, uint vertex2, uint vertex3)
+        public Restriction(long vertex1, long vertex2, long vertex3)
         {
             this.Vertex1 = vertex1;
             this.Vertex2 = vertex2;
@@ -56,16 +56,16 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// First vertex.
         /// </summary>
-        public uint Vertex1 { get; set; }
+        public long Vertex1 { get; set; }
 
         /// <summary>
         /// Second vertex.
         /// </summary>
-        public uint Vertex2 { get; set; }
+        public long Vertex2 { get; set; }
 
         /// <summary>
         /// Third vertex.
         /// </summary>
-        public uint Vertex3 { get; set; }
+        public long Vertex3 { get; set; }
     }
 }

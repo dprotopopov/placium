@@ -45,7 +45,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns the current neighbour.
         /// </summary>
-        public uint Neighbour
+        public long Neighbour
         {
             get;
             set;
@@ -54,7 +54,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns the edge data.
         /// </summary>
-        public uint[] Data
+        public long[] Data
         {
             get;
             set;
@@ -63,7 +63,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns the edge meta-data.
         /// </summary>
-        public uint[] MetaData
+        public long[] MetaData
         {
             get;
             set;
@@ -72,7 +72,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns the id.
         /// </summary>
-        public uint Id
+        public long Id
         {
             get;
             set;

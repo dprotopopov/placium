@@ -145,7 +145,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a new edge with the given direction and weight.
         /// </summary>
-        public sealed override void AddEdge(DirectedMetaGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, float weight)
+        public sealed override void AddEdge(DirectedMetaGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, float weight)
         {
             var data = Data.Contracted.Edges.ContractedEdgeDataSerializer.Serialize(
                 weight, direction);
@@ -155,7 +155,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds or updates an edge.
         /// </summary>
-        public sealed override void AddOrUpdateEdge(DirectedMetaGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, float weight)
+        public sealed override void AddOrUpdateEdge(DirectedMetaGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, float weight)
         {
             graph.AddOrUpdateEdge(vertex1, vertex2, weight, direction, contractedId);
         }
@@ -163,7 +163,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds or updates an edge.
         /// </summary>
-        public sealed override void AddOrUpdateEdge(DirectedDynamicGraph graph, uint vertex1, uint vertex2, uint contractedId, bool? direction, float weight, uint[] s1, uint[] s2)
+        public sealed override void AddOrUpdateEdge(DirectedDynamicGraph graph, long vertex1, long vertex2, long contractedId, bool? direction, float weight, long[] s1, long[] s2)
         {
             graph.AddOrUpdateEdge(vertex1, vertex2, weight, direction, contractedId, s1, s2);
         }
@@ -171,7 +171,7 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a new edge with the given direction and weight.
         /// </summary>
-        public sealed override void AddEdge(DirectedDynamicGraph graph, uint vertex1, uint vertex2, bool? direction, float weight)
+        public sealed override void AddEdge(DirectedDynamicGraph graph, long vertex1, long vertex2, bool? direction, float weight)
         {
             var data = Data.Contracted.Edges.ContractedEdgeDataSerializer.Serialize(
                 weight, direction);
@@ -200,17 +200,17 @@ namespace Route.Algorithms.Weights
         /// <summary>
         /// Adds a vertex to the path tree.
         /// </summary>
-        public override uint AddPathTree(PathTree tree, uint vertex, float weight, uint previous)
+        public override long AddPathTree(PathTree tree, long vertex, float weight, long previous)
         {
-            return tree.Add(vertex, (uint)(weight * 10.0f), previous);
+            return tree.Add(vertex, (long)(weight * 10.0f), previous);
         }
 
         /// <summary>
         /// Gets a vertex from the path tree.
         /// </summary>
-        public override void GetPathTree(PathTree tree, uint pointer, out uint vertex, out float weight, out uint previous)
+        public override void GetPathTree(PathTree tree, long pointer, out long vertex, out float weight, out long previous)
         {
-            uint data1;
+            long data1;
             tree.Get(pointer, out vertex, out data1, out previous);
             weight = data1 / 10.0f;
         }

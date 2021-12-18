@@ -34,9 +34,9 @@ namespace Route.Data.Shortcuts
     {
         private readonly IAttributeCollection _dbMeta;
         private readonly AttributesIndex _stopsMeta;
-        private readonly ArrayBase<uint> _stops;
+        private readonly ArrayBase<long> _stops;
         private readonly AttributesIndex _shortcutsMeta;
-        private readonly ArrayBase<uint> _shortcuts;
+        private readonly ArrayBase<long> _shortcuts;
         private readonly string _profileName;
 
         /// <summary>
@@ -48,16 +48,16 @@ namespace Route.Data.Shortcuts
             _profileName = profileName;
 
             _stopsMeta = new AttributesIndex(AttributesIndexMode.ReverseAll);
-            _stops = Context.ArrayFactory.CreateMemoryBackedArray<uint>(100);
+            _stops = Context.ArrayFactory.CreateMemoryBackedArray<long>(100);
             _shortcutsMeta = new AttributesIndex(AttributesIndexMode.ReverseAll);
-            _shortcuts = Context.ArrayFactory.CreateMemoryBackedArray<uint>(100);
+            _shortcuts = Context.ArrayFactory.CreateMemoryBackedArray<long>(100);
         }
 
         /// <summary>
         /// Creates a new shortcuts db.
         /// </summary>
-        private ShortcutsDb(string profileName, IAttributeCollection dbMeta, AttributesIndex stopsMeta, ArrayBase<uint> stops, 
-            AttributesIndex shortcutsMeta, ArrayBase<uint> shortcuts)
+        private ShortcutsDb(string profileName, IAttributeCollection dbMeta, AttributesIndex stopsMeta, ArrayBase<long> stops, 
+            AttributesIndex shortcutsMeta, ArrayBase<long> shortcuts)
         {
             _dbMeta = dbMeta;
             _profileName = profileName;
@@ -67,12 +67,12 @@ namespace Route.Data.Shortcuts
             _shortcuts = shortcuts;
             _shortcutsMeta = shortcutsMeta;
 
-            _shortcutsPointer = (uint)_shortcuts.Length;
-            _stopsPointer = (uint)_stops.Length;
+            _shortcutsPointer = (long)_shortcuts.Length;
+            _stopsPointer = (long)_stops.Length;
         }
 
-        private uint _stopsPointer = 0;
-        private uint _shortcutsPointer = 0;
+        private long _stopsPointer = 0;
+        private long _shortcutsPointer = 0;
 
         /// <summary>
         /// Gets the meta-data collection.
@@ -99,7 +99,7 @@ namespace Route.Data.Shortcuts
         /// <summary>
         /// Adds a stop with associated meta-data.
         /// </summary>
-        public void AddStop(uint vertex, IAttributeCollection meta)
+        public void AddStop(long vertex, IAttributeCollection meta)
         {
             var stopsMetaId = _stopsMeta.Add(meta);
 
@@ -113,9 +113,9 @@ namespace Route.Data.Shortcuts
         /// <summary>
         /// Gets a stop if there is one for the given vertex and the associated meta-data. Returns null if no stop is found.
         /// </summary>
-        public IAttributeCollection GetStop(uint vertex)
+        public IAttributeCollection GetStop(long vertex)
         {
-            for(uint p = 0; p < _stops.Length; p += 2)
+            for(long p = 0; p < _stops.Length; p += 2)
             {
                 if (_stops[p + 0] == vertex)
                 {
@@ -128,15 +128,15 @@ namespace Route.Data.Shortcuts
         /// <summary>
         /// Adds a new shortcut.
         /// </summary>
-        public uint Add(uint[] vertices, IAttributeCollection meta)
+        public long Add(long[] vertices, IAttributeCollection meta)
         {
             var shortcutMetaId = _shortcutsMeta.Add(meta);
-            var size = (uint)vertices.Length + 2;
+            var size = (long)vertices.Length + 2;
 
             _shortcuts.EnsureMinimumSize(_shortcutsPointer + vertices.Length + 2);
             _shortcuts[_shortcutsPointer + 0] = size;
             _shortcuts[_shortcutsPointer + 1] = shortcutMetaId;
-            for (uint i = 0; i < vertices.Length; i++)
+            for (long i = 0; i < vertices.Length; i++)
             {
                 _shortcuts[_shortcutsPointer + 2 + i] = vertices[i];
             }
@@ -149,12 +149,12 @@ namespace Route.Data.Shortcuts
         /// <summary>
         /// Gets a shortcut.
         /// </summary>
-        public uint[] Get(uint id, out IAttributeCollection meta)
+        public long[] Get(long id, out IAttributeCollection meta)
         {
             var size = _shortcuts[id];
 
             meta = _shortcutsMeta.Get(_shortcuts[id + 1]);
-            var vertices = new uint[size - 2];
+            var vertices = new long[size - 2];
             for(var pointer = id + 2; pointer < id + size; pointer++)
             {
                 vertices[pointer - id - 2] = _shortcuts[pointer];
@@ -166,9 +166,9 @@ namespace Route.Data.Shortcuts
         /// <summary>
         /// Gets a shortcut but it's source and target vertex.
         /// </summary>
-        public uint[] Get(uint vertex1, uint vertex2, out IAttributeCollection meta)
+        public long[] Get(long vertex1, long vertex2, out IAttributeCollection meta)
         {
-            uint id = 0;
+            long id = 0;
             while(id < _shortcuts.Length)
             {
                 var size = _shortcuts[id];
@@ -204,11 +204,11 @@ namespace Route.Data.Shortcuts
 
             // write the stops count and the shortcuts count.
             var bytes = BitConverter.GetBytes(_stopsPointer);
-            stream.Write(bytes, 0, 4);
-            size += 4;
+            stream.Write(bytes, 0, 8);
+            size += 8;
             bytes = BitConverter.GetBytes(_shortcutsPointer);
-            stream.Write(bytes, 0, 4);
-            size += 4;
+            stream.Write(bytes, 0, 8);
+            size += 8;
 
             // write stops meta and data.
             size += _stopsMeta.Serialize(stream);
@@ -239,20 +239,20 @@ namespace Route.Data.Shortcuts
             var metaDb = stream.ReadWithSizeAttributesCollection();
 
             // read stops and shortcuts data sizes.
-            var bytes = new byte[4];
-            stream.Read(bytes, 0, 4);
-            var stopsPointer = BitConverter.ToUInt32(bytes, 0);
-            stream.Read(bytes, 0, 4);
-            var shortcutsPointer = BitConverter.ToUInt32(bytes, 0);
+            var bytes = new byte[8];
+            stream.Read(bytes, 0, 8);
+            var stopsPointer = BitConverter.ToInt64(bytes, 0);
+            stream.Read(bytes, 0, 8);
+            var shortcutsPointer = BitConverter.ToInt64(bytes, 0);
 
             // read stops meta and data.
             var stopsMeta = AttributesIndex.Deserialize(new LimitedStream(stream), true);
-            var stops = Context.ArrayFactory.CreateMemoryBackedArray<uint>(stopsPointer);
+            var stops = Context.ArrayFactory.CreateMemoryBackedArray<long>(stopsPointer);
             stops.CopyFrom(stream);
 
             // read shortcuts meta and data.
             var shortcutsMeta = AttributesIndex.Deserialize(new LimitedStream(stream), true);
-            var shortcuts = Context.ArrayFactory.CreateMemoryBackedArray<uint>(shortcutsPointer);
+            var shortcuts = Context.ArrayFactory.CreateMemoryBackedArray<long>(shortcutsPointer);
             shortcuts.CopyFrom(stream);
 
             return new ShortcutsDb(profileName, metaDb, stopsMeta, stops, shortcutsMeta, shortcuts);

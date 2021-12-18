@@ -31,12 +31,12 @@ namespace Route.Data.Network.Restrictions
     /// <remarks>A restriction is a sequence of vertices that is forbidden. A complex restriction is a restriction with > 1 vertex.</remarks>
     public class RestrictionsDb
     {
-        private readonly ArrayBase<uint> _hashes; // holds pointers to a set of pointers in the index.
-        private readonly ArrayBase<uint> _index; // holds pointers per hash to the actual restrictions.
-        private readonly ArrayBase<uint> _restrictions; // holds the actual restrictions with a prefixed count.
+        private readonly ArrayBase<long> _hashes; // holds pointers to a set of pointers in the index.
+        private readonly ArrayBase<long> _index; // holds pointers per hash to the actual restrictions.
+        private readonly ArrayBase<long> _restrictions; // holds the actual restrictions with a prefixed count.
         private const int DEFAULT_ARRAY_SIZE = 1024;
         private const int DEFAULT_HASHCOUNT = 1024 * 1024;
-        private const uint NO_DATA = uint.MaxValue;
+        private const long NO_DATA = long.MaxValue;
 
         private bool _hasComplexRestrictions; // flag to indicate presence of complex restrictions.
 
@@ -46,19 +46,19 @@ namespace Route.Data.Network.Restrictions
         public RestrictionsDb(int hashes = DEFAULT_HASHCOUNT)
         {
             _hasComplexRestrictions = false;
-            _hashes = Context.ArrayFactory.CreateMemoryBackedArray<uint>(hashes * 2);
+            _hashes = Context.ArrayFactory.CreateMemoryBackedArray<long>(hashes * 2);
             for (var i = 0; i < _hashes.Length; i++)
             {
                 _hashes[i] = NO_DATA;
             }
-            _restrictions = Context.ArrayFactory.CreateMemoryBackedArray<uint>(DEFAULT_ARRAY_SIZE);
-            _index = Context.ArrayFactory.CreateMemoryBackedArray<uint>(DEFAULT_ARRAY_SIZE);
+            _restrictions = Context.ArrayFactory.CreateMemoryBackedArray<long>(DEFAULT_ARRAY_SIZE);
+            _index = Context.ArrayFactory.CreateMemoryBackedArray<long>(DEFAULT_ARRAY_SIZE);
         }
         
         /// <summary>
         /// Creates a new restrictions db.
         /// </summary>
-        private RestrictionsDb(uint count, bool hasComplexRestrictions, ArrayBase<uint> hashes, ArrayBase<uint> index, ArrayBase<uint> restrictions)
+        private RestrictionsDb(long count, bool hasComplexRestrictions, ArrayBase<long> hashes, ArrayBase<long> index, ArrayBase<long> restrictions)
         {
             _count = (int)count;
             _hasComplexRestrictions = hasComplexRestrictions;
@@ -66,18 +66,18 @@ namespace Route.Data.Network.Restrictions
             _index = index;
             _restrictions = restrictions;
 
-            _nextIndexPointer = (uint)index.Length;
-            _nextRestrictionPointer = (uint)_restrictions.Length;
+            _nextIndexPointer = (long)index.Length;
+            _nextRestrictionPointer = (long)_restrictions.Length;
         }
         
-        private uint _nextIndexPointer = 0;
-        private uint _nextRestrictionPointer = 0;
+        private long _nextIndexPointer = 0;
+        private long _nextRestrictionPointer = 0;
         private int _count = 0;
 
         /// <summary>
         /// Adds a new restriction.
         /// </summary>
-        public void Add(params uint[] restriction)
+        public void Add(params long[] restriction)
         {
             if (restriction == null) { throw new ArgumentNullException("restriction"); }
             if (restriction.Length == 0) { throw new ArgumentException("Restriction should contain one or more vertices.", "restriction"); }
@@ -87,10 +87,10 @@ namespace Route.Data.Network.Restrictions
                 _hasComplexRestrictions = true;
             }
 
-            _restrictions.EnsureMinimumSize(_nextRestrictionPointer + (uint)restriction.Length + 1);
+            _restrictions.EnsureMinimumSize(_nextRestrictionPointer + (long)restriction.Length + 1);
 
             // add the data.
-            _restrictions[_nextRestrictionPointer] = (uint)restriction.Length;
+            _restrictions[_nextRestrictionPointer] = (long)restriction.Length;
             for (var i = 0; i < restriction.Length; i++)
             {
                 _restrictions[_nextRestrictionPointer + i + 1] = restriction[i];
@@ -99,7 +99,7 @@ namespace Route.Data.Network.Restrictions
             // add by pointer.
             this.AddByPointer(_nextRestrictionPointer);
 
-            _nextRestrictionPointer = _nextRestrictionPointer + 1 + (uint)restriction.Length;
+            _nextRestrictionPointer = _nextRestrictionPointer + 1 + (long)restriction.Length;
             _count++;
         }
 
@@ -117,10 +117,10 @@ namespace Route.Data.Network.Restrictions
         /// <summary>
         /// Switches the given two vertices.
         /// </summary>
-        public void Switch(uint vertex1, uint vertex2)
+        public void Switch(long vertex1, long vertex2)
         {
             // collect relevant restrictions.
-            var restrictions = new HashSet<uint>();
+            var restrictions = new HashSet<long>();
             var hash = CalculateHash(vertex1);
             var indexPointer = _hashes[hash];
             if (indexPointer != NO_DATA)
@@ -185,7 +185,7 @@ namespace Route.Data.Network.Restrictions
         /// <summary>
         /// Adds a restriction using just it's pointer.
         /// </summary>
-        private void AddByPointer(uint pointer)
+        private void AddByPointer(long pointer)
         {
             var size = _restrictions[pointer];
 
@@ -198,7 +198,7 @@ namespace Route.Data.Network.Restrictions
         /// <summary>
         /// Adds a pointer for the given vertex.
         /// </summary>
-        private void AddPointer(uint vertex, uint pointer)
+        private void AddPointer(long vertex, long pointer)
         {
             var hash = CalculateHash(vertex);
             var hashPointer = _hashes[hash];
@@ -246,7 +246,7 @@ namespace Route.Data.Network.Restrictions
         /// <summary>
         /// Removes a restriction by pointer.
         /// </summary>
-        private void RemoveByPointer(uint pointer)
+        private void RemoveByPointer(long pointer)
         {
             var size = _restrictions[pointer];
             //_restrictions[pointer] = NO_DATA;
@@ -308,7 +308,7 @@ namespace Route.Data.Network.Restrictions
         /// <summary>
         /// Calculates a hashcode with a fixed size.
         /// </summary>
-        private int CalculateHash(uint vertex)
+        private int CalculateHash(long vertex)
         {
             var hash = (vertex.GetHashCode() % (_hashes.Length / 2)) * 2;
             if (hash > 0)
@@ -333,15 +333,15 @@ namespace Route.Data.Network.Restrictions
                 _db = db;
             }
 
-            private uint _vertex;
-            private uint _indexPointer;
-            private uint _indexPosition;
-            private uint _restrictionPointer;
+            private long _vertex;
+            private long _indexPointer;
+            private long _indexPosition;
+            private long _restrictionPointer;
             
             /// <summary>
             /// Moves to restrictions for the given vertex.
             /// </summary>
-            public bool MoveTo(uint vertex)
+            public bool MoveTo(long vertex)
             {
                 _vertex = vertex;
                 var hash = _db.CalculateHash(vertex);
@@ -412,7 +412,7 @@ namespace Route.Data.Network.Restrictions
             /// <summary>
             /// Gets the number of vertices in the current restriction.
             /// </summary>
-            public uint Count
+            public long Count
             {
                 get
                 {
@@ -428,7 +428,7 @@ namespace Route.Data.Network.Restrictions
             /// <summary>
             /// Returns the vertex at the given position.
             /// </summary>
-            public uint this[int i]
+            public long this[int i]
             {
                 get
                 {
@@ -443,7 +443,7 @@ namespace Route.Data.Network.Restrictions
             /// <summary>
             /// Gets the id of this restriction.
             /// </summary>
-            public uint Id
+            public long Id
             {
                 get
                 {
@@ -454,7 +454,7 @@ namespace Route.Data.Network.Restrictions
 
         private class LinkedNode
         {
-            public uint Pointer { get; set; }
+            public long Pointer { get; set; }
             public LinkedNode Next { get; set; }
         }
 
@@ -472,11 +472,11 @@ namespace Route.Data.Network.Restrictions
             stream.WriteByte(_hasComplexRestrictions ? (byte)1 : (byte)0);
             size++;
 
-            // write sizes, all uints, [count, hashCount, indexSize, restrictionSize]
-            var bytes = BitConverter.GetBytes((uint)_count);
+            // write sizes, all longs, [count, hashCount, indexSize, restrictionSize]
+            var bytes = BitConverter.GetBytes((long)_count);
             stream.Write(bytes, 0, 4);
             size += 4;
-            bytes = BitConverter.GetBytes((uint)_hashes.Length);
+            bytes = BitConverter.GetBytes((long)_hashes.Length);
             stream.Write(bytes, 0, 4);
             size += 4;
             bytes = BitConverter.GetBytes(_nextIndexPointer);
@@ -518,17 +518,17 @@ namespace Route.Data.Network.Restrictions
             var hasComplexRestrictions = hasComplexRestrictionsByte == 1;
 
             // read sizes.
-            var bytes = new byte[16];
-            stream.Read(bytes, 0, 16);
-            var count = BitConverter.ToUInt32(bytes, 0);
-            var hashSize = BitConverter.ToUInt32(bytes, 4);
-            var indexSize = BitConverter.ToUInt32(bytes, 8);
-            var restrictionSize = BitConverter.ToUInt32(bytes, 12);
+            var bytes = new byte[32];
+            stream.Read(bytes, 0, 32);
+            var count = BitConverter.ToInt64(bytes, 0);
+            var hashSize = BitConverter.ToInt64(bytes, 8);
+            var indexSize = BitConverter.ToInt64(bytes, 16);
+            var restrictionSize = BitConverter.ToInt64(bytes, 24);
 
-            ArrayBase<uint> hashes;
+            ArrayBase<long> hashes;
             if (profile == null || profile.HashesProfile == null)
             {
-                hashes = Context.ArrayFactory.CreateMemoryBackedArray<uint>(hashSize);
+                hashes = Context.ArrayFactory.CreateMemoryBackedArray<long>(hashSize);
                 hashes.CopyFrom(stream);
             }
             else
@@ -536,38 +536,38 @@ namespace Route.Data.Network.Restrictions
                 var position = stream.Position;
                 var map = new MemoryMapStream(new CappedStream(stream, position,
                     hashSize * 4));
-                hashes = new Array<uint>(map.CreateUInt32(hashSize), profile.HashesProfile);
-                stream.Seek(hashSize * 4, SeekOrigin.Current);
+                hashes = new Array<long>(map.CreateInt64(hashSize), profile.HashesProfile);
+                stream.Seek(hashSize * 8, SeekOrigin.Current);
             }
 
-            ArrayBase<uint> index;
+            ArrayBase<long> index;
             if (profile == null || profile.IndexProfile == null)
             {
-                index = Context.ArrayFactory.CreateMemoryBackedArray<uint>(indexSize);
+                index = Context.ArrayFactory.CreateMemoryBackedArray<long>(indexSize);
                 index.CopyFrom(stream);
             }
             else
             {
                 var position = stream.Position;
                 var map = new MemoryMapStream(new CappedStream(stream, position,
-                    indexSize * 4));
-                index = new Array<uint>(map.CreateUInt32(indexSize), profile.IndexProfile);
-                stream.Seek(indexSize * 4, SeekOrigin.Current);
+                    indexSize * 8));
+                index = new Array<long>(map.CreateInt64(indexSize), profile.IndexProfile);
+                stream.Seek(indexSize * 8, SeekOrigin.Current);
             }
 
-            ArrayBase<uint> restrictions;
+            ArrayBase<long> restrictions;
             if (profile == null || profile.RestrictionsProfile == null)
             {
-                restrictions = Context.ArrayFactory.CreateMemoryBackedArray<uint>(restrictionSize);
+                restrictions = Context.ArrayFactory.CreateMemoryBackedArray<long>(restrictionSize);
                 restrictions.CopyFrom(stream);
             }
             else
             {
                 var position = stream.Position;
                 var map = new MemoryMapStream(new CappedStream(stream, position,
-                    restrictionSize * 4));
-                restrictions = new Array<uint>(map.CreateUInt32(restrictionSize), profile.RestrictionsProfile);
-                stream.Seek(restrictionSize * 4, SeekOrigin.Current);
+                    restrictionSize * 8));
+                restrictions = new Array<long>(map.CreateInt64(restrictionSize), profile.RestrictionsProfile);
+                stream.Seek(restrictionSize * 8, SeekOrigin.Current);
             }
 
             return new RestrictionsDb(count, hasComplexRestrictions, hashes, index, restrictions);

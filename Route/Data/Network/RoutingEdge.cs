@@ -29,7 +29,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Creates a new edge.
         /// </summary>
-        internal RoutingEdge(uint id, uint from, uint to, EdgeData data, bool edgeDataInverted,
+        internal RoutingEdge(long id, long from, long to, EdgeData data, bool edgeDataInverted,
             ShapeBase shape)
         {
             this.Id = id;
@@ -56,17 +56,17 @@ namespace Route.Data.Network
         /// <summary>
         /// Gets the id.
         /// </summary>
-        public uint Id { get; private set; }
+        public long Id { get; private set; }
 
         /// <summary>
         /// Gets the from.
         /// </summary>
-        public uint From { get; private set; }
+        public long From { get; private set; }
 
         /// <summary>
         /// Gets the to.
         /// </summary>
-        public uint To { get; private set; }
+        public long To { get; private set; }
 
         /// <summary>
         /// Gets the data.

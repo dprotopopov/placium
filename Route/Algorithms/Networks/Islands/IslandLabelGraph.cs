@@ -25,7 +25,7 @@ namespace Route.Algorithms.Networks.Islands
         /// </summary>
         /// <param name="label1">The first label.</param>
         /// <param name="label2">The second label.</param>
-        internal void Connect(uint label1, uint label2)
+        internal void Connect(long label1, long label2)
         {
             if (label1 == label2)
             {
@@ -46,23 +46,23 @@ namespace Route.Algorithms.Networks.Islands
         /// <summary>
         /// Gets the label count.
         /// </summary>
-        internal uint LabelCount => _graph.VertexCount;
+        internal long LabelCount => _graph.VertexCount;
 
         /// <summary>
         /// Finds loops and merges them together.
         /// </summary>
         /// <param name="maxSettles">The maximum labels to settle.</param>
         /// <param name="updateLabel">A callback to update label.</param>
-        internal void FindLoops(uint maxSettles, IslandLabels islandLabels, Action<uint, uint> updateLabel)
+        internal void FindLoops(long maxSettles, IslandLabels islandLabels, Action<long, long> updateLabel)
         {
             // TODO: it's probably better to call reduce here when too much has changed.
             
             var pathTree = new PathTree();
             var enumerator = _graph.GetEdgeEnumerator();
-            var settled = new HashSet<uint>();
-            var queue = new Queue<uint>();
-            var loop = new HashSet<uint>(); // keeps all with a path back to label, initially only label.
-            uint label = 0;
+            var settled = new HashSet<long>();
+            var queue = new Queue<long>();
+            var loop = new HashSet<long>(); // keeps all with a path back to label, initially only label.
+            long label = 0;
             while (label < _graph.VertexCount)
             {
                 if (!enumerator.MoveTo(label))
@@ -82,7 +82,7 @@ namespace Route.Algorithms.Networks.Islands
                 settled.Clear();
 
                 loop.Add(label);
-                queue.Enqueue(pathTree.Add(label, uint.MaxValue));
+                queue.Enqueue(pathTree.Add(label, long.MaxValue));
 
                 while (queue.Count > 0 &&
                        settled.Count < maxSettles)
@@ -112,7 +112,7 @@ namespace Route.Algorithms.Networks.Islands
                         {
                             // yay, a loop!
                             loop.Add(current);
-                            while (previous != uint.MaxValue)
+                            while (previous != long.MaxValue)
                             {
                                 pathTree.Get(previous, out current, out previous);
                                 loop.Add(current);
@@ -143,11 +143,11 @@ namespace Route.Algorithms.Networks.Islands
         /// </summary>
         /// <param name="labels">The labels to merge.</param>
         /// <param name="updateLabel">A callback to update label.</param>
-        private void Merge(HashSet<uint> labels, Action<uint, uint> updateLabel)
+        private void Merge(HashSet<long> labels, Action<long, long> updateLabel)
         {
             var edgeEnumerator = _graph.GetEdgeEnumerator();
-            var bestLabel = uint.MaxValue;
-            var neighbours = new HashSet<uint>();
+            var bestLabel = long.MaxValue;
+            var neighbours = new HashSet<long>();
             foreach (var label in labels)
             {
                 if (label < bestLabel)
@@ -172,7 +172,7 @@ namespace Route.Algorithms.Networks.Islands
                 _graph.RemoveEdges(label);
             }
 
-            if (bestLabel == uint.MaxValue)
+            if (bestLabel == long.MaxValue)
             {
                 return;
             }
@@ -202,11 +202,11 @@ namespace Route.Algorithms.Networks.Islands
         internal long Reduce(IslandLabels islandLabels)
         {
             // remove vertices that aren't originals.
-            var neighbours = new HashSet<uint>();
+            var neighbours = new HashSet<long>();
             var edgeEnumerator = _graph.GetEdgeEnumerator();
             var edgeEnumerator2 = _graph.GetEdgeEnumerator();
             var nonNullLabels = 0;
-            for (uint label = 0; label < _graph.VertexCount; label++)
+            for (long label = 0; label < _graph.VertexCount; label++)
             {
                 var minimal = islandLabels[label];
                 if (!edgeEnumerator.MoveTo(label))

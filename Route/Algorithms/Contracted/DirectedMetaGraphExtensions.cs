@@ -32,7 +32,7 @@ namespace Route.Algorithms.Contracted
         /// Gets the shortest edge between two vertices.
         /// </summary>
         /// <returns></returns>
-        public static MetaEdge GetShortestEdge(this DirectedMetaGraph graph, uint vertex1, uint vertex2, Func<uint[], float?> getWeight)
+        public static MetaEdge GetShortestEdge(this DirectedMetaGraph graph, long vertex1, long vertex2, Func<long[], float?> getWeight)
         {
             var minWeight = float.MaxValue;
             var edges = graph.GetEdgeEnumerator(vertex1);
@@ -64,11 +64,11 @@ namespace Route.Algorithms.Contracted
         /// Gets the contracted id for the shortest edge between two vertices.
         /// </summary>
         /// <returns></returns>
-        public static uint? GetShortestEdgeContractedId(this DirectedMetaGraph.EdgeEnumerator edgeEnumerator, uint vertex1, uint vertex2, bool forward)
+        public static long? GetShortestEdgeContractedId(this DirectedMetaGraph.EdgeEnumerator edgeEnumerator, long vertex1, long vertex2, bool forward)
         {
             var minWeight = float.MaxValue;
             edgeEnumerator.MoveTo(vertex1);
-            uint? contractedId = null;
+            long? contractedId = null;
             while (edgeEnumerator.MoveNext())
             {
                 if (edgeEnumerator.Neighbour == vertex2)
@@ -92,7 +92,7 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Expands a the shortest edge between the two given vertices.
         /// </summary>
-        public static void ExpandEdge(this DirectedMetaGraph graph, uint vertex1, uint vertex2, List<uint> vertices, bool inverted,
+        public static void ExpandEdge(this DirectedMetaGraph graph, long vertex1, long vertex2, List<long> vertices, bool inverted,
             bool forward)
         {
             var edgeEnumerator = graph.GetEdgeEnumerator();
@@ -102,7 +102,7 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Expands a the shortest edge between the two given vertices.
         /// </summary>
-        public static void ExpandEdge(this DirectedMetaGraph.EdgeEnumerator edgeEnumerator, uint vertex1, uint vertex2, List<uint> vertices, bool inverted,
+        public static void ExpandEdge(this DirectedMetaGraph.EdgeEnumerator edgeEnumerator, long vertex1, long vertex2, List<long> vertices, bool inverted,
             bool forward)
         {
             // check if expansion is needed.
@@ -132,8 +132,8 @@ namespace Route.Algorithms.Contracted
         /// Add edge.
         /// </summary>
         /// <returns></returns>
-        public static void AddEdge(this DirectedMetaGraph graph, uint vertex1, uint vertex2, float weight, 
-            bool? direction, uint contractedId)
+        public static void AddEdge(this DirectedMetaGraph graph, long vertex1, long vertex2, float weight, 
+            bool? direction, long contractedId)
         {
             graph.AddEdge(vertex1, vertex2, ContractedEdgeDataSerializer.Serialize(
                 weight, direction), contractedId);
@@ -143,10 +143,10 @@ namespace Route.Algorithms.Contracted
         /// Add edge.
         /// </summary>
         /// <returns></returns>
-        public static void AddEdge(this DirectedMetaGraph graph, uint vertex1, uint vertex2, float weight,
-            bool? direction, uint contractedId, float distance, float time)
+        public static void AddEdge(this DirectedMetaGraph graph, long vertex1, long vertex2, float weight,
+            bool? direction, long contractedId, float distance, float time)
         {
-            graph.AddEdge(vertex1, vertex2, new uint[] { ContractedEdgeDataSerializer.Serialize(
+            graph.AddEdge(vertex1, vertex2, new long[] { ContractedEdgeDataSerializer.Serialize(
                 weight, direction) }, ContractedEdgeDataSerializer.SerializeMetaAugmented(contractedId, distance, time));
         }
 
@@ -154,8 +154,8 @@ namespace Route.Algorithms.Contracted
         /// Add or update edge.
         /// </summary>
         /// <returns></returns>
-        public static void AddOrUpdateEdge(this DirectedMetaGraph graph, uint vertex1, uint vertex2, float weight, 
-            bool? direction, uint contractedId)
+        public static void AddOrUpdateEdge(this DirectedMetaGraph graph, long vertex1, long vertex2, float weight, 
+            bool? direction, long contractedId)
         {
             var current = ContractedEdgeDataSerializer.Serialize(weight, direction);
             var hasExistingEdge = false;
@@ -173,7 +173,7 @@ namespace Route.Algorithms.Contracted
                     }
                     hasExistingEdgeOnlySameDirection = false;
                     return false;
-                }, new uint[] { current }, contractedId) != Constants.NO_EDGE)
+                }, new long[] { current }, contractedId) != Constants.NO_EDGE)
             { // updating the edge succeeded.
                 return;
             }
@@ -190,10 +190,10 @@ namespace Route.Algorithms.Contracted
             { // see what's there and update if needed.
                 var forward = false;
                 var forwardWeight = float.MaxValue;
-                var forwardContractedId = uint.MaxValue;
+                var forwardContractedId = long.MaxValue;
                 var backward = false;
                 var backwardWeight = float.MaxValue;
-                var backwardContractedId = uint.MaxValue;
+                var backwardContractedId = long.MaxValue;
 
                 if(direction == null || direction.Value)
                 {
@@ -215,7 +215,7 @@ namespace Route.Algorithms.Contracted
                     {
                         float localWeight;
                         bool? localDirection;
-                        uint localContractedId;
+                        long localContractedId;
                         ContractedEdgeDataSerializer.Deserialize(edgeEnumerator.Data0, edgeEnumerator.MetaData0,
                             out localWeight, out localDirection, out localContractedId);
                         if(localDirection == null || localDirection.Value)
@@ -268,8 +268,8 @@ namespace Route.Algorithms.Contracted
         /// Add or update edge.
         /// </summary>
         /// <returns></returns>
-        public static void AddOrUpdateEdge(this DirectedMetaGraph graph, uint vertex1, uint vertex2, float weight,
-            bool? direction, uint contractedId, float distance, float time)
+        public static void AddOrUpdateEdge(this DirectedMetaGraph graph, long vertex1, long vertex2, float weight,
+            bool? direction, long contractedId, float distance, float time)
         {
             var current = ContractedEdgeDataSerializer.Serialize(weight, direction);
             var hasExistingEdge = false;
@@ -287,13 +287,13 @@ namespace Route.Algorithms.Contracted
                 }
                 hasExistingEdgeOnlySameDirection = false;
                 return false;
-            }, new uint[] { current }, ContractedEdgeDataSerializer.SerializeMetaAugmented(contractedId, distance, time)) != Constants.NO_EDGE)
+            }, new long[] { current }, ContractedEdgeDataSerializer.SerializeMetaAugmented(contractedId, distance, time)) != Constants.NO_EDGE)
             { // updating the edge succeeded.
                 return;
             }
             if (!hasExistingEdge)
             { // no edge exists yet.
-                graph.AddEdge(vertex1, vertex2, new uint[] { current }, ContractedEdgeDataSerializer.SerializeMetaAugmented(
+                graph.AddEdge(vertex1, vertex2, new long[] { current }, ContractedEdgeDataSerializer.SerializeMetaAugmented(
                     contractedId, distance, time));
                 return;
             }
@@ -305,12 +305,12 @@ namespace Route.Algorithms.Contracted
             { // see what's there and update if needed.
                 var forward = false;
                 var forwardWeight = float.MaxValue;
-                var forwardContractedId = uint.MaxValue;
+                var forwardContractedId = long.MaxValue;
                 var forwardTime = float.MaxValue;
                 var forwardDistance = float.MaxValue;
                 var backward = false;
                 var backwardWeight = float.MaxValue;
-                var backwardContractedId = uint.MaxValue;
+                var backwardContractedId = long.MaxValue;
                 var backwardTime = float.MaxValue;
                 var backwardDistance = float.MaxValue;
 
@@ -340,7 +340,7 @@ namespace Route.Algorithms.Contracted
                         bool? localDirection;
                         ContractedEdgeDataSerializer.Deserialize(edgeEnumerator.Data0,
                             out localWeight, out localDirection);
-                        uint localContractedId;
+                        long localContractedId;
                         float localTime;
                         float localDistance;
                         ContractedEdgeDataSerializer.DeserializeMetaAgumented(edgeEnumerator.MetaData, out localContractedId, out localDistance, out localTime);
@@ -399,7 +399,7 @@ namespace Route.Algorithms.Contracted
         /// Tries adding or updating an edge and returns #added and #removed edges.
         /// </summary>
         /// <returns></returns>
-        public static void TryAddOrUpdateEdge(this DirectedMetaGraph graph, uint vertex1, uint vertex2, float weight, bool? direction, uint contractedId,
+        public static void TryAddOrUpdateEdge(this DirectedMetaGraph graph, long vertex1, long vertex2, float weight, bool? direction, long contractedId,
             out int added, out int removed)
         {
             var hasExistingEdge = false;
@@ -441,10 +441,10 @@ namespace Route.Algorithms.Contracted
             { // see what's there and update if needed.
                 var forward = false;
                 var forwardWeight = float.MaxValue;
-                var forwardContractedId = uint.MaxValue;
+                var forwardContractedId = long.MaxValue;
                 var backward = false;
                 var backwardWeight = float.MaxValue;
-                var backwardContractedId = uint.MaxValue;
+                var backwardContractedId = long.MaxValue;
 
                 if (direction == null || direction.Value)
                 {
@@ -466,7 +466,7 @@ namespace Route.Algorithms.Contracted
                     {
                         float localWeight;
                         bool? localDirection;
-                        uint localContractedId;
+                        long localContractedId;
                         ContractedEdgeDataSerializer.Deserialize(edgeEnumerator.Data0, edgeEnumerator.MetaData0,
                             out localWeight, out localDirection, out localContractedId);
                         if (localDirection == null || localDirection.Value)

@@ -21,18 +21,18 @@ namespace Route.Algorithms.Collections
     /// <summary>
     /// Represents a large bit array.
     /// </summary>
-    public class BitArray32
+    public class BitArray64
     {
-        private readonly uint[] _array; // Holds the bit vector array.
+        private readonly long[] _array; // Holds the bit vector array.
         private long _length; // Holds the length of this array.
 
         /// <summary>
         /// Creates a new bitvector array.
         /// </summary>
-        public BitArray32(long size)
+        public BitArray64(long size)
         {
             _length = size;
-            _array = new uint[(int)System.Math.Ceiling((double)size / 32)];
+            _array = new long[(int)System.Math.Ceiling((double)size / 64)];
         }
 
         /// <summary>
@@ -42,23 +42,23 @@ namespace Route.Algorithms.Collections
         {
             get
             {
-                var arrayIdx = (int)(idx >> 5);
-                var bitIdx = (int)(idx % 32);
+                var arrayIdx = (int)(idx >> 6);
+                var bitIdx = (int)(idx % 64);
                 var mask = (long)1 << bitIdx;
                 return (_array[arrayIdx] & mask) != 0;
             }
             set
             {
-                var arrayIdx = (int)(idx >> 5);
-                var bitIdx = (int)(idx % 32);
+                var arrayIdx = (int)(idx >> 6);
+                var bitIdx = (int)(idx % 64);
                 var mask = (long)1 << bitIdx;
                 if (value)
                 { // set value.
-                    _array[arrayIdx] = (uint)(mask | _array[arrayIdx]);
+                    _array[arrayIdx] = (long)(mask | _array[arrayIdx]);
                 }
                 else
                 { // unset value.
-                    _array[arrayIdx] = (uint)((~mask) & _array[arrayIdx]);
+                    _array[arrayIdx] = (long)((~mask) & _array[arrayIdx]);
                 }
             }
         }

@@ -42,7 +42,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Creates a new routing algorithm instance.
         /// </summary>
-        public Dykstra(DirectedMetaGraph graph, WeightHandler<T> weightHandler, uint source, bool backward, T max, 
+        public Dykstra(DirectedMetaGraph graph, WeightHandler<T> weightHandler, long source, bool backward, T max, 
             SearchSpaceCache<T> cache = null)
             : this(graph, weightHandler, new DykstraSource<T>(source), backward, max)
         {
@@ -65,9 +65,9 @@ namespace Route.Algorithms.Contracted.Dual
             _cache = cache;
         }
 
-        private BinaryHeap<uint> _pointerHeap;
+        private BinaryHeap<long> _pointerHeap;
         private PathTree _pathTree;
-        private Dictionary<uint, Tuple<uint, T>> _visited;
+        private Dictionary<long, Tuple<long, T>> _visited;
         private DirectedMetaGraph.EdgeEnumerator _edgeEnumerator;
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace Route.Algorithms.Contracted.Dual
             { // use cached search space.
                 foreach (var visit in space.Visits)
                 {
-                    this.WasFound?.Invoke(uint.MaxValue,visit.Key, visit.Value.Item2);
+                    this.WasFound?.Invoke(long.MaxValue,visit.Key, visit.Value.Item2);
                 }
             }
             else
@@ -109,18 +109,18 @@ namespace Route.Algorithms.Contracted.Dual
             this.HasSucceeded = true;
 
             // initialize dykstra data structures.
-            _pointerHeap = new BinaryHeap<uint>();
+            _pointerHeap = new BinaryHeap<long>();
             _pathTree = new PathTree();
-            _visited = new Dictionary<uint, Tuple<uint, T>>();
+            _visited = new Dictionary<long, Tuple<long, T>>();
 
             // queue source.
             if (_source.Vertex1 != Constants.NO_VERTEX)
             {
-                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex1, _source.Weight1, uint.MaxValue), 0);
+                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex1, _source.Weight1, long.MaxValue), 0);
             }
             if (_source.Vertex2 != Constants.NO_VERTEX)
             {
-                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex2, _source.Weight2, uint.MaxValue), 0);
+                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Vertex2, _source.Weight2, long.MaxValue), 0);
             }
 
             // gets the edge enumerator.
@@ -144,7 +144,7 @@ namespace Route.Algorithms.Contracted.Dual
             {
                 return true;
             }
-            _visited.Add(cVertex, new Tuple<uint, T>(cPointer, cWeight));
+            _visited.Add(cVertex, new Tuple<long, T>(cPointer, cWeight));
 
             if (this.WasFound != null)
             {
@@ -178,7 +178,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Gets the path for the vertex at the given pointer.
         /// </summary>
-        public EdgePath<T> GetPath(uint pointer)
+        public EdgePath<T> GetPath(long pointer)
         {
             return _weightHandler.GetPath(_pathTree, pointer);
         }
@@ -186,7 +186,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Gets the weight for the vertex at the given pointer.
         /// </summary>
-        public T GetWeight(uint pointer)
+        public T GetWeight(long pointer)
         {
             _weightHandler.GetPathTree(_pathTree, pointer, out _, out var weight, out _);
             return weight;
@@ -202,7 +202,7 @@ namespace Route.Algorithms.Contracted.Dual
             {
                 Tree = _pathTree,
                 Visits = _visited,
-                VisitSet =  new HashSet<uint>(_visited.Keys)
+                VisitSet =  new HashSet<long>(_visited.Keys)
             };
         }
 
@@ -214,7 +214,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <param name="weight">The weight at the vertex.</param>
         /// <returns> when true is returned, the listener signals it knows what it wants to know and the search stops.</returns>
         /// <remarks>Yes, we can use Func but this is less confusing and contains meaning about the parameters.</remarks>
-        public delegate bool WasFoundDelegate(uint pointer, uint vertex, T weight);
+        public delegate bool WasFoundDelegate(long pointer, long vertex, T weight);
 
         /// <summary>
         /// Gets or sets the was found function to be called when a new vertex is found.

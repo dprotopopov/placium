@@ -33,7 +33,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Gets the first point on the given edge starting a the given vertex.
         /// </summary>
-        public static Coordinate GetFirstPoint(this RoutingNetwork graph, RoutingEdge edge, uint vertex)
+        public static Coordinate GetFirstPoint(this RoutingNetwork graph, RoutingEdge edge, long vertex)
         {
             var points = new List<Coordinate>();
             if (edge.From == vertex)
@@ -63,7 +63,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Gets the vertex on this edge that is not the given vertex.
         /// </summary>
-        public static uint GetOther(this RoutingEdge edge, uint vertex)
+        public static long GetOther(this RoutingEdge edge, long vertex)
         {
             if(edge.From == vertex)
             {
@@ -105,7 +105,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Returns true if the routing network contains an edge between the two given vertices.
         /// </summary>
-        public static bool ContainsEdge(this RoutingNetwork network, uint vertex1, uint vertex2)
+        public static bool ContainsEdge(this RoutingNetwork network, long vertex1, long vertex2)
         {
             var edges = network.GetEdgeEnumerator(vertex1);
             while(edges.MoveNext())
@@ -121,7 +121,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        public static uint AddEdge(this RoutingNetwork network, uint vertex1, uint vertex2, ushort profile, uint metaId, float distance,
+        public static long AddEdge(this RoutingNetwork network, long vertex1, long vertex2, ushort profile, long metaId, float distance,
             params Coordinate[] shape)
         {
             return network.AddEdge(vertex1, vertex2, new Edges.EdgeData()
@@ -135,7 +135,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        public static uint AddEdge(this RoutingNetwork network, uint vertex1, uint vertex2, Edges.EdgeData data,
+        public static long AddEdge(this RoutingNetwork network, long vertex1, long vertex2, Edges.EdgeData data,
             params Coordinate[] shape)
         {
             return network.AddEdge(vertex1, vertex2, data, new ShapeEnumerable(shape));
@@ -144,7 +144,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        public static uint AddEdge(this RoutingNetwork network, uint vertex1, uint vertex2, Edges.EdgeData data,
+        public static long AddEdge(this RoutingNetwork network, long vertex1, long vertex2, Edges.EdgeData data,
             IEnumerable<Coordinate> shape)
         {
             if(shape == null)
@@ -157,7 +157,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Adds a new edge.
         /// </summary>
-        public static uint AddEdge(this RoutingNetwork network, uint vertex1, uint vertex2, ushort profile, uint metaId, float distance,
+        public static long AddEdge(this RoutingNetwork network, long vertex1, long vertex2, ushort profile, long metaId, float distance,
             IEnumerable<Coordinate> shape)
         {
             return network.AddEdge(vertex1, vertex2, new Edges.EdgeData()
@@ -171,7 +171,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Merges vertex2 into vertex1.
         /// </summary>
-        public static void MergeVertices(this RoutingNetwork network, uint vertex1, uint vertex2)
+        public static void MergeVertices(this RoutingNetwork network, long vertex1, long vertex2)
         {
             // get and save edge for vertex2.
             var vertex2Edges = new List<RoutingEdge>(network.GetEdgeEnumerator(vertex2));
@@ -201,7 +201,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Gets all edges starting at this edges.
         /// </summary>
-        public static List<RoutingEdge> GetEdges(this RoutingNetwork network, uint vertex)
+        public static List<RoutingEdge> GetEdges(this RoutingNetwork network, long vertex)
         {
             return new List<RoutingEdge>(network.GetEdgeEnumerator(vertex));
         }
@@ -247,14 +247,14 @@ namespace Route.Data.Network
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             enumerator.MoveToEdge(edgeId);
         }
@@ -266,14 +266,14 @@ namespace Route.Data.Network
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             return graph.GetEdge(edgeId);
         }
@@ -294,7 +294,7 @@ namespace Route.Data.Network
         /// <summary>
         /// Returns the location on the network.
         /// </summary>
-        public static Coordinate LocationOnNetwork(this RoutingNetwork network, uint edgeId, ushort offset)
+        public static Coordinate LocationOnNetwork(this RoutingNetwork network, long edgeId, ushort offset)
         {
             return network.GeometricGraph.LocationOnGraph(edgeId, offset);
         }

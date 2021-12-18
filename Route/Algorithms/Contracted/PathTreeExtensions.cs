@@ -31,50 +31,50 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Adds a new settled vertex.
         /// </summary>
-        public static uint AddSettledVertex(this PathTree tree, uint vertex, WeightAndDir<float> weightAndDir, uint hops)
+        public static long AddSettledVertex(this PathTree tree, long vertex, WeightAndDir<float> weightAndDir, long hops)
         {
             var hopsAndDirection = hops * 4 + weightAndDir.Direction._val;
-            return tree.Add(vertex, (uint)(weightAndDir.Weight * WeightFactor),
+            return tree.Add(vertex, (long)(weightAndDir.Weight * WeightFactor),
                 hopsAndDirection);
         }
 
         /// <summary>
         /// Adds a new settled vertex.
         /// </summary>
-        public static uint AddSettledVertex(this PathTree tree, uint vertex, WeightAndDir<float> weightAndDir, uint hops, uint pPointer)
+        public static long AddSettledVertex(this PathTree tree, long vertex, WeightAndDir<float> weightAndDir, long hops, long pPointer)
         {
             var hopsAndDirection = hops * 4 + weightAndDir.Direction._val;
-            return tree.Add(vertex, (uint)(weightAndDir.Weight * WeightFactor),
+            return tree.Add(vertex, (long)(weightAndDir.Weight * WeightFactor),
                 hopsAndDirection, pPointer);
         }
 
         /// <summary>
         /// Adds a new settled vertex.
         /// </summary>
-        public static uint AddSettledVertex(this PathTree tree, uint vertex, float weight, Dir dir, uint hops)
+        public static long AddSettledVertex(this PathTree tree, long vertex, float weight, Dir dir, long hops)
         {
             var hopsAndDirection = hops * 4 + dir._val;
-            return tree.Add(vertex, (uint)(weight * WeightFactor),
+            return tree.Add(vertex, (long)(weight * WeightFactor),
                 hopsAndDirection);
         }
 
         /// <summary>
         /// Adds a new settled vertex.
         /// </summary>
-        public static uint AddSettledVertex(this PathTree tree, uint vertex, float weight, Dir dir, uint hops, uint pPointer)
+        public static long AddSettledVertex(this PathTree tree, long vertex, float weight, Dir dir, long hops, long pPointer)
         {
             var hopsAndDirection = hops * 4 + dir._val;
-            return tree.Add(vertex, (uint)(weight * WeightFactor),
+            return tree.Add(vertex, (long)(weight * WeightFactor),
                 hopsAndDirection, pPointer);
         }
 
         /// <summary>
         /// Gets a settled vertex.
         /// </summary>
-        public static void GetSettledVertex(this PathTree tree, uint pointer, out uint vertex,
-            out WeightAndDir<float> weightAndDir, out uint hops)
+        public static void GetSettledVertex(this PathTree tree, long pointer, out long vertex,
+            out WeightAndDir<float> weightAndDir, out long hops)
         {
-            uint data0, data1, data2;
+            long data0, data1, data2;
             tree.Get(pointer, out data0, out data1, out data2);
             vertex = data0;
             weightAndDir = new WeightAndDir<float>()
@@ -91,10 +91,10 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Gets a settled vertex.
         /// </summary>
-        public static void GetSettledVertex(this PathTree tree, uint pointer, out uint vertex,
-            out WeightAndDir<float> weightAndDir, out uint hops, out uint previous)
+        public static void GetSettledVertex(this PathTree tree, long pointer, out long vertex,
+            out WeightAndDir<float> weightAndDir, out long hops, out long previous)
         {
-            uint data0, data1, data2, data3;
+            long data0, data1, data2, data3;
             tree.Get(pointer, out data0, out data1, out data2, out data3);
             vertex = data0;
             previous = data3;
@@ -112,9 +112,9 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Gets a settled vertex weight.
         /// </summary>
-        public static WeightAndDir<float> GetSettledVertexWeight(this PathTree tree, uint pointer)
+        public static WeightAndDir<float> GetSettledVertexWeight(this PathTree tree, long pointer)
         {
-            uint data0, data1, data2;
+            long data0, data1, data2;
             tree.Get(pointer, out data0, out data1, out data2);
             return new WeightAndDir<float>()
             {

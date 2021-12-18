@@ -29,7 +29,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Creates a path source.
         /// </summary>
-        public EdgePath(uint vertex = Constants.NO_VERTEX)
+        public EdgePath(long vertex = Constants.NO_VERTEX)
         {
             this.Vertex = vertex;
             this.Edge = Constants.NO_EDGE;
@@ -40,7 +40,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Creates a path to the given vertex with the given weight.
         /// </summary>
-        public EdgePath(uint vertex, T weight, EdgePath<T> from)
+        public EdgePath(long vertex, T weight, EdgePath<T> from)
         {
             this.Vertex = vertex;
             this.Edge = Constants.NO_EDGE;
@@ -51,7 +51,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Creates a path to the given vertex with the given weight along the given edge.
         /// </summary>
-        public EdgePath(uint vertex, T weight, long edge, EdgePath<T> from)
+        public EdgePath(long vertex, T weight, long edge, EdgePath<T> from)
         {
             this.Vertex = vertex;
             this.Edge = edge;
@@ -67,7 +67,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Gets the vertex.
         /// </summary>
-        public uint Vertex { get; set; }
+        public long Vertex { get; set; }
         
         /// <summary>
         /// Gets the weight at the vertex.

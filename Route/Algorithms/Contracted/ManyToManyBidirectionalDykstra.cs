@@ -36,7 +36,7 @@ namespace Route.Algorithms.Contracted
         private readonly DirectedMetaGraph _graph;
         private readonly RouterPoint[] _sources;
         private readonly RouterPoint[] _targets;
-        private readonly Dictionary<uint, Dictionary<int, EdgePath<T>>> _buckets;
+        private readonly Dictionary<long, Dictionary<int, EdgePath<T>>> _buckets;
         private readonly WeightHandler<T> _weightHandler;
         private readonly T _max;
 
@@ -66,7 +66,7 @@ namespace Route.Algorithms.Contracted
             _graph = contractedDb.NodeBasedGraph;
             weightHandler.CheckCanUse(contractedDb);
 
-            _buckets = new Dictionary<uint, Dictionary<int, EdgePath<T>>>();
+            _buckets = new Dictionary<long, Dictionary<int, EdgePath<T>>>();
         }
 
         private struct Solution
@@ -152,7 +152,7 @@ namespace Route.Algorithms.Contracted
                 return null;
             }
 
-            var vertices = new List<uint>();
+            var vertices = new List<long>();
             var fromSource = solution.Path1;
             var toTarget = solution.Path2;
 

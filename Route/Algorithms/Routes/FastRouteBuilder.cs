@@ -33,7 +33,7 @@ namespace Route.Algorithms.Routes
     public class FastRouteBuilder : AlgorithmBase
     {
         private readonly RouterDb _routerDb;
-        private readonly List<uint> _path;
+        private readonly List<long> _path;
         private readonly Profile _profile;
         private readonly Func<ushort, Factor> _getFactor;
         private readonly RouterPoint _source;
@@ -43,7 +43,7 @@ namespace Route.Algorithms.Routes
         /// Creates a router builder.
         /// </summary>
         public FastRouteBuilder(RouterDb routerDb, Profile profile, Func<ushort, Factor> getFactor, RouterPoint source, RouterPoint target, 
-            List<uint> path)
+            List<long> path)
         {
             _routerDb = routerDb;
             _path = path;
@@ -167,7 +167,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Adds the shape point between from and to and the target location itself.
         /// </summary>
-        private void Add(uint from, uint to)
+        private void Add(long from, long to)
         {
             if (from == Constants.NO_VERTEX &&
                 _source.IsVertex())
@@ -264,7 +264,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Adds the shape point between from and to and the target location itself.
         /// </summary>
-        private void Add(uint from, uint to, uint next)
+        private void Add(long from, long to, long next)
         {
             if (from == Constants.NO_VERTEX &&
                 _source.IsVertex())
@@ -420,7 +420,7 @@ namespace Route.Algorithms.Routes
         public static Result<Route> TryBuild(RouterDb db, Profile profile, Func<ushort, Profiles.Factor> getFactor, RouterPoint source, RouterPoint target, EdgePath<float> path,
             CancellationToken cancellationToken)
         {
-            var pathList = new List<uint>();
+            var pathList = new List<long>();
             path.AddToListAsVertices(pathList);
             return FastRouteBuilder.TryBuild(db, profile, getFactor, source, target, pathList, cancellationToken);
         }
@@ -428,7 +428,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Builds a route.
         /// </summary>
-        public static Route Build(RouterDb db, Profile profile, Func<ushort, Profiles.Factor> getFactor, RouterPoint source, RouterPoint target, List<uint> path)
+        public static Route Build(RouterDb db, Profile profile, Func<ushort, Profiles.Factor> getFactor, RouterPoint source, RouterPoint target, List<long> path)
         {
             return FastRouteBuilder.Build(db, profile, getFactor, source, target, path, CancellationToken.None);
         }
@@ -436,7 +436,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Builds a route.
         /// </summary>
-        public static Route Build(RouterDb db, Profile profile, Func<ushort, Profiles.Factor> getFactor, RouterPoint source, RouterPoint target, List<uint> path,
+        public static Route Build(RouterDb db, Profile profile, Func<ushort, Profiles.Factor> getFactor, RouterPoint source, RouterPoint target, List<long> path,
             CancellationToken cancellationToken)
         {
             return FastRouteBuilder.TryBuild(db, profile, getFactor, source, target, path, cancellationToken).Value;
@@ -446,7 +446,7 @@ namespace Route.Algorithms.Routes
         /// Builds a route.
         /// </summary>
         public static Result<Route> TryBuild(RouterDb db, Profile profile, Func<ushort, Profiles.Factor> getFactor,
-            RouterPoint source, RouterPoint target, List<uint> path)
+            RouterPoint source, RouterPoint target, List<long> path)
         {
             return FastRouteBuilder.TryBuild(db, profile, getFactor, source, target, path, CancellationToken.None);
         }
@@ -455,7 +455,7 @@ namespace Route.Algorithms.Routes
         /// Builds a route.
         /// </summary>
         public static Result<Route> TryBuild(RouterDb db, Profile profile, Func<ushort, Profiles.Factor> getFactor,
-            RouterPoint source, RouterPoint target, List<uint> path, CancellationToken cancellationToken)
+            RouterPoint source, RouterPoint target, List<long> path, CancellationToken cancellationToken)
         {
             var routeBuilder = new FastRouteBuilder(db, profile, getFactor, source, target, path);
             routeBuilder.Run(cancellationToken);

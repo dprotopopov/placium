@@ -42,7 +42,7 @@ namespace Route.Algorithms.Matrices
         protected readonly WeightHandler<T> _weightHandler;
         protected readonly IMassResolvingAlgorithm _massResolver;
 
-        protected readonly Dictionary<uint, Dictionary<int, LinkedEdgePath<T>>> _buckets;
+        protected readonly Dictionary<long, Dictionary<int, LinkedEdgePath<T>>> _buckets;
         protected readonly DirectedDynamicGraph _graph;
         protected readonly DirectedMetaGraph _dualGraph;
         protected readonly T _max;
@@ -102,7 +102,7 @@ namespace Route.Algorithms.Matrices
                 _max = weightHandler.Infinite;
             }
 
-            _buckets = new Dictionary<uint, Dictionary<int, LinkedEdgePath<T>>>();
+            _buckets = new Dictionary<long, Dictionary<int, LinkedEdgePath<T>>>();
         }
 
         protected Dictionary<int, RouterPointError> _errors; // all errors per routerpoint idx.
@@ -337,7 +337,7 @@ namespace Route.Algorithms.Matrices
                 dykstraSources, dykstraTargets, _max);
             algorithm.Run(cancellationToken);
 
-            var map = new Dictionary<uint, int>();
+            var map = new Dictionary<long, int>();
             for (var i = 0; i < sources.Count; i += 2)
             {
                 map[sources[i].EdgeId] = i / 2;
@@ -412,7 +412,7 @@ namespace Route.Algorithms.Matrices
         /// Called when a forward vertex was found.
         /// </summary>
         /// <returns></returns>
-        protected bool ForwardVertexFound(int i, uint vertex, LinkedEdgePath<T> visit)
+        protected bool ForwardVertexFound(int i, long vertex, LinkedEdgePath<T> visit)
         {
             Dictionary<int, LinkedEdgePath<T>> bucket;
             if (!_buckets.TryGetValue(vertex, out bucket))
@@ -428,7 +428,7 @@ namespace Route.Algorithms.Matrices
         /// Called when a backward vertex was found.
         /// </summary>
         /// <returns></returns>
-        protected virtual bool BackwardVertexFound(int i, uint vertex, LinkedEdgePath<T> backwardVisit)
+        protected virtual bool BackwardVertexFound(int i, long vertex, LinkedEdgePath<T> backwardVisit)
         {
             Dictionary<int, LinkedEdgePath<T>> bucket;
             if (_buckets.TryGetValue(vertex, out bucket))
@@ -632,7 +632,7 @@ namespace Route.Algorithms.Matrices
 
         }
 
-        protected sealed override bool BackwardVertexFound(int i, uint vertex, LinkedEdgePath<float> backwardVisit)
+        protected sealed override bool BackwardVertexFound(int i, long vertex, LinkedEdgePath<float> backwardVisit)
         {
             Dictionary<int, LinkedEdgePath<float>> bucket;
             if (_buckets.TryGetValue(vertex, out bucket))
@@ -730,7 +730,7 @@ namespace Route.Algorithms.Matrices
         /// Called when a backward vertex was found.
         /// </summary>
         /// <returns></returns>
-        protected override bool BackwardVertexFound(int i, uint vertex, LinkedEdgePath<Weight> backwardVisit)
+        protected override bool BackwardVertexFound(int i, long vertex, LinkedEdgePath<Weight> backwardVisit)
         {
             Dictionary<int, LinkedEdgePath<Weight>> bucket;
             if (_buckets.TryGetValue(vertex, out bucket))

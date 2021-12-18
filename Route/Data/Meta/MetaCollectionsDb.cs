@@ -82,7 +82,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Switches the two items around.
         /// </summary>
-        public void Switch(uint item1, uint item2)
+        public void Switch(long item1, long item2)
         {
             foreach(var collection in _collections)
             {
@@ -93,7 +93,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Copies whatever data is in 'from' to 'to'.
         /// </summary>
-        public void Copy(uint to, uint from)
+        public void Copy(long to, long from)
         {
             foreach(var collection in _collections)
             {
@@ -104,7 +104,7 @@ namespace Route.Data.Meta
         /// <summary>
         /// Sets the item to the default empty value.
         /// </summary>
-        public void SetEmpty(uint item)
+        public void SetEmpty(long item)
         {
             foreach(var collection in _collections)
             {
@@ -170,9 +170,9 @@ namespace Route.Data.Meta
         /// <summary>
         /// Adds a new meta collection.
         /// </summary>
-        public MetaCollection<uint> AddUInt32(string name)
+        public MetaCollection<long> AddUInt32(string name)
         {
-            var metaCollection = new MetaCollection<uint>(BLOCK_SIZE);
+            var metaCollection = new MetaCollection<long>(BLOCK_SIZE);
             _collections[name] = metaCollection;
             return metaCollection;
         }

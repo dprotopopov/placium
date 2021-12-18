@@ -35,7 +35,7 @@ namespace Route.Algorithms.Routes
     public class CompleteRouteBuilder : AlgorithmBase
     {
         private readonly RouterDb _routerDb;
-        private readonly List<uint> _path;
+        private readonly List<long> _path;
         private readonly Profile _profile;
         private readonly RouterPoint _source;
         private readonly RouterPoint _target;
@@ -44,7 +44,7 @@ namespace Route.Algorithms.Routes
         /// Creates a router builder.
         /// </summary>
         public CompleteRouteBuilder(RouterDb routerDb, Profile profile,
-            RouterPoint source, RouterPoint target, List<uint> path)
+            RouterPoint source, RouterPoint target, List<long> path)
         {
             _routerDb = routerDb;
             _path = path;
@@ -179,7 +179,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Adds the shape point between from and to and the target location itself.
         /// </summary>
-        private void Add(uint from, uint to)
+        private void Add(long from, long to)
         { 
             if(from == Constants.NO_VERTEX &&
                 _source.IsVertex())
@@ -286,7 +286,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Adds the shape point between from and to and the target location itself.
         /// </summary>
-        private void Add(uint from, uint to, uint next, CancellationToken cancellationToken)
+        private void Add(long from, long to, long next, CancellationToken cancellationToken)
         {
             if (from == Constants.NO_VERTEX &&
                 _source.IsVertex())
@@ -432,7 +432,7 @@ namespace Route.Algorithms.Routes
                         var route = CompleteRouteBuilder.Build(_routerDb, shortcutProfile,
                             _routerDb.CreateRouterPointForVertex(shortcut[0], shortcutProfile, _profile),
                             _routerDb.CreateRouterPointForVertex(shortcut[shortcut.Length - 1], shortcutProfile, _profile),
-                                new List<uint>(shortcut), cancellationToken);
+                                new List<long>(shortcut), cancellationToken);
                         if (shortcutMeta == null)
                         {
                             shortcutMeta = new AttributeCollection();
@@ -503,7 +503,7 @@ namespace Route.Algorithms.Routes
         /// </summary>
         public static Result<Route> TryBuild<T>(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, EdgePath<T> path, CancellationToken cancellationToken)
         {
-            var pathList = new List<uint>();
+            var pathList = new List<long>();
             path.AddToListAsVertices(pathList);
             return CompleteRouteBuilder.TryBuild(db, profile, source, target, pathList, cancellationToken);
         }
@@ -511,7 +511,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Builds a route.
         /// </summary>
-        public static Route Build(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<uint> path)
+        public static Route Build(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<long> path)
         {
             return CompleteRouteBuilder.Build(db, profile, source, target, path, CancellationToken.None);
         }
@@ -519,7 +519,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Builds a route.
         /// </summary>
-        public static Route Build(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<uint> path, CancellationToken cancellationToken)
+        public static Route Build(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<long> path, CancellationToken cancellationToken)
         {
             return CompleteRouteBuilder.TryBuild(db, profile, source, target, path, cancellationToken).Value;
         }
@@ -527,7 +527,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Builds a route.
         /// </summary>
-        public static Result<Route> TryBuild(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<uint> path)
+        public static Result<Route> TryBuild(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<long> path)
         {
             return CompleteRouteBuilder.TryBuild(db, profile, source, target, path, CancellationToken.None);
         }
@@ -535,7 +535,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Builds a route.
         /// </summary>
-        public static Result<Route> TryBuild(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<uint> path, CancellationToken cancellationToken)
+        public static Result<Route> TryBuild(RouterDb db, Profile profile, RouterPoint source, RouterPoint target, List<long> path, CancellationToken cancellationToken)
         {
             var routeBuilder = new CompleteRouteBuilder(db, profile, source, target, path);
             routeBuilder.Run(cancellationToken);

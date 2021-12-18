@@ -30,7 +30,7 @@ namespace Route.Algorithms.Contracted
         /// Returns the path.
         /// </summary>
         /// <returns></returns>
-        public static List<uint> GetPath<T>(this BidirectionalDykstra<T> dykstra)
+        public static List<long> GetPath<T>(this BidirectionalDykstra<T> dykstra)
             where T : struct
         {
             dykstra.CheckHasRunAndHasSucceeded();
@@ -40,7 +40,7 @@ namespace Route.Algorithms.Contracted
             if (dykstra.TryGetForwardVisit(dykstra.Best, out fromSource) &&
                 dykstra.TryGetBackwardVisit(dykstra.Best, out toTarget))
             {
-                var vertices = new List<uint>();
+                var vertices = new List<long>();
 
                 // add vertices from source.
                 vertices.Add(fromSource.Vertex);

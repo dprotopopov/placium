@@ -25,7 +25,7 @@ namespace Route.Algorithms.Collections
     /// <summary>
     /// Represents a sparse bitarray.
     /// </summary>
-    public class SparseBitArray32 : IEnumerable<long>
+    public class SparseBitArray64 : IEnumerable<long>
     {
         private readonly int _blockSize; // Holds the blocksize, or the size of the 'sub arrays'.
         private readonly long _length; // Holds the length of this array.
@@ -35,9 +35,9 @@ namespace Route.Algorithms.Collections
         /// <summary>
         /// Creates a new sparse bitarray.
         /// </summary>
-        public SparseBitArray32(long size, int blockSize)
+        public SparseBitArray64(long size, int blockSize)
         {
-            if (size % 32 != 0) { throw new ArgumentOutOfRangeException("Size has to be divisible by 32."); }
+            if (size % 64 != 0) { throw new ArgumentOutOfRangeException("Size has to be divisible by 64."); }
             if (size % blockSize != 0) { throw new ArgumentOutOfRangeException("Size has to be divisible by blocksize."); }
 
             _length = size;
@@ -110,9 +110,9 @@ namespace Route.Algorithms.Collections
 
         private struct Enumerator : IEnumerator<long>
         {
-            private readonly SparseBitArray32 _array;
+            private readonly SparseBitArray64 _array;
             
-            public Enumerator(SparseBitArray32 array)
+            public Enumerator(SparseBitArray64 array)
             {
                 _array = array;
                 _current = -1;

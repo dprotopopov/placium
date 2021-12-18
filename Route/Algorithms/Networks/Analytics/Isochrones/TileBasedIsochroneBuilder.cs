@@ -73,14 +73,14 @@ namespace Route.Algorithms.Networks.Analytics.Isochrones
                 var startWeight = path.From.Weight;
 
                 // Calculate weight at start vertex.
-                uint edgeId;
+                long edgeId;
                 if (e > 0)
                 {
-                    edgeId = (uint)e - 1;
+                    edgeId = (long)e - 1;
                 }
                 else
                 {
-                    edgeId = (uint)((-e) - 1);
+                    edgeId = (long)((-e) - 1);
                 }
                 var edge = _graph.GetEdge(edgeId);
                 var shape = _graph.GetShape(edge);

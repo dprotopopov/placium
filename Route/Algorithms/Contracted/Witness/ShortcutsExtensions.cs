@@ -32,7 +32,7 @@ namespace Route.Algorithms.Contracted.Witness
         /// <param name="shortcuts"></param>
         /// <param name="witnesses"></param>
         /// <returns></returns>
-        public static bool RemoveWitnessed<T>(this Shortcuts<T> shortcuts, WeightHandler<T> weightHandler, uint vertex, Dictionary<uint, Dictionary<OriginalEdge, T>> witnesses)
+        public static bool RemoveWitnessed<T>(this Shortcuts<T> shortcuts, WeightHandler<T> weightHandler, long vertex, Dictionary<long, Dictionary<OriginalEdge, T>> witnesses)
             where T : struct
         {
             if (witnesses.TryGetValue(vertex, out Dictionary<OriginalEdge, T> vertexWitnesses))

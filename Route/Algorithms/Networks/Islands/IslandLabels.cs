@@ -28,26 +28,26 @@ namespace Route.Algorithms.Networks.Islands
     /// </summary>
     public class IslandLabels
     {
-        private readonly ArrayBase<uint> _labels;
+        private readonly ArrayBase<long> _labels;
 
-        public const uint NotSet = uint.MaxValue;
-        public const uint NoAccess = uint.MaxValue - 1;
+        public const long NotSet = long.MaxValue;
+        public const long NoAccess = long.MaxValue - 1;
 
-        private uint _count = 0;
+        private long _count = 0;
 
         /// <summary>
         /// Creates a new island labels data structure.
         /// </summary>
         internal IslandLabels()
         {
-            _labels = Context.ArrayFactory.CreateMemoryBackedArray<uint>(1);
+            _labels = Context.ArrayFactory.CreateMemoryBackedArray<long>(1);
         }
         
         /// <summary>
         /// Gets or sets the label.
         /// </summary>
         /// <param name="id">The label.</param>
-        public uint this[uint id]
+        public long this[long id]
         {
             get
             {
@@ -83,7 +83,7 @@ namespace Route.Algorithms.Networks.Islands
         /// Updates the label of this id and all labels along the way to their lowest equivalent.
         /// </summary>
         /// <param name="id"></param>
-        internal uint UpdateLowest(uint id)
+        internal long UpdateLowest(long id)
         {
             var label = this[id];
 
@@ -111,6 +111,6 @@ namespace Route.Algorithms.Networks.Islands
         /// <summary>
         /// Returns the # of labels.
         /// </summary>
-        public uint Count => _count + 1;
+        public long Count => _count + 1;
     }
 }

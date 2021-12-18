@@ -18,18 +18,18 @@ namespace Route.Algorithms.Contracted.Witness
             _maxSettles = maxSettles;
         } 
 
-        protected Dictionary<uint, float> forwardSettled = new Dictionary<uint, float>();
-        protected Dictionary<uint, float> backwardSettled = new Dictionary<uint, float>();
-        //private List<Tuple<uint, uint, Shortcut<float>>> witnesses = new List<Tuple<uint, uint, Shortcut<float>>>();
+        protected Dictionary<long, float> forwardSettled = new Dictionary<long, float>();
+        protected Dictionary<long, float> backwardSettled = new Dictionary<long, float>();
+        //private List<Tuple<long, long, Shortcut<float>>> witnesses = new List<Tuple<long, long, Shortcut<float>>>();
         private List<Witness> witnesses = new List<Witness>();
 
         private struct Witness
         {
-            public uint Vertex1 { get; set; }
+            public long Vertex1 { get; set; }
 
-            public uint Vertex2 { get; set; }
+            public long Vertex2 { get; set; }
 
-            //public uint Witnessed { get; set; }
+            //public long Witnessed { get; set; }
 
             public float Forward { get; set; }
 
@@ -37,9 +37,9 @@ namespace Route.Algorithms.Contracted.Witness
         }
 
         protected PathTree pathTree = new PathTree();
-        protected BinaryHeap<uint> pointerHeap = new BinaryHeap<uint>();
+        protected BinaryHeap<long> pointerHeap = new BinaryHeap<long>();
         
-        public void Run(DirectedGraph graph, DirectedGraph witnessGraph, uint vertex, HashSet<uint> dirty)
+        public void Run(DirectedGraph graph, DirectedGraph witnessGraph, long vertex, HashSet<long> dirty)
         {
             try
             {
@@ -121,8 +121,8 @@ namespace Route.Algorithms.Contracted.Witness
                 while (pointerHeap.Count > 0)
                 {
                     var cPointer = pointerHeap.Pop();
-                    pathTree.GetSettledVertex(cPointer, out uint cVertex, out WeightAndDir<float> cWeight,
-                        out uint cHops, out uint pVertex);
+                    pathTree.GetSettledVertex(cPointer, out long cVertex, out WeightAndDir<float> cWeight,
+                        out long cHops, out long pVertex);
 
                     if (cHops == 2)
                     { // check if the search can stop or not.

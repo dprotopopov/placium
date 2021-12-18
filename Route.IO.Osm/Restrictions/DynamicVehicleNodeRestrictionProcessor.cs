@@ -16,8 +16,8 @@ namespace Route.IO.Osm.Restrictions
     {
         private readonly RouterDb _routerDb;
         private readonly object _nodeRestrictionFunc;
-        private readonly Action<string, List<uint>> _foundRestriction; // restriction found action.
-        private readonly Func<Node, uint> _markCore; // marks the node as core.
+        private readonly Action<string, List<long>> _foundRestriction; // restriction found action.
+        private readonly Func<Node, long> _markCore; // marks the node as core.
         private readonly Table _attributesTable;
         private readonly Table _resultsTable;
         private readonly DynamicVehicle _vehicle;
@@ -25,8 +25,8 @@ namespace Route.IO.Osm.Restrictions
         /// <summary>
         /// Creates a new processor.
         /// </summary>
-        public DynamicVehicleNodeRestrictionProcessor(RouterDb routerDb, DynamicVehicle vehicle, Func<Node, uint> markCore, 
-            Action<string, List<uint>> foundRestriction)
+        public DynamicVehicleNodeRestrictionProcessor(RouterDb routerDb, DynamicVehicle vehicle, Func<Node, long> markCore, 
+            Action<string, List<long>> foundRestriction)
         {
             _foundRestriction = foundRestriction;
             _routerDb = routerDb;
@@ -95,7 +95,7 @@ namespace Route.IO.Osm.Restrictions
                 // there is a restriction, mark it as such.
                 var vertex = _markCore(node);
                 var vehicleType = vehicleTypeVal.String;
-                var r = new List<uint> {vertex};
+                var r = new List<long> {vertex};
                 _foundRestriction(vehicleType, r);
 
                 // get attributes to keep and add the vertex meta.

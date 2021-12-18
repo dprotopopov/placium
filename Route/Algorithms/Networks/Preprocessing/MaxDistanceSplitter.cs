@@ -33,13 +33,13 @@ namespace Route.Algorithms.Networks.Preprocessing
         private readonly RoutingNetwork _network;
         private readonly float _maxDistance;
         private readonly float _tolerance = 1;
-        private readonly Action<uint> _newVertex;
-        private readonly Action<uint, uint> _edgeSplit;
+        private readonly Action<long> _newVertex;
+        private readonly Action<long, long> _edgeSplit;
 
         /// <summary>
         /// Creates a new distance splitter algorithm instance.
         /// </summary>
-        public MaxDistanceSplitter(RoutingNetwork network, Action<uint, uint> edgeSplit, float maxDistance = Constants.DefaultMaxEdgeDistance, Action<uint> newVertex = null)
+        public MaxDistanceSplitter(RoutingNetwork network, Action<long, long> edgeSplit, float maxDistance = Constants.DefaultMaxEdgeDistance, Action<long> newVertex = null)
         {
             _network = network;
             _maxDistance = maxDistance;
@@ -54,7 +54,7 @@ namespace Route.Algorithms.Networks.Preprocessing
         {
             var edgeEnumerator = _network.GetEdgeEnumerator();
             var shape = new List<Coordinate>();
-            for (uint v = 0; v < _network.VertexCount; v++)
+            for (long v = 0; v < _network.VertexCount; v++)
             {
                 if (!edgeEnumerator.MoveTo(v))
                 { // no edges here.
@@ -103,7 +103,7 @@ namespace Route.Algorithms.Networks.Preprocessing
         /// <summary>
         /// Adds the given edge again but in multiple pieces with a given max length.
         /// </summary>
-        private void AddSplitEdges(uint originalEdgeId, uint vertex1, uint vertex2, EdgeData data, List<Coordinate> shape)
+        private void AddSplitEdges(long originalEdgeId, long vertex1, long vertex2, EdgeData data, List<Coordinate> shape)
         {
             var vertex1Location = _network.GetVertex(vertex1);
             var vertex2Location = _network.GetVertex(vertex2);

@@ -26,7 +26,7 @@ namespace Route.Graphs
         /// <summary>
         /// Creates a new edge.
         /// </summary>
-        internal Edge(uint id, uint from, uint to, uint[] data, bool edgeDataInverted)
+        internal Edge(long id, long from, long to, long[] data, bool edgeDataInverted)
         {
             this.Id = id;
             this.To = to;
@@ -50,7 +50,7 @@ namespace Route.Graphs
         /// <summary>
         /// Gets the edge id.
         /// </summary>
-        public uint Id
+        public long Id
         {
             get;
             private set;
@@ -59,7 +59,7 @@ namespace Route.Graphs
         /// <summary>
         /// Gets the vertex at the beginning of this edge.
         /// </summary>
-        public uint From
+        public long From
         {
             get;
             private set;
@@ -68,7 +68,7 @@ namespace Route.Graphs
         /// <summary>
         /// Gets the vertex at the end of this edge.
         /// </summary>
-        public uint To
+        public long To
         {
             get;
             private set;
@@ -86,7 +86,7 @@ namespace Route.Graphs
         /// <summary>
         /// Gets the edge data.
         /// </summary>
-        public uint[] Data
+        public long[] Data
         {
             get;
             private set;

@@ -61,7 +61,7 @@ namespace Route.Algorithms.Contracted.Dual.Witness
         /// <summary>
         /// Calculates and updates the shortcuts by searching for witness paths.
         /// </summary>
-        public virtual void Calculate(uint vertex, Shortcuts<T> shortcuts)
+        public virtual void Calculate(long vertex, Shortcuts<T> shortcuts)
         {
             var sources = new HashSet<OriginalEdge>();
             var waitHandlers = new List<ManualResetEvent>();
@@ -69,7 +69,7 @@ namespace Route.Algorithms.Contracted.Dual.Witness
             while (true)
             {
                 var source = Constants.NO_VERTEX;
-                var targets = new Dictionary<uint, Shortcut<T>>();
+                var targets = new Dictionary<long, Shortcut<T>>();
 
                 foreach (var shortcut in shortcuts)
                 {
@@ -125,22 +125,22 @@ namespace Route.Algorithms.Contracted.Dual.Witness
         }
 
         protected PathTree pathTree = new PathTree();
-        protected BinaryHeap<uint> pointerHeap = new BinaryHeap<uint>();
+        protected BinaryHeap<long> pointerHeap = new BinaryHeap<long>();
 
         /// <summary>
         /// Calculates witness paths.
         /// </summary>
-        public virtual void Calculate(DirectedGraph graph, WeightHandler<T> weightHandler, uint vertex, 
-            uint source, Dictionary<uint, Shortcut<T>> targets, int maxSettles, int hopLimit)
+        public virtual void Calculate(DirectedGraph graph, WeightHandler<T> weightHandler, long vertex, 
+            long source, Dictionary<long, Shortcut<T>> targets, int maxSettles, int hopLimit)
         {
             pathTree.Clear();
             pointerHeap.Clear();
 
-            var forwardSettled = new HashSet<uint>();
-            var backwardSettled = new HashSet<uint>();
+            var forwardSettled = new HashSet<long>();
+            var backwardSettled = new HashSet<long>();
 
-            var forwardTargets = new HashSet<uint>();
-            var backwardTargets = new HashSet<uint>();
+            var forwardTargets = new HashSet<long>();
+            var backwardTargets = new HashSet<long>();
 
             var maxWeight = 0f;
 
@@ -183,7 +183,7 @@ namespace Route.Algorithms.Contracted.Dual.Witness
             // dequeue vertices until stopping conditions are reached.
             var cVertex = Constants.NO_VERTEX;
             WeightAndDir<float> cWeight;
-            var cHops = uint.MaxValue;
+            var cHops = long.MaxValue;
             var enumerator = graph.GetEdgeEnumerator();
             while (pointerHeap.Count > 0)
             {
@@ -375,17 +375,17 @@ namespace Route.Algorithms.Contracted.Dual.Witness
         /// <summary>
         /// Calculates witness paths.
         /// </summary>
-        public override void Calculate(DirectedGraph graph, WeightHandler<float> weightHandler, uint vertex,
-            uint source, Dictionary<uint, Shortcut<float>> targets, int maxSettles, int hopLimit)
+        public override void Calculate(DirectedGraph graph, WeightHandler<float> weightHandler, long vertex,
+            long source, Dictionary<long, Shortcut<float>> targets, int maxSettles, int hopLimit)
         {
             pathTree.Clear();
             pointerHeap.Clear();
 
-            var forwardSettled = new HashSet<uint>();
-            var backwardSettled = new HashSet<uint>();
+            var forwardSettled = new HashSet<long>();
+            var backwardSettled = new HashSet<long>();
 
-            var forwardTargets = new HashSet<uint>();
-            var backwardTargets = new HashSet<uint>();
+            var forwardTargets = new HashSet<long>();
+            var backwardTargets = new HashSet<long>();
 
             var maxWeight = 0f;
             var maxForwardWeight = 0f;
@@ -432,7 +432,7 @@ namespace Route.Algorithms.Contracted.Dual.Witness
             // dequeue vertices until stopping conditions are reached.
             var cVertex = Constants.NO_VERTEX;
             WeightAndDir<float> cWeight;
-            var cHops = uint.MaxValue;
+            var cHops = long.MaxValue;
             var enumerator = graph.GetEdgeEnumerator();
             while (pointerHeap.Count > 0)
             {

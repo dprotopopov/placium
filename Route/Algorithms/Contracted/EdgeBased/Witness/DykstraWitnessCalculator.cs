@@ -57,13 +57,13 @@ namespace Route.Algorithms.Contracted.EdgeBased.Witness
 
         private int _hopLimit;
         private int _maxSettles;
-        private uint[] _sequence1 = new uint[16];
+        private long[] _sequence1 = new long[16];
 
         /// <summary>
         /// Calculates witness paths.
         /// </summary>
-        public void Calculate(DirectedDynamicGraph graph, Func<uint, IEnumerable<uint[]>> getRestrictions, uint source, List<uint> targets, List<T> weights,
-            ref EdgePath<T>[] forwardWitness, ref EdgePath<T>[] backwardWitness, uint vertexToSkip)
+        public void Calculate(DirectedDynamicGraph graph, Func<long, IEnumerable<long[]>> getRestrictions, long source, List<long> targets, List<T> weights,
+            ref EdgePath<T>[] forwardWitness, ref EdgePath<T>[] backwardWitness, long vertexToSkip)
         {
             if (_hopLimit == 1)
             {
@@ -72,11 +72,11 @@ namespace Route.Algorithms.Contracted.EdgeBased.Witness
             }
 
             // creates the settled list.
-            var s = new List<uint>();
+            var s = new List<long>();
             var backwardSettled = new HashSet<EdgePath<T>>();
             var forwardSettled = new HashSet<EdgePath<T>>();
-            var backwardTargets = new HashSet<uint>();
-            var forwardTargets = new HashSet<uint>();
+            var backwardTargets = new HashSet<long>();
+            var forwardTargets = new HashSet<long>();
             T forwardMaxWeight = _weightHandler.Zero, backwardMaxWeight = _weightHandler.Zero;
             for (int idx = 0; idx < weights.Count; idx++)
             {
@@ -197,7 +197,7 @@ namespace Route.Algorithms.Contracted.EdgeBased.Witness
 
                         // move to the current vertex.
                         edgeEnumerator.MoveTo(current.Path.Vertex);
-                        //uint neighbour, data0, data1;
+                        //long neighbour, data0, data1;
                         while (edgeEnumerator.MoveNext())
                         { // move next.
                             var neighbour = edgeEnumerator.Neighbour;
@@ -219,7 +219,7 @@ namespace Route.Algorithms.Contracted.EdgeBased.Witness
                             if (doNeighbourBackward || doNeighbourForward)
                             {
                                 T existingWeight;
-                                uint[] sequenceAlongNeighbour = null;
+                                long[] sequenceAlongNeighbour = null;
 
                                 if ((doNeighbourBackward || doNeighbourForward) && sequence.Length > 0)
                                 {
@@ -313,10 +313,10 @@ namespace Route.Algorithms.Contracted.EdgeBased.Witness
         /// <summary>
         /// Calculates witness paths with just one hop.
         /// </summary>
-        public void ExistsOneHop(DirectedDynamicGraph graph, uint source, List<uint> targets, List<T> weights,
+        public void ExistsOneHop(DirectedDynamicGraph graph, long source, List<long> targets, List<T> weights,
             ref EdgePath<T>[] forwardExists, ref EdgePath<T>[] backwardExists)
         {
-            var targetsToCalculate = new HashSet<uint>();
+            var targetsToCalculate = new HashSet<long>();
             var maxWeight = _weightHandler.Zero;
             for (int idx = 0; idx < weights.Count; idx++)
             {
@@ -412,7 +412,7 @@ namespace Route.Algorithms.Contracted.EdgeBased.Witness
             /// <summary>
             /// Creates a new settled edge.
             /// </summary>
-            public SettledEdge(EdgePath<T> edge, uint hops, bool forward, bool backward)
+            public SettledEdge(EdgePath<T> edge, long hops, bool forward, bool backward)
             {
                 this.Path = edge;
                 this.Hops = hops;
@@ -428,7 +428,7 @@ namespace Route.Algorithms.Contracted.EdgeBased.Witness
             /// <summary>
             /// The hop-count of this vertex.
             /// </summary>
-            public uint Hops { get; set; }
+            public long Hops { get; set; }
 
             /// <summary>
             /// Holds the forward flag.

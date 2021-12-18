@@ -65,8 +65,8 @@ namespace Route.Algorithms.Default.EdgeBased
 
         private Graph.EdgeEnumerator _edgeEnumerator;
         private PathTree _pathTree;
-        private HashSet<uint> _visits;
-        private BinaryHeap<uint> _pointerHeap;
+        private HashSet<long> _visits;
+        private BinaryHeap<long> _pointerHeap;
 
         /// <summary>
         /// Executes the algorithm.
@@ -89,8 +89,8 @@ namespace Route.Algorithms.Default.EdgeBased
             this.HasSucceeded = true;
             
             // intialize dykstra data structures.
-            _visits = new HashSet<uint>();
-            _pointerHeap = new BinaryHeap<uint>();
+            _visits = new HashSet<long>();
+            _pointerHeap = new BinaryHeap<long>();
             _pathTree = new PathTree();
 
             // initialize the edge enumerator.
@@ -99,11 +99,11 @@ namespace Route.Algorithms.Default.EdgeBased
             // queue source.
             if (!_source.Edge1.IsNoEdge)
             {
-                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Edge1.Raw, _source.Weight1, uint.MaxValue), 0);
+                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Edge1.Raw, _source.Weight1, long.MaxValue), 0);
             }
             if (!_source.Edge2.IsNoEdge)
             {
-                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Edge2.Raw, _source.Weight2, uint.MaxValue), 0);
+                _pointerHeap.Push(_weightHandler.AddPathTree(_pathTree, _source.Edge2.Raw, _source.Weight2, long.MaxValue), 0);
             }
         }
 
@@ -113,8 +113,8 @@ namespace Route.Algorithms.Default.EdgeBased
         public bool Step()
         {
             // while the visit list is not empty.
-            var cPointer = uint.MaxValue;
-            while (cPointer == uint.MaxValue)
+            var cPointer = long.MaxValue;
+            while (cPointer == long.MaxValue)
             { // choose the next edge.
                 if (_pointerHeap.Count == 0)
                 {
@@ -124,7 +124,7 @@ namespace Route.Algorithms.Default.EdgeBased
             }
 
             // get details.
-            uint cEdge, cPreviousPointer;
+            long cEdge, cPreviousPointer;
             T cWeight;
             _weightHandler.GetPathTree(_pathTree, cPointer, out cEdge, out cWeight, out cPreviousPointer);
             if (_visits.Contains(cEdge))
@@ -205,7 +205,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Gets the path for the vertex at the given pointer.
         /// </summary>
-        public EdgePath<T> GetPath(uint pointer)
+        public EdgePath<T> GetPath(long pointer)
         {
             return _weightHandler.GetPath(_pathTree, pointer);
         }
@@ -213,10 +213,10 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Gets the weight for the vertex at the given pointer.
         /// </summary>
-        public T GetWeight(uint pointer)
+        public T GetWeight(long pointer)
         {
             T weight;
-            uint vertex, previous;
+            long vertex, previous;
             _weightHandler.GetPathTree(_pathTree, pointer, out vertex, out weight, out previous);
             return weight;
         }
@@ -235,7 +235,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <param name="weight">The weight at the vertex.</param>
         /// <returns>>When true is returned, the listener signals it knows what it wants to know and the search stops.</returns>
         /// <remarks>Yes, we can use Func but this is less confusing and contains meaning about the parameters.</remarks>
-        public delegate bool WasFoundDelegate(uint pointer, DirectedEdgeId edge, T weight);
+        public delegate bool WasFoundDelegate(long pointer, DirectedEdgeId edge, T weight);
 
         /// <summary>
         /// Gets or sets the wasfound function to be called when a new vertex is found.

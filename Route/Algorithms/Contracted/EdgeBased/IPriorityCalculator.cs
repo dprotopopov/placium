@@ -30,11 +30,11 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Calculate the priority for the given vertex.
         /// </summary>
-        float Calculate(BitArray32 contractedFlags, Func<uint, IEnumerable<uint[]>> getRestrictions, uint vertex);
+        float Calculate(BitArray64 contractedFlags, Func<long, IEnumerable<long[]>> getRestrictions, long vertex);
 
         /// <summary>
         /// Notifies this calculator that the given vertex was contracted.
         /// </summary>
-        void NotifyContracted(uint vertex);
+        void NotifyContracted(long vertex);
     }
 }

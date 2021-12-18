@@ -59,10 +59,10 @@ namespace Route.Algorithms.Networks.Preprocessing
 
             var removedCount = 0;
             var edgeEnumerator = _routerDb.Network.GeometricGraph.Graph.GetEdgeEnumerator();
-            var neighbours = new HashSet<uint>();
-            var duplicates = new HashSet<uint>();
+            var neighbours = new HashSet<long>();
+            var duplicates = new HashSet<long>();
             var duplicateEdges = new List<RoutingEdge>();
-            for (uint v = 0; v < _routerDb.Network.VertexCount; )
+            for (long v = 0; v < _routerDb.Network.VertexCount; )
             {
                 if (!edgeEnumerator.MoveTo(v))
                 {

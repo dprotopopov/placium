@@ -74,7 +74,7 @@ namespace Route.IO.Osm.Streams
         /// <summary>
         /// Sets a vertex id for the given vertex.
         /// </summary>
-        public void Set(long id, uint vertex)
+        public void Set(long id, long vertex)
         {
             if (id >= 0)
             {
@@ -124,7 +124,7 @@ namespace Route.IO.Osm.Streams
         /// <summary>
         /// Tries to get a core node and it's matching vertex.
         /// </summary>
-        public bool TryGetCoreNode(long id, out uint vertex)
+        public bool TryGetCoreNode(long id, out long vertex)
         {
             if (id >= 0)
             {
@@ -139,7 +139,7 @@ namespace Route.IO.Osm.Streams
         /// <summary>
         /// Gets all relevant info on the given node.
         /// </summary>
-        public bool TryGetValue(long id, out float latitude, out float longitude, out bool isCore, out uint vertex)
+        public bool TryGetValue(long id, out float latitude, out float longitude, out bool isCore, out long vertex)
         {
             if (id >= 0)
             {

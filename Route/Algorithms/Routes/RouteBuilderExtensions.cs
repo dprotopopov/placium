@@ -37,7 +37,7 @@ namespace Route.Algorithms.Routes
         /// <summary>
         /// Adds branches for the given vertex.
         /// </summary>
-        public static void AddBranches(this List<Route.Branch> branches, RouterDb routerDb, int shape, uint vertex, uint previousEdge, uint nextVertex)
+        public static void AddBranches(this List<Route.Branch> branches, RouterDb routerDb, int shape, long vertex, long previousEdge, long nextVertex)
         {
             var edges = routerDb.Network.GetEdgeEnumerator(vertex);
             while (edges.MoveNext())

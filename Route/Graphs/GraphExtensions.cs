@@ -32,7 +32,7 @@ namespace Route.Graphs
         /// Gets the vertex on this edge that is not the given vertex.
         /// </summary>
         /// <returns></returns>
-        public static uint GetOther(this Edge edge, uint vertex)
+        public static long GetOther(this Edge edge, long vertex)
         {
             if (edge.From == vertex)
             {
@@ -55,7 +55,7 @@ namespace Route.Graphs
         /// <param name="vertex1"></param>
         /// <param name="vertex2"></param>
         /// <returns></returns>
-        public static long FindBestEdge<T>(this Graph.EdgeEnumerator edgeEnumerator, WeightHandler<T> weightHandler, uint vertex1, uint vertex2, out T bestWeight)
+        public static long FindBestEdge<T>(this Graph.EdgeEnumerator edgeEnumerator, WeightHandler<T> weightHandler, long vertex1, long vertex2, out T bestWeight)
             where T : struct
         {
             edgeEnumerator.MoveTo(vertex1);
@@ -118,14 +118,14 @@ namespace Route.Graphs
         {
             if (directedEdgeId == 0) { throw new ArgumentOutOfRangeException("directedEdgeId"); }
 
-            uint edgeId;
+            long edgeId;
             if (directedEdgeId > 0)
             {
-                edgeId = (uint)directedEdgeId - 1;
+                edgeId = (long)directedEdgeId - 1;
             }
             else
             {
-                edgeId = (uint)((-directedEdgeId) - 1);
+                edgeId = (long)((-directedEdgeId) - 1);
             }
             return graph.GetEdge(edgeId);
         }

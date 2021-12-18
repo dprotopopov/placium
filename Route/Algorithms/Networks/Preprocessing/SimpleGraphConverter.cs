@@ -31,8 +31,8 @@ namespace Route.Algorithms.Networks.Preprocessing
     public class SimpleGraphConverter : AlgorithmBase
     {
         private readonly RoutingNetwork _network;
-        private readonly Action<uint> _newVertex;
-        private readonly Action<uint, uint> _edgeSplit;
+        private readonly Action<long> _newVertex;
+        private readonly Action<long, long> _edgeSplit;
 
         /// <summary>
         /// Creates a new simple graph converter.
@@ -40,7 +40,7 @@ namespace Route.Algorithms.Networks.Preprocessing
         /// <param name="network">The network, graph, to convert to a simple version.</param>
         /// <param name="newVertex">A function to report on new vertices.</param>
         /// <param name="edgeSplit">A function called when an edge is split, to properly maintain external data about edges.</param>
-        public SimpleGraphConverter(RoutingNetwork network, Action<uint, uint> edgeSplit, Action<uint> newVertex = null)
+        public SimpleGraphConverter(RoutingNetwork network, Action<long, long> edgeSplit, Action<long> newVertex = null)
         {
             _network = network;
             _newVertex = newVertex;
@@ -53,9 +53,9 @@ namespace Route.Algorithms.Networks.Preprocessing
         protected override void DoRun(CancellationToken cancellationToken)
         {
             var edgeEnumerator = _network.GetEdgeEnumerator();
-            var neighbours = new HashSet<uint>();
+            var neighbours = new HashSet<long>();
             var shape = new List<Coordinate>();
-            for (uint v = 0; v < _network.VertexCount; v++)
+            for (long v = 0; v < _network.VertexCount; v++)
             {
                 if (!edgeEnumerator.MoveTo(v))
                 { // no edges here.
@@ -117,7 +117,7 @@ namespace Route.Algorithms.Networks.Preprocessing
         /// <param name="vertex2">The second vertex.</param>
         /// <param name="data">The data.</param>
         /// <param name="shape">The shape.</param>
-        private void AddAndSplitEdge(uint originalEdgeId, uint vertex1, uint vertex2, EdgeData data, List<Coordinate> shape)
+        private void AddAndSplitEdge(long originalEdgeId, long vertex1, long vertex2, EdgeData data, List<Coordinate> shape)
         {
             var newVertex = _network.VertexCount;
 

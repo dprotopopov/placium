@@ -69,7 +69,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns enumerator for the given vertex. Throws an exception if the vertex is not in the graph.
         /// </summary>
-        public static DirectedDynamicGraph.EdgeEnumerator GetEdgeEnumerator(this DirectedDynamicGraph graph, uint vertex)
+        public static DirectedDynamicGraph.EdgeEnumerator GetEdgeEnumerator(this DirectedDynamicGraph graph, long vertex)
         {
             var enumerator = graph.GetEdgeEnumerator();
             if (!enumerator.MoveTo(vertex))
@@ -82,7 +82,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Gets the edge from vertex1 -> vertex2.
         /// </summary>
-        public static DynamicEdge GetEdge(this DirectedDynamicGraph.EdgeEnumerator enumerator, uint vertex1, uint vertex2)
+        public static DynamicEdge GetEdge(this DirectedDynamicGraph.EdgeEnumerator enumerator, long vertex1, long vertex2)
         {
             if(!enumerator.MoveTo(vertex1))
             {

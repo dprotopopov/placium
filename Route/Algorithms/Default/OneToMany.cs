@@ -60,7 +60,7 @@ namespace Route.Algorithms.Default
 
             // register the targets and determine one-edge-paths.
             var sourcePaths = _source.ToEdgePaths(_routerDb, _weightHandler, true);
-            var targetIndexesPerVertex = new Dictionary<uint, LinkedTarget>();
+            var targetIndexesPerVertex = new Dictionary<long, LinkedTarget>();
             var targetPaths = new IEnumerable<EdgePath<T>>[_targets.Count];
             for (var i = 0; i < _targets.Count; i++)
             {

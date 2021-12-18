@@ -171,7 +171,7 @@ namespace Route.IO.Shape.Writer
                     "Building feature {0}/{1}.", index - 1, this.Count);
             }
 
-            var edge = _routerDb.Network.GetEdge((uint)index);
+            var edge = _routerDb.Network.GetEdge((long)index);
 
             var vertexLocation1 = _routerDb.Network.GeometricGraph.GetVertex(edge.From);
             var coordinates = new List<Coordinate>();

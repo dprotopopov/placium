@@ -31,14 +31,14 @@ namespace Route.Graphs.Directed
     /// </summary>
     public sealed class DirectedDynamicGraph : IDisposable
     {
-        private const uint NO_EDGE = uint.MaxValue; // a dummy value indication that there is no edge.
-        private const uint MAX_DYNAMIC_PAYLOAD = uint.MaxValue / 4; // the maximum payload for a dynamic data field and the last of the fixed fields. two bits are needed for bookkeeping.
+        private const long NO_EDGE = long.MaxValue; // a dummy value indication that there is no edge.
+        private const long MAX_DYNAMIC_PAYLOAD = long.MaxValue / 4; // the maximum payload for a dynamic data field and the last of the fixed fields. two bits are needed for bookkeeping.
 
         private readonly int _fixedEdgeDataSize = -1; // the fixed part of the edge-data.
-        private readonly ArrayBase<uint> _vertices; // Holds pointers to where the edge-data starts per verex.
-        private readonly ArrayBase<uint> _edges; // Holds all edge-data.
+        private readonly ArrayBase<long> _vertices; // Holds pointers to where the edge-data starts per verex.
+        private readonly ArrayBase<long> _edges; // Holds all edge-data.
 
-        private uint _nextEdgePointer; // the next pointer.
+        private long _nextEdgePointer; // the next pointer.
         private bool _readonly = false; 
         private long _edgeCount; // the number of edges.
 
@@ -59,12 +59,12 @@ namespace Route.Graphs.Directed
             if (fixedEdgeDataSize < 1) { throw new ArgumentOutOfRangeException("fixedEdgeDataSize", "Fixed edge data size needs too greater than or equal to 1."); }
             if (sizeEstimate <= 0) { throw new ArgumentOutOfRangeException("sizeEstimate"); }
 
-            _vertices = Context.ArrayFactory.CreateMemoryBackedArray<uint>(sizeEstimate);
+            _vertices = Context.ArrayFactory.CreateMemoryBackedArray<long>(sizeEstimate);
             for (var i = 0; i < _vertices.Length; i++)
             {
                 _vertices[i] = NO_EDGE;
             }
-            _edges = Context.ArrayFactory.CreateMemoryBackedArray<uint>(sizeEstimate * 4);
+            _edges = Context.ArrayFactory.CreateMemoryBackedArray<long>(sizeEstimate * 4);
 
             _fixedEdgeDataSize = fixedEdgeDataSize;
             _edgeCount = 0;
@@ -79,12 +79,12 @@ namespace Route.Graphs.Directed
             if (fixedEdgeDataSize < 1) { throw new ArgumentOutOfRangeException("fixedEdgeDataSize", "Fixed edge data size needs too greater than or equal to 1."); }
             if (sizeEstimate <= 0) { throw new ArgumentOutOfRangeException("sizeEstimate"); }
 
-            _vertices = new Array<uint>(file, sizeEstimate);
+            _vertices = new Array<long>(file, sizeEstimate);
             for(var i = 0; i < _vertices.Length; i++)
             {
                 _vertices[i] = NO_EDGE;
             }
-            _edges = new Array<uint>(file, sizeEstimate * 4);
+            _edges = new Array<long>(file, sizeEstimate * 4);
 
             _fixedEdgeDataSize = fixedEdgeDataSize;
             _edgeCount = 0;
@@ -94,7 +94,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Creates a new dynamic directed graph.
         /// </summary>
-        private DirectedDynamicGraph(ArrayBase<uint> vertices, ArrayBase<uint> edges, long edgeCount, int fixedEdgeDataSize)
+        private DirectedDynamicGraph(ArrayBase<long> vertices, ArrayBase<long> edges, long edgeCount, int fixedEdgeDataSize)
         {
             _vertices = vertices;
             _edges = edges;
@@ -119,7 +119,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Adds an edge with the associated data.
         /// </summary>
-        public uint AddEdge(uint vertex1, uint vertex2, uint data)
+        public long AddEdge(long vertex1, long vertex2, long data)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 == vertex2) { throw new ArgumentException("Given vertices must be different."); }
@@ -128,7 +128,7 @@ namespace Route.Graphs.Directed
 
             var vertexPointer = vertex1;
             var edgePointer = _vertices[vertexPointer];
-            var edgeId = uint.MaxValue;
+            var edgeId = long.MaxValue;
 
             if (edgePointer == NO_EDGE)
             { // no edge yet, just add the end.
@@ -144,7 +144,7 @@ namespace Route.Graphs.Directed
             else
             { // there are already edges present for this vertex.
                 var startPointer = edgePointer;
-                edgePointer += (uint)(_fixedEdgeDataSize - 1);
+                edgePointer += (long)(_fixedEdgeDataSize - 1);
                 while(true)
                 {
                     var e = _edges[edgePointer];
@@ -174,7 +174,7 @@ namespace Route.Graphs.Directed
 
                         // move existing data to the end and update pointer.
                         _vertices[vertexPointer] = _nextEdgePointer;
-                        for(uint i = 0; i < size; i++)
+                        for(long i = 0; i < size; i++)
                         {
                             _edges[_nextEdgePointer + i] = _edges[startPointer + i];
                         }
@@ -199,7 +199,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Adds an edge with the associated data.
         /// </summary>
-        public uint AddEdge(uint vertex1, uint vertex2, params uint[] data)
+        public long AddEdge(long vertex1, long vertex2, params long[] data)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 == vertex2) { throw new ArgumentException("Given vertices must be different."); }
@@ -212,7 +212,7 @@ namespace Route.Graphs.Directed
 
             var vertexPointer = vertex1;
             var edgePointer = _vertices[vertexPointer];
-            var edgeId = uint.MaxValue;
+            var edgeId = long.MaxValue;
 
             if (edgePointer == NO_EDGE)
             { // no edge yet, just add the end.
@@ -228,12 +228,12 @@ namespace Route.Graphs.Directed
                     _edges[_nextEdgePointer + i + 1] = data[i];
                 }
                 _edges[_nextEdgePointer + data.Length - 1 + 1] = DirectedDynamicGraph.AddLastEdgeAndLastFieldFlag(data[data.Length - 1]);
-                _nextEdgePointer += DirectedDynamicGraph.NextPowerOfTwoOrPowerOfTwo((uint)(1 + data.Length));
+                _nextEdgePointer += DirectedDynamicGraph.NextPowerOfTwoOrPowerOfTwo((long)(1 + data.Length));
             }
             else
             { // there are already edges present for this vertex.
                 var startPointer = edgePointer;
-                edgePointer += (uint)(_fixedEdgeDataSize - 1);
+                edgePointer += (long)(_fixedEdgeDataSize - 1);
                 while (true)
                 {
                     var e = _edges[edgePointer];
@@ -247,7 +247,7 @@ namespace Route.Graphs.Directed
                 // check size and allocate new space or move if needed.
                 var size = edgePointer - startPointer + 1;
                 var totalSpace = NextPowerOfTwoOrPowerOfTwo(size);
-                var requiredSpace = size + 1 + (uint)data.Length;
+                var requiredSpace = size + 1 + (long)data.Length;
                 if (requiredSpace > totalSpace)
                 { // allocate enough space.
                     var newTotalSpace = NextPowerOfTwoOrPowerOfTwo(requiredSpace);
@@ -263,7 +263,7 @@ namespace Route.Graphs.Directed
 
                         // move existing data to the end and update pointer.
                         _vertices[vertexPointer] = _nextEdgePointer;
-                        for (uint i = 0; i < size; i++)
+                        for (long i = 0; i < size; i++)
                         {
                             _edges[_nextEdgePointer + i] = _edges[startPointer + i];
                         }
@@ -291,7 +291,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Updates and edge's associated data.
         /// </summary>
-        public uint UpdateEdge(uint vertex1, uint vertex2, Func<uint[], bool> update, params uint[] data)
+        public long UpdateEdge(long vertex1, long vertex2, Func<long[], bool> update, params long[] data)
         {
             throw new NotImplementedException();
         }
@@ -300,7 +300,7 @@ namespace Route.Graphs.Directed
         /// Deletes all edges leading from/to the given vertex. 
         /// </summary>
         /// <remarks>Only deletes all edges vertex->* NOT *->vertex</remarks>
-        public int RemoveEdges(uint vertex)
+        public int RemoveEdges(long vertex)
         {
             var removed = 0;
             var edges = this.GetEdgeEnumerator();
@@ -318,7 +318,7 @@ namespace Route.Graphs.Directed
         /// Deletes the edge between the two given vertices.
         /// </summary>
         /// <remarks>Only deletes edge vertex1->vertex2 NOT vertex2 -> vertex1.</remarks>
-        public int RemoveEdge(uint vertex1, uint vertex2)
+        public int RemoveEdge(long vertex1, long vertex2)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 >= _vertices.Length) { return 0; }
@@ -381,7 +381,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Deletes the edge with the given id starting at the given vertex.
         /// </summary>
-        public int RemoveEdgeById(uint vertex1, uint edgeId)
+        public int RemoveEdgeById(long vertex1, long edgeId)
         {
             if (_readonly) { throw new Exception("Graph is readonly."); }
             if (vertex1 >= _vertices.Length) { return 0; }
@@ -447,17 +447,17 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns the number of vertices in this graph.
         /// </summary>
-        public uint VertexCount
+        public long VertexCount
         {
-            get { return (uint)(_vertices.Length); }
+            get { return (long)(_vertices.Length); }
         }
 
         /// <summary>
         /// Returns the number of edges in this graph.
         /// </summary>
-        public uint EdgeCount
+        public long EdgeCount
         {
-            get { return (uint)_edgeCount; }
+            get { return (long)_edgeCount; }
         }
 
         /// <summary>
@@ -475,8 +475,8 @@ namespace Route.Graphs.Directed
         public void Trim(out long maxEdgeId)
         {
             // remove all vertices without edges at the end.
-            var maxVertexId = uint.MinValue;
-            for (uint i = 0; i < _vertices.Length; i++)
+            var maxVertexId = long.MinValue;
+            for (long i = 0; i < _vertices.Length; i++)
             {
                 var pointer = _vertices[i];
                 if (pointer == NO_EDGE)
@@ -507,7 +507,7 @@ namespace Route.Graphs.Directed
             var edgesLength = _nextEdgePointer;
             if (edgesLength == 0)
             { // keep minimum room for one edge.
-                edgesLength = (uint)_fixedEdgeDataSize;
+                edgesLength = (long)_fixedEdgeDataSize;
             }
             _edges.Resize(edgesLength);
 
@@ -533,8 +533,8 @@ namespace Route.Graphs.Directed
             this.Trim();
 
             // build a list of all vertices sorted by their first position.
-            var sortedVertices = Context.ArrayFactory.CreateMemoryBackedArray<uint>(_vertices.Length);
-            for (uint i = 0; i < sortedVertices.Length; i++)
+            var sortedVertices = Context.ArrayFactory.CreateMemoryBackedArray<long>(_vertices.Length);
+            for (long i = 0; i < sortedVertices.Length; i++)
             {
                 sortedVertices[i] = i;
             }
@@ -550,8 +550,8 @@ namespace Route.Graphs.Directed
                 }, 0, this.VertexCount - 1);
 
             // move data down.
-            uint pointer = 0;
-            for (uint i = 0; i < sortedVertices.Length; i++)
+            long pointer = 0;
+            for (long i = 0; i < sortedVertices.Length; i++)
             {
                 var vertex = sortedVertices[i];
                 var vertexPointer = _vertices[vertex];
@@ -574,8 +574,8 @@ namespace Route.Graphs.Directed
                     {
                         _edges[pointer + e] = _edges[vertexPointer + e];
                     }
-                    pointer += (uint)_fixedEdgeDataSize;
-                    vertexPointer += (uint)_fixedEdgeDataSize;
+                    pointer += (long)_fixedEdgeDataSize;
+                    vertexPointer += (long)_fixedEdgeDataSize;
                     while (!DirectedDynamicGraph.IsLastField(_edges[pointer - 1]))
                     {
                         _edges[pointer] = _edges[vertexPointer];
@@ -619,8 +619,8 @@ namespace Route.Graphs.Directed
         public sealed class EdgeEnumerator : IEnumerable<DynamicEdge>, IEnumerator<DynamicEdge>
         {
             private readonly DirectedDynamicGraph _graph;
-            private uint _currentEdgePointer;
-            private uint _startPointer;
+            private long _currentEdgePointer;
+            private long _startPointer;
 
             /// <summary>
             /// Creates a new edge enumerator.
@@ -657,7 +657,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the current neighbour.
             /// </summary>
-            public uint Neighbour
+            public long Neighbour
             {
                 get { return _graph._edges[_currentEdgePointer]; }
             }
@@ -665,7 +665,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Gets all commonly used data fields in on go.
             /// </summary>
-            public void GetData(out uint neighbour, out uint data0, out uint data1)
+            public void GetData(out long neighbour, out long data0, out long data1)
             {
                 neighbour = _graph._edges[_currentEdgePointer];
                 data0 = DirectedDynamicGraph.RemoveFlags(_graph._edges[_currentEdgePointer + 0 + 1]);
@@ -691,17 +691,17 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the dynamic part of the edge data.
             /// </summary>
-            public uint[] DynamicData
+            public long[] DynamicData
             {
                 get
                 {
                     var p = _currentEdgePointer + _graph._fixedEdgeDataSize;
                     if (DirectedDynamicGraph.IsLastField(_graph._edges[p]))
                     { // no dynamic data!
-                        return new uint[0];
+                        return new long[0];
                     }
 
-                    var dataList = new List<uint>(4);
+                    var dataList = new List<long>(4);
                     p++;
                     do
                     {
@@ -722,14 +722,14 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the dynamic part of the edge data.
             /// </summary>
-            public uint DynamicData0
+            public long DynamicData0
             {
                 get
                 {
                     var p = _currentEdgePointer + _graph._fixedEdgeDataSize;
                     if (DirectedDynamicGraph.IsLastField(_graph._edges[p]))
                     { // no dynamic data!
-                        return uint.MaxValue;
+                        return long.MaxValue;
                     }
 
                     p++;
@@ -745,7 +745,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Fills the given array with the dynamic part of the edge-data.
             /// </summary>
-            public int FillWithDynamicData(ref uint[] data)
+            public int FillWithDynamicData(ref long[] data)
             {
                 var p = _currentEdgePointer + _graph._fixedEdgeDataSize;
                 if (DirectedDynamicGraph.IsLastField(_graph._edges[p]))
@@ -772,7 +772,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the first entry in the edge data if fixed data count > 0.
             /// </summary>
-            public uint Data0
+            public long Data0
             {
                 get
                 {
@@ -787,7 +787,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the first entry in the edge data if fixed data count > 1.
             /// </summary>
-            public uint Data1
+            public long Data1
             {
                 get
                 {
@@ -802,11 +802,11 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the dynamic part of the edge data.
             /// </summary>
-            public uint[] Data
+            public long[] Data
             {
                 get
                 {
-                    var data = new uint[_graph._fixedEdgeDataSize];
+                    var data = new long[_graph._fixedEdgeDataSize];
                     for (var i = 0; i < _graph._fixedEdgeDataSize; i++)
                     {
                         data[i] = DirectedDynamicGraph.RemoveFlags(_graph._edges[_currentEdgePointer + 1 + i]);
@@ -818,7 +818,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Fills the given array with the fixed data.
             /// </summary>
-            public int FillWithData(ref uint[] data)
+            public int FillWithData(ref long[] data)
             {
                 for (var i = 0; i < _graph._fixedEdgeDataSize && i < data.Length; i++)
                 {
@@ -849,7 +849,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Returns the edge id.
             /// </summary>
-            public uint Id
+            public long Id
             {
                 get
                 {
@@ -868,7 +868,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Moves this enumerator to the given vertex.
             /// </summary>
-            public bool MoveTo(uint vertex)
+            public bool MoveTo(long vertex)
             {
                 if (vertex > _graph.VertexCount)
                 {
@@ -884,7 +884,7 @@ namespace Route.Graphs.Directed
             /// <summary>
             /// Moves this enumerator to the given edge.
             /// </summary>
-            public bool MoveToEdge(uint edge)
+            public bool MoveToEdge(long edge)
             {
                 _currentEdgePointer = NO_EDGE;
                 _startPointer = edge;
@@ -1004,27 +1004,27 @@ namespace Route.Graphs.Directed
             size = size + 4;
             var fixedEdgeDataSize = BitConverter.ToInt32(bytes, 0);
 
-            ArrayBase<uint> vertices;
-            ArrayBase<uint> edges;
+            ArrayBase<long> vertices;
+            ArrayBase<long> edges;
             if (profile == null)
             { // just create arrays and read the data.
-                vertices = Context.ArrayFactory.CreateMemoryBackedArray<uint>(vertexLength);
+                vertices = Context.ArrayFactory.CreateMemoryBackedArray<long>(vertexLength);
                 vertices.CopyFrom(stream);
-                size += vertexLength * 4;
-                edges = Context.ArrayFactory.CreateMemoryBackedArray<uint>(edgeArraySize);
+                size += vertexLength * 8;
+                edges = Context.ArrayFactory.CreateMemoryBackedArray<long>(edgeArraySize);
                 edges.CopyFrom(stream);
-                size += edgeArraySize * 4;
+                size += edgeArraySize * 8;
             }
             else
             { // create accessors over the exact part of the stream that represents vertices/edges.
                 var position = stream.Position;
                 var map1 = new MemoryMapStream(new CappedStream(stream, position, vertexLength * 4));
-                vertices = new Array<uint>(map1.CreateUInt32(vertexLength), profile.VertexProfile);
-                size += vertexLength * 4;
-                var map2 = new MemoryMapStream(new CappedStream(stream, position + vertexLength * 4,
+                vertices = new Array<long>(map1.CreateInt64(vertexLength), profile.VertexProfile);
+                size += vertexLength * 8;
+                var map2 = new MemoryMapStream(new CappedStream(stream, position + vertexLength * 8,
                     edgeArraySize * 4));
-                edges = new Array<uint>(map2.CreateUInt32(edgeArraySize), profile.EdgeProfile);
-                size += edgeArraySize * 4;
+                edges = new Array<long>(map2.CreateInt64(edgeArraySize), profile.EdgeProfile);
+                size += edgeArraySize * 8;
             }
 
             // make sure stream is positioned at the correct location.
@@ -1040,7 +1040,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Mark this data payload at the last field in the current edge.
         /// </summary>
-        private static uint AddLastFieldFlag(uint data)
+        private static long AddLastFieldFlag(long data)
         {
             return data + 1 << 30;
         }
@@ -1048,45 +1048,45 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Mark this data payload as the last field in the last edge.
         /// </summary>
-        private static uint AddLastEdgeAndLastFieldFlag(uint data)
+        private static long AddLastEdgeAndLastFieldFlag(long data)
         {
-            return data + ((uint)1 << 30) + ((uint)1 << 31);
+            return data + ((long)1 << 30) + ((long)1 << 31);
         }
 
         /// <summary>
         /// Removes the mark that markes this data payload as the last field in the last edge.
         /// </summary>
-        private static uint RemoveLastEdgeFlag(uint data)
+        private static long RemoveLastEdgeFlag(long data)
         {
             if (!IsLastFieldInLastEdge(data)) { throw new ArgumentOutOfRangeException("data"); }
 
-            return data - ((uint)1 << 31);
+            return data - ((long)1 << 31);
         }
 
         /// <summary>
         /// Returns true if this data payload is the last field in the current edge.
         /// </summary>
-        private static bool IsLastField(uint data)
+        private static bool IsLastField(long data)
         {
             if (data == NO_EDGE) { return false; }
 
-            return (data & ((uint)1 << 30)) != 0;
+            return (data & ((long)1 << 30)) != 0;
         }
 
         /// <summary>
         /// Return true if this data payload is the last field in the last edge.
         /// </summary>
-        private static bool IsLastFieldInLastEdge(uint data)
+        private static bool IsLastFieldInLastEdge(long data)
         {
             if (data == NO_EDGE) { return false; }
 
-            return (data & ((uint)1 << 31)) != 0;
+            return (data & ((long)1 << 31)) != 0;
         }
 
         /// <summary>
         /// Removes all flags.
         /// </summary>
-        public static uint RemoveFlags(uint data)
+        public static long RemoveFlags(long data)
         {
             if (IsLastFieldInLastEdge(data))
             {
@@ -1094,7 +1094,7 @@ namespace Route.Graphs.Directed
             }
             if (IsLastField(data))
             {
-                data = data - ((uint)1 << 30);
+                data = data - ((long)1 << 30);
             }
             return data;
         }
@@ -1102,7 +1102,7 @@ namespace Route.Graphs.Directed
         /// <summary>
         /// Returns the next power of 2.
         /// </summary>
-        private static uint NextPowerOfTwoOrPowerOfTwo(uint count)
+        private static long NextPowerOfTwoOrPowerOfTwo(long count)
         {
             if (count == 1 || ((count & (count - 1)) == 0))
             { // already a power of 2.
@@ -1122,7 +1122,7 @@ namespace Route.Graphs.Directed
         /// 
         /// The given pointer is expected to be the first position of an edge.
         /// </summary>
-        private uint MoveNextEdge(uint edgePointer)
+        private long MoveNextEdge(long edgePointer)
         {
             // move past first fixed-data fields to the last one.
             var data = _edges[edgePointer];
@@ -1135,7 +1135,7 @@ namespace Route.Graphs.Directed
                 }
                 return edgePointer;
             }
-            edgePointer += (uint)_fixedEdgeDataSize;
+            edgePointer += (long)_fixedEdgeDataSize;
             data = _edges[edgePointer];
             while (!DirectedDynamicGraph.IsLastField(data))
             { // move until the last data field.
@@ -1161,7 +1161,7 @@ namespace Route.Graphs.Directed
         /// 
         /// The given pointer is expected to be the first position of an edge starting a the given vertex. The previous edge pointer is NO_EDGE if there is not previous edge.
         /// </summary>
-        private uint RemoveEdge(uint vertex, uint previousEdgePointer, uint edgePointer, uint nextPointer)
+        private long RemoveEdge(long vertex, long previousEdgePointer, long edgePointer, long nextPointer)
         {
             var originalEdgePointer = edgePointer;
             if (previousEdgePointer == NO_EDGE && nextPointer == NO_EDGE)
@@ -1200,7 +1200,7 @@ namespace Route.Graphs.Directed
         /// Marks the edge at the given location as the last edge.
         /// </summary>
         /// <returns>False if there is no data at the given location, true otherwise.</returns>
-        private bool MarkAsLast(uint edgePointer)
+        private bool MarkAsLast(long edgePointer)
         {
             var data = _edges[edgePointer];
             if (data == NO_EDGE)

@@ -43,7 +43,7 @@ namespace Route.Algorithms.Contracted.Dual.Witness
         /// <summary>
         /// Gets or sets the vertex.
         /// </summary>
-        public uint Vertex { get; set; }
+        public long Vertex { get; set; }
 
         /// <summary>
         /// Gets or sets the potential depth.

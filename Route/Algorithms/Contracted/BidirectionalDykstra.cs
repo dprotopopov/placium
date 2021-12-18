@@ -52,9 +52,9 @@ namespace Route.Algorithms.Contracted
             _restrictions = restrictions;
         }
 
-        private Tuple<uint, T> _best;
-        private Dictionary<uint, EdgePath<T>> _forwardVisits;
-        private Dictionary<uint, EdgePath<T>> _backwardVisits;
+        private Tuple<long, T> _best;
+        private Dictionary<long, EdgePath<T>> _forwardVisits;
+        private Dictionary<long, EdgePath<T>> _backwardVisits;
 
         /// <summary>
         /// Executes the actual run.
@@ -62,8 +62,8 @@ namespace Route.Algorithms.Contracted
         protected override void DoRun(CancellationToken cancellationToken)
         {
             // keep settled vertices.
-            _forwardVisits = new Dictionary<uint, EdgePath<T>>();
-            _backwardVisits = new Dictionary<uint, EdgePath<T>>();
+            _forwardVisits = new Dictionary<long, EdgePath<T>>();
+            _backwardVisits = new Dictionary<long, EdgePath<T>>();
 
             // initialize the queues.
             var forwardQueue = new BinaryHeap<EdgePath<T>>();
@@ -82,7 +82,7 @@ namespace Route.Algorithms.Contracted
             }
 
             // update best with current visits.
-            _best = new Tuple<uint, T>(Constants.NO_VERTEX, _weightHandler.Infinite);
+            _best = new Tuple<long, T>(Constants.NO_VERTEX, _weightHandler.Infinite);
 
             // calculate stopping conditions.
             var queueBackwardWeight = backwardQueue.PeekWeight();
@@ -120,7 +120,7 @@ namespace Route.Algorithms.Contracted
                             { // a better path was found.
                                 // check for restrictions.
 
-                                _best = new Tuple<uint, T>(current.Vertex, total);
+                                _best = new Tuple<long, T>(current.Vertex, total);
                                 this.HasSucceeded = true;
                             }
                         }
@@ -148,7 +148,7 @@ namespace Route.Algorithms.Contracted
                             var total = _weightHandler.Add(current.Weight, toBest.Weight);
                             if (_weightHandler.IsSmallerThan(total, _best.Item2))
                             { // a better path was found.
-                                _best = new Tuple<uint, T>(current.Vertex, total);
+                                _best = new Tuple<long, T>(current.Vertex, total);
                                 this.HasSucceeded = true;
                             }
                         }
@@ -294,7 +294,7 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Returns the vertex on the best path.
         /// </summary>
-        public uint Best
+        public long Best
         {
             get
             {
@@ -308,7 +308,7 @@ namespace Route.Algorithms.Contracted
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetForwardVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetForwardVisit(long vertex, out EdgePath<T> visit)
         {
             this.CheckHasRunAndHasSucceeded();
 
@@ -319,7 +319,7 @@ namespace Route.Algorithms.Contracted
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetBackwardVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetBackwardVisit(long vertex, out EdgePath<T> visit)
         {
             this.CheckHasRunAndHasSucceeded();
 

@@ -338,7 +338,7 @@ namespace Route
 
                 if (useContracted)
                 { // use the contracted graph.
-                    List<uint> vertexPath = null;
+                    List<long> vertexPath = null;
 
                     if (contracted.HasEdgeBasedGraph)
                     { // use edge-based routing.
@@ -378,7 +378,7 @@ namespace Route
 
                             // convert directed edge-path to an original vertex path.
                             var enumerator = _db.Network.GetEdgeEnumerator();
-                            vertexPath = new List<uint>();
+                            vertexPath = new List<long>();
                             var edge = new List<OriginalEdge>();
                             for (var i = 0; i < directedEdgePath.Count; i++)
                             {
@@ -588,7 +588,7 @@ namespace Route
                 { // use the contracted graph.
                     path = null;
 
-                    List<uint> vertexPath = null;
+                    List<long> vertexPath = null;
 
                     if (contracted.HasEdgeBasedGraph)
                     { // use edge-based routing.
@@ -627,7 +627,7 @@ namespace Route
 
                         // convert directed edge-path to an original vertex path.
                         var enumerator = _db.Network.GetEdgeEnumerator();
-                        vertexPath = new List<uint>();
+                        vertexPath = new List<long>();
                         for (var i = 0; i < directedEdgePath.Count; i++)
                         {
                             var e = new DirectedEdgeId()
@@ -776,7 +776,7 @@ namespace Route
 
                 if (useContracted)
                 { // use the contracted graph.
-                    List<uint> vertexPath = null;
+                    List<long> vertexPath = null;
 
                     if (contracted.HasEdgeBasedGraph)
                     { // use edge-based routing.
@@ -843,7 +843,7 @@ namespace Route
 
                             // convert directed edge-path to an original vertex path.
                             var enumerator = _db.Network.GetEdgeEnumerator();
-                            vertexPath = new List<uint>();
+                            vertexPath = new List<long>();
                             var edge = new List<OriginalEdge>();
                             for (var i = 0; i < directedEdgePath.Count; i++)
                             {

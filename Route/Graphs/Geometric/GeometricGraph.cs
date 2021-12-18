@@ -176,7 +176,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the given vertex.
         /// </summary>
-        public Coordinate GetVertex(uint vertex)
+        public Coordinate GetVertex(long vertex)
         {
             if (vertex >= _coordinates.Length) { throw new ArgumentException(string.Format("Vertex {0} does not exist.", vertex)); }
             if (_coordinates[vertex].Equals(NO_COORDINATE)) { throw new ArgumentException(string.Format("Vertex {0} does not exist.", vertex)); }
@@ -205,7 +205,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the given vertex.
         /// </summary>
-        public bool GetVertex(uint vertex, out float latitude, out float longitude)
+        public bool GetVertex(long vertex, out float latitude, out float longitude)
         {
             if (vertex * 2 + 1 < _coordinates.Length)
             {
@@ -224,7 +224,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the given vertex.
         /// </summary>
-        public bool GetVertex(uint vertex, out float latitude, out float longitude, out short? elevation)
+        public bool GetVertex(long vertex, out float latitude, out float longitude, out short? elevation)
         {
             if (vertex * 2 + 1 < _coordinates.Length)
             {
@@ -253,7 +253,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Removes the given vertex.
         /// </summary>
-        public bool RemoveVertex(uint vertex)
+        public bool RemoveVertex(long vertex)
         {
             if (_graph.RemoveVertex(vertex))
             {
@@ -272,7 +272,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Adds the given vertex.
         /// </summary>
-        public void AddVertex(uint vertex, float latitude, float longitude, 
+        public void AddVertex(long vertex, float latitude, float longitude, 
             short? elevation = null)
         {
             _graph.AddVertex(vertex);
@@ -304,7 +304,7 @@ namespace Route.Graphs.Geometric
         public void AddElevation(ElevationHandler.GetElevationDelegate getElevationFunc)
         {
             // add elevation to all vertices.
-            for (uint v = 0; v < this.VertexCount; v++)
+            for (long v = 0; v < this.VertexCount; v++)
             {
                 var location = this.GetVertex(v);
                 var elevation = getElevationFunc(location.Latitude, location.Longitude);
@@ -318,7 +318,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Updates the given vertex.
         /// </summary>
-        public void UpdateVertex(uint vertex, float latitude, float longitude, short? elevation = null)
+        public void UpdateVertex(long vertex, float latitude, float longitude, short? elevation = null)
         {
             if (vertex >= _coordinates.Length) { throw new ArgumentException(string.Format("Vertex {0} does not exist.", vertex)); }
             if (_coordinates[vertex].Equals(NO_COORDINATE)) { throw new ArgumentException(string.Format("Vertex {0} does not exist.", vertex)); }
@@ -344,7 +344,7 @@ namespace Route.Graphs.Geometric
         /// Adds a new edge.
         /// </summary>
         /// <returns></returns>
-        public uint AddEdge(uint vertex1, uint vertex2, uint[] data, ShapeBase shape)
+        public long AddEdge(long vertex1, long vertex2, long[] data, ShapeBase shape)
         {
             var edgeId = _graph.AddEdge(vertex1, vertex2, data);
 
@@ -357,7 +357,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Updates the data associated with this edge.
         /// </summary>
-        public void UpdateEdgeData(uint edgeId, uint[] data)
+        public void UpdateEdgeData(long edgeId, long[] data)
         {
             _graph.UpdateEdgeData(edgeId, data);
         }
@@ -366,7 +366,7 @@ namespace Route.Graphs.Geometric
         /// Gets the edge with the given id.
         /// </summary>
         /// <returns></returns>
-        public GeometricEdge GetEdge(uint edgeId)
+        public GeometricEdge GetEdge(long edgeId)
         {
             var edge = _graph.GetEdge(edgeId);
 
@@ -377,7 +377,7 @@ namespace Route.Graphs.Geometric
         /// Removes all edges from/to the given vertex.
         /// </summary>
         /// <returns></returns>
-        public int RemoveEdges(uint vertex)
+        public int RemoveEdges(long vertex)
         {
             var removed = 0;
             var edges = this.GetEdgeEnumerator(vertex);
@@ -396,7 +396,7 @@ namespace Route.Graphs.Geometric
         /// Removes the edge with the given id.
         /// </summary>
         /// <returns></returns>
-        public bool RemoveEdge(uint edgeId)
+        public bool RemoveEdge(long edgeId)
         {
             if (_graph.RemoveEdge(edgeId))
             {
@@ -410,7 +410,7 @@ namespace Route.Graphs.Geometric
         /// Removes the given edge.
         /// </summary>
         /// <returns></returns>
-        public int RemoveEdges(uint vertex1, uint vertex2)
+        public int RemoveEdges(long vertex1, long vertex2)
         {
             var removedCount = 0;
             var removed = true;
@@ -435,7 +435,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Switches the two vertices.
         /// </summary>
-        public void Switch(uint vertex1, uint vertex2)
+        public void Switch(long vertex1, long vertex2)
         {
             // switch vertices, edges do not change id's.
             _graph.Switch(vertex1, vertex2);
@@ -462,7 +462,7 @@ namespace Route.Graphs.Geometric
         /// Gets an edge enumerator for the given vertex.
         /// </summary>
         /// <returns></returns>
-        public EdgeEnumerator GetEdgeEnumerator(uint vertex)
+        public EdgeEnumerator GetEdgeEnumerator(long vertex)
         {
             return new EdgeEnumerator(this, _graph.GetEdgeEnumerator(vertex));
         }
@@ -471,7 +471,7 @@ namespace Route.Graphs.Geometric
         /// Relocates data internally in the most compact way possible.
         /// </summary>
         /// <param name="updateEdgeId">The edge id's may change. This action can be used to hook into every change.</param>
-        public void Compress(Action<uint, uint> updateEdgeId)
+        public void Compress(Action<long, long> updateEdgeId)
         {
             _graph.Compress((originalId, newId) =>
             {
@@ -527,7 +527,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Returns the number of vertices in this graph.
         /// </summary>
-        public uint VertexCount
+        public long VertexCount
         {
             get
             {
@@ -560,7 +560,7 @@ namespace Route.Graphs.Geometric
         /// <summary>
         /// Gets the shape for the given edge.
         /// </summary>
-        public ShapeBase GetShape(uint edge)
+        public ShapeBase GetShape(long edge)
         {
             return _shapes[edge];
         }
@@ -593,7 +593,7 @@ namespace Route.Graphs.Geometric
             /// <summary>
             /// Returns the id of the current edge.
             /// </summary>
-            public uint Id
+            public long Id
             {
                 get
                 {
@@ -604,7 +604,7 @@ namespace Route.Graphs.Geometric
             /// <summary>
             /// Returns the vertex at the beginning.
             /// </summary>
-            public uint From
+            public long From
             {
                 get
                 {
@@ -615,7 +615,7 @@ namespace Route.Graphs.Geometric
             /// <summary>
             /// Returns the vertex at the end.
             /// </summary>
-            public uint To
+            public long To
             {
                 get
                 {
@@ -626,7 +626,7 @@ namespace Route.Graphs.Geometric
             /// <summary>
             /// Returns the edge data.
             /// </summary>
-            public uint[] Data
+            public long[] Data
             {
                 get
                 {
@@ -660,7 +660,7 @@ namespace Route.Graphs.Geometric
             /// Moves to the given vertex.
             /// </summary>
             /// <returns></returns>
-            public bool MoveTo(uint vertex)
+            public bool MoveTo(long vertex)
             {
                 return _enumerator.MoveTo(vertex);
             }
@@ -669,7 +669,7 @@ namespace Route.Graphs.Geometric
             /// Moves to the given edge.
             /// </summary>
             /// <returns></returns>
-            public void MoveToEdge(uint edge)
+            public void MoveToEdge(long edge)
             {
                 _enumerator.MoveToEdge(edge);
             }

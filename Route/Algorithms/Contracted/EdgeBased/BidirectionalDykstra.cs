@@ -36,14 +36,14 @@ namespace Route.Algorithms.Contracted.EdgeBased
         private readonly DirectedDynamicGraph _graph;
         private readonly IEnumerable<EdgePath<T>> _sources;
         private readonly IEnumerable<EdgePath<T>> _targets;
-        private readonly Func<uint, IEnumerable<uint[]>> _getRestrictions;
+        private readonly Func<long, IEnumerable<long[]>> _getRestrictions;
         private readonly WeightHandler<T> _weightHandler;
  
         /// <summary>
         /// Creates a new contracted bidirectional router.
         /// </summary>
         public BidirectionalDykstra(DirectedDynamicGraph graph, WeightHandler<T> weightHandler, IEnumerable<EdgePath<T>> sources, IEnumerable<EdgePath<T>> targets,
-            Func<uint, IEnumerable<uint[]>> getRestrictions)
+            Func<long, IEnumerable<long[]>> getRestrictions)
         {
             weightHandler.CheckCanUse(graph);
 
@@ -61,8 +61,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
         }
 
         private Tuple<EdgePath<T>, EdgePath<T>, T> _best;
-        private Dictionary<uint, LinkedEdgePath> _forwardVisits;
-        private Dictionary<uint, LinkedEdgePath> _backwardVisits;
+        private Dictionary<long, LinkedEdgePath> _forwardVisits;
+        private Dictionary<long, LinkedEdgePath> _backwardVisits;
         private BinaryHeap<EdgePath<T>> _forwardQueue;
         private BinaryHeap<EdgePath<T>> _backwardQueue;
 
@@ -74,8 +74,8 @@ namespace Route.Algorithms.Contracted.EdgeBased
             var edgeEnumerator = _graph.GetEdgeEnumerator();
 
             // keep settled vertices.
-            _forwardVisits = new Dictionary<uint, LinkedEdgePath>();
-            _backwardVisits = new Dictionary<uint, LinkedEdgePath>();
+            _forwardVisits = new Dictionary<long, LinkedEdgePath>();
+            _backwardVisits = new Dictionary<long, LinkedEdgePath>();
 
             // initialize the queues.
             _forwardQueue = new BinaryHeap<EdgePath<T>>();
@@ -174,7 +174,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                                     if (restrictions != null && allowed)
                                     {
                                         allowed = false;
-                                        var sequence = new List<uint>(
+                                        var sequence = new List<long>(
                                             current.GetSequence2(edgeEnumerator));
                                         sequence.Reverse();
                                         sequence.Add(current.Vertex);
@@ -264,7 +264,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
                                     if (restrictions != null && allowed)
                                     {
                                         allowed = false;
-                                        var sequence = new List<uint>(
+                                        var sequence = new List<long>(
                                             forwardPath.Path.GetSequence2(edgeEnumerator));
                                         sequence.Add(current.Vertex);
                                         var s1 = current.GetSequence2(edgeEnumerator);
@@ -309,7 +309,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Search forward from one vertex.
         /// </summary>
         /// <returns></returns>
-        private void SearchForward(DirectedDynamicGraph.EdgeEnumerator edgeEnumerator, EdgePath<T> current, IEnumerable<uint[]> restrictions)
+        private void SearchForward(DirectedDynamicGraph.EdgeEnumerator edgeEnumerator, EdgePath<T> current, IEnumerable<long[]> restrictions)
         {
             if (current != null)
             { // there is a next vertex found.
@@ -380,7 +380,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Search backward from one vertex.
         /// </summary>
         /// <returns></returns>
-        private void SearchBackward(DirectedDynamicGraph.EdgeEnumerator edgeEnumerator, EdgePath<T> current, IEnumerable<uint[]> restrictions)
+        private void SearchBackward(DirectedDynamicGraph.EdgeEnumerator edgeEnumerator, EdgePath<T> current, IEnumerable<long[]> restrictions)
         {
             if (current != null)
             { // there is a next vertex found.
@@ -451,7 +451,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Returns the vertex on the best path.
         /// </summary>
-        public uint Best
+        public long Best
         {
             get
             {
@@ -465,7 +465,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetForwardVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetForwardVisit(long vertex, out EdgePath<T> visit)
         {
             this.CheckHasRunAndHasSucceeded();
 
@@ -483,7 +483,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetBackwardVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetBackwardVisit(long vertex, out EdgePath<T> visit)
         {
             this.CheckHasRunAndHasSucceeded();
 
@@ -500,11 +500,11 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// <summary>
         /// Returns the path.
         /// </summary>
-        public List<uint> GetPath()
+        public List<long> GetPath()
         {
             this.CheckHasRunAndHasSucceeded();
 
-            var vertices = new List<uint>();
+            var vertices = new List<long>();
             var fromSource = _best.Item1.Expand(_graph, _weightHandler, true);
             var toTarget = _best.Item2.Expand(_graph, _weightHandler, false);
 
@@ -579,7 +579,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Creates a new contracted bidirectional router.
         /// </summary>
         public BidirectionalDykstra(DirectedDynamicGraph graph, IEnumerable<EdgePath<float>> sources, IEnumerable<EdgePath<float>> targets,
-            Func<uint, IEnumerable<uint[]>> getRestrictions)
+            Func<long, IEnumerable<long[]>> getRestrictions)
             : base(graph, new DefaultWeightHandler(null), sources, targets, getRestrictions)
         {
 

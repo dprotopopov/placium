@@ -35,7 +35,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
     {
         private readonly DirectedDynamicGraph _graph;
         private readonly IEnumerable<EdgePath<T>> _sources;
-        private readonly Func<uint, IEnumerable<uint[]>> _getRestrictions;
+        private readonly Func<long, IEnumerable<long[]>> _getRestrictions;
         private readonly bool _backward;
         private readonly WeightHandler<T> _weightHandler;
         private readonly T _max;
@@ -44,7 +44,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Creates a new routing algorithm instance.
         /// </summary>
         public Dykstra(DirectedDynamicGraph graph, WeightHandler<T> weightHandler, IEnumerable<EdgePath<T>> sources,
-            Func<uint, IEnumerable<uint[]>> getRestrictions, bool backward, T max)
+            Func<long, IEnumerable<long[]>> getRestrictions, bool backward, T max)
         {
             weightHandler.CheckCanUse(graph);
 
@@ -60,7 +60,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         }
 
         private DirectedDynamicGraph.EdgeEnumerator _edgeEnumerator;
-        private Dictionary<uint, LinkedEdgePath<T>> _visits;
+        private Dictionary<long, LinkedEdgePath<T>> _visits;
         private EdgePath<T> _current;
         private BinaryHeap<EdgePath<T>> _heap;
 
@@ -85,7 +85,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
             this.HasSucceeded = true;
 
             // intialize dykstra data structures.
-            _visits = new Dictionary<uint, LinkedEdgePath<T>>();
+            _visits = new Dictionary<long, LinkedEdgePath<T>>();
             _heap = new BinaryHeap<EdgePath<T>>();
 
             // queue all sources.
@@ -221,7 +221,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Returns true if the given vertex was visited and sets the visits output parameter with the actual visits data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetVisits(uint vertex, out LinkedEdgePath<T> visits)
+        public bool TryGetVisits(long vertex, out LinkedEdgePath<T> visits)
         {
             return _visits.TryGetValue(vertex, out visits);
         }
@@ -230,7 +230,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Returns true if the given vertex was visited and sets the visits output parameter with the best visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetVisit(uint vertex, out EdgePath<T> visits)
+        public bool TryGetVisit(long vertex, out EdgePath<T> visits)
         {
             LinkedEdgePath<T> linkedVisits;
             if (!_visits.TryGetValue(vertex, out linkedVisits))
@@ -294,7 +294,7 @@ namespace Route.Algorithms.Contracted.EdgeBased
         /// Creates a new routing algorithm instance.
         /// </summary>
         public Dykstra(DirectedDynamicGraph graph, IEnumerable<EdgePath<float>> sources,
-            Func<uint, IEnumerable<uint[]>> getRestrictions, bool backward, float max = float.MaxValue)
+            Func<long, IEnumerable<long[]>> getRestrictions, bool backward, float max = float.MaxValue)
             : base(graph, new DefaultWeightHandler(null), sources, getRestrictions, backward, max)
         {
 

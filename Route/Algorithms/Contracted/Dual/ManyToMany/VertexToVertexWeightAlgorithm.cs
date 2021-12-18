@@ -51,7 +51,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
             _cache = cache;
         }
 
-        protected Dictionary<uint, Dictionary<int, T>> _buckets;
+        protected Dictionary<long, Dictionary<int, T>> _buckets;
         protected T[][] _weights;
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
                 }
             }
 
-            _buckets = new Dictionary<uint, Dictionary<int, T>>();
+            _buckets = new Dictionary<long, Dictionary<int, T>>();
 
             // do forward searches into buckets.
             for (var i = 0; i < _sources.Length; i++)
@@ -115,7 +115,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
         /// Called when a forward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool ForwardVertexFound(int i, uint vertex, T weight)
+        private bool ForwardVertexFound(int i, long vertex, T weight)
         {
             if (!_buckets.TryGetValue(vertex, out var bucket))
             {
@@ -144,7 +144,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
         /// Called when a backward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool BackwardVertexFound(int i, uint vertex, T weight)
+        private bool BackwardVertexFound(int i, long vertex, T weight)
         {
             if (!_buckets.TryGetValue(vertex, out var bucket)) return false;
             
@@ -177,7 +177,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
             
         }
 
-        private Dictionary<uint, Dictionary<int, float>> _buckets;
+        private Dictionary<long, Dictionary<int, float>> _buckets;
         private float[][] _weights;
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
                 }
             }
 
-            _buckets = new Dictionary<uint, Dictionary<int, float>>();
+            _buckets = new Dictionary<long, Dictionary<int, float>>();
             // do forward searches into buckets.
             for (var i = 0; i < _sources.Length; i++)
             {
@@ -240,7 +240,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
         /// Called when a forward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool ForwardVertexFound(int i, uint vertex, float weight)
+        private bool ForwardVertexFound(int i, long vertex, float weight)
         {
             if (!_buckets.TryGetValue(vertex, out var bucket))
             {
@@ -269,7 +269,7 @@ namespace Route.Algorithms.Contracted.Dual.ManyToMany
         /// Called when a backward vertex was found.
         /// </summary>
         /// <returns></returns>
-        private bool BackwardVertexFound(int i, uint vertex, float weight)
+        private bool BackwardVertexFound(int i, long vertex, float weight)
         {
             if (!_buckets.TryGetValue(vertex, out var bucket)) return false;
             

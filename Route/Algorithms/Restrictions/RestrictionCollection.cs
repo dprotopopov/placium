@@ -25,12 +25,12 @@ namespace Route.Algorithms.Restrictions
     /// </summary>
     public sealed class RestrictionCollection
     {
-        private readonly Func<RestrictionCollection, uint, bool> _update;
+        private readonly Func<RestrictionCollection, long, bool> _update;
 
         /// <summary>
         /// Creates a new restriction collection.
         /// </summary>
-        public RestrictionCollection(Func<RestrictionCollection, uint, bool> update)
+        public RestrictionCollection(Func<RestrictionCollection, long, bool> update)
         {
             _update = update;
             _restrictions = new Restriction[64];
@@ -40,13 +40,13 @@ namespace Route.Algorithms.Restrictions
 
         private Restriction[] _restrictions;
         private int _count;
-        private uint _vertex;
+        private long _vertex;
 
         /// <summary>
         /// Updates this restriction collection.
         /// </summary>
         /// <return>Returns true if there are restrictions.</return>
-        public bool Update(uint vertex)
+        public bool Update(long vertex)
         {
             if (_vertex == vertex)
             {
@@ -83,7 +83,7 @@ namespace Route.Algorithms.Restrictions
         /// <summary>
         /// Returns the vertex.
         /// </summary>
-        public uint Vertex
+        public long Vertex
         {
             get
             {

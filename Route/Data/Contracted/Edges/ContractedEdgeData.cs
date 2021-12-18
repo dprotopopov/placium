@@ -36,6 +36,6 @@ namespace Route.Data.Contracted.Edges
         ///<summary>
         ///Gets or sets the id of the contracted vertex.
         ///</summary>
-        public uint ContractedId { get; set; }
+        public long ContractedId { get; set; }
     }
 }

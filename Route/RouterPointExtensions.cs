@@ -230,7 +230,7 @@ namespace Route
         /// Calculates the distance to one of the vertices on the edge this router point is on.
         /// </summary>
         /// <returns></returns>
-        public static float DistanceTo(this RouterPoint point, RouterDb routerDb, uint vertex)
+        public static float DistanceTo(this RouterPoint point, RouterDb routerDb, long vertex)
         {
             var geometricEdge = routerDb.Network.GeometricGraph.GetEdge(point.EdgeId);
             var edgeDistance = routerDb.Network.GeometricGraph.Length(geometricEdge);
@@ -265,7 +265,7 @@ namespace Route
         /// <summary>
         /// Calculates the shape points along the way from this router point to one of it's vertices.
         /// </summary>
-        public static List<Coordinate> ShapePointsTo(this RouterPoint point, RouterDb routerDb, uint vertex)
+        public static List<Coordinate> ShapePointsTo(this RouterPoint point, RouterDb routerDb, long vertex)
         {
             List<Coordinate> points = null;
             var geometricEdge = routerDb.Network.GeometricGraph.GetEdge(point.EdgeId);
@@ -352,7 +352,7 @@ namespace Route
         /// <summary>
         /// Returns true if the router point matches exactly with the given vertex.
         /// </summary>
-        public static bool IsVertex(this RouterPoint point, RouterDb router, uint vertex)
+        public static bool IsVertex(this RouterPoint point, RouterDb router, long vertex)
         {
             if(point.Offset == 0)
             { // offset is zero, maybe there is a match.
@@ -370,7 +370,7 @@ namespace Route
         /// <summary>
         /// Creates a new router point.
         /// </summary>
-        public static RouterPoint CreateRouterPoint(this RouterDb routerDb, uint edgeId, ushort offset)
+        public static RouterPoint CreateRouterPoint(this RouterDb routerDb, long edgeId, ushort offset)
         {
             var location = routerDb.LocationOnNetwork(edgeId, offset);
             return new RouterPoint(location.Latitude, location.Longitude, edgeId, offset);
@@ -443,7 +443,7 @@ namespace Route
         /// <summary>
         /// Creates a router point for the given vertex.
         /// </summary>
-        public static RouterPoint CreateRouterPointForVertex(this RouterDb routerDb, uint vertex, params Profile[] profile)
+        public static RouterPoint CreateRouterPointForVertex(this RouterDb routerDb, long vertex, params Profile[] profile)
         {
             float latitude, longitude;
             if (!routerDb.Network.GeometricGraph.GetVertex(vertex, out latitude, out longitude))
@@ -479,7 +479,7 @@ namespace Route
         /// <summary>
         /// Creates a router point for the given vertex.
         /// </summary>
-        public static RouterPoint CreateRouterPointForVertex(this GeometricGraph graph, uint vertex, Func<GeometricEdge, bool> isAcceptable)
+        public static RouterPoint CreateRouterPointForVertex(this GeometricGraph graph, long vertex, Func<GeometricEdge, bool> isAcceptable)
         {
             float latitude, longitude;
             if (!graph.GetVertex(vertex, out latitude, out longitude))
@@ -504,7 +504,7 @@ namespace Route
         /// <summary>
         /// Creates a router point for the given vertex.
         /// </summary>
-        public static RouterPoint CreateRouterPointForVertex(this RoutingNetwork graph, uint vertex)
+        public static RouterPoint CreateRouterPointForVertex(this RoutingNetwork graph, long vertex)
         {
             float latitude, longitude;
             if (!graph.GetVertex(vertex, out latitude, out longitude))
@@ -526,7 +526,7 @@ namespace Route
         /// <summary>
         /// Creates a router point for the given vertex.
         /// </summary>
-        public static RouterPoint CreateRouterPointForVertex(this RoutingNetwork graph, uint vertex, uint neighbour)
+        public static RouterPoint CreateRouterPointForVertex(this RoutingNetwork graph, long vertex, long neighbour)
         {
             return graph.GeometricGraph.CreateRouterPointForVertex(vertex, neighbour);
         }
@@ -534,7 +534,7 @@ namespace Route
         /// <summary>
         /// Creates a router point for the given vertex.
         /// </summary>
-        public static RouterPoint CreateRouterPointForVertex(this GeometricGraph graph, uint vertex, uint neighbour)
+        public static RouterPoint CreateRouterPointForVertex(this GeometricGraph graph, long vertex, long neighbour)
         {
             float latitude, longitude;
             if (!graph.GetVertex(vertex, out latitude, out longitude))
@@ -679,7 +679,7 @@ namespace Route
         /// <summary>
         /// Calculates the edge path between this router point and one of it's neighbours.
         /// </summary>
-        public static EdgePath<T> EdgePathTo<T>(this RouterPoint point, RouterDb db, WeightHandler<T> weightHandler, uint neighbour, bool backward = false)
+        public static EdgePath<T> EdgePathTo<T>(this RouterPoint point, RouterDb db, WeightHandler<T> weightHandler, long neighbour, bool backward = false)
             where T : struct
         {
             Factor factor;
@@ -714,7 +714,7 @@ namespace Route
         /// <summary>
         /// Returns the vertex id if any.
         /// </summary>
-        public static uint VertexId(this RouterPoint point, RouterDb db)
+        public static long VertexId(this RouterPoint point, RouterDb db)
         {
             var edge = db.Network.GetEdge(point.EdgeId);
             if (point.Offset == 0)

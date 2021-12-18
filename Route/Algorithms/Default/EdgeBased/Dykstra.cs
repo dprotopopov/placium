@@ -37,14 +37,14 @@ namespace Route.Algorithms.Default.EdgeBased
         private readonly Graph _graph;
         private readonly IEnumerable<EdgePath<T>> _sources;
         private readonly WeightHandler<T> _weightHandler;
-        private readonly Func<uint, IEnumerable<uint[]>> _getRestriction;
+        private readonly Func<long, IEnumerable<long[]>> _getRestriction;
         private readonly T _sourceMax;
         private readonly bool _backward;
 
         /// <summary>
         /// Creates a new one-to-all dykstra algorithm instance.
         /// </summary>
-        public Dykstra(Graph graph, WeightHandler<T> weightHandler, Func<uint, IEnumerable<uint[]>> getRestriction,
+        public Dykstra(Graph graph, WeightHandler<T> weightHandler, Func<long, IEnumerable<long[]>> getRestriction,
             IEnumerable<EdgePath<T>> sources, T sourceMax, bool backward)
         {
             _graph = graph;
@@ -59,7 +59,7 @@ namespace Route.Algorithms.Default.EdgeBased
         private Dictionary<long, EdgePath<T>> _visits;
         private EdgePath<T> _current;
         private BinaryHeap<EdgePath<T>> _heap;
-        private Dictionary<uint, Factor> _factors;
+        private Dictionary<long, Factor> _factors;
         private Dictionary<EdgePath<T>, LinkedRestriction> _edgeRestrictions;
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Route.Algorithms.Default.EdgeBased
             this.HasSucceeded = true;
 
             // initialize a dictionary of speeds per edge profile.
-            _factors = new Dictionary<uint, Factor>();
+            _factors = new Dictionary<long, Factor>();
 
             // initialize dykstra data structures.
             _visits = new Dictionary<long, EdgePath<T>>();
@@ -381,7 +381,7 @@ namespace Route.Algorithms.Default.EdgeBased
             }
         }
 
-        internal IEnumerable<uint[]> GetRestriction(uint vertex)
+        internal IEnumerable<long[]> GetRestriction(long vertex)
         {
             if (_getRestriction != null)
             {
@@ -399,7 +399,7 @@ namespace Route.Algorithms.Default.EdgeBased
             /// <summary>
             /// Gets the restriction.
             /// </summary>
-            public uint[] Restriction { get; set; }
+            public long[] Restriction { get; set; }
 
             /// <summary>
             /// Gets the next linked restriction.
@@ -433,7 +433,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new one-to-all dykstra algorithm instance.
         /// </summary>
-        public Dykstra(Graph graph, Func<ushort, Factor> getFactor, Func<uint, IEnumerable<uint[]>> getRestriction,
+        public Dykstra(Graph graph, Func<ushort, Factor> getFactor, Func<long, IEnumerable<long[]>> getRestriction,
             IEnumerable<EdgePath<float>> sources, float sourceMax, bool backward)
             : base(graph, new DefaultWeightHandler(getFactor), getRestriction, sources, sourceMax, backward)
         {
@@ -443,7 +443,7 @@ namespace Route.Algorithms.Default.EdgeBased
         /// <summary>
         /// Creates a new one-to-all dykstra algorithm instance.
         /// </summary>
-        public Dykstra(Graph graph, DefaultWeightHandler weightHandler, Func<uint, IEnumerable<uint[]>> getRestriction,
+        public Dykstra(Graph graph, DefaultWeightHandler weightHandler, Func<long, IEnumerable<long[]>> getRestriction,
             IEnumerable<EdgePath<float>> sources, float sourceMax, bool backward)
             : base(graph, weightHandler, getRestriction, sources, sourceMax, backward)
         {

@@ -74,7 +74,7 @@ namespace Route.Algorithms.Networks
         {
             var allSuccess = false;
 
-            var newVertices = new uint[_locations.Length];
+            var newVertices = new long[_locations.Length];
             for(var i = 0; i < newVertices.Length; i++)
             {
                 newVertices[i] = Constants.NO_VERTEX;
@@ -116,11 +116,11 @@ namespace Route.Algorithms.Networks
                     {
                         if (newVertices[i] == v1)
                         {
-                            newVertices[i] = (uint)v2;
+                            newVertices[i] = (long)v2;
                         }
                         else if (newVertices[i] == v2)
                         {
-                            newVertices[i] = (uint)v1;
+                            newVertices[i] = (long)v1;
                         }
                     }
                 });

@@ -36,12 +36,12 @@ namespace Route.IO.Osm.Nodes
         private readonly object _nodeTagProcessor;
         private readonly Table _attributesTable;
         private readonly Table _resultsTable;
-        private readonly Func<Node, uint> _markCore; // marks the node as core.
+        private readonly Func<Node, long> _markCore; // marks the node as core.
 
         /// <summary>
         /// Creates a new processor.
         /// </summary>
-        public DynamicVehicleNodeTagProcessor(RouterDb routerDb, DynamicVehicle vehicle, Func<Node, uint> markCore)
+        public DynamicVehicleNodeTagProcessor(RouterDb routerDb, DynamicVehicle vehicle, Func<Node, long> markCore)
         {
             _routerDb = routerDb;
             _vehicle = vehicle;

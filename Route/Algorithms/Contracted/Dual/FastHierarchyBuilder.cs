@@ -14,7 +14,7 @@ namespace Route.Algorithms.Contracted.Dual
         protected readonly DirectedMetaGraph _graph;
         private readonly static Logger _logger = Logger.Create("HierarchyBuilder");
         protected readonly WeightHandler<T> _weightHandler;
-        private readonly HugeDictionary<uint, int> _contractionCount;
+        private readonly HugeDictionary<long, int> _contractionCount;
         private readonly HugeDictionary<long, int> _depth;
         protected VertexInfo<T> _vertexInfo;
         public const float E = 0.001f;
@@ -41,16 +41,16 @@ namespace Route.Algorithms.Contracted.Dual
 
             _vertexInfo = new VertexInfo<T>();
             _depth = new HugeDictionary<long, int>();
-            _contractionCount = new HugeDictionary<uint, int>();
+            _contractionCount = new HugeDictionary<long, int>();
 
             this.DifferenceFactor = 4;
             this.DepthFactor = 14;
             this.ContractedFactor = 1;
         }
 
-        private BinaryHeap<uint> _queue; // the vertex-queue.
+        private BinaryHeap<long> _queue; // the vertex-queue.
         private DirectedGraph _witnessGraph; // the graph with all the witnesses.
-        protected BitArray32 _contractedFlags; // contains flags for contracted vertices.
+        protected BitArray64 _contractedFlags; // contains flags for contracted vertices.
         private int _k = 200; // The amount of queue 'misses' before recalculation of queue.
         private int _misses; // Holds a counter of all misses.
         private Queue<bool> _missesQueue; // Holds the misses queue.
@@ -81,17 +81,17 @@ namespace Route.Algorithms.Contracted.Dual
 #if NETSTANDARD2_0
             System.Threading.Tasks.Parallel.For(0, _graph.VertexCount, (v) =>
             {
-                WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (uint) v, null);
+                WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (long) v, null);
             });
 #elif PCL
-            for (uint v = 0; v < _graph.VertexCount; v++)
+            for (long v = 0; v < _graph.VertexCount; v++)
             {
-                WitnessCalculators.Run(_graph.Graph, _witnessGraph, (uint)v, null);
+                WitnessCalculators.Run(_graph.Graph, _witnessGraph, (long)v, null);
             }
 #else
-            for (uint v = 0; v < _graph.VertexCount; v++)
+            for (long v = 0; v < _graph.VertexCount; v++)
             {
-                WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (uint) v, null);
+                WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (long) v, null);
             }
 #endif
         }
@@ -100,7 +100,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// Updates the vertex info object with the given vertex.
         /// </summary>
         /// <returns>True if succeeded, false if a witness calculation is required.</returns>
-        private bool UpdateVertexInfo(uint v)
+        private bool UpdateVertexInfo(long v)
         {
             var contracted = 0;
             var depth = 0;
@@ -144,16 +144,16 @@ namespace Route.Algorithms.Contracted.Dual
         /// </summary>
         protected override void DoRun(CancellationToken cancellationToken)
         {
-            _queue = new BinaryHeap<uint>((uint) _graph.VertexCount);
-            _contractedFlags = new BitArray32(_graph.VertexCount); // is this strictly needed?
+            _queue = new BinaryHeap<long>((long) _graph.VertexCount);
+            _contractedFlags = new BitArray64(_graph.VertexCount); // is this strictly needed?
             _missesQueue = new Queue<bool>();
 
             this.InitializeWitnessGraph();
 
-            this.CalculateQueue((uint) _graph.VertexCount);
+            this.CalculateQueue((long) _graph.VertexCount);
 
             _logger.Log(TraceEventType.Information, "Started contraction...");
-            this.SelectNext((uint) _graph.VertexCount);
+            this.SelectNext((long) _graph.VertexCount);
             var latestProgress = 0f;
             var current = 0;
             var total = _graph.VertexCount;
@@ -164,7 +164,7 @@ namespace Route.Algorithms.Contracted.Dual
                 this.Contract();
 
                 // ... and select next.
-                this.SelectNext((uint) _graph.VertexCount);
+                this.SelectNext((long) _graph.VertexCount);
 
                 // calculate and log progress.
                 var progress = (float) (System.Math.Floor(((double) current / (double) total) * 10000) / 100.0);
@@ -179,8 +179,8 @@ namespace Route.Algorithms.Contracted.Dual
                     int totaEdges = 0;
                     int totalUncontracted = 0;
                     int maxCardinality = 0;
-                    var neighbourCount = new Dictionary<uint, int>();
-                    for (uint v = 0; v < _graph.VertexCount; v++)
+                    var neighbourCount = new Dictionary<long, int>();
+                    for (long v = 0; v < _graph.VertexCount; v++)
                     {
                         if (!_contractedFlags[v])
                         {
@@ -210,7 +210,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Calculates the entire queue.
         /// </summary>
-        private void CalculateQueue(uint size)
+        private void CalculateQueue(long size)
         {
             _logger.Log(TraceEventType.Information, "Calculating queue...");
 
@@ -221,7 +221,7 @@ namespace Route.Algorithms.Contracted.Dual
             long witnessed = 0;
             long total = 0;
             _queue.Clear();
-            for (uint v = 0; v < _graph.VertexCount; v++)
+            for (long v = 0; v < _graph.VertexCount; v++)
             {
                 if (!_contractedFlags[v])
                 {
@@ -248,7 +248,7 @@ namespace Route.Algorithms.Contracted.Dual
             //     witnessed, total);
         }
 
-        private HashSet<uint> localQueue = new HashSet<uint>();
+        private HashSet<long> localQueue = new HashSet<long>();
         private int MaxLocalQueueSize = 1;
 
         private void FlushLocalQueue()
@@ -268,7 +268,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// Select the next vertex to contract.
         /// </summary>
         /// <returns></returns>
-        protected virtual void SelectNext(uint queueSize)
+        protected virtual void SelectNext(long queueSize)
         {
             // first check the first of the current queue.
             while (_queue.Count > 0)
@@ -365,7 +365,7 @@ namespace Route.Algorithms.Contracted.Dual
             return; // all nodes have been contracted.
         }
 
-        protected HashSet<uint> _witnessQueue = new HashSet<uint>();
+        protected HashSet<long> _witnessQueue = new HashSet<long>();
 
         /// <summary>
         /// Contracts the given vertex.
@@ -447,17 +447,17 @@ namespace Route.Algorithms.Contracted.Dual
 #if NETSTANDARD2_0
                 System.Threading.Tasks.Parallel.ForEach(_witnessQueue, (v) =>
                 {
-                    WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (uint) v, _witnessQueue);
+                    WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (long) v, _witnessQueue);
                 });
 #elif PCL
-                for (uint v = 0; v < _graph.VertexCount; v++)
+                for (long v = 0; v < _graph.VertexCount; v++)
                 {
-                    WitnessCalculators.Run(_graph.Graph, _witnessGraph, (uint)v, _witnessQueue);
+                    WitnessCalculators.Run(_graph.Graph, _witnessGraph, (long)v, _witnessQueue);
                 }
 #else
                 foreach (var v in _witnessQueue)
                 {
-                   WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (uint)v, _witnessQueue);
+                   WitnessCalculators.Value.Run(_graph.Graph, _witnessGraph, (long)v, _witnessQueue);
                 }
 #endif
                 _witnessQueue.Clear();
@@ -474,7 +474,7 @@ namespace Route.Algorithms.Contracted.Dual
         /// <summary>
         /// Notifies this calculator that the given vertex was contracted.
         /// </summary>
-        public void NotifyContracted(uint vertex)
+        public void NotifyContracted(long vertex)
         {
             // removes the contractions count.
             _contractionCount.Remove(vertex);
@@ -615,7 +615,7 @@ namespace Route.Algorithms.Contracted.Dual
 
     public static class DirectedGraphExtensions
     {
-        public static void AddOrUpdateEdge(this DirectedGraph graph, uint vertex1, uint vertex2, float forward, float backward)
+        public static void AddOrUpdateEdge(this DirectedGraph graph, long vertex1, long vertex2, float forward, float backward)
         {
 
             if (vertex1 > vertex2)
@@ -631,7 +631,7 @@ namespace Route.Algorithms.Contracted.Dual
 
             var dataForward = ToData(forward);
             var dataBackward = ToData(backward);
-            var data = new uint[] { dataForward, dataBackward };
+            var data = new long[] { dataForward, dataBackward };
             if (graph.UpdateEdgeIfBetter(vertex1, vertex2, (d) =>
                 {
                     var existingForward = FromData(d[0]);
@@ -660,18 +660,18 @@ namespace Route.Algorithms.Contracted.Dual
             }
         }
 
-        public static uint ToData(float weight)
+        public static long ToData(float weight)
         {
             if (weight == float.MaxValue)
             {
-                return uint.MaxValue;
+                return long.MaxValue;
             }
-            return (uint) (weight * 1000);
+            return (long) (weight * 1000);
         }
 
-        public static float FromData(uint data)
+        public static float FromData(long data)
         {
-            if (data == uint.MaxValue)
+            if (data == long.MaxValue)
             {
                 return float.MaxValue;
             }

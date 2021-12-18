@@ -159,13 +159,13 @@ namespace Route.Algorithms.Weights
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static EdgePath<T> GetPath<T>(this WeightHandler<T> weightHandler, PathTree pathTree, uint pointer)
+        public static EdgePath<T> GetPath<T>(this WeightHandler<T> weightHandler, PathTree pathTree, long pointer)
             where T : struct
         {
-            uint vertex, previous;
+            long vertex, previous;
             T weight;
             weightHandler.GetPathTree(pathTree, pointer, out vertex, out weight, out previous);
-            if (previous == uint.MaxValue)
+            if (previous == long.MaxValue)
             {
                 return new EdgePath<T>(vertex);
             }

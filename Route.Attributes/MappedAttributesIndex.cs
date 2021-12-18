@@ -31,11 +31,11 @@ namespace Route.Attributes
     /// <summary>
     /// A collection that contains meta-data per unique id, can be used to map meta-data to vertices or edges by their id's.
     /// </summary>
-    public class MappedAttributesIndex : IEnumerable<uint>
+    public class MappedAttributesIndex : IEnumerable<long>
     {
         private const int _BLOCK_SIZE = 1024;
-        private const uint _NO_DATA = uint.MaxValue;
-        private readonly ArrayBase<uint> _data; // holds pairs of id's and a pointer to the attribute collection for that id.
+        private const long _NO_DATA = long.MaxValue;
+        private readonly ArrayBase<long> _data; // holds pairs of id's and a pointer to the attribute collection for that id.
         private readonly AttributesIndex _attributes;
 
         /// <summary>
@@ -44,9 +44,9 @@ namespace Route.Attributes
         public MappedAttributesIndex(AttributesIndexMode mode = AttributesIndexMode.ReverseCollectionIndex |
                 AttributesIndexMode.ReverseStringIndex)
         {
-            _data = Context.ArrayFactory.CreateMemoryBackedArray<uint>(1024);
+            _data = Context.ArrayFactory.CreateMemoryBackedArray<long>(1024);
             _attributes = new AttributesIndex(mode);
-            _reverseIndex = new HugeDictionary<uint, int>();
+            _reverseIndex = new HugeDictionary<long, int>();
 
             for (var p = 0; p < _data.Length; p++)
             {
@@ -61,9 +61,9 @@ namespace Route.Attributes
             AttributesIndexMode mode = AttributesIndexMode.ReverseCollectionIndex |
                 AttributesIndexMode.ReverseStringIndex)
         {
-            _data = new Array<uint>(map, 1024);
+            _data = new Array<long>(map, 1024);
             _attributes = new AttributesIndex(map, mode);
-            _reverseIndex = new HugeDictionary<uint, int>();
+            _reverseIndex = new HugeDictionary<long, int>();
 
             for (var p = 0; p < _data.Length; p++)
             {
@@ -74,7 +74,7 @@ namespace Route.Attributes
         /// <summary>
         /// Used for deserialization.
         /// </summary>
-        private MappedAttributesIndex(ArrayBase<uint> data, AttributesIndex attributes)
+        private MappedAttributesIndex(ArrayBase<long> data, AttributesIndex attributes)
         {
             _data = data;
             _pointer = (int)_data.Length;
@@ -83,13 +83,13 @@ namespace Route.Attributes
             _reverseIndex = null;
     }
 
-        private HugeDictionary<uint, int> _reverseIndex;
+        private HugeDictionary<long, int> _reverseIndex;
         private int _pointer = 0;
 
         /// <summary>
         /// Gets or sets attributes for the given id.
         /// </summary>
-        public IAttributeCollection this[uint id]
+        public IAttributeCollection this[long id]
         {
             get
             {
@@ -117,7 +117,7 @@ namespace Route.Attributes
         /// Gets the enumerator.
         /// </summary>
         /// <returns></returns>
-        public IEnumerator<uint> GetEnumerator()
+        public IEnumerator<long> GetEnumerator()
         {
             for (var p = 0; p < _pointer; p += 2)
             {
@@ -177,7 +177,7 @@ namespace Route.Attributes
         /// </summary>
         public void MakeWriteable()
         {
-            _reverseIndex = new HugeDictionary<uint, int>();
+            _reverseIndex = new HugeDictionary<long, int>();
             for (var p = 0; p < _data.Length; p += 2)
             {
                 if (_data[p + 0] == _NO_DATA)
@@ -204,7 +204,7 @@ namespace Route.Attributes
             stream.WriteByte(1);
 
             // write data size.
-            var bytes = BitConverter.GetBytes((uint)_data.Length);
+            var bytes = BitConverter.GetBytes((long)_data.Length);
             stream.Write(bytes, 0, 4);
             size += 4;
 
@@ -220,7 +220,7 @@ namespace Route.Attributes
         /// <summary>
         /// Switches the two id's.
         /// </summary>
-        public void Switch(uint id1, uint id2)
+        public void Switch(long id1, long id2)
         {
             if (_reverseIndex == null)
             {
@@ -270,23 +270,23 @@ namespace Route.Attributes
                 throw new Exception(string.Format("Cannot deserialize mapped attributes index: Invalid version #: {0}, upgrade Itinero.", version));
             }
 
-            var bytes = new byte[4];
-            stream.Read(bytes, 0, 4);
-            var length = BitConverter.ToUInt32(bytes, 0);
+            var bytes = new byte[8];
+            stream.Read(bytes, 0, 8);
+            var length = BitConverter.ToInt64(bytes, 0);
 
-            ArrayBase<uint> data;
+            ArrayBase<long> data;
             if (profile == null || profile.DataProfile == null)
             {
-                data = Context.ArrayFactory.CreateMemoryBackedArray<uint>(length);
+                data = Context.ArrayFactory.CreateMemoryBackedArray<long>(length);
                 data.CopyFrom(stream);
             }
             else
             {
                 var position = stream.Position;
                 var map = new MemoryMapStream(new CappedStream(stream, position,
-                    length * 4));
-                data = new Array<uint>(map.CreateUInt32(length), profile.DataProfile);
-                stream.Seek(length * 4, SeekOrigin.Current);
+                    length * 8));
+                data = new Array<long>(map.CreateInt64(length), profile.DataProfile);
+                stream.Seek(length * 8, SeekOrigin.Current);
             }
 
             var attributes = AttributesIndex.Deserialize(new LimitedStream(stream, stream.Position), true);
@@ -295,9 +295,9 @@ namespace Route.Attributes
         }
 
         /// <summary>
-        /// Searches pointer of the given id, returns uint.maxvalue is no data was found.
+        /// Searches pointer of the given id, returns long.maxvalue is no data was found.
         /// </summary>
-        private uint Search(uint id, out int idx)
+        private long Search(long id, out int idx)
         {
             if (_reverseIndex != null)
             {
@@ -371,7 +371,7 @@ namespace Route.Attributes
         /// <summary>
         /// Adds a new id-attributeId pair.
         /// </summary>
-        private void Add(uint id, uint attributeId)
+        private void Add(long id, long attributeId)
         {
             if (_reverseIndex == null)
             {

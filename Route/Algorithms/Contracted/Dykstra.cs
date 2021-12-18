@@ -52,7 +52,7 @@ namespace Route.Algorithms.Contracted
         }
 
         private DirectedMetaGraph.EdgeEnumerator _edgeEnumerator;
-        private Dictionary<uint, EdgePath<T>> _visits;
+        private Dictionary<long, EdgePath<T>> _visits;
         private EdgePath<T> _current;
         private BinaryHeap<EdgePath<T>> _heap;
 
@@ -77,7 +77,7 @@ namespace Route.Algorithms.Contracted
             this.HasSucceeded = true;
 
             // intialize dykstra data structures.
-            _visits = new Dictionary<uint, EdgePath<T>>();
+            _visits = new Dictionary<long, EdgePath<T>>();
             _heap = new BinaryHeap<EdgePath<T>>();
 
             // queue all sources.
@@ -150,7 +150,7 @@ namespace Route.Algorithms.Contracted
         /// Returns true if the given vertex was visited and sets the visit output parameters with the actual visit data.
         /// </summary>
         /// <returns></returns>
-        public bool TryGetVisit(uint vertex, out EdgePath<T> visit)
+        public bool TryGetVisit(long vertex, out EdgePath<T> visit)
         {
             return _visits.TryGetValue(vertex, out visit);
         }

@@ -56,8 +56,8 @@ namespace Route.Algorithms.Contracted.Witness
         /// <summary>
         /// Calculates witness paths.
         /// </summary>
-        public void Calculate(DirectedGraph graph, uint source, List<uint> targets, List<float> weights,
-            ref bool[] forwardWitness, ref bool[] backwardWitness, uint vertexToSkip)
+        public void Calculate(DirectedGraph graph, long source, List<long> targets, List<float> weights,
+            ref bool[] forwardWitness, ref bool[] backwardWitness, long vertexToSkip)
         {
             if(_hopLimit == 1)
             {
@@ -66,10 +66,10 @@ namespace Route.Algorithms.Contracted.Witness
             }
 
             // creates the settled list.
-            var backwardSettled = new HashSet<uint>();
-            var forwardSettled = new HashSet<uint>();
-            var backwardTargets = new HashSet<uint>();
-            var forwardTargets = new HashSet<uint>();
+            var backwardSettled = new HashSet<long>();
+            var forwardSettled = new HashSet<long>();
+            var backwardTargets = new HashSet<long>();
+            var forwardTargets = new HashSet<long>();
             float forwardMaxWeight = 0, backwardMaxWeight = 0;
             for (int idx = 0; idx < weights.Count; idx++)
             {
@@ -96,8 +96,8 @@ namespace Route.Algorithms.Contracted.Witness
             }
 
             // creates the priorty queue.
-            var forwardMinWeight = new Dictionary<uint, float>();
-            var backwardMinWeight = new Dictionary<uint, float>();
+            var forwardMinWeight = new Dictionary<long, float>();
+            var backwardMinWeight = new Dictionary<long, float>();
             _heap.Clear();
             _heap.Push(new SettledVertex(source, 0, 0, forwardMaxWeight > 0, backwardMaxWeight > 0), 0);
 
@@ -241,10 +241,10 @@ namespace Route.Algorithms.Contracted.Witness
         /// <summary>
         /// Calculates witness paths with just one hop.
         /// </summary>
-        public void ExistsOneHop(DirectedGraph graph, uint source, List<uint> targets, List<float> weights,
+        public void ExistsOneHop(DirectedGraph graph, long source, List<long> targets, List<float> weights,
             ref bool[] forwardExists, ref bool[] backwardExists)
         {
-            var targetsToCalculate = new HashSet<uint>();
+            var targetsToCalculate = new HashSet<long>();
             var maxWeight = 0.0f;
             for (int idx = 0; idx < weights.Count; idx++)
             {
@@ -271,7 +271,7 @@ namespace Route.Algorithms.Contracted.Witness
 
                         float neighbourWeight;
                         bool? neighbourDirection;
-                        uint neighbourContractedId;
+                        long neighbourContractedId;
                         ContractedEdgeDataSerializer.Deserialize(edgeEnumerator.Data0, edgeEnumerator.Data1,
                             out neighbourWeight, out neighbourDirection, out neighbourContractedId);
                         var neighbourCanMoveForward = neighbourDirection == null || neighbourDirection.Value;
@@ -335,7 +335,7 @@ namespace Route.Algorithms.Contracted.Witness
             /// <summary>
             /// Creates a new settled vertex.
             /// </summary>
-            public SettledVertex(uint vertex, float weight, uint hops, bool forward, bool backward)
+            public SettledVertex(long vertex, float weight, long hops, bool forward, bool backward)
             {
                 this.VertexId = vertex;
                 this.Weight = weight;
@@ -347,7 +347,7 @@ namespace Route.Algorithms.Contracted.Witness
             /// <summary>
             /// The vertex that was settled.
             /// </summary>
-            public uint VertexId { get; set; }
+            public long VertexId { get; set; }
 
             /// <summary>
             /// The weight this vertex was settled at.
@@ -357,7 +357,7 @@ namespace Route.Algorithms.Contracted.Witness
             /// <summary>
             /// The hop-count of this vertex.
             /// </summary>
-            public uint Hops { get; set; }
+            public long Hops { get; set; }
 
             /// <summary>
             /// Holds the forward flag.

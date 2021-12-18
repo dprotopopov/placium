@@ -26,12 +26,12 @@ namespace Route
         /// <summary>
         /// A constant to use when no edge was found, is available or set.
         /// </summary>
-        public const uint NO_EDGE = uint.MaxValue;
+        public const long NO_EDGE = long.MaxValue;
 
         /// <summary>
         /// A constant to use when no vertex was found, is available or set.
         /// </summary>
-        public const uint NO_VERTEX = uint.MaxValue - 1;
+        public const long NO_VERTEX = long.MaxValue - 1;
 
         /// <summary>
         /// A maximum search distance.
@@ -46,7 +46,7 @@ namespace Route
         /// <summary>
         /// An empty sequence/restriction.
         /// </summary>
-        public static uint[] EMPTY_SEQUENCE = new uint[0];
+        public static long[] EMPTY_SEQUENCE = new long[0];
 
         /// <summary>
         /// The default simplification epsilon.

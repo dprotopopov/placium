@@ -31,7 +31,7 @@ namespace Route.Algorithms.Networks
     {
         private readonly RoutingNetwork _network;
         private readonly MergeDelegate _merge;
-        private readonly Func<uint, bool> _hasRestriction;
+        private readonly Func<long, bool> _hasRestriction;
         private readonly float _simplifyEpsilonInMeter;
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace Route.Algorithms.Networks
         /// </summary>
         /// <param name="edgeId1">The first edge.</param>
         /// <param name="edgeId2">The second edge.</param>
-        public delegate bool CanMergeDelegate(uint edgeId1, uint edgeId2);
+        public delegate bool CanMergeDelegate(long edgeId1, long edgeId2);
         
         /// <summary>
         /// Gets or sets a listener to verify if edge can be merged or not.
@@ -52,7 +52,7 @@ namespace Route.Algorithms.Networks
         /// <param name="oldEdgeId">The old id.</param>
         /// <param name="newEdgeId">The new edge id, a part of the old edge.</param>
         /// <remarks>A this time both old and new edges exist.</remarks>
-        public delegate void NewEdgeDelegate(uint oldEdgeId, uint newEdgeId);
+        public delegate void NewEdgeDelegate(long oldEdgeId, long newEdgeId);
         
         /// <summary>
         /// Gets or sets a listener to listen to new edge nofications.
@@ -68,7 +68,7 @@ namespace Route.Algorithms.Networks
         /// <summary>
         /// Creates a new network optimizer algorithm.
         /// </summary>
-        public NetworkOptimizer(RoutingNetwork network, Func<uint, bool> hasRestriction, MergeDelegate merge, float simplifyEpsilonInMeter = 0.1f)
+        public NetworkOptimizer(RoutingNetwork network, Func<long, bool> hasRestriction, MergeDelegate merge, float simplifyEpsilonInMeter = 0.1f)
         {
             _network = network;
             _merge = merge;
@@ -82,7 +82,7 @@ namespace Route.Algorithms.Networks
         protected override void DoRun(CancellationToken cancellationToken)
         {
             var edges = new List<RoutingEdge>();
-            for (uint vertex = 0; vertex < _network.VertexCount; vertex++)
+            for (long vertex = 0; vertex < _network.VertexCount; vertex++)
             {
                 edges.Clear();
                 edges.AddRange(_network.GetEdgeEnumerator(vertex));

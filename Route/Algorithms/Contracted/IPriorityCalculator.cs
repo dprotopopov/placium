@@ -28,11 +28,11 @@ namespace Route.Algorithms.Contracted
         /// <summary>
         /// Calculate the priority for the given vertex.
         /// </summary>
-        float Calculate(BitArray32 contractedFlags, uint vertex);
+        float Calculate(BitArray64 contractedFlags, long vertex);
 
         /// <summary>
         /// Notifies this calculator that the given vertex was contracted.
         /// </summary>
-        void NotifyContracted(uint vertex);
+        void NotifyContracted(long vertex);
     }
 }

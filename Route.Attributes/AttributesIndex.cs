@@ -32,14 +32,14 @@ namespace Route.Attributes
     {
         private readonly Index<string> _stringIndex;
         private readonly Index<int[]> _collectionIndex;
-        private readonly ArrayBase<uint> _index;
+        private readonly ArrayBase<long> _index;
         private bool _isReadonly = false;
         private readonly AttributesIndexMode _mode;
-        private const uint NULL_ATTRIBUTES = 0;
-        private const uint EMPTY_ATTRIBUTES = 1;
+        private const long NULL_ATTRIBUTES = 0;
+        private const long EMPTY_ATTRIBUTES = 1;
 
         private System.Collections.Generic.IDictionary<string, int> _stringReverseIndex; // Holds all strings and their id.
-        private System.Collections.Generic.IDictionary<int[], uint> _collectionReverseIndex; // Holds all tag collections and their reverse index.
+        private System.Collections.Generic.IDictionary<int[], long> _collectionReverseIndex; // Holds all tag collections and their reverse index.
 
         /// <summary>
         /// Creates a new empty index.
@@ -56,7 +56,7 @@ namespace Route.Attributes
 
             if ((_mode & AttributesIndexMode.IncreaseOne) == AttributesIndexMode.IncreaseOne)
             {
-                _index = Context.ArrayFactory.CreateMemoryBackedArray<uint>(1024);
+                _index = Context.ArrayFactory.CreateMemoryBackedArray<long>(1024);
                 _nextId = 0;
             }
 
@@ -67,7 +67,7 @@ namespace Route.Attributes
             }
             if ((_mode & AttributesIndexMode.ReverseCollectionIndex) == AttributesIndexMode.ReverseCollectionIndex)
             {
-                _collectionReverseIndex = new System.Collections.Generic.Dictionary<int[], uint>(
+                _collectionReverseIndex = new System.Collections.Generic.Dictionary<int[], long>(
                     new DelegateEqualityComparer<int[]>(
                         (obj) =>
                         { // assumed the array is sorted.
@@ -114,7 +114,7 @@ namespace Route.Attributes
 
             if ((_mode & AttributesIndexMode.IncreaseOne) == AttributesIndexMode.IncreaseOne)
             { // create the increment-by-one data structures.
-                _index = new Array<uint>(map, 1024);
+                _index = new Array<long>(map, 1024);
                 _nextId = 0;
             }
 
@@ -125,7 +125,7 @@ namespace Route.Attributes
             }
             if ((_mode & AttributesIndexMode.ReverseCollectionIndex) == AttributesIndexMode.ReverseCollectionIndex)
             {
-                _collectionReverseIndex = new Reminiscence.Collections.Dictionary<int[], uint>(map, 1024 * 16,
+                _collectionReverseIndex = new Reminiscence.Collections.Dictionary<int[], long>(map, 1024 * 16,
                     new DelegateEqualityComparer<int[]>(
                         (obj) =>
                         { // assumed the array is sorted.
@@ -163,7 +163,7 @@ namespace Route.Attributes
             _collectionIndex = tagsIndex;
             _isReadonly = true;
             _index = null;
-            _nextId = uint.MaxValue;
+            _nextId = long.MaxValue;
             _mode = mode;
 
             _stringReverseIndex = null;
@@ -173,20 +173,20 @@ namespace Route.Attributes
         /// <summary>
         /// Creates a new index.
         /// </summary>
-        internal AttributesIndex(AttributesIndexMode mode, Index<string> stringIndex, Index<int[]> tagsIndex, ArrayBase<uint> index)
+        internal AttributesIndex(AttributesIndexMode mode, Index<string> stringIndex, Index<int[]> tagsIndex, ArrayBase<long> index)
         {
             _stringIndex = stringIndex;
             _collectionIndex = tagsIndex;
             _isReadonly = true;
             _index = index;
-            _nextId = (uint) index.Length;
+            _nextId = (long) index.Length;
             _mode = mode;
 
             _stringReverseIndex = null;
             _collectionReverseIndex = null;
         }
 
-        private uint _nextId;
+        private long _nextId;
 
         /// <summary>
         /// Returns true if this index is readonly.
@@ -207,7 +207,7 @@ namespace Route.Attributes
         /// <summary>
         /// Gets the number of collections.
         /// </summary>
-        public uint Count
+        public long Count
         {
             get
             {
@@ -237,7 +237,7 @@ namespace Route.Attributes
         /// <summary>
         /// Returns the attributes that belong to the given id.
         /// </summary>
-        public IAttributeCollection Get(uint tagsId)
+        public IAttributeCollection Get(long tagsId)
         {
             if (tagsId == 0)
             {
@@ -258,7 +258,7 @@ namespace Route.Attributes
         /// <summary>
         /// Adds new attributes.
         /// </summary>
-        public uint Add(IAttributeCollection tags)
+        public long Add(IAttributeCollection tags)
         {
             if (tags == null)
             {
@@ -281,7 +281,7 @@ namespace Route.Attributes
                         throw new Exception("Invalid combination of data: There is an index but mode isn't increase one.");
                     }
 
-                    _nextId = (uint) _index.Length;
+                    _nextId = (long) _index.Length;
                 }
 
                 // build reverse indexes if needed.
@@ -313,7 +313,7 @@ namespace Route.Attributes
 
                 if ((_mode & AttributesIndexMode.ReverseCollectionIndex) == AttributesIndexMode.ReverseCollectionIndex)
                 {
-                    _collectionReverseIndex = new Reminiscence.Collections.Dictionary<int[], uint>(new MemoryMapStream(), 1024 * 16,
+                    _collectionReverseIndex = new Reminiscence.Collections.Dictionary<int[], long>(new MemoryMapStream(), 1024 * 16,
                         new DelegateEqualityComparer<int[]>(
                             (obj) =>
                             { // assumed the array is sorted.
@@ -341,7 +341,7 @@ namespace Route.Attributes
                             }));
                     if (_index != null)
                     {
-                        for (uint col = 0; col < _nextId; col++)
+                        for (long col = 0; col < _nextId; col++)
                         {
                             var pointer = _index[col];
                             _collectionReverseIndex[_collectionIndex.Get(pointer)] = col;
@@ -351,7 +351,7 @@ namespace Route.Attributes
                     {
                         foreach (var pair in _collectionIndex)
                         {
-                            _collectionReverseIndex[pair.Value] = (uint)pair.Key;
+                            _collectionReverseIndex[pair.Value] = (long)pair.Key;
                         }
                     }
                 }
@@ -404,9 +404,9 @@ namespace Route.Attributes
         /// <summary>
         /// Adds a new collection, it's assumed to be sorted.
         /// </summary>
-        private uint AddCollection(int[] collection)
+        private long AddCollection(int[] collection)
         {
-            uint id;
+            long id;
             if (_collectionReverseIndex != null)
             {
                 // check duplicates.
@@ -416,7 +416,7 @@ namespace Route.Attributes
                 }
             }
 
-            id = (uint) _collectionIndex.Add(collection);
+            id = (long) _collectionIndex.Add(collection);
             if (_index != null)
             { // use next id.
                 _index.EnsureMinimumSize(_nextId + 1);
@@ -716,7 +716,7 @@ namespace Route.Attributes
                 var indexLengthBytes = new byte[8];
                 stream.Read(indexLengthBytes, 0, 8);
                 var indexLength = BitConverter.ToInt64(indexLengthBytes, 0);
-                var index = Context.ArrayFactory.CreateMemoryBackedArray<uint>(indexLength);
+                var index = Context.ArrayFactory.CreateMemoryBackedArray<long>(indexLength);
                 index.CopyFrom(stream);
                 return new AttributesIndex(defaultIndexMode, stringIndex, tagsIndex, index);
             }

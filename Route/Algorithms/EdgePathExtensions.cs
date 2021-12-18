@@ -68,7 +68,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Returns true if this path contains the given vertex.
         /// </summary>
-        public static bool HasVertex<T>(this EdgePath<T> path, uint vertex)
+        public static bool HasVertex<T>(this EdgePath<T> path, long vertex)
         {
             while(path != null)
             {
@@ -96,7 +96,7 @@ namespace Route.Algorithms
         /// <summary>
         /// Adds the vertices in this path to the given list.
         /// </summary>
-        public static void AddToListReverseAsVertices<T>(this EdgePath<T> path, List<uint> vertices)
+        public static void AddToListReverseAsVertices<T>(this EdgePath<T> path, List<long> vertices)
         {
             while (path != null)
             {
@@ -121,9 +121,9 @@ namespace Route.Algorithms
         /// <summary>
         /// Adds the vertices in this path to the given list.
         /// </summary>
-        public static void AddToListAsVertices<T>(this EdgePath<T> path, List<uint> vertices)
+        public static void AddToListAsVertices<T>(this EdgePath<T> path, List<long> vertices)
         {
-            var reversed = new List<uint>();
+            var reversed = new List<long>();
             path.AddToListReverseAsVertices(reversed);
             for (var i = reversed.Count - 1; i >= 0; i--)
             {
@@ -179,9 +179,9 @@ namespace Route.Algorithms
         /// <summary>
         /// Converts the path to a list of vertices.
         /// </summary>
-        public static List<uint> ToListAsVertices<T>(this EdgePath<T> path)
+        public static List<long> ToListAsVertices<T>(this EdgePath<T> path)
         {
-            var pathAsList = new List<uint> ();
+            var pathAsList = new List<long> ();
             path.AddToListAsVertices(pathAsList);
             return pathAsList;
         }

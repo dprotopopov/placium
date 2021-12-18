@@ -84,7 +84,7 @@ namespace Route.Geo.Network
         /// <summary>
         /// Gets features for all the given vertices.
         /// </summary>
-        public static FeatureCollection GetFeaturesFor(this RoutingNetwork network, List<uint> vertices)
+        public static FeatureCollection GetFeaturesFor(this RoutingNetwork network, List<long> vertices)
         {
             var features = new FeatureCollection();
 
