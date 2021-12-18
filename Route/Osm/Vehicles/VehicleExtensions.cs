@@ -29,7 +29,7 @@ namespace Route.Osm.Vehicles
         /// Gets the itinero assembly to load embedded resources.
         /// </summary>
         /// <returns></returns>
-        public static Assembly ItineroAssembly()
+        public static Assembly VehicleAssembly()
         {
 #if NETFX_CORE
             return typeof(Vehicle).GetTypeInfo().Assembly;
@@ -43,7 +43,7 @@ namespace Route.Osm.Vehicles
         /// </summary>
         public static string LoadEmbeddedResource(string name)
         {
-            return VehicleExtensions.ItineroAssembly().GetManifestResourceStream(name).ReadToEnd();
+            return VehicleExtensions.VehicleAssembly().GetManifestResourceStream(name).ReadToEnd();
         }
     }
 }

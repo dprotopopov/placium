@@ -38,7 +38,7 @@ namespace Route.Logging
         /// <summary>
         /// Creates a new logger.
         /// </summary>
-        internal static Logger Create(string name)
+        public static Logger Create(string name)
         {
             return new Logger(name);
         }

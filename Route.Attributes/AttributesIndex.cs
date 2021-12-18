@@ -22,7 +22,6 @@ using Reminiscence.Arrays;
 using Reminiscence.Indexes;
 using Reminiscence.IO;
 using Reminiscence.IO.Streams;
-using Route.Algorithms.Collections;
 
 namespace Route.Attributes
 {
@@ -361,7 +360,7 @@ namespace Route.Attributes
             }
 
             // add new collection.
-            var sortedSet = new SortedSet<long>();
+            var sortedSet = new Algorithms.Collections.SortedSet<long>();
             foreach (var tag in tags)
             {
                 sortedSet.Add((long) this.AddString(tag.Key, true) +

@@ -22,6 +22,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Reminiscence.Arrays;
 
 namespace Route.Attributes
 {
@@ -45,6 +46,7 @@ namespace Route.Attributes
         private const string RegexUnitKilometersPerHour = @"\s*(km/h|kmh|kph|kmph)?\s*";
         private const string RegexUnitKnots = @"\s*(knots)\s*";
         private const string RegexUnitMilesPerHour = @"\s*(mph)\s*";
+
 
         /// <summary>
         /// Returns true if the given tags key has an associated value that can be interpreted as true.

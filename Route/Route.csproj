@@ -38,4 +38,15 @@
       <LogicalName>Route.Osm.Vehicles.smalltruck.lua</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Route.Algorithms.Collections\Route.Algorithms.Collections.csproj" />
+    <ProjectReference Include="..\Route.Algorithms.Sorting\Route.Algorithms.Sorting.csproj" />
+    <ProjectReference Include="..\Route.Attributes\Route.Attributes.csproj" />
+    <ProjectReference Include="..\Route.Base\Route.Base.csproj" />
+    <ProjectReference Include="..\Route.IO\Route.IO.csproj" />
+    <ProjectReference Include="..\Route.LocalGeo\Route.LocalGeo.csproj" />
+    <ProjectReference Include="..\Route.Logging\Route.Logging.csproj" />
+    <ProjectReference Include="..\Route.Navigation.Directions\Route.Navigation.Directions.csproj" />
+    <ProjectReference Include="..\Route.Profiles.Lua\Route.Profiles.Lua.csproj" />
+  </ItemGroup>
 </Project>
