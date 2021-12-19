@@ -263,8 +263,7 @@ namespace Route.Profiles
                 }
             }
 
-            Whitelist cachedWhitelist;
-            if (this.TryGetCached(filtered, out cachedWhitelist, false))
+            if (this.TryGetCached(filtered, out var cachedWhitelist, false))
             {
                 foreach (var key in cachedWhitelist)
                 {
@@ -272,8 +271,8 @@ namespace Route.Profiles
                 }
                 return cachedWhitelist.Count > 0;
             }
-            bool[] canTraverse;
-            if (this.Add(filtered, out cachedWhitelist, out canTraverse, false))
+
+            if (this.Add(filtered, out cachedWhitelist, out var canTraverse, false))
             {
                 foreach (var key in cachedWhitelist)
                 {

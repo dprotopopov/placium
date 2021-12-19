@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS restriction (
 	PRIMARY KEY (id, guid, vehicle_type)
 );
 
-CREATE INDEX ON restriction USING GIN (nodes);
+CREATE INDEX IF NOT EXISTS restriction_nodes_idx ON restriction USING GIN (nodes);

@@ -741,8 +741,7 @@ namespace Route
                 var supportedVehicles = stream.ReadWithSizeStringArray();
                 foreach (var vehicleName in supportedVehicles)
                 {
-                    Profile vehicleProfile;
-                    if (Profile.TryGet(vehicleName, out vehicleProfile))
+                    if (Profile.TryGet(vehicleName, out var vehicleProfile))
                     {
                         supportedVehicleInstances.Add(vehicleProfile.Parent);
                     }

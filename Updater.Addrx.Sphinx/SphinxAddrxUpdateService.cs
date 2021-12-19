@@ -159,7 +159,7 @@ namespace Updater.Addrx.Sphinx
             var result = new List<Doc>(take);
             for (var i = 0; i < take && reader.Read(); i++)
             {
-                var dictionary = (Dictionary<string, string>) reader.GetValue(1);
+                var dictionary = reader.GetValue(1) as Dictionary<string, string> ?? new Dictionary<string, string>();
 
                 var priority = keys.Length;
                 for (; priority > 0 && !dictionary.ContainsKey(keys[priority - 1]); priority--) ;

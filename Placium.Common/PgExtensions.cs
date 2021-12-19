@@ -266,7 +266,8 @@ namespace Placium.Common
             node.UserId = reader.SafeGetInt64(6);
             node.UserName = reader.SafeGetString(7);
             node.Visible = reader.SafeGetBoolean(8);
-            node.Tags = ((Dictionary<string, string>) reader.SafeGetValue(9)).ToTags();
+            node.Tags = (reader.SafeGetValue(9) as Dictionary<string, string> ?? new Dictionary<string, string>())
+                .ToTags();
             return node;
         }
 
@@ -279,7 +280,8 @@ namespace Placium.Common
             way.UserId = reader.SafeGetInt64(4);
             way.UserName = reader.SafeGetString(5);
             way.Visible = reader.SafeGetBoolean(6);
-            way.Tags = ((Dictionary<string, string>) reader.SafeGetValue(7)).ToTags();
+            way.Tags = (reader.SafeGetValue(7) as Dictionary<string, string> ?? new Dictionary<string, string>())
+                .ToTags();
             way.Nodes = (long[]) reader.SafeGetValue(8);
             return way;
         }
@@ -293,8 +295,9 @@ namespace Placium.Common
             relation.UserId = reader.SafeGetInt64(4);
             relation.UserName = reader.SafeGetString(5);
             relation.Visible = reader.SafeGetBoolean(6);
-            relation.Tags = ((Dictionary<string, string>) reader.SafeGetValue(7)).ToTags();
-            relation.Members = ((OsmRelationMember[]) reader.SafeGetValue(8))
+            relation.Tags = (reader.SafeGetValue(7) as Dictionary<string, string> ?? new Dictionary<string, string>())
+                .ToTags();
+            relation.Members = (reader.SafeGetValue(8) as OsmRelationMember[] ?? new OsmRelationMember[0])
                 .Select(x => new RelationMember(x.Id, x.Role, (OsmGeoType) x.Type)).ToArray();
             return relation;
         }

@@ -69,11 +69,14 @@ namespace Route.IO.Osm.Streams
 
         private NpgsqlCommand _route_command;
         private NpgsqlCommand _route_command2;
+        private NpgsqlCommand _route_command3;
         private NpgsqlConnection _route_connection;
         private NpgsqlConnection _route_connection2;
+        private NpgsqlConnection _route_connection3;
 
         private TextWriter _writer;
         private TextWriter _writer2;
+        private TextWriter _writer3;
 
         /// <summary>
         ///     Creates a new router db stream target.
@@ -161,7 +164,7 @@ namespace Route.IO.Osm.Streams
                 if (!isDynamic) Processors.Add(new NodeRestrictionProcessor(MarkCore, FoundRestriction));
 
                 Processors.Add(new RestrictionProcessor(_vehicleTypes,
-                    node => _nodeData.ContainsKey(node) ? _nodeData[node] : long.MaxValue, MarkCore,
+                    node => _nodeData.TryGetValue(node, out var vertex) ? vertex : long.MaxValue, MarkCore,
                     FoundRestriction));
             }
 
@@ -246,6 +249,23 @@ namespace Route.IO.Osm.Streams
                     "COPY temp_restriction (guid,vehicle_type,nodes) FROM STDIN WITH NULL AS ''");
             }
 
+
+            if (_route_connection3 == null)
+            {
+                _route_connection3 = new NpgsqlConnection(_db.RouteConnectionString);
+                _route_connection3.Open();
+                _route_connection3.TypeMapper.MapComposite<RouteCoordinate>("coordinate");
+            }
+
+            if (_writer3 == null)
+            {
+                ExecuteResource(Assembly.GetExecutingAssembly(),
+                    "Route.IO.Osm.Streams.CreateTempTables3.pgsql",
+                    _route_connection3);
+                _writer3 = _route_connection3.BeginTextImport(
+                    "COPY temp_edge (guid,from_node,to_node,distance,profile,coordinates,tags) FROM STDIN WITH NULL AS ''");
+            }
+
             // execute the first pass.
             DoPull();
 
@@ -322,7 +342,51 @@ namespace Route.IO.Osm.Streams
                         restrictions = new RestrictionsDb();
                         _db.AddRestrictions(vehicleType, restrictions);
                     }
+
                     restrictions.Add(nodes.Select(x => _nodeData[x]).ToArray());
+                }
+            }
+
+
+            if (_writer3 != null)
+            {
+                _writer3.Flush();
+                _writer3.Dispose();
+                _writer3 = null;
+                ExecuteResource(Assembly.GetExecutingAssembly(),
+                    "Route.IO.Osm.Streams.InsertFromTempTables3.pgsql",
+                    _route_connection3);
+                using var command =
+                    new NpgsqlCommand(
+                        @"SELECT from_node,to_node,distance,profile,coordinates,tags FROM edge WHERE guid=@guid",
+                        _route_connection3);
+                command.Parameters.Add("guid", NpgsqlDbType.Uuid);
+                command.Prepare();
+                command.Parameters["guid"].Value = _db.Guid;
+                using var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    var from = reader.GetInt64(0);
+                    var to = reader.GetInt64(1);
+                    var distance = reader.GetDouble(2);
+                    var profile = reader.GetInt64(3);
+                    var coordinates = reader.GetValue(4) as RouteCoordinate[] ?? new RouteCoordinate[0];
+                    var tags = reader.GetValue(5) as Dictionary<string, string> ?? new Dictionary<string, string>();
+
+                    var metaTags = new AttributeCollection();
+                    foreach (var (key, value) in tags) metaTags.AddOrReplace(key, value);
+
+                    var meta = _db.EdgeMeta.Add(metaTags);
+                    var fromVertex = _nodeData[from];
+                    var toVertex = _nodeData[to];
+                    var intermediates = coordinates.Select(x => new Coordinate((float) x.Latitude, (float) x.Longitude))
+                        .ToList();
+                    AddCoreEdge(fromVertex, toVertex, new EdgeData
+                    {
+                        MetaId = meta,
+                        Distance = (float) distance,
+                        Profile = (ushort) profile
+                    }, intermediates);
                 }
             }
 
@@ -570,8 +634,6 @@ namespace Route.IO.Osm.Streams
                         metaTags.AddOrReplace(profileTags);
                     }
 
-                    var meta = _db.EdgeMeta.Add(metaTags);
-
                     if (!_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes())) return;
 
                     if (_route_connection == null)
@@ -613,17 +675,13 @@ namespace Route.IO.Osm.Streams
 
                     // convert way into one or more edges.
                     var node = 0;
-                    var fromNodeIdx = 0;
 
                     while (node < way.Nodes.Length - 1)
                     {
-                        fromNodeIdx = node;
-
                         // build edge to add.
                         var intermediates = new List<Coordinate>();
                         var distance = 0.0f;
-                        if (!dictionary.ContainsKey(way.Nodes[node])) return;
-                        var item = dictionary[way.Nodes[node]];
+                        if (!dictionary.TryGetValue(way.Nodes[node], out var item)) return;
 
                         var coordinate = new Coordinate((float) item.Latitude, (float) item.Longitude);
 
@@ -637,11 +695,9 @@ namespace Route.IO.Osm.Streams
                         while (true)
                         {
                             if (node >= way.Nodes.Length ||
-                                !dictionary.ContainsKey(way.Nodes[node]))
+                                !dictionary.TryGetValue(way.Nodes[node], out item))
                                 // an incomplete way, node not in source.
                                 return;
-
-                            item = dictionary[way.Nodes[node]];
 
                             coordinate = new Coordinate((float) item.Latitude, (float) item.Longitude);
 
@@ -661,15 +717,18 @@ namespace Route.IO.Osm.Streams
                             node++;
                         }
 
-                        // just add edge.
-                        // duplicates are allowed, one-edge loops are allowed, and too long edges are added with max-length.
-                        // these data-issues are fixed in another processing step.
-                        AddCoreEdge(fromVertex, toVertex, new EdgeData
+                        var edgeValues = new[]
                         {
-                            MetaId = meta,
-                            Distance = distance,
-                            Profile = (ushort) profile
-                        }, intermediates, way.Id.Value, (ushort) fromNodeIdx);
+                            _db.Guid.ToString(),
+                            fromNode.ToString(),
+                            toNode.ToString(),
+                            distance.ValueAsText(),
+                            profile.ToString(),
+                            $"{{{string.Join(",", intermediates.Select(t => $"\\\"({t.Latitude.ValueAsText()},{t.Longitude.ValueAsText()})\\\""))}}}",
+                            $"{string.Join(",", metaTags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
+                        };
+
+                        _writer3.WriteLine(string.Join("\t", edgeValues));
                     }
                 }
             }
@@ -689,8 +748,7 @@ namespace Route.IO.Osm.Streams
         /// <summary>
         ///     Adds a new edge.
         /// </summary>
-        public void AddCoreEdge(long vertex1, long vertex2, EdgeData data, List<Coordinate> shape, long wayId,
-            ushort nodeIdx)
+        public void AddCoreEdge(long vertex1, long vertex2, EdgeData data, List<Coordinate> shape)
         {
             if (data.Distance >= _db.Network.MaxEdgeDistance)
                 // distance is too big to fit into the graph's data field.
