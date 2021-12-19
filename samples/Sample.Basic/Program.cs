@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using OsmSharp.Logging;
 using Placium.Common;
 using Route;
+using Route.Algorithms.Networks;
+using Route.Algorithms.Search.Hilbert;
 using Route.IO.Osm;
 using Route.LocalGeo;
 using Route.Osm.Vehicles;
@@ -43,15 +45,39 @@ namespace Sample.Basic
 
             routerDb.LoadOsmDataFromPlacium(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 
+            var routerDb2 = new RouterDb(routerDb.Guid, connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"));
+            routerDb2.AddSupportedVehicle(Vehicle.Car);
+            routerDb2.Network.GeometricGraph.Graph.MarkAsMulti();
+            routerDb2.LoadVertexes();
+            routerDb2.LoadVertexMeta();
+            routerDb2.LoadRestrictions();
+            routerDb2.LoadEdges();
+            routerDb2.RemoveDuplicateEdges();
+            routerDb2.SplitLongEdges();
+            routerDb2.ConvertToSimple();
+
+            // sort the network.
+            routerDb2.Sort();
+
+            // optimize the network if requested.
+            var settings = new LoadSettings();
+            if (settings.NetworkSimplificationEpsilon > 0)
+            {
+                routerDb2.OptimizeNetwork(settings.NetworkSimplificationEpsilon);
+            }
+
+            // compress the network.
+            routerDb2.Compress();
+
             // get the profile from the routerdb.
             // this is best-practice in Itinero, to prevent mis-matches.
-            var car = routerDb.GetSupportedProfile("car");
+            var car = routerDb2.GetSupportedProfile("car");
 
             // add a contraction hierarchy.
-            routerDb.AddContracted(car);
+            routerDb2.AddContracted(car);
 
             // create router.
-            var router = new Router(routerDb);
+            var router = new Router(routerDb2);
 
             // calculate route.
             // this should be the result: http://geojson.io/#id=gist:dprotopopov/34df4ce18b6e974bb2ee9123b29d46c4&map=16/55.8223/37.6331

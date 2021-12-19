@@ -1,23 +1,4 @@
-﻿/*
- *  Licensed to SharpSoftware under one or more contributor
- *  license agreements. See the NOTICE file distributed with this work for 
- *  additional information regarding copyright ownership.
- * 
- *  SharpSoftware licenses this file to you under the Apache License, 
- *  Version 2.0 (the "License"); you may not use this file except in 
- *  compliance with the License. You may obtain a copy of the License at
- * 
- *       http://www.apache.org/licenses/LICENSE-2.0
- * 
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,9 +10,6 @@ using OsmSharp.Streams;
 using OsmSharp.Streams.Filters;
 using Placium.Common;
 using Route.Attributes;
-using Route.Data.Edges;
-using Route.Data.Network;
-using Route.Data.Network.Restrictions;
 using Route.IO.Osm.Nodes;
 using Route.IO.Osm.Normalizer;
 using Route.IO.Osm.Relations;
@@ -39,7 +17,6 @@ using Route.IO.Osm.Restrictions;
 using Route.LocalGeo;
 using Route.Logging;
 using Route.Profiles;
-using EdgeData = Route.Data.Network.Edges.EdgeData;
 
 namespace Route.IO.Osm.Streams
 {
@@ -154,7 +131,8 @@ namespace Route.IO.Osm.Streams
                 Processors.Add(new DynamicVehicleNodeTagProcessor(_db, dynamicVehicle, MarkCore, AddMeta));
                 if (processRestrictions)
                     Processors.Add(
-                        new DynamicVehicleNodeRestrictionProcessor(_db, dynamicVehicle, MarkCore, FoundRestriction, AddMeta));
+                        new DynamicVehicleNodeRestrictionProcessor(_db, dynamicVehicle, MarkCore, FoundRestriction,
+                            AddMeta));
             }
 
             // add restriction processor if needed.
@@ -212,7 +190,7 @@ namespace Route.IO.Osm.Streams
                     {
                         _db.Guid.ToString(),
                         node.Id.ToString(),
-                        $"{string.Join(",", attributes.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                        $"{string.Join(",", attributes.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                     };
 
                     _writer4.WriteLine(string.Join("\t", values));
@@ -366,7 +344,7 @@ namespace Route.IO.Osm.Streams
                 ExecuteResource(Assembly.GetExecutingAssembly(),
                     "Route.IO.Osm.Streams.InsertFromTempTables4.pgsql",
                     _route_connection4);
-                _db.LoadMetas();
+                _db.LoadVertexMeta();
             }
 
             Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
@@ -648,27 +626,6 @@ namespace Route.IO.Osm.Streams
             command.Prepare();
 
             command.ExecuteNonQuery();
-        }
-
-        /// <summary>
-        ///     Adds a new edge.
-        /// </summary>
-        public void AddCoreEdge(long vertex1, long vertex2, EdgeData data, List<Coordinate> shape)
-        {
-            if (data.Distance >= _db.Network.MaxEdgeDistance)
-                // distance is too big to fit into the graph's data field.
-                // just add the edge with the max distance, length can be recalculated on the fly for these edges 
-                // or (and this is what's probably done) we split up the edge later and add a proper length.
-                data = new EdgeData
-                {
-                    Distance = _db.Network.MaxEdgeDistance,
-                    Profile = data.Profile,
-                    MetaId = data.MetaId
-                };
-
-            // add the edge.
-            var edgeId = _db.Network.AddEdge(vertex1, vertex2, data,
-                shape.Simplify(_simplifyEpsilonInMeter));
         }
 
         /// <summary>

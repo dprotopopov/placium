@@ -1,29 +1,10 @@
-﻿/*
- *  Licensed to SharpSoftware under one or more contributor
- *  license agreements. See the NOTICE file distributed with this work for 
- *  additional information regarding copyright ownership.
- * 
- *  SharpSoftware licenses this file to you under the Apache License, 
- *  Version 2.0 (the "License"); you may not use this file except in 
- *  compliance with the License. You may obtain a copy of the License at
- * 
- *       http://www.apache.org/licenses/LICENSE-2.0
- * 
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using Npgsql;
 using NpgsqlTypes;
-using Reminiscence.IO;
 using Reminiscence.IO.Streams;
 using Route.Attributes;
 using Route.Data.Contracted;
@@ -76,6 +57,31 @@ namespace Route
             _shortcutsDbs = new Dictionary<string, ShortcutsDb>();
 
             Guid = Guid.NewGuid();
+        }
+        /// <summary>
+        ///     Creates a new router database.
+        /// </summary>
+        public RouterDb(Guid guid, string routeConnectionString, string osmConnectionString,
+            float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
+        {
+            RouteConnectionString = routeConnectionString;
+            OsmConnectionString = osmConnectionString;
+            Network = new RoutingNetwork(new GeometricGraph(1), maxEdgeDistance);
+            EdgeProfiles = new AttributesIndex(AttributesIndexMode.IncreaseOne
+                                               | AttributesIndexMode.ReverseAll);
+            EdgeMeta = new AttributesIndex(AttributesIndexMode.ReverseStringIndexKeysOnly);
+            VertexMeta = new MappedAttributesIndex();
+            VertexData = new MetaCollectionDb();
+            EdgeData = new MetaCollectionDb();
+            Meta = new AttributeCollection();
+
+            _supportedVehicles = new Dictionary<string, Vehicle>();
+            _supportedProfiles = new Dictionary<string, Profile>();
+            _contracted = new Dictionary<string, ContractedDb>();
+            _restrictionDbs = new Dictionary<string, RestrictionsDb>();
+            _shortcutsDbs = new Dictionary<string, ShortcutsDb>();
+
+            Guid = guid;
         }
 
         /// <summary>
@@ -239,7 +245,7 @@ namespace Route
             }
         }
 
-        public void LoadMetas()
+        public void LoadVertexMeta()
         {
             using var connection = new NpgsqlConnection(RouteConnectionString);
             connection.Open();
@@ -276,7 +282,7 @@ namespace Route
             }
         }
 
-        public void LoadEdges(bool Normalize)
+        public void LoadEdges(bool Normalize = false)
         {
             using var connection = new NpgsqlConnection(RouteConnectionString);
             connection.Open();
