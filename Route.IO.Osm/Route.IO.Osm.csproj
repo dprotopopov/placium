@@ -21,14 +21,18 @@
     <None Remove="Streams\CreateTempTables.pgsql" />
     <None Remove="Streams\CreateTempTables2.pgsql" />
     <None Remove="Streams\CreateTempTables3.pgsql" />
+    <None Remove="Streams\CreateTempTables4.pgsql" />
     <None Remove="Streams\InsertFromTempTables.pgsql" />
     <None Remove="Streams\InsertFromTempTables2.pgsql" />
     <None Remove="Streams\InsertFromTempTables3.pgsql" />
+    <None Remove="Streams\InsertFromTempTables4.pgsql" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Streams\CreateTempTables4.pgsql" />
     <EmbeddedResource Include="Streams\CreateTempTables3.pgsql" />
     <EmbeddedResource Include="Streams\CreateTempTables2.pgsql" />
     <EmbeddedResource Include="Streams\CreateTempTables.pgsql" />
+    <EmbeddedResource Include="Streams\InsertFromTempTables4.pgsql" />
     <EmbeddedResource Include="Streams\InsertFromTempTables3.pgsql" />
     <EmbeddedResource Include="Streams\InsertFromTempTables2.pgsql" />
     <EmbeddedResource Include="Streams\InsertFromTempTables.pgsql" />

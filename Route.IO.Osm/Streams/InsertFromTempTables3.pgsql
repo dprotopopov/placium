@@ -25,5 +25,4 @@ FROM cte
 WHERE rn = 1
 ON CONFLICT (guid,from_node,to_node) DO NOTHING;
 
-
 DROP TABLE temp_edge;

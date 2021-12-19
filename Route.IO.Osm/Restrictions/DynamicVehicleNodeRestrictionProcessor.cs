@@ -21,14 +21,16 @@ namespace Route.IO.Osm.Restrictions
         private readonly Table _attributesTable;
         private readonly Table _resultsTable;
         private readonly DynamicVehicle _vehicle;
+        private readonly Func<Node, IAttributeCollection, long> _addMeta;
 
         /// <summary>
         /// Creates a new processor.
         /// </summary>
         public DynamicVehicleNodeRestrictionProcessor(RouterDb routerDb, DynamicVehicle vehicle, Func<Node, long> markCore, 
-            Action<string, List<long>> foundRestriction)
+            Action<string, List<long>> foundRestriction, Func<Node, IAttributeCollection, long> addMeta)
         {
             _foundRestriction = foundRestriction;
+            _addMeta = addMeta;
             _routerDb = routerDb;
             _vehicle = vehicle;
             _markCore = markCore;
@@ -78,6 +80,20 @@ namespace Route.IO.Osm.Restrictions
                 var vehicleType = vehicleTypeVal.String;
                 var r = new List<long> { node.Id.Value };
                 _foundRestriction(vehicleType, r);
+                // get attributes to keep and add the vertex meta.
+                var resultAttributes = new AttributeCollection();
+                var dynAttributesToKeep = _resultsTable.Get("attributes_to_keep");
+                if (dynAttributesToKeep != null &&
+                    dynAttributesToKeep.Type != DataType.Nil &&
+                    dynAttributesToKeep.Table.Keys.Count() > 0)
+                {
+                    foreach (var attribute in dynAttributesToKeep.Table.Pairs)
+                    {
+                        resultAttributes.AddOrReplace(attribute.Key.String, attribute.Value.String);
+                    }
+                }
+
+                _addMeta(node, resultAttributes);
             }
         }
 
@@ -102,64 +118,6 @@ namespace Route.IO.Osm.Restrictions
         /// </summary>
         public void SecondPass(Node node)
         {
-            if (node.Tags == null ||
-                node.Tags.Count == 0)
-            {
-                return;
-            }
-
-            if (_nodeRestrictionFunc == null) return;
-
-            lock (_vehicle.Script)
-            {
-                // build lua table.
-                _attributesTable.Clear();
-                foreach (var attribute in node.Tags)
-                {
-                    _attributesTable.Set(attribute.Key, DynValue.NewString(attribute.Value));
-                }
-
-                // call factor_and_speed function.
-                _resultsTable.Clear();
-                _vehicle.Script.Call(_nodeRestrictionFunc, _attributesTable, _resultsTable);
-                
-                // get the vehicle type if any.
-                var vehicleTypeVal = _resultsTable.Get("vehicle");
-                if (vehicleTypeVal == null ||
-                    vehicleTypeVal.Type != DataType.String)
-                { // no restriction found.
-                    return;
-                }
-                
-                // there is a restriction, mark it as such.
-                var vertex = _markCore(node);
-
-                // get attributes to keep and add the vertex meta.
-                var resultAttributes = new AttributeCollection();
-                var dynAttributesToKeep = _resultsTable.Get("attributes_to_keep");
-                if (dynAttributesToKeep != null &&
-                    dynAttributesToKeep.Type != DataType.Nil &&
-                    dynAttributesToKeep.Table.Keys.Count() > 0)
-                {
-                    foreach (var attribute in dynAttributesToKeep.Table.Pairs)
-                    {
-                        resultAttributes.AddOrReplace(attribute.Key.String, attribute.Value.String);
-                    }
-                }
-
-                // add or set the attributes on the vertex.
-                var existing = _routerDb.VertexMeta[vertex];
-                if (existing != null)
-                {
-                    existing = new AttributeCollection(existing);
-                    existing.AddOrReplace(resultAttributes);
-                }
-                else
-                {
-                    existing = resultAttributes;
-                }
-                _routerDb.VertexMeta[vertex] = existing;
-            }
         }
 
         /// <summary>

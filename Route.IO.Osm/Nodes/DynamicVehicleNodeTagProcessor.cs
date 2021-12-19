@@ -27,27 +27,29 @@ using Route.Profiles.Lua.DataTypes;
 namespace Route.IO.Osm.Nodes
 {
     /// <summary>
-    /// A processor that enables lua profiles to add vertex meta data.
+    ///     A processor that enables lua profiles to add vertex meta data.
     /// </summary>
     public class DynamicVehicleNodeTagProcessor : ITwoPassProcessor
     {
+        private readonly Func<Node, IAttributeCollection, long> _addMeta;
+        private readonly Table _attributesTable;
+        private readonly Func<Node, long> _markCore; // marks the node as core.
+        private readonly object _nodeTagProcessor;
+        private readonly Table _resultsTable;
         private readonly RouterDb _routerDb;
         private readonly DynamicVehicle _vehicle;
-        private readonly object _nodeTagProcessor;
-        private readonly Table _attributesTable;
-        private readonly Table _resultsTable;
-        private readonly Func<Node, long> _markCore; // marks the node as core.
 
         /// <summary>
-        /// Creates a new processor.
+        ///     Creates a new processor.
         /// </summary>
-        public DynamicVehicleNodeTagProcessor(RouterDb routerDb, DynamicVehicle vehicle, Func<Node, long> markCore)
+        public DynamicVehicleNodeTagProcessor(RouterDb routerDb, DynamicVehicle vehicle, Func<Node, long> markCore,
+            Func<Node, IAttributeCollection, long> addMeta)
         {
             _routerDb = routerDb;
             _vehicle = vehicle;
             _nodeTagProcessor = vehicle.Script.Globals["node_tag_processor"];
             _markCore = markCore;
-
+            _addMeta = addMeta;
             if (_nodeTagProcessor != null)
             {
                 _attributesTable = new Table(vehicle.Script);
@@ -55,30 +57,69 @@ namespace Route.IO.Osm.Nodes
             }
         }
 
+        public void FirstPass(Node node)
+        {
+            var attributes = GetAttributesFor(node);
+            if (attributes != null &&
+                attributes.Count > 0)
+            {
+                _markCore(node);
+                _addMeta(node, attributes);
+            }
+        }
 
         /// <summary>
-        /// Returns true if node is relevant.
+        ///     Processes the first pass of this way.
+        /// </summary>
+        public void FirstPass(Way way)
+        {
+        }
+
+        /// <summary>
+        ///     Processes the first pass of this relation.
+        /// </summary>
+        public bool FirstPass(Relation relation)
+        {
+            return false;
+        }
+
+        /// <summary>
+        ///     Processes a node in the second pass.
+        /// </summary>
+        public void SecondPass(Node node)
+        {
+        }
+
+        /// <summary>
+        ///     Processes a way in the second pass.
+        /// </summary>
+        public void SecondPass(Way way)
+        {
+        }
+
+        /// <summary>
+        ///     Processes a relation in a second pass.
+        /// </summary>
+        public void SecondPass(Relation relation)
+        {
+        }
+
+
+        /// <summary>
+        ///     Returns true if node is relevant.
         /// </summary>
         private IAttributeCollection GetAttributesFor(Node node)
         {
-            if (_nodeTagProcessor == null)
-            {
-                return null;
-            }
-            
+            if (_nodeTagProcessor == null) return null;
+
             var nodeTags = node.Tags;
-            if (nodeTags == null || nodeTags.Count == 0)
-            {
-                return null;
-            }
+            if (nodeTags == null || nodeTags.Count == 0) return null;
             lock (_vehicle.Script)
             {
                 // build lua table.
                 _attributesTable.Clear();
                 foreach (var attribute in nodeTags)
-                {
                     _attributesTable.Set(attribute.Key, DynValue.NewString(attribute.Value));
-                }
 
                 // call factor_and_speed function.
                 _resultsTable.Clear();
@@ -90,77 +131,10 @@ namespace Route.IO.Osm.Nodes
                 if (dynAttributesToKeep != null &&
                     dynAttributesToKeep.Type != DataType.Nil &&
                     dynAttributesToKeep.Table.Keys.Count() > 0)
-                {
                     foreach (var attribute in dynAttributesToKeep.Table.Pairs)
-                    {
                         resultAttributes.AddOrReplace(attribute.Key.String, attribute.Value.String);
-                    }
-                }
                 return resultAttributes;
             }
-        }
-
-        public void FirstPass(Node node)
-        {
-            var attributes = this.GetAttributesFor(node);
-            if (attributes != null &&
-                attributes.Count > 0)
-            {
-                var vertex = _markCore(node);
-                if (vertex != global::Route.Constants.NO_VERTEX)
-                {
-                    _routerDb.VertexMeta[vertex] = attributes;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Processes the first pass of this way.
-        /// </summary>
-        public void FirstPass(Way way)
-        {
-
-        }
-
-        /// <summary>
-        /// Processes the first pass of this relation.
-        /// </summary>
-        public bool FirstPass(Relation relation)
-        {
-            return false;
-        }
-
-        /// <summary>
-        /// Processes a node in the second pass.
-        /// </summary>
-        public void SecondPass(Node node)
-        {
-            var attributes = this.GetAttributesFor(node);
-            if (attributes != null &&
-                attributes.Count > 0)
-            {
-                var vertex = _markCore(node);
-                if (vertex != global::Route.Constants.NO_VERTEX)
-                {
-                    _routerDb.VertexMeta[vertex] = attributes;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Processes a way in the second pass.
-        /// </summary>
-        public void SecondPass(Way way)
-        {
-
-        }
-
-        /// <summary>
-        /// Processes a relation in a second pass.
-        /// </summary>
-        public void SecondPass(Relation relation)
-        {
-
         }
     }
 }

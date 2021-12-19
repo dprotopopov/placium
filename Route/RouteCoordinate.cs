@@ -1,6 +1,6 @@
 ﻿using NpgsqlTypes;
 
-namespace Route.IO.Osm.Streams
+namespace Route
 {
     public class RouteCoordinate
     {

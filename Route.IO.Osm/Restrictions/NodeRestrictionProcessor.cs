@@ -32,7 +32,7 @@ namespace Route.IO.Osm.Restrictions
                  node.Tags.Contains("barrier", "fence") ||
                  node.Tags.Contains("barrier", "gate")))
             {
-                var vertex = _markCore(node);
+                _markCore(node);
                 var r = new List<long>() {node.Id.Value};
                 _foundRestriction("motorcar", r);
             }

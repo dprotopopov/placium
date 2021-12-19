@@ -51,14 +51,12 @@ namespace Route.IO.Osm.Streams
         private readonly bool _allCore;
         private readonly RouterDb _db;
         private readonly float _simplifyEpsilonInMeter;
-        private readonly Dictionary<long, ushort> _translatedPerOriginal = new Dictionary<long, ushort>();
         private readonly VehicleCache _vehicleCache;
         private readonly HashSet<string> _vehicleTypes;
 
         private HashSet<ITwoPassProcessor> _anotherPass = new HashSet<ITwoPassProcessor>();
 
         private bool _firstPass = true; // flag for first/second pass.
-        private Dictionary<long, long> _nodeData;
         private NpgsqlCommand _osm_command;
 
         private NpgsqlConnection _osm_connection;
@@ -73,10 +71,12 @@ namespace Route.IO.Osm.Streams
         private NpgsqlConnection _route_connection;
         private NpgsqlConnection _route_connection2;
         private NpgsqlConnection _route_connection3;
+        private NpgsqlConnection _route_connection4;
 
         private TextWriter _writer;
         private TextWriter _writer2;
         private TextWriter _writer3;
+        private TextWriter _writer4;
 
         /// <summary>
         ///     Creates a new router db stream target.
@@ -151,10 +151,10 @@ namespace Route.IO.Osm.Streams
 
                 isDynamic = true;
                 Processors.Add(new DynamicVehicleRelationTagProcessor(dynamicVehicle));
-                Processors.Add(new DynamicVehicleNodeTagProcessor(_db, dynamicVehicle, MarkCore));
+                Processors.Add(new DynamicVehicleNodeTagProcessor(_db, dynamicVehicle, MarkCore, AddMeta));
                 if (processRestrictions)
                     Processors.Add(
-                        new DynamicVehicleNodeRestrictionProcessor(_db, dynamicVehicle, MarkCore, FoundRestriction));
+                        new DynamicVehicleNodeRestrictionProcessor(_db, dynamicVehicle, MarkCore, FoundRestriction, AddMeta));
             }
 
             // add restriction processor if needed.
@@ -164,7 +164,7 @@ namespace Route.IO.Osm.Streams
                 if (!isDynamic) Processors.Add(new NodeRestrictionProcessor(MarkCore, FoundRestriction));
 
                 Processors.Add(new RestrictionProcessor(_vehicleTypes,
-                    node => _nodeData.TryGetValue(node, out var vertex) ? vertex : long.MaxValue, MarkCore,
+                    node => _db.NodeData.TryGetValue(node, out var vertex) ? vertex : long.MaxValue, MarkCore,
                     FoundRestriction));
             }
 
@@ -173,14 +173,14 @@ namespace Route.IO.Osm.Streams
             {
                 if (vehicleType == null) vehicleType = string.Empty;
 
-                var restrictionValues = new[]
+                var values = new[]
                 {
                     _db.Guid.ToString(),
                     vehicleType,
                     $"{{{string.Join(",", sequence.Select(t => $"{t}"))}}}"
                 };
 
-                _writer2.WriteLine(string.Join("\t", restrictionValues));
+                _writer2.WriteLine(string.Join("\t", values));
             }
 
             // a function to handle callbacks from processor that want to mark nodes as core.
@@ -188,7 +188,7 @@ namespace Route.IO.Osm.Streams
             {
                 if (_firstPass)
                 {
-                    var nodeValues = new[]
+                    var values = new[]
                     {
                         _db.Guid.ToString(),
                         node.Id.ToString(),
@@ -197,11 +197,31 @@ namespace Route.IO.Osm.Streams
                         true.ValueAsText()
                     };
 
-                    _writer.WriteLine(string.Join("\t", nodeValues));
+                    _writer.WriteLine(string.Join("\t", values));
                     return global::Route.Constants.NO_VERTEX;
                 }
 
-                return _nodeData[node.Id.Value];
+                return _db.NodeData[node.Id.Value];
+            }
+
+            long AddMeta(Node node, IAttributeCollection attributes)
+            {
+                if (_firstPass)
+                {
+                    var values = new[]
+                    {
+                        _db.Guid.ToString(),
+                        node.Id.ToString(),
+                        $"{string.Join(",", attributes.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                    };
+
+                    _writer4.WriteLine(string.Join("\t", values));
+                    return global::Route.Constants.NO_VERTEX;
+                }
+
+                var vertex = _db.NodeData[node.Id.Value];
+                _db.VertexMeta[vertex] = attributes;
+                return vertex;
             }
         }
 
@@ -266,6 +286,22 @@ namespace Route.IO.Osm.Streams
                     "COPY temp_edge (guid,from_node,to_node,distance,coordinates,meta_tags,profile_tags) FROM STDIN WITH NULL AS ''");
             }
 
+            if (_route_connection4 == null)
+            {
+                _route_connection4 = new NpgsqlConnection(_db.RouteConnectionString);
+                _route_connection4.Open();
+            }
+
+            if (_writer4 == null)
+            {
+                ExecuteResource(Assembly.GetExecutingAssembly(),
+                    "Route.IO.Osm.Streams.CreateTempTables4.pgsql",
+                    _route_connection4);
+                _writer4 = _route_connection4.BeginTextImport(
+                    "COPY temp_meta (guid,node,tags) FROM STDIN WITH NULL AS ''");
+            }
+
+
             // execute the first pass.
             DoPull();
 
@@ -289,26 +325,8 @@ namespace Route.IO.Osm.Streams
                 ExecuteResource(Assembly.GetExecutingAssembly(),
                     "Route.IO.Osm.Streams.InsertFromTempTables.pgsql",
                     _route_connection);
-                using var command =
-                    new NpgsqlCommand(
-                        @"SELECT id,latitude,longitude,ROW_NUMBER() OVER (ORDER BY id) FROM node WHERE guid=@guid AND is_core",
-                        _route_connection);
-                command.Parameters.Add("guid", NpgsqlDbType.Uuid);
-                command.Prepare();
-                command.Parameters["guid"].Value = _db.Guid;
-                var keyValuePairs = new List<KeyValuePair<long, long>>();
-                using var reader = command.ExecuteReader();
-                while (reader.Read())
-                {
-                    var id = reader.GetInt64(0);
-                    var latitude = (float) reader.GetDouble(1);
-                    var longitude = (float) reader.GetDouble(2);
-                    var vertex = reader.GetInt64(3) - 1;
-                    _db.Network.AddVertex(vertex, latitude, longitude);
-                    keyValuePairs.Add(new KeyValuePair<long, long>(id, vertex));
-                }
 
-                _nodeData = keyValuePairs.ToDictionary(x => x.Key, x => x.Value);
+                _db.LoadVertexes();
             }
 
             // move to second pass.
@@ -325,26 +343,7 @@ namespace Route.IO.Osm.Streams
                 ExecuteResource(Assembly.GetExecutingAssembly(),
                     "Route.IO.Osm.Streams.InsertFromTempTables2.pgsql",
                     _route_connection2);
-                using var command =
-                    new NpgsqlCommand(
-                        @"SELECT vehicle_type,nodes FROM restriction WHERE guid=@guid",
-                        _route_connection2);
-                command.Parameters.Add("guid", NpgsqlDbType.Uuid);
-                command.Prepare();
-                command.Parameters["guid"].Value = _db.Guid;
-                using var reader = command.ExecuteReader();
-                while (reader.Read())
-                {
-                    var vehicleType = reader.GetString(0);
-                    var nodes = (long[]) reader.GetValue(1);
-                    if (!_db.TryGetRestrictions(vehicleType, out var restrictions))
-                    {
-                        restrictions = new RestrictionsDb();
-                        _db.AddRestrictions(vehicleType, restrictions);
-                    }
-
-                    restrictions.Add(nodes.Select(x => _nodeData[x]).ToArray());
-                }
+                _db.LoadRestrictions();
             }
 
 
@@ -356,118 +355,18 @@ namespace Route.IO.Osm.Streams
                 ExecuteResource(Assembly.GetExecutingAssembly(),
                     "Route.IO.Osm.Streams.InsertFromTempTables3.pgsql",
                     _route_connection3);
-                using var command =
-                    new NpgsqlCommand(
-                        @"SELECT from_node,to_node,distance,coordinates,meta_tags,profile_tags FROM edge WHERE guid=@guid",
-                        _route_connection3);
-                command.Parameters.Add("guid", NpgsqlDbType.Uuid);
-                command.Prepare();
-                command.Parameters["guid"].Value = _db.Guid;
-                using var reader = command.ExecuteReader();
-                while (reader.Read())
-                {
-                    var from = reader.GetInt64(0);
-                    var to = reader.GetInt64(1);
-                    var distance = reader.GetDouble(2);
-                    var coordinates = reader.GetValue(3) as RouteCoordinate[] ?? new RouteCoordinate[0];
-                    var meta_tags = reader.GetValue(4) as Dictionary<string, string> ??
-                                    new Dictionary<string, string>();
-                    var profile_tags = reader.GetValue(5) as Dictionary<string, string> ??
-                                       new Dictionary<string, string>();
+                _db.LoadEdges(Normalize);
+            }
 
-                    var metaTags = new AttributeCollection();
-                    var profileTags = new AttributeCollection();
-                    foreach (var (key, value) in meta_tags) metaTags.AddOrReplace(key, value);
-                    foreach (var (key, value) in profile_tags) profileTags.AddOrReplace(key, value);
-
-
-                    // get profile and meta-data id's.
-                    var profileCount = _profileIndex.Count;
-                    var profile = _profileIndex.Add(profileTags);
-                    if (profileCount != _profileIndex.Count)
-                    {
-                        var stringBuilder = new StringBuilder();
-
-                        if (!Normalize)
-                        {
-                            // no normalization, translate profiles by.
-                            metaTags.AddOrReplace(profileTags);
-
-                            // translate profile.
-                            var translatedProfile = new AttributeCollection();
-                            translatedProfile.AddOrReplace("translated_profile", "yes");
-                            foreach (var vehicle in _vehicleCache.Vehicles)
-                            foreach (var vehicleProfile in vehicle.GetProfiles())
-                            {
-                                var factorAndSpeed = vehicleProfile.FactorAndSpeed(profileTags);
-                                translatedProfile.AddOrReplace($"{vehicleProfile.FullName}",
-                                    $"{factorAndSpeed.Direction}|" +
-                                    global::Route.Extensions.ToInvariantString(factorAndSpeed.Value) + "|" +
-                                    global::Route.Extensions.ToInvariantString(factorAndSpeed.SpeedFactor));
-                            }
-
-                            var translatedCount = _db.EdgeProfiles.Count;
-                            var translatedProfileId = _db.EdgeProfiles.Add(translatedProfile);
-                            if (translatedProfileId > EdgeDataSerializer.MAX_PROFILE_COUNT)
-                                throw new Exception(
-                                    "Maximum supported profiles exceeded, make sure only routing tags are included in the profiles.");
-                            _translatedPerOriginal[profile] = (ushort) translatedProfileId;
-                            profile = translatedProfileId;
-                            if (translatedCount != _db.EdgeProfiles.Count)
-                            {
-                                stringBuilder.Clear();
-                                foreach (var att in translatedProfile)
-                                {
-                                    stringBuilder.Append(att.Key);
-                                    stringBuilder.Append('=');
-                                    stringBuilder.Append(att.Value);
-                                    stringBuilder.Append(' ');
-                                }
-
-                                Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
-                                    "New translated profile: # {0}: {1}", _db.EdgeProfiles.Count,
-                                    global::Route.Extensions.ToInvariantString(stringBuilder));
-                            }
-                        }
-                        else
-                        {
-                            foreach (var att in profileTags)
-                            {
-                                stringBuilder.Append(att.Key);
-                                stringBuilder.Append('=');
-                                stringBuilder.Append(att.Value);
-                                stringBuilder.Append(' ');
-                            }
-
-                            Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
-                                "New edge profile: # profiles {0}: {1}", _profileIndex.Count,
-                                global::Route.Extensions.ToInvariantString(stringBuilder));
-
-                            if (profile > EdgeDataSerializer.MAX_PROFILE_COUNT)
-                                throw new Exception(
-                                    "Maximum supported profiles exceeded, make sure only routing tags are included in the profiles.");
-                        }
-                    }
-                    else if (!Normalize)
-                    {
-                        profile = _translatedPerOriginal[profile];
-
-                        metaTags.AddOrReplace(profileTags);
-                    }
-
-
-                    var meta = _db.EdgeMeta.Add(metaTags);
-                    var fromVertex = _nodeData[from];
-                    var toVertex = _nodeData[to];
-                    var intermediates = coordinates.Select(x => new Coordinate((float) x.Latitude, (float) x.Longitude))
-                        .ToList();
-                    AddCoreEdge(fromVertex, toVertex, new EdgeData
-                    {
-                        MetaId = meta,
-                        Distance = (float) distance,
-                        Profile = (ushort) profile
-                    }, intermediates);
-                }
+            if (_writer4 != null)
+            {
+                _writer4.Flush();
+                _writer4.Dispose();
+                _writer4 = null;
+                ExecuteResource(Assembly.GetExecutingAssembly(),
+                    "Route.IO.Osm.Streams.InsertFromTempTables4.pgsql",
+                    _route_connection4);
+                _db.LoadMetas();
             }
 
             Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
@@ -691,7 +590,7 @@ namespace Route.IO.Osm.Streams
 
                         var coordinate = new Coordinate((float) item.Latitude, (float) item.Longitude);
 
-                        var fromVertex = _nodeData[way.Nodes[node]];
+                        var fromVertex = _db.NodeData[way.Nodes[node]];
                         var fromNode = way.Nodes[node];
                         var previousCoordinate = coordinate;
                         node++;
@@ -713,7 +612,7 @@ namespace Route.IO.Osm.Streams
                             if (item.IsCore)
                             {
                                 // node is part of the core.
-                                toVertex = _nodeData[way.Nodes[node]];
+                                toVertex = _db.NodeData[way.Nodes[node]];
                                 toNode = way.Nodes[node];
                                 break;
                             }
