@@ -17,9 +17,9 @@ CREATE TEMP TABLE temp_edge (
 	from_node BIGINT, 
 	to_node BIGINT,
 	distance DOUBLE PRECISION,
-	profile BIGINT,
 	coordinates coordinate[],
-	tags hstore
+	meta_tags hstore,
+	profile_tags hstore
 );
 
 CREATE TABLE IF NOT EXISTS edge (
@@ -28,9 +28,9 @@ CREATE TABLE IF NOT EXISTS edge (
 	from_node BIGINT, 
 	to_node BIGINT,
 	distance DOUBLE PRECISION, 
-	profile BIGINT,
 	coordinates coordinate[],
-	tags hstore,
+	meta_tags hstore,
+	profile_tags hstore,
 	PRIMARY KEY (id, guid)
 );
 

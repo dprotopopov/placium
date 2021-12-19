@@ -5,9 +5,9 @@ INSERT INTO edge(
 	from_node,
 	to_node,
 	distance,
-	profile,
 	coordinates,
-	tags
+	meta_tags,
+	profile_tags
 )
 WITH cte AS
 (
@@ -18,9 +18,9 @@ SELECT
 	from_node,
 	to_node,
 	distance,
-	profile,
 	coordinates,
-	tags
+	meta_tags,
+	profile_tags
 FROM cte
 WHERE rn = 1
 ON CONFLICT (guid,from_node,to_node) DO NOTHING;

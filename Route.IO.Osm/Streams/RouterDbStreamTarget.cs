@@ -263,7 +263,7 @@ namespace Route.IO.Osm.Streams
                     "Route.IO.Osm.Streams.CreateTempTables3.pgsql",
                     _route_connection3);
                 _writer3 = _route_connection3.BeginTextImport(
-                    "COPY temp_edge (guid,from_node,to_node,distance,profile,coordinates,tags) FROM STDIN WITH NULL AS ''");
+                    "COPY temp_edge (guid,from_node,to_node,distance,coordinates,meta_tags,profile_tags) FROM STDIN WITH NULL AS ''");
             }
 
             // execute the first pass.
@@ -358,7 +358,7 @@ namespace Route.IO.Osm.Streams
                     _route_connection3);
                 using var command =
                     new NpgsqlCommand(
-                        @"SELECT from_node,to_node,distance,profile,coordinates,tags FROM edge WHERE guid=@guid",
+                        @"SELECT from_node,to_node,distance,coordinates,meta_tags,profile_tags FROM edge WHERE guid=@guid",
                         _route_connection3);
                 command.Parameters.Add("guid", NpgsqlDbType.Uuid);
                 command.Prepare();
@@ -369,12 +369,92 @@ namespace Route.IO.Osm.Streams
                     var from = reader.GetInt64(0);
                     var to = reader.GetInt64(1);
                     var distance = reader.GetDouble(2);
-                    var profile = reader.GetInt64(3);
-                    var coordinates = reader.GetValue(4) as RouteCoordinate[] ?? new RouteCoordinate[0];
-                    var tags = reader.GetValue(5) as Dictionary<string, string> ?? new Dictionary<string, string>();
+                    var coordinates = reader.GetValue(3) as RouteCoordinate[] ?? new RouteCoordinate[0];
+                    var meta_tags = reader.GetValue(4) as Dictionary<string, string> ??
+                                    new Dictionary<string, string>();
+                    var profile_tags = reader.GetValue(5) as Dictionary<string, string> ??
+                                       new Dictionary<string, string>();
 
                     var metaTags = new AttributeCollection();
-                    foreach (var (key, value) in tags) metaTags.AddOrReplace(key, value);
+                    var profileTags = new AttributeCollection();
+                    foreach (var (key, value) in meta_tags) metaTags.AddOrReplace(key, value);
+                    foreach (var (key, value) in profile_tags) profileTags.AddOrReplace(key, value);
+
+
+                    // get profile and meta-data id's.
+                    var profileCount = _profileIndex.Count;
+                    var profile = _profileIndex.Add(profileTags);
+                    if (profileCount != _profileIndex.Count)
+                    {
+                        var stringBuilder = new StringBuilder();
+
+                        if (!Normalize)
+                        {
+                            // no normalization, translate profiles by.
+                            metaTags.AddOrReplace(profileTags);
+
+                            // translate profile.
+                            var translatedProfile = new AttributeCollection();
+                            translatedProfile.AddOrReplace("translated_profile", "yes");
+                            foreach (var vehicle in _vehicleCache.Vehicles)
+                            foreach (var vehicleProfile in vehicle.GetProfiles())
+                            {
+                                var factorAndSpeed = vehicleProfile.FactorAndSpeed(profileTags);
+                                translatedProfile.AddOrReplace($"{vehicleProfile.FullName}",
+                                    $"{factorAndSpeed.Direction}|" +
+                                    global::Route.Extensions.ToInvariantString(factorAndSpeed.Value) + "|" +
+                                    global::Route.Extensions.ToInvariantString(factorAndSpeed.SpeedFactor));
+                            }
+
+                            var translatedCount = _db.EdgeProfiles.Count;
+                            var translatedProfileId = _db.EdgeProfiles.Add(translatedProfile);
+                            if (translatedProfileId > EdgeDataSerializer.MAX_PROFILE_COUNT)
+                                throw new Exception(
+                                    "Maximum supported profiles exceeded, make sure only routing tags are included in the profiles.");
+                            _translatedPerOriginal[profile] = (ushort) translatedProfileId;
+                            profile = translatedProfileId;
+                            if (translatedCount != _db.EdgeProfiles.Count)
+                            {
+                                stringBuilder.Clear();
+                                foreach (var att in translatedProfile)
+                                {
+                                    stringBuilder.Append(att.Key);
+                                    stringBuilder.Append('=');
+                                    stringBuilder.Append(att.Value);
+                                    stringBuilder.Append(' ');
+                                }
+
+                                Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
+                                    "New translated profile: # {0}: {1}", _db.EdgeProfiles.Count,
+                                    global::Route.Extensions.ToInvariantString(stringBuilder));
+                            }
+                        }
+                        else
+                        {
+                            foreach (var att in profileTags)
+                            {
+                                stringBuilder.Append(att.Key);
+                                stringBuilder.Append('=');
+                                stringBuilder.Append(att.Value);
+                                stringBuilder.Append(' ');
+                            }
+
+                            Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
+                                "New edge profile: # profiles {0}: {1}", _profileIndex.Count,
+                                global::Route.Extensions.ToInvariantString(stringBuilder));
+
+                            if (profile > EdgeDataSerializer.MAX_PROFILE_COUNT)
+                                throw new Exception(
+                                    "Maximum supported profiles exceeded, make sure only routing tags are included in the profiles.");
+                        }
+                    }
+                    else if (!Normalize)
+                    {
+                        profile = _translatedPerOriginal[profile];
+
+                        metaTags.AddOrReplace(profileTags);
+                    }
+
 
                     var meta = _db.EdgeMeta.Add(metaTags);
                     var fromVertex = _nodeData[from];
@@ -486,54 +566,53 @@ namespace Route.IO.Osm.Streams
                         processor.FirstPass(way);
 
                 if (_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes()))
-                    if (true)
+                {
+                    if (!_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes())) return;
+
+                    if (_osm_connection == null)
                     {
-                        if (!_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes())) return;
-
-                        if (_osm_connection == null)
-                        {
-                            _osm_connection = new NpgsqlConnection(_db.OsmConnectionString);
-                            _osm_connection.Open();
-                        }
-
-                        if (_osm_command == null)
-                        {
-                            _osm_command = new NpgsqlCommand(
-                                @"SELECT id,latitude,longitude FROM node WHERE id=ANY(@ids)",
-                                _osm_connection);
-                            _osm_command.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                            _osm_command.Prepare();
-                        }
-
-                        _osm_command.Parameters["ids"].Value = way.Nodes;
-
-                        var list = new List<NodeItem>(way.Nodes.Length);
-
-                        using (var reader = _osm_command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                                list.Add(new NodeItem
-                                {
-                                    Id = reader.GetInt64(0),
-                                    Latitude = reader.GetDouble(1),
-                                    Longitude = reader.GetDouble(2)
-                                });
-                        }
-
-                        list.ForEach(node =>
-                        {
-                            var nodeValues = new[]
-                            {
-                                _db.Guid.ToString(),
-                                node.Id.ToString(),
-                                node.Latitude.ValueAsText(),
-                                node.Longitude.ValueAsText(),
-                                (node.Id == way.Nodes.First() || node.Id == way.Nodes.Last()).ValueAsText()
-                            };
-
-                            _writer.WriteLine(string.Join("\t", nodeValues));
-                        });
+                        _osm_connection = new NpgsqlConnection(_db.OsmConnectionString);
+                        _osm_connection.Open();
                     }
+
+                    if (_osm_command == null)
+                    {
+                        _osm_command = new NpgsqlCommand(
+                            @"SELECT id,latitude,longitude FROM node WHERE id=ANY(@ids)",
+                            _osm_connection);
+                        _osm_command.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                        _osm_command.Prepare();
+                    }
+
+                    _osm_command.Parameters["ids"].Value = way.Nodes;
+
+                    var list = new List<NodeItem>(way.Nodes.Length);
+
+                    using (var reader = _osm_command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            list.Add(new NodeItem
+                            {
+                                Id = reader.GetInt64(0),
+                                Latitude = reader.GetDouble(1),
+                                Longitude = reader.GetDouble(2)
+                            });
+                    }
+
+                    list.ForEach(node =>
+                    {
+                        var nodeValues = new[]
+                        {
+                            _db.Guid.ToString(),
+                            node.Id.ToString(),
+                            node.Latitude.ValueAsText(),
+                            node.Longitude.ValueAsText(),
+                            (node.Id == way.Nodes.First() || node.Id == way.Nodes.Last()).ValueAsText()
+                        };
+
+                        _writer.WriteLine(string.Join("\t", nodeValues));
+                    });
+                }
             }
             else
             {
@@ -560,79 +639,6 @@ namespace Route.IO.Osm.Streams
                         // way has some use, add all of it's nodes to the index.
                         return;
 
-                    // get profile and meta-data id's.
-                    var profileCount = _profileIndex.Count;
-                    var profile = _profileIndex.Add(profileTags);
-                    if (profileCount != _profileIndex.Count)
-                    {
-                        var stringBuilder = new StringBuilder();
-
-                        if (!Normalize)
-                        {
-                            // no normalization, translate profiles by.
-                            metaTags.AddOrReplace(profileTags);
-
-                            // translate profile.
-                            var translatedProfile = new AttributeCollection();
-                            translatedProfile.AddOrReplace("translated_profile", "yes");
-                            foreach (var vehicle in _vehicleCache.Vehicles)
-                            foreach (var vehicleProfile in vehicle.GetProfiles())
-                            {
-                                var factorAndSpeed = vehicleProfile.FactorAndSpeed(profileTags);
-                                translatedProfile.AddOrReplace($"{vehicleProfile.FullName}",
-                                    $"{factorAndSpeed.Direction}|" +
-                                    global::Route.Extensions.ToInvariantString(factorAndSpeed.Value) + "|" +
-                                    global::Route.Extensions.ToInvariantString(factorAndSpeed.SpeedFactor));
-                            }
-
-                            var translatedCount = _db.EdgeProfiles.Count;
-                            var translatedProfileId = _db.EdgeProfiles.Add(translatedProfile);
-                            if (translatedProfileId > EdgeDataSerializer.MAX_PROFILE_COUNT)
-                                throw new Exception(
-                                    "Maximum supported profiles exceeded, make sure only routing tags are included in the profiles.");
-                            _translatedPerOriginal[profile] = (ushort) translatedProfileId;
-                            profile = translatedProfileId;
-                            if (translatedCount != _db.EdgeProfiles.Count)
-                            {
-                                stringBuilder.Clear();
-                                foreach (var att in translatedProfile)
-                                {
-                                    stringBuilder.Append(att.Key);
-                                    stringBuilder.Append('=');
-                                    stringBuilder.Append(att.Value);
-                                    stringBuilder.Append(' ');
-                                }
-
-                                Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
-                                    "New translated profile: # {0}: {1}", _db.EdgeProfiles.Count,
-                                    global::Route.Extensions.ToInvariantString(stringBuilder));
-                            }
-                        }
-                        else
-                        {
-                            foreach (var att in profileTags)
-                            {
-                                stringBuilder.Append(att.Key);
-                                stringBuilder.Append('=');
-                                stringBuilder.Append(att.Value);
-                                stringBuilder.Append(' ');
-                            }
-
-                            Logger.Log("RouterDbStreamTarget", TraceEventType.Information,
-                                "New edge profile: # profiles {0}: {1}", _profileIndex.Count,
-                                global::Route.Extensions.ToInvariantString(stringBuilder));
-
-                            if (profile > EdgeDataSerializer.MAX_PROFILE_COUNT)
-                                throw new Exception(
-                                    "Maximum supported profiles exceeded, make sure only routing tags are included in the profiles.");
-                        }
-                    }
-                    else if (!Normalize)
-                    {
-                        profile = _translatedPerOriginal[profile];
-
-                        metaTags.AddOrReplace(profileTags);
-                    }
 
                     if (!_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes())) return;
 
@@ -723,9 +729,9 @@ namespace Route.IO.Osm.Streams
                             fromNode.ToString(),
                             toNode.ToString(),
                             distance.ValueAsText(),
-                            profile.ToString(),
                             $"{{{string.Join(",", intermediates.Select(t => $"\\\"({t.Latitude.ValueAsText()},{t.Longitude.ValueAsText()})\\\""))}}}",
-                            $"{string.Join(",", metaTags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
+                            $"{string.Join(",", metaTags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                            $"{string.Join(",", profileTags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                         };
 
                         _writer3.WriteLine(string.Join("\t", edgeValues));
