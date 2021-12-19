@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
-using Placium.IO.Osm;
 using Route;
 using Route.IO.Osm;
 using Route.LocalGeo;

@@ -30,7 +30,6 @@ using OsmSharp.Streams.Filters;
 using Placium.Common;
 using Route.Attributes;
 using Route.Data.Edges;
-using Route.Data.Meta;
 using Route.Data.Network;
 using Route.Data.Network.Restrictions;
 using Route.IO.Osm.Nodes;
@@ -73,8 +72,6 @@ namespace Route.IO.Osm.Streams
         private NpgsqlConnection _route_connection;
         private NpgsqlConnection _route_connection2;
 
-        private MetaCollection<long> _wayIds;
-        private MetaCollection<ushort> _wayNodeIndices;
         private TextWriter _writer;
         private TextWriter _writer2;
 
@@ -211,12 +208,6 @@ namespace Route.IO.Osm.Streams
         public override void Initialize()
         {
             _firstPass = true;
-
-            if (KeepWayIds)
-            {
-                _wayIds = _db.EdgeData.AddInt64(Constants.WAY_ID_META_NAME);
-                _wayNodeIndices = _db.EdgeData.AddUInt16(Constants.WAY_NODE_IDX_META_NAME);
-            }
         }
 
         /// <summary>
@@ -715,13 +706,6 @@ namespace Route.IO.Osm.Streams
             // add the edge.
             var edgeId = _db.Network.AddEdge(vertex1, vertex2, data,
                 shape.Simplify(_simplifyEpsilonInMeter));
-
-            // save the original way-id and node index for this edge.
-            if (_wayIds != null)
-            {
-                _wayIds[edgeId] = wayId;
-                _wayNodeIndices[edgeId] = nodeIdx;
-            }
         }
 
         /// <summary>

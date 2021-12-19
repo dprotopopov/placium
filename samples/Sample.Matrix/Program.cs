@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Placium.Common;
-using Placium.IO.Osm;
 using Route;
 using Route.Algorithms.Matrices;
 using Route.IO.Osm;

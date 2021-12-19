@@ -60,8 +60,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addrobx.Sphinx", "U
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySql.QueryTools.WebApp", "MySql.QueryTools.WebApp\MySql.QueryTools.WebApp.csproj", "{5A2837E5-D502-486C-A477-194C4FBADCB7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Placium.IO.Osm", "Placium.IO.Osm\Placium.IO.Osm.csproj", "{9C2FA2BA-BE29-47EB-9136-9A5D11B8E7FD}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route", "Route\Route.csproj", "{70399F91-8B2E-4C14-BC1B-EDE6884EE454}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Geo", "Route.Geo\Route.Geo.csproj", "{356DE268-230E-49B5-A4E2-E61CF77E15BA}"
@@ -70,23 +68,23 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.IO.Osm", "Route.IO.Os
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.IO.Shape", "Route.IO.Shape\Route.IO.Shape.csproj", "{F13941AC-A49D-4ED9-AAFE-ED796F8B504F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.IO", "Route.IO\Route.IO.csproj", "{AD6B008D-2C8A-4945-ADD4-9E0C5CAB3B11}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.IO", "Route.IO\Route.IO.csproj", "{AD6B008D-2C8A-4945-ADD4-9E0C5CAB3B11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.Logging", "Route.Logging\Route.Logging.csproj", "{DE82DF58-E940-4FA6-A313-2543806DEB87}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Logging", "Route.Logging\Route.Logging.csproj", "{DE82DF58-E940-4FA6-A313-2543806DEB87}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.Base", "Route.Base\Route.Base.csproj", "{5A98795E-0236-4511-8290-900443CFEF2E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Base", "Route.Base\Route.Base.csproj", "{5A98795E-0236-4511-8290-900443CFEF2E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.Algorithms.Collections", "Route.Algorithms.Collections\Route.Algorithms.Collections.csproj", "{DC3E6D20-84F3-43BD-B734-247B3B619BAD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Algorithms.Collections", "Route.Algorithms.Collections\Route.Algorithms.Collections.csproj", "{DC3E6D20-84F3-43BD-B734-247B3B619BAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.Algorithms.Sorting", "Route.Algorithms.Sorting\Route.Algorithms.Sorting.csproj", "{663EF87E-1E1E-423D-9124-6DC52599EDCD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Algorithms.Sorting", "Route.Algorithms.Sorting\Route.Algorithms.Sorting.csproj", "{663EF87E-1E1E-423D-9124-6DC52599EDCD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.Attributes", "Route.Attributes\Route.Attributes.csproj", "{294445CA-C94D-4F25-837F-542D60A07B9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Attributes", "Route.Attributes\Route.Attributes.csproj", "{294445CA-C94D-4F25-837F-542D60A07B9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.Profiles.Lua", "Route.Profiles.Lua\Route.Profiles.Lua.csproj", "{12F02C05-B3F6-4C61-B539-3C7CCFB5FA59}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Profiles.Lua", "Route.Profiles.Lua\Route.Profiles.Lua.csproj", "{12F02C05-B3F6-4C61-B539-3C7CCFB5FA59}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.Navigation.Directions", "Route.Navigation.Directions\Route.Navigation.Directions.csproj", "{0DCFA33B-9BC4-4217-BA34-B0F3C1686741}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Navigation.Directions", "Route.Navigation.Directions\Route.Navigation.Directions.csproj", "{0DCFA33B-9BC4-4217-BA34-B0F3C1686741}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Route.LocalGeo", "Route.LocalGeo\Route.LocalGeo.csproj", "{E3AF1351-E741-402C-8A33-85434BFA90FF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.LocalGeo", "Route.LocalGeo\Route.LocalGeo.csproj", "{E3AF1351-E741-402C-8A33-85434BFA90FF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -178,10 +176,6 @@ Global
 		{5A2837E5-D502-486C-A477-194C4FBADCB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A2837E5-D502-486C-A477-194C4FBADCB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A2837E5-D502-486C-A477-194C4FBADCB7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9C2FA2BA-BE29-47EB-9136-9A5D11B8E7FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9C2FA2BA-BE29-47EB-9136-9A5D11B8E7FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9C2FA2BA-BE29-47EB-9136-9A5D11B8E7FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9C2FA2BA-BE29-47EB-9136-9A5D11B8E7FD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{70399F91-8B2E-4C14-BC1B-EDE6884EE454}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{70399F91-8B2E-4C14-BC1B-EDE6884EE454}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{70399F91-8B2E-4C14-BC1B-EDE6884EE454}.Release|Any CPU.ActiveCfg = Release|Any CPU

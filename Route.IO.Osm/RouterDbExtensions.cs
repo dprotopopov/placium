@@ -22,10 +22,10 @@ using System.IO;
 using OsmSharp;
 using OsmSharp.Streams;
 using OsmSharp.Streams.Filters;
-using Placium.IO.Osm.PostgreSQL;
 using Route.Algorithms.Networks;
 using Route.Algorithms.Search.Hilbert;
 using Route.IO.Osm.Overpass;
+using Route.IO.Osm.PostgreSQL;
 using Route.IO.Osm.Streams;
 using Route.LocalGeo;
 using Route.Profiles;
@@ -43,7 +43,7 @@ namespace Route.IO.Osm
         public static void LoadOsmDataFromPostgreSQL(this RouterDb db, string osmConnectionString,
             params Vehicle[] vehicles)
         {
-            var stream = new PostgresSQLDataSource(osmConnectionString);
+            var stream = new PostgresSQLStreamSource(osmConnectionString);
             LoadOsmData(db, (OsmStreamSource) stream, vehicles);
         }
 

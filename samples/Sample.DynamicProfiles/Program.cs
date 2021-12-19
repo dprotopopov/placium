@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OsmSharp.Logging;
 using Placium.Common;
-using Placium.IO.Osm;
 using Route;
 using Route.Attributes;
 using Route.IO.Osm;

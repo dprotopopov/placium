@@ -5,9 +5,9 @@ using OsmSharp.Streams;
 using Placium.Common;
 using Placium.Types;
 
-namespace Placium.IO.Osm.PostgreSQL
+namespace Route.IO.Osm.PostgreSQL
 {
-    public class PostgresSQLDataSource : OsmStreamSource
+    public class PostgresSQLStreamSource : OsmStreamSource
     {
         private readonly NpgsqlCommand _command;
         private readonly NpgsqlConnection _connection;
@@ -54,7 +54,7 @@ namespace Placium.IO.Osm.PostgreSQL
 
         private NpgsqlDataReader _reader;
 
-        public PostgresSQLDataSource(string connectionString)
+        public PostgresSQLStreamSource(string connectionString)
         {
             ConnectionString = connectionString;
             _connection = new NpgsqlConnection(ConnectionString);

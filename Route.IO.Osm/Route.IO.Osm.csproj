@@ -8,7 +8,6 @@
     <Description>Route.IO.Osm - OpenStreetMap data IO.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
     <ProjectReference Include="..\Route\Route.csproj" />
   </ItemGroup>
   <ItemGroup>
