@@ -100,6 +100,20 @@ namespace Route.IO.Osm.Nodes
             }
         }
 
+        public void FirstPass(Node node)
+        {
+            var attributes = this.GetAttributesFor(node);
+            if (attributes != null &&
+                attributes.Count > 0)
+            {
+                var vertex = _markCore(node);
+                if (vertex != global::Route.Constants.NO_VERTEX)
+                {
+                    _routerDb.VertexMeta[vertex] = attributes;
+                }
+            }
+        }
+
         /// <summary>
         /// Processes the first pass of this way.
         /// </summary>

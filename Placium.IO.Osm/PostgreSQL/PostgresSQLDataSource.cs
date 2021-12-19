@@ -11,7 +11,7 @@ namespace Placium.IO.Osm.PostgreSQL
     {
         private readonly NpgsqlCommand _command;
         private readonly NpgsqlConnection _connection;
-        private readonly string _connectionString;
+        public string ConnectionString { get; }
 
         private readonly string _selectNode = @"SELECT 
         id,
@@ -56,8 +56,8 @@ namespace Placium.IO.Osm.PostgreSQL
 
         public PostgresSQLDataSource(string connectionString)
         {
-            _connectionString = connectionString;
-            _connection = new NpgsqlConnection(_connectionString);
+            ConnectionString = connectionString;
+            _connection = new NpgsqlConnection(ConnectionString);
             _connection.Open();
             _connection.ReloadTypes();
             _connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");

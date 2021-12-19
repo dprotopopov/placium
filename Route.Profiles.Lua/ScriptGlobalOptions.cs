@@ -1,6 +1,6 @@
 ﻿using Route.Profiles.Lua.Interop;
 
-//using Itinero.Profiles.Lua.Platforms;
+//using Route.Profiles.Lua.Platforms;
 
 namespace Route.Profiles.Lua
 {

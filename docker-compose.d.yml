@@ -21,6 +21,10 @@ services:
     volumes:
       - //d/placium/osm/data:/var/lib/postgresql/data
 
+  route-placium:
+    volumes:
+      - //d/placium/route/data:/var/lib/postgresql/data
+
   manticore-placium:
     volumes:
       - //d/placium/manticore/run:/var/manticore/run

@@ -3,9 +3,9 @@ using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Placium.Common;
-using Placium.IO.Osm;
 using Route;
 using Route.Data.Edges;
+using Route.IO.Osm;
 using Route.LocalGeo;
 using Route.Logging;
 using Route.Profiles;
@@ -37,7 +37,8 @@ namespace Sample.Shape
             // create a new router db and load the shapefile.
             var vehicle = DynamicVehicle.LoadFromStream(File.OpenRead(
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "car.lua")));
-            var routerDb = new RouterDb(EdgeDataSerializer.MAX_DISTANCE);
+            var routerDb = new RouterDb(connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"),
+                EdgeDataSerializer.MAX_DISTANCE);
             routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), vehicle);
 
             // OPTIONAL: build a contracted version of the routing graph.

@@ -24,7 +24,20 @@ namespace Route.IO.Osm.Restrictions
             _foundRestriction = foundRestriction;
             _markCore = markCore;
         }
-        
+
+        public void FirstPass(Node node)
+        {
+            if (node.Tags != null &&
+                (node.Tags.Contains("barrier", "bollard") ||
+                 node.Tags.Contains("barrier", "fence") ||
+                 node.Tags.Contains("barrier", "gate")))
+            {
+                var vertex = _markCore(node);
+                var r = new List<long>() {node.Id.Value};
+                _foundRestriction("motorcar", r);
+            }
+        }
+
         /// <summary>
         /// Processes the given way in the first pass.
         /// </summary>
@@ -46,19 +59,6 @@ namespace Route.IO.Osm.Restrictions
         /// </summary>
         public void SecondPass(Node node)
         {
-            if (node.Tags != null &&
-                (node.Tags.Contains("barrier", "bollard") ||
-                 node.Tags.Contains("barrier", "fence") ||
-                 node.Tags.Contains("barrier", "gate")))
-            {
-                var vertex = _markCore(node);
-                if (vertex != global::Route.Constants.NO_VERTEX)
-                {
-                    var r = new List<long>();
-                    r.Add(vertex);
-                    _foundRestriction("motorcar", r);
-                }
-            }
         }
 
         /// <summary>

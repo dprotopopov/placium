@@ -1,12 +1,14 @@
-﻿#if !NETFX_CORE || !DOTNET_CORE
+﻿
 
+using Route.Profiles.Lua.Compatibility.Frameworks.Base;
+#if !NETFX_CORE || !DOTNET_CORE
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace Itinero.Profiles.Lua.Compatibility.Frameworks
+namespace Route.Profiles.Lua.Compatibility.Frameworks
 {
 	abstract class FrameworkClrBase : FrameworkReflectionBase
 	{

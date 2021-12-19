@@ -21,8 +21,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\AstraUtils\AstraUtils.csproj" />
 		<ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
-		<ProjectReference Include="..\Route.IO.Osm\Route.IO.Osm.csproj" />
-		<ProjectReference Include="..\Route\Route.csproj" />
+		<ProjectReference Include="..\Route.LocalGeo\Route.LocalGeo.csproj" />
 	</ItemGroup>
 
 </Project>

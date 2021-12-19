@@ -22,8 +22,10 @@ using System.IO;
 using OsmSharp;
 using OsmSharp.Streams;
 using OsmSharp.Streams.Filters;
+using Placium.IO.Osm.PostgreSQL;
 using Route.Algorithms.Networks;
 using Route.Algorithms.Search.Hilbert;
+using Route.IO.Osm.Overpass;
 using Route.IO.Osm.Streams;
 using Route.LocalGeo;
 using Route.Profiles;
@@ -35,6 +37,16 @@ namespace Route.IO.Osm
     /// </summary>
     public static class RouterDbExtensions
     {
+        /// <summary>
+        ///     Loads a routing network from OSM data downloaded from PostgreSQL.
+        /// </summary>
+        public static void LoadOsmDataFromPostgreSQL(this RouterDb db, string osmConnectionString,
+            params Vehicle[] vehicles)
+        {
+            var stream = new PostgresSQLDataSource(osmConnectionString);
+            LoadOsmData(db, (OsmStreamSource) stream, vehicles);
+        }
+
         /// <summary>
         /// Loads a routing network created from OSM data.
         /// </summary>
@@ -55,7 +67,7 @@ namespace Route.IO.Osm
 
             // load the data.
             var source = new PBFOsmStreamSource(data);
-            var progress = new OsmSharp.Streams.Filters.OsmStreamFilterProgress();
+            var progress = new OsmStreamFilterProgress();
             progress.RegisterSource(source);
             db.LoadOsmData(progress, allCore, true, vehicles);
         }
@@ -72,7 +84,7 @@ namespace Route.IO.Osm
 
             // load the data.
             var source = new PBFOsmStreamSource(data);
-            var progress = new OsmSharp.Streams.Filters.OsmStreamFilterProgress();
+            var progress = new OsmStreamFilterProgress();
             progress.RegisterSource(source);
             db.LoadOsmData(new OsmStreamSource[] { progress }, settings, vehicles);
         }
@@ -89,7 +101,7 @@ namespace Route.IO.Osm
 
             // load the data.
             var source = new PBFOsmStreamSource(data);
-            var progress = new OsmSharp.Streams.Filters.OsmStreamFilterProgress();
+            var progress = new OsmStreamFilterProgress();
             progress.RegisterSource(source);
             db.LoadOsmData(progress, allCore, processRestrictions, vehicles);
         }
@@ -99,7 +111,7 @@ namespace Route.IO.Osm
         /// </summary>
         public static void LoadOsmData(this RouterDb db, IEnumerable<OsmGeo> source, params Vehicle[] vehicles)
         {
-            db.LoadOsmData(new OsmSharp.Streams.OsmEnumerableStreamSource(source), vehicles);
+            db.LoadOsmData(new OsmEnumerableStreamSource(source), vehicles);
         }
 
         /// <summary>
@@ -123,7 +135,7 @@ namespace Route.IO.Osm
         /// </summary>
         public static void LoadOsmData(this RouterDb db, IEnumerable<OsmGeo> source, bool allCore = false, params Vehicle[] vehicles)
         {
-            db.LoadOsmData(new OsmSharp.Streams.OsmEnumerableStreamSource(source), allCore, vehicles);
+            db.LoadOsmData(new OsmEnumerableStreamSource(source), allCore, vehicles);
         }
 
         /// <summary>
@@ -147,7 +159,7 @@ namespace Route.IO.Osm
         /// </summary>
         public static void LoadOsmData(this RouterDb db, IEnumerable<OsmGeo> source, bool allCore = false, bool processRestrictions = true, params Vehicle[] vehicles)
         {
-            db.LoadOsmData(new OsmSharp.Streams.OsmEnumerableStreamSource(source), allCore, processRestrictions, vehicles);
+            db.LoadOsmData(new OsmEnumerableStreamSource(source), allCore, processRestrictions, vehicles);
         }
 
         /// <summary>
@@ -172,7 +184,7 @@ namespace Route.IO.Osm
         public static void LoadOsmData(this RouterDb db, IEnumerable<OsmGeo> source, bool allCore = false, bool processRestrictions = true,
             IEnumerable<ITwoPassProcessor> processors = null, params Vehicle[] vehicles)
         {
-            db.LoadOsmData(new OsmSharp.Streams.OsmEnumerableStreamSource(source), allCore, processRestrictions, processors, vehicles);
+            db.LoadOsmData(new OsmEnumerableStreamSource(source), allCore, processRestrictions, processors, vehicles);
         }
 
         /// <summary>
@@ -219,7 +231,7 @@ namespace Route.IO.Osm
         /// </summary>
         public static void LoadOsmDataFromOverpass(this RouterDb db, Polygon polygon, params Vehicle[] vehicles)
         {
-            var stream = new Overpass.OverpassSourceStream(Overpass.OverpassQueryBuilder.BuildQueryForPolygon(polygon));
+            var stream = new OverpassSourceStream(OverpassQueryBuilder.BuildQueryForPolygon(polygon));
             db.LoadOsmData(stream, vehicles);
         }
 
@@ -250,7 +262,7 @@ namespace Route.IO.Osm
             var source = sources[0];
             for (var i = 1; i < sources.Length; i++)
             {
-                var merger = new OsmSharp.Streams.Filters.OsmStreamFilterMerge();
+                var merger = new OsmStreamFilterMerge();
                 merger.RegisterSource(source);
                 merger.RegisterSource(sources[i]);
                 source = merger;
@@ -276,7 +288,7 @@ namespace Route.IO.Osm
             }
             
             // load the data.
-            var target = new Streams.RouterDbStreamTarget(db,
+            var target = new RouterDbStreamTarget(db,
                 vehicles, settings.AllCore, processRestrictions: settings.ProcessRestrictions, processors: settings.Processors,
                     simplifyEpsilonInMeter: settings.NetworkSimplificationEpsilon);
             target.KeepNodeIds = settings.KeepNodeIds;

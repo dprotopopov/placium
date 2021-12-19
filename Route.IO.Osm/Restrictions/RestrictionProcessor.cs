@@ -58,7 +58,18 @@ namespace Route.IO.Osm.Restrictions
 
         private List<Relation> _invertedRestrictions; // a restriction db can only store negative restrictions, we need to convert positive into negative restrictions.
         private Dictionary<long, List<Relation>> _positiveRestrictions; // all positive restrictions indexed by the expected first 'to'-node.
-        
+
+        public void FirstPass(Node node)
+        {
+            if (node.Tags != null &&
+                node.Tags.Contains("barrier", "bollard"))
+            {
+                var vertex = _markCore(node);
+                var r = new List<long>() { node.Id.Value };
+                _foundRestriction("motorcar", r);
+            }
+        }
+
         /// <summary>
         /// Processes the given way in the first pass.
         /// </summary>
@@ -147,17 +158,6 @@ namespace Route.IO.Osm.Restrictions
         /// </summary>
         public void SecondPass(Node node)
         {
-            if (node.Tags != null &&
-                node.Tags.Contains("barrier", "bollard"))
-            {
-                var vertex = _markCore(node);
-                if (vertex != global::Route.Constants.NO_VERTEX)
-                {
-                    var r = new List<long>();
-                    r.Add(vertex);
-                    _foundRestriction("motorcar", r);
-                }
-            }
         }
 
         /// <summary>
@@ -407,7 +407,7 @@ namespace Route.IO.Osm.Restrictions
                             "No vertex found for via node for restriction relation {0}!", relation.Id.Value);
                         return;
                     }
-                    sequence.Add(viaVertex);
+                    sequence.Add(via.Value);
                 }
                 else
                 {
@@ -463,7 +463,7 @@ namespace Route.IO.Osm.Restrictions
                             "No vertex found for first node of via way for restriction relation {0}!", relation.Id.Value);
                         return;
                     }
-                    sequence.Add(viaVertex);
+                    sequence.Add(viaNodes[0]);
                     for (var i = 1; i < viaNodes.Length - 1; i++)
                     {
                         viaVertex = _getVertex(viaNodes[i]);
@@ -481,7 +481,7 @@ namespace Route.IO.Osm.Restrictions
                                 "No vertex found for last node of via way for restriction relation {0}!", relation.Id.Value);
                             return;
                         }
-                        sequence.Add(viaVertex);
+                        sequence.Add(viaNodes[viaNodes.Length - 1]);
                     }
                 }
 
@@ -492,7 +492,7 @@ namespace Route.IO.Osm.Restrictions
                     var fromVertex = _getVertex(fromNodes[i]);
                     if (fromVertex != long.MaxValue)
                     {
-                        sequence.Insert(0, fromVertex);
+                        sequence.Insert(0, fromNodes[i]);
                         found = true;
                         break;
                     }
@@ -511,7 +511,7 @@ namespace Route.IO.Osm.Restrictions
                     var toVertex = _getVertex(toNodes[i]);
                     if (toVertex != long.MaxValue)
                     {
-                        sequence.Add(toVertex);
+                        sequence.Add(toNodes[i]);
                         found = true;
                         break;
                     }

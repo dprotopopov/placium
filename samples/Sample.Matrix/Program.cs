@@ -5,6 +5,7 @@ using Placium.Common;
 using Placium.IO.Osm;
 using Route;
 using Route.Algorithms.Matrices;
+using Route.IO.Osm;
 using Route.LocalGeo;
 using Route.Osm.Vehicles;
 
@@ -27,7 +28,7 @@ namespace Sample.Matrix
 
             var connectionsConfig = serviceProvider.GetService<IConnectionsConfig>();
 
-            var routerDb = new RouterDb();
+            var routerDb = new RouterDb(connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"));
             var router = new Router(routerDb);
             routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 

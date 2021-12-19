@@ -9,6 +9,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Placium.Common\Placium.Common.csproj" />
 		<ProjectReference Include="..\..\Placium.IO.Osm\Placium.IO.Osm.csproj" />
+		<ProjectReference Include="..\..\Route.IO.Osm\Route.IO.Osm.csproj" />
 		<ProjectReference Include="..\..\Route.IO.Shape\Route.IO.Shape.csproj" />
 		<ProjectReference Include="..\..\Route\Route.csproj" />
 	</ItemGroup>

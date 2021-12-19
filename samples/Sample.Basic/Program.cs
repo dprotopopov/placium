@@ -6,6 +6,7 @@ using OsmSharp.Logging;
 using Placium.Common;
 using Placium.IO.Osm;
 using Route;
+using Route.IO.Osm;
 using Route.LocalGeo;
 using Route.Osm.Vehicles;
 
@@ -39,7 +40,7 @@ namespace Sample.Basic
             };
 
             // load some routing data and create a router.
-            var routerDb = new RouterDb();
+            var routerDb = new RouterDb(connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"));
 
             routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 

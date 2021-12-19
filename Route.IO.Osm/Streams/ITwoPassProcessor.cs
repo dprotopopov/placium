@@ -26,6 +26,11 @@ namespace Route.IO.Osm.Streams
     public interface ITwoPassProcessor
     {
         /// <summary>
+        /// Processes the first pass of this node.
+        /// </summary>
+        void FirstPass(Node node);
+
+        /// <summary>
         /// Processes the first pass of this way.
         /// </summary>
         void FirstPass(Way way);

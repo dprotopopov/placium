@@ -1,7 +1,7 @@
 ﻿//using System;
 //using System.Diagnostics;
 
-//namespace Itinero.Profiles.Lua.Diagnostics.PerformanceCounters
+//namespace Route.Profiles.Lua.Diagnostics.PerformanceCounters
 //{
 //	/// <summary>
 //	/// This class is not *really* IDisposable.. it's just use to have a RAII like pattern.

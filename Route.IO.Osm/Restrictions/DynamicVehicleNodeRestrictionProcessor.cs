@@ -42,6 +42,45 @@ namespace Route.IO.Osm.Restrictions
             }
         }
 
+        public void FirstPass(Node node)
+        {
+            if (node.Tags == null ||
+                node.Tags.Count == 0)
+            {
+                return;
+            }
+
+            if (_nodeRestrictionFunc == null) return;
+
+            lock (_vehicle.Script)
+            {
+                // build lua table.
+                _attributesTable.Clear();
+                foreach (var attribute in node.Tags)
+                {
+                    _attributesTable.Set(attribute.Key, DynValue.NewString(attribute.Value));
+                }
+
+                // call factor_and_speed function.
+                _resultsTable.Clear();
+                _vehicle.Script.Call(_nodeRestrictionFunc, _attributesTable, _resultsTable);
+
+                // get the vehicle type if any.
+                var vehicleTypeVal = _resultsTable.Get("vehicle");
+                if (vehicleTypeVal == null ||
+                    vehicleTypeVal.Type != DataType.String)
+                { // no restriction found.
+                    return;
+                }
+
+                // there is a restriction, mark it as such.
+                var vertex = _markCore(node);
+                var vehicleType = vehicleTypeVal.String;
+                var r = new List<long> { node.Id.Value };
+                _foundRestriction(vehicleType, r);
+            }
+        }
+
         /// <summary>
         /// Processes the first pass of this way.
         /// </summary>
@@ -94,9 +133,6 @@ namespace Route.IO.Osm.Restrictions
                 
                 // there is a restriction, mark it as such.
                 var vertex = _markCore(node);
-                var vehicleType = vehicleTypeVal.String;
-                var r = new List<long> {vertex};
-                _foundRestriction(vehicleType, r);
 
                 // get attributes to keep and add the vertex meta.
                 var resultAttributes = new AttributeCollection();

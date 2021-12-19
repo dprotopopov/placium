@@ -886,7 +886,7 @@ namespace Route.Profiles.Lua.DataTypes
 		/// </summary>
 		public dynamic ToDynamic()
 		{
-			return Itinero.Profiles.Lua.Interop.Converters.ScriptToClrConversions.DynValueToObject(this);
+			return Route.Profiles.Lua.Interop.Converters.ScriptToClrConversions.DynValueToObject(this);
 		}
 #endif
 

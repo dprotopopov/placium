@@ -10,7 +10,7 @@ using Route.Profiles.Lua.Interop.RegistrationPolicies;
 using Route.Profiles.Lua.Interop.StandardDescriptors;
 using Route.Profiles.Lua.Interop.UserDataRegistries;
 
-//using Itinero.Profiles.Lua.Serialization.Json;
+//using Route.Profiles.Lua.Serialization.Json;
 
 namespace Route.Profiles.Lua.DataTypes
 {

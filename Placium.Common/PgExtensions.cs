@@ -171,6 +171,11 @@ namespace Placium.Common
                 };
         }
 
+        public static string ValueAsText(this bool value)
+        {
+            return value ? "true" : "false";
+        }
+
         public static string ValueAsText(this double? value)
         {
             return value?.ToString("G", CultureInfo.InvariantCulture) ?? string.Empty;

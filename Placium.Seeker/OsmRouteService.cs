@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Placium.Common;
 using Placium.IO.Osm;
 using Route;
+using Route.IO.Osm;
 using Route.LocalGeo;
 using Route.Osm.Vehicles;
 
@@ -16,7 +17,7 @@ namespace Placium.Seeker
 
         public async Task<string> CalculateAsync(Coordinate source, Coordinate target)
         {
-            var routerDb = new RouterDb();
+            var routerDb = new RouterDb(GetRouteConnectionString(),GetOsmConnectionString());
 
             routerDb.LoadOsmDataFromPostgreSQL(GetOsmConnectionString(), Vehicle.Car);
 

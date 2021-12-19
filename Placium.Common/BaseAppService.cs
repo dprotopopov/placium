@@ -35,6 +35,11 @@ namespace Placium.Common
             return _configuration.GetConnectionString("OsmConnection");
         }
 
+        protected string GetRouteConnectionString()
+        {
+            return _configuration.GetConnectionString("RouteConnection");
+        }
+
         protected void SelectAndExecute(string[][] sqls, NpgsqlConnection conn, string connectionString)
         {
             foreach (var sql in sqls)

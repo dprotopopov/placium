@@ -7,6 +7,7 @@ using Placium.Common;
 using Placium.IO.Osm;
 using Route;
 using Route.Attributes;
+using Route.IO.Osm;
 using Route.LocalGeo;
 using Route.Profiles;
 using Attribute = Route.Attributes.Attribute;
@@ -38,7 +39,7 @@ namespace Sample.DynamicProfiles
             };
 
             // load some routing data and create a router.
-            var routerDb = new RouterDb();
+            var routerDb = new RouterDb(connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"));
 
             var customCar = DynamicVehicle.Load(File.ReadAllText("custom-car.lua"));
 

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>Route</AssemblyName>
     <PackageId>Route</PackageId>
     <Title>Route</Title>
@@ -39,6 +39,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
     <ProjectReference Include="..\Route.Algorithms.Collections\Route.Algorithms.Collections.csproj" />
     <ProjectReference Include="..\Route.Algorithms.Sorting\Route.Algorithms.Sorting.csproj" />
     <ProjectReference Include="..\Route.Attributes\Route.Attributes.csproj" />

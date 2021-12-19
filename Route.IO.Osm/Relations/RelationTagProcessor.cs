@@ -86,9 +86,8 @@ namespace Route.IO.Osm.Relations
                 _relationsAsMembers.Remove(relation.Id.Value);
 
                 var tags = relation.Tags;
-                LinkedRelation linkedRelation;
                 if (_linkedMemberRelations != null &&
-                    _linkedMemberRelations.TryGetValue(relation.Id.Value, out linkedRelation))
+                    _linkedMemberRelations.TryGetValue(relation.Id.Value, out var linkedRelation))
                 {
                     while(linkedRelation != null)
                     {
@@ -142,6 +141,11 @@ namespace Route.IO.Osm.Relations
             return false;
         }
 
+        public void FirstPass(Node node)
+        {
+
+        }
+
         /// <summary>
         /// Executes the first pass for ways.
         /// </summary>
@@ -163,8 +167,7 @@ namespace Route.IO.Osm.Relations
         /// </summary>
         public void SecondPass(Way way)
         {
-            LinkedRelation linkedRelation;
-            if (_linkedRelations.TryGetValue(way.Id.Value, out linkedRelation))
+            if (_linkedRelations.TryGetValue(way.Id.Value, out var linkedRelation))
             {
                 while(linkedRelation != null)
                 {

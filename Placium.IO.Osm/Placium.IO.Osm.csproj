@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -13,8 +13,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
-		<ProjectReference Include="..\Route.IO.Osm\Route.IO.Osm.csproj" />
-		<ProjectReference Include="..\Route\Route.csproj" />
 	</ItemGroup>
 
 </Project>

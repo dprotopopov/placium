@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Placium.Common;
 using Reminiscence.IO;
 using Reminiscence.IO.Streams;
 using Route.Attributes;
@@ -52,11 +53,16 @@ namespace Route
         private readonly Dictionary<string, RestrictionsDb> _restrictionDbs;
         private readonly Dictionary<string, ShortcutsDb> _shortcutsDbs;
 
+        public string RouteConnectionString { get; }
+        public string OsmConnectionString { get; }
+
         /// <summary>
         /// Creates a new router database.
         /// </summary>
-        public RouterDb(float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
+        public RouterDb(string routeConnectionString, string osmConnectionString, float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
+            RouteConnectionString = routeConnectionString;
+            OsmConnectionString = osmConnectionString;
             _network = new RoutingNetwork(new Graphs.Geometric.GeometricGraph(1), maxEdgeDistance);
             _edgeProfiles = new AttributesIndex(AttributesIndexMode.IncreaseOne
                 | AttributesIndexMode.ReverseAll);
@@ -78,8 +84,10 @@ namespace Route
         /// <summary>
         /// Creates a new router database.
         /// </summary>
-        public RouterDb(MemoryMap map, float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
+        public RouterDb(MemoryMap map, string routeConnectionString, string osmConnectionString, float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
+            RouteConnectionString = routeConnectionString;
+            OsmConnectionString = osmConnectionString;
             _network = new RoutingNetwork(map, RoutingNetworkProfile.NoCache, maxEdgeDistance);
             _edgeProfiles = new AttributesIndex(AttributesIndexMode.IncreaseOne
                 | AttributesIndexMode.ReverseAll);
@@ -101,8 +109,10 @@ namespace Route
         /// <summary>
         /// Creates a new router database.
         /// </summary>
-        public RouterDb(MemoryMap map, RoutingNetworkProfile profile, float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
+        public RouterDb(MemoryMap map, RoutingNetworkProfile profile, string routeConnectionString, string osmConnectionString, float maxEdgeDistance = Constants.DefaultMaxEdgeDistance)
         {
+            RouteConnectionString = routeConnectionString;
+            OsmConnectionString = osmConnectionString;
             _network = new RoutingNetwork(map, profile, maxEdgeDistance);
             _edgeProfiles = new AttributesIndex(map, AttributesIndexMode.IncreaseOne |
                 AttributesIndexMode.ReverseCollectionIndex | AttributesIndexMode.ReverseStringIndex);
@@ -124,13 +134,14 @@ namespace Route
         /// <summary>
         /// Creates a new router database.
         /// </summary>
-        public RouterDb(RoutingNetwork network, AttributesIndex profiles, AttributesIndex meta, IAttributeCollection dbMeta,
-            params Profiles.Vehicle[] supportedVehicles)
+        public RouterDb(RoutingNetwork network, AttributesIndex profiles, AttributesIndex meta, IAttributeCollection dbMeta, string routeConnectionString, string osmConnectionString, params Profiles.Vehicle[] supportedVehicles)
         {
             _network = network;
             _edgeProfiles = profiles;
             _meta = meta;
             _dbMeta = dbMeta;
+            RouteConnectionString = routeConnectionString;
+            OsmConnectionString = osmConnectionString;
 
             _metaVertex = new MappedAttributesIndex();
             _vertexData = new MetaCollectionDb();
@@ -157,7 +168,7 @@ namespace Route
         /// Creates a new router database.
         /// </summary>
         private RouterDb(Guid guid, RoutingNetwork network, AttributesIndex profiles, AttributesIndex meta, MappedAttributesIndex metaVertex, 
-            MetaCollectionDb vertexData, MetaCollectionDb edgeData, IAttributeCollection dbMeta, Profiles.Vehicle[] supportedVehicles)
+            MetaCollectionDb vertexData, MetaCollectionDb edgeData, IAttributeCollection dbMeta, string routeConnectionString, string osmConnectionString, Profiles.Vehicle[] supportedVehicles)
         {
             _guid = guid;
             _network = network;
@@ -167,6 +178,8 @@ namespace Route
             _vertexData = vertexData;
             _edgeData = edgeData;
             _dbMeta = dbMeta;
+            RouteConnectionString = routeConnectionString;
+            OsmConnectionString = osmConnectionString;
 
             _supportedVehicles = new Dictionary<string, Vehicle>();
             _supportedProfiles = new Dictionary<string, Profile>();
@@ -783,7 +796,7 @@ namespace Route
             var network = RoutingNetwork.Deserialize(stream, profile == null ? null : profile.RoutingNetworkProfile);
 
             // create router db.
-            var routerDb = new RouterDb(guid, network, profiles, meta, metaVertex, vertexData, edgeData, metaDb, supportedVehicleInstances.ToArray());
+            var routerDb = new RouterDb(guid, network, profiles, meta, metaVertex, vertexData, edgeData, metaDb, null, null, supportedVehicleInstances.ToArray());
 
             // read all shortcut dbs.
             for (var i = 0; i < shorcutsCount; i++)

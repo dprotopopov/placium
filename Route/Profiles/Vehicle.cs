@@ -229,7 +229,7 @@ namespace Route.Profiles
             var typeName = stream.ReadWithSizeString();
             switch (typeName)
             {
-                case "Itinero.Profiles.DynamicVehicle":
+                case "Route.Profiles.DynamicVehicle":
                     var vehicle = new DynamicVehicle(stream.ReadWithSizeString());
                     return vehicle;
             }

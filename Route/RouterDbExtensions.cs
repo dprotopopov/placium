@@ -1457,7 +1457,7 @@ namespace Route
         /// <returns></returns>
         public static RouterDb ExtractArea(this RouterDb db, Func<long, bool> isInside, bool insideOnly = false)
         {
-            var newDb = new RouterDb(db.Network.MaxEdgeDistance);
+            var newDb = new RouterDb(db.RouteConnectionString, db.OsmConnectionString, db.Network.MaxEdgeDistance);
             // maps vertices old -> new.
             var idMap = new Dictionary<long, long>();
             // maps edges old -> new.
@@ -1749,7 +1749,7 @@ namespace Route
         public static RouterDb ExtractArea(this RouterDb db, Func<long, bool> isInside, 
             Func<long, long, bool> isEdgeInside)
         {
-            var newDb = new RouterDb(db.Network.MaxEdgeDistance);
+            var newDb = new RouterDb(db.RouteConnectionString, db.OsmConnectionString, db.Network.MaxEdgeDistance);
             // maps vertices old -> new.
             var idMap = new Dictionary<long, long>();
             // maps edges old -> new.

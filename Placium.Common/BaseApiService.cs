@@ -25,5 +25,10 @@ namespace Placium.Common
         {
             return _configuration.GetConnectionString("OsmConnection");
         }
+
+        protected string GetRouteConnectionString()
+        {
+            return _configuration.GetConnectionString("RouteConnection");
+        }
     }
 }

@@ -16,12 +16,14 @@ services:
     depends_on:
       - fias-placium
       - osm-placium
+      - route-placium
       - manticore-placium
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__RouteConnection: "Host=route-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
       SphinxConfig__Http: "http://manticore-placium:9308"
       UploadConfig__Path: "/upload"
@@ -40,12 +42,14 @@ services:
     depends_on:
       - fias-placium
       - osm-placium
+      - route-placium
       - manticore-placium
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
+      ConnectionStrings__RouteConnection: "Host=route-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
       ServerConfig__BasePath: "/placium"
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
@@ -75,6 +79,19 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: osm_db
+      PGDATA: /var/lib/postgresql/data
+    networks:
+      - placium
+
+  route-placium:
+    image: "postgres"
+    shm_size: '4gb'
+    container_name: route-placium
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: route_db
       PGDATA: /var/lib/postgresql/data
     networks:
       - placium

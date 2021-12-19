@@ -1,0 +1,19 @@
+﻿DROP TABLE IF EXISTS temp_node;
+
+CREATE TEMP TABLE temp_node (
+	guid UUID NOT NULL, 
+	id BIGINT NOT NULL, 
+	latitude DOUBLE PRECISION, 
+	longitude DOUBLE PRECISION,
+	is_core BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS node (
+	guid UUID NOT NULL, 
+	id BIGINT NOT NULL, 
+	latitude DOUBLE PRECISION, 
+	longitude DOUBLE PRECISION,
+	is_core BOOLEAN,
+	PRIMARY KEY (guid, id)
+);
+

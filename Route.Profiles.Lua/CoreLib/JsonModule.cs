@@ -2,9 +2,9 @@
 //using System.Collections.Generic;
 //using System.Linq;
 //using System.Text;
-//using Itinero.Profiles.Lua.Serialization.Json;
+//using Route.Profiles.Lua.Serialization.Json;
 
-//namespace Itinero.Profiles.Lua.CoreLib
+//namespace Route.Profiles.Lua.CoreLib
 //{
 //	[MoonSharpModule(Namespace = "json")]
 //	public class JsonModule

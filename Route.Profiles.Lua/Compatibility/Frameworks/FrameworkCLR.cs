@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace Itinero.Profiles.Lua.Compatibility.Frameworks
+namespace Route.Profiles.Lua.Compatibility.Frameworks
 {
 	class FrameworkCurrent : FrameworkClrBase
 	{

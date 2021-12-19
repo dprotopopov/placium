@@ -28,6 +28,7 @@ cd /opt2
 sudo mkdir -p upload
 sudo mkdir -p fias/data
 sudo mkdir -p osm/data
+sudo mkdir -p route/data
 sudo mkdir -p manticore/run
 sudo mkdir -p manticore/log
 sudo mkdir -p manticore/data
