@@ -25,7 +25,7 @@ using OsmSharp.Streams.Filters;
 using Route.Algorithms.Networks;
 using Route.Algorithms.Search.Hilbert;
 using Route.IO.Osm.Overpass;
-using Route.IO.Osm.PostgreSQL;
+using Route.IO.Osm.Placium;
 using Route.IO.Osm.Streams;
 using Route.LocalGeo;
 using Route.Profiles;
@@ -40,10 +40,10 @@ namespace Route.IO.Osm
         /// <summary>
         ///     Loads a routing network from OSM data downloaded from PostgreSQL.
         /// </summary>
-        public static void LoadOsmDataFromPostgreSQL(this RouterDb db, string osmConnectionString,
+        public static void LoadOsmDataFromPlacium(this RouterDb db, string osmConnectionString,
             params Vehicle[] vehicles)
         {
-            var stream = new PostgresSQLStreamSource(osmConnectionString);
+            var stream = new PlaciumStreamSource(osmConnectionString);
             LoadOsmData(db, (OsmStreamSource) stream, vehicles);
         }
 

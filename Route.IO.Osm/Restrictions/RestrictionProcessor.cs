@@ -469,7 +469,7 @@ namespace Route.IO.Osm.Restrictions
                         viaVertex = _getVertex(viaNodes[i]);
                         if (viaVertex != long.MaxValue)
                         {
-                            sequence.Add(viaVertex);
+                            sequence.Add(viaNodes[i]);
                         }
                     }
                     if (viaNodes.Length > 1)

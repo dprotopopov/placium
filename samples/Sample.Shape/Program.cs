@@ -39,7 +39,7 @@ namespace Sample.Shape
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "car.lua")));
             var routerDb = new RouterDb(connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"),
                 EdgeDataSerializer.MAX_DISTANCE);
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), vehicle);
+            routerDb.LoadOsmDataFromPlacium(connectionsConfig.GetConnectionString("OsmConnection"), vehicle);
 
             // OPTIONAL: build a contracted version of the routing graph.
             // routerDb.AddContracted(vehicle.Fastest());

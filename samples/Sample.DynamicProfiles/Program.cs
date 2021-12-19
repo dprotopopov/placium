@@ -42,7 +42,7 @@ namespace Sample.DynamicProfiles
 
             var customCar = DynamicVehicle.Load(File.ReadAllText("custom-car.lua"));
 
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), customCar);
+            routerDb.LoadOsmDataFromPlacium(connectionsConfig.GetConnectionString("OsmConnection"), customCar);
 
             // add custom profiles.
             var speed10 = routerDb.EdgeProfiles.Add(new AttributeCollection(

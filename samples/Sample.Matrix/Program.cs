@@ -29,7 +29,7 @@ namespace Sample.Matrix
 
             var routerDb = new RouterDb(connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"));
             var router = new Router(routerDb);
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
+            routerDb.LoadOsmDataFromPlacium(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 
             var locations = new List<Coordinate>(new[]
             {

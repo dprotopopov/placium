@@ -18,7 +18,7 @@ namespace Placium.Seeker
         {
             var routerDb = new RouterDb(GetRouteConnectionString(),GetOsmConnectionString());
 
-            routerDb.LoadOsmDataFromPostgreSQL(GetOsmConnectionString(), Vehicle.Car);
+            routerDb.LoadOsmDataFromPlacium(GetOsmConnectionString(), Vehicle.Car);
 
             // get the profile from the routerdb.
             // this is best-practice in Itinero, to prevent mis-matches.

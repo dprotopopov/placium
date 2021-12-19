@@ -45,7 +45,7 @@ namespace Sample.Elevation
             var routerDb = new RouterDb(connectionsConfig.GetConnectionString("RouteConnection"), connectionsConfig.GetConnectionString("OsmConnection"));
             var router = new Router(routerDb);
 
-            routerDb.LoadOsmDataFromPostgreSQL(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
+            routerDb.LoadOsmDataFromPlacium(connectionsConfig.GetConnectionString("OsmConnection"), Vehicle.Car);
 
             // create a new srtm data instance.
             // it accepts a folder to download and cache data into.
