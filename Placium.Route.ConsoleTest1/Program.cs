@@ -37,7 +37,7 @@ namespace Placium.Route.ConsoleTest1
 
             var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"), connectionsConfig.GetConnectionString("RouteConnection"),
                 new[] { Vehicle.Car });
-            await routerDb.LoadFromOsmAsync(connectionsConfig.GetConnectionString("OsmConnection"), progressClient, null);
+            // await routerDb.LoadFromOsmAsync(connectionsConfig.GetConnectionString("OsmConnection"), progressClient, null);
 
             // create router.
             var router = new Router(routerDb);

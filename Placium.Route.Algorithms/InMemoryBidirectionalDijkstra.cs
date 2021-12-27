@@ -246,7 +246,7 @@ namespace Placium.Route.Algorithms
                     {
                         if (!reader.Read()) throw new NullReferenceException();
                         var count = reader.GetInt64(0);
-                        if (count == 0) throw new NullReferenceException();
+                        if (count == 0 && node==0) throw new NullReferenceException();
                         Console.WriteLine($"Step level1={level} count={count} complete");
                     }
 
@@ -255,15 +255,16 @@ namespace Placium.Route.Algorithms
                     {
                         if (!reader.Read()) throw new NullReferenceException();
                         var count = reader.GetInt64(0);
-                        if (count == 0) throw new NullReferenceException();
+                        if (count == 0 && node == 0) throw new NullReferenceException();
                         Console.WriteLine($"Step level2={level} count={count} complete");
                     }
 
+                    var prev = node;
                     using (var reader = await command3.ExecuteReaderAsync())
                     {
                         if (!reader.Read()) continue;
                         node = reader.GetInt64(0);
-                        break;
+                        if (prev == node) break;
                     }
                 }
             }
