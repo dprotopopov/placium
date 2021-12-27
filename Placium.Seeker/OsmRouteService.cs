@@ -1,10 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
-using Route;
-using Route.IO.Osm;
+using Placium.Route;
+using Placium.Route.Osm.Vehicles;
 using Route.LocalGeo;
-using Route.Osm.Vehicles;
 
 namespace Placium.Seeker
 {
@@ -16,22 +16,15 @@ namespace Placium.Seeker
 
         public async Task<string> CalculateAsync(Coordinate source, Coordinate target)
         {
-            var routerDb = new RouterDb(GetRouteConnectionString(),GetOsmConnectionString());
-
-            routerDb.LoadOsmDataFromPlacium(GetOsmConnectionString(), Vehicle.Car);
-
-            // get the profile from the routerdb.
-            // this is best-practice in Itinero, to prevent mis-matches.
-            var car = routerDb.GetSupportedProfile("car");
-
-            // add a contraction hierarchy.
-            routerDb.AddContracted(car);
+            var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"), GetRouteConnectionString(),
+                new[] { Vehicle.Car });
 
             // create router.
             var router = new Router(routerDb);
 
             // calculate route.
-            var route = router.Calculate(car, source, target);
+            var route = await router.CalculateAsync(source, target, "car");
+
             return route.ToGeoJson();
         }
     }

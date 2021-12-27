@@ -26,7 +26,7 @@ namespace Placium.Route
                 new[] { 1, 4 }.Contains(sourceRouterPoint.Direction) && sourceRouterPoint.Offset > targetRouterPoint.Offset ||
                 new[] { 2, 5 }.Contains(sourceRouterPoint.Direction) && sourceRouterPoint.Offset < targetRouterPoint.Offset)
             {
-                path = await new Dijkstra(Db.Guid, Db.ConnectionString, profile, sourceRouterPoint, targetRouterPoint)
+                path = await new InMemoryBidirectionalDijkstra(Db.Guid, Db.ConnectionString, profile, sourceRouterPoint, targetRouterPoint)
                     .DoRunAsync();
                 path.Insert(0, sourceRouterPoint.EdgeId);
                 path.Add(targetRouterPoint.EdgeId);

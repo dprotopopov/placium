@@ -1,4 +1,5 @@
 ﻿DROP TABLE IF EXISTS temp_node;
+DROP TABLE IF EXISTS node;
 
 CREATE TEMP TABLE temp_node (
 	guid UUID NOT NULL, 

@@ -13,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using NetTopologySuite.IO.Converters;
 using Newtonsoft.Json;
 using Placium.Common;
+using Placium.Route;
 using Placium.Services;
 using Updater.Addrobx.Sphinx;
 using Updater.Addrx.Database;
@@ -48,6 +49,7 @@ namespace Placium.WebApp
             services.AddSingleton<FiasService>();
             services.AddSingleton<FileFiasUploadService>();
             services.AddSingleton<FileOsmUploadService>();
+            services.AddSingleton<DatabaseRouteUpdateService>();
             services.AddSingleton<DatabasePlacexUpdateService>();
             services.AddSingleton<DatabaseAddrxUpdateService>();
             services.AddSingleton<SphinxAddrxUpdateService>();

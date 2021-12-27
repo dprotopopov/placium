@@ -15,8 +15,6 @@ namespace Placium.WebApi
             // enable logging.
             Logger.LogAction = (o, level, message, parameters) =>
                 Console.WriteLine("[{0}] {1} - {2}", o, level, message);
-            Route.Logging.Logger.LogAction = (o, level, message, parameters) =>
-                Console.WriteLine("[{0}] {1} - {2}", o, level, message);
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             using var host = CreateWebHostBuilder(args).Build();

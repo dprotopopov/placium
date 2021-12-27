@@ -24,9 +24,9 @@ namespace Placium.Route.Algorithms
             connection.TypeMapper.MapComposite<RouteCoordinate>("coordinate");
             using (var command = new NpgsqlCommand(
                 @"SELECT id,from_node,to_node,coordinates,direction,ST_X(point),ST_Y(point) 
-                    FROM (SELECT id,from_node,to_node,coordinates,(direction->@profile)::integer AS direction,
+                    FROM (SELECT id,from_node,to_node,coordinates,(direction->@profile)::smallint AS direction,
                     ST_ClosestPoint(location, ST_SetSRID( ST_Point( @lon, @lat ), 4326 )::geometry) AS point
-                    FROM edge WHERE guid=@guid AND (direction->@profile)::integer=ANY(ARRAY[0,1,2])
+                    FROM edge WHERE guid=@guid AND (direction->@profile)::smallint=ANY(ARRAY[0,1,2])
                     ORDER BY location <-> ST_SetSRID( ST_Point( @lon, @lat ), 4326 )::geometry
                     LIMIT 1) q", connection))
             {

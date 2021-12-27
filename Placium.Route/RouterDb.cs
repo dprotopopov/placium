@@ -33,7 +33,7 @@ namespace Placium.Route
         public Guid Guid { get; }
         public string ConnectionString { get; }
 
-        public async Task LoadFromOsmAsync(string osmConnectionString, IProgressClient progressClient)
+        public async Task LoadFromOsmAsync(string osmConnectionString, IProgressClient progressClient, string session)
         {
             using (var osmConnection = new NpgsqlConnection(osmConnectionString))
             using (var osmConnection2 = new NpgsqlConnection(osmConnectionString))
@@ -46,7 +46,7 @@ namespace Placium.Route
                 await connection2.OpenAsync();
 
                 var id = Guid.NewGuid().ToString();
-                await progressClient.Init(id, null);
+                await progressClient.Init(id, session);
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
                     "Placium.Route.CreateTempTables.pgsql",
@@ -81,40 +81,42 @@ namespace Placium.Route
                         var way = new Way().Fill(reader);
 
                         var attributes = way.Tags.ToAttributes();
-                        if (!VehicleCache.AnyCanTraverse(attributes)) continue;
-
-                        command2.Parameters["ids"].Value = way.Nodes;
-
-                        using var reader2 = await command2.ExecuteReaderAsync();
-                        while (reader2.Read())
+                        if (VehicleCache.AnyCanTraverse(attributes))
                         {
-                            var nodeId = reader2.GetInt64(0);
-                            var latitude = reader2.GetFloat(1);
-                            var longitude = reader2.GetFloat(2);
+                            command2.Parameters["ids"].Value = way.Nodes;
 
-                            var values = new[]
+                            using var reader2 = await command2.ExecuteReaderAsync();
+                            while (reader2.Read())
                             {
-                                Guid.ToString(),
-                                nodeId.ToString(),
-                                latitude.ValueAsText(),
-                                longitude.ValueAsText(),
-                                (nodeId == way.Nodes.First() || nodeId == way.Nodes.Last()).ValueAsText()
-                            };
+                                var nodeId = reader2.GetInt64(0);
+                                var latitude = reader2.GetFloat(1);
+                                var longitude = reader2.GetFloat(2);
 
-                            writer.WriteLine(string.Join("\t", values));
+                                var values = new[]
+                                {
+                                    Guid.ToString(),
+                                    nodeId.ToString(),
+                                    latitude.ValueAsText(),
+                                    longitude.ValueAsText(),
+                                    (nodeId == way.Nodes.First() || nodeId == way.Nodes.Last()).ValueAsText()
+                                };
+
+                                writer.WriteLine(string.Join("\t", values));
+                            }
                         }
 
-                        if (current++ % 1000 == 0) await progressClient.Progress(100f * current / count, id, null);
+                        if (current++ % 1000 == 0)
+                            await progressClient.Progress(100f * current / count, id, session);
                     }
                 }
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
                     "Placium.Route.InsertFromTempTables.pgsql",
                     connection);
-                await progressClient.Finalize(id, null);
+                await progressClient.Finalize(id, session);
 
                 id = Guid.NewGuid().ToString();
-                await progressClient.Init(id, null);
+                await progressClient.Init(id, session);
 
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
                     "Placium.Route.CreateTempTables3.pgsql",
@@ -153,101 +155,104 @@ namespace Placium.Route
                         var way = new Way().Fill(reader);
 
                         var attributes = way.Tags.ToAttributes();
-                        if (!VehicleCache.AnyCanTraverse(attributes)) continue;
-
-                        var factorAndSpeeds = new Dictionary<string, FactorAndSpeed>();
-                        foreach (var vehicle in VehicleCache.Vehicles)
-                        foreach (var profile in vehicle.GetProfiles())
-                            factorAndSpeeds.Add(profile.FullName, profile.FactorAndSpeed(attributes));
-
-                        command2.Parameters["ids"].Value = way.Nodes;
-
-                        var list = new List<NodeItem>(way.Nodes.Length);
-
-                        using (var reader2 = await command2.ExecuteReaderAsync())
+                        if (VehicleCache.AnyCanTraverse(attributes))
                         {
-                            while (reader2.Read())
-                                list.Add(new NodeItem
-                                {
-                                    Id = reader2.GetInt64(0),
-                                    Latitude = reader2.GetFloat(1),
-                                    Longitude = reader2.GetFloat(2),
-                                    IsCore = reader2.GetBoolean(3)
-                                });
-                        }
+                            var factorAndSpeeds = new Dictionary<string, FactorAndSpeed>();
+                            foreach (var vehicle in VehicleCache.Vehicles)
+                            foreach (var profile in vehicle.GetProfiles())
+                                factorAndSpeeds.Add(profile.FullName, profile.FactorAndSpeed(attributes));
 
-                        var dictionary = list.ToDictionary(item => item.Id, item => item);
+                            command2.Parameters["ids"].Value = way.Nodes;
 
-                        // convert way into one or more edges.
-                        var i = 0;
+                            var list = new List<NodeItem>(way.Nodes.Length);
 
-                        while (i < way.Nodes.Length - 1)
-                        {
-                            // build edge to add.
-                            var intermediates = new List<Coordinate>();
-                            var distance = 0.0f;
-                            if (!dictionary.TryGetValue(way.Nodes[i], out var item)) return;
-
-
-                            var previousCoordinate = new Coordinate(item.Latitude, item.Longitude);
-                            intermediates.Add(previousCoordinate);
-
-                            var fromNode = way.Nodes[i];
-                            i++;
-
-                            var toNode = long.MaxValue;
-                            while (true)
+                            using (var reader2 = await command2.ExecuteReaderAsync())
                             {
-                                if (i >= way.Nodes.Length ||
-                                    !dictionary.TryGetValue(way.Nodes[i], out item))
-                                    // an incomplete way, node not in source.
-                                    return;
-
-                                var coordinate = new Coordinate(item.Latitude, item.Longitude);
-
-                                distance += Coordinate.DistanceEstimateInMeter(
-                                    previousCoordinate, coordinate);
-
-                                intermediates.Add(coordinate);
-                                previousCoordinate = coordinate;
-
-                                if (item.IsCore)
-                                {
-                                    // node is part of the core.
-                                    toNode = way.Nodes[i];
-                                    break;
-                                }
-
-                                i++;
+                                while (reader2.Read())
+                                    list.Add(new NodeItem
+                                    {
+                                        Id = reader2.GetInt64(0),
+                                        Latitude = reader2.GetFloat(1),
+                                        Longitude = reader2.GetFloat(2),
+                                        IsCore = reader2.GetBoolean(3)
+                                    });
                             }
 
-                            var direction = factorAndSpeeds.ToDictionary(x => x.Key, x => x.Value.Direction);
-                            var weight = factorAndSpeeds.Where(x=>x.Value.Value>0).ToDictionary(x => x.Key, x => distance/x.Value.Value);
+                            var dictionary = list.ToDictionary(item => item.Id, item => item);
 
-                            var values = new[]
+                            // convert way into one or more edges.
+                            var i = 0;
+
+                            while (i < way.Nodes.Length - 1)
                             {
-                                Guid.ToString(),
-                                fromNode.ToString(),
-                                toNode.ToString(),
-                                distance.ValueAsText(),
-                                $"{{{string.Join(",", intermediates.Select(t => $"\\\"({t.Latitude.ValueAsText()},{t.Longitude.ValueAsText()})\\\""))}}}",
-                                intermediates.Count switch {
-                                    0=>"SRID=4326;POINT EMPTY",
-                                    1=>
-                                    $"SRID=4326;POINT({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})"
-                                    ,
-                                    _=>
-                                    $"SRID=4326;LINESTRING({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})"
-                                    },
-                                $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                $"{string.Join(",", direction.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ToString()}\""))}",
-                                $"{string.Join(",", weight.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ValueAsText()}\""))}",
-                            };
+                                // build edge to add.
+                                var intermediates = new List<Coordinate>();
+                                var distance = 0.0f;
+                                if (!dictionary.TryGetValue(way.Nodes[i], out var item)) return;
 
-                            writer.WriteLine(string.Join("\t", values));
+
+                                var previousCoordinate = new Coordinate(item.Latitude, item.Longitude);
+                                intermediates.Add(previousCoordinate);
+
+                                var fromNode = way.Nodes[i];
+                                i++;
+
+                                var toNode = long.MaxValue;
+                                while (true)
+                                {
+                                    if (i >= way.Nodes.Length ||
+                                        !dictionary.TryGetValue(way.Nodes[i], out item))
+                                        // an incomplete way, node not in source.
+                                        return;
+
+                                    var coordinate = new Coordinate(item.Latitude, item.Longitude);
+
+                                    distance += Coordinate.DistanceEstimateInMeter(
+                                        previousCoordinate, coordinate);
+
+                                    intermediates.Add(coordinate);
+                                    previousCoordinate = coordinate;
+
+                                    if (item.IsCore)
+                                    {
+                                        // node is part of the core.
+                                        toNode = way.Nodes[i];
+                                        break;
+                                    }
+
+                                    i++;
+                                }
+
+                                var direction = factorAndSpeeds.ToDictionary(x => x.Key, x => x.Value.Direction);
+                                var weight = factorAndSpeeds.Where(x => x.Value.Value > 0)
+                                    .ToDictionary(x => x.Key, x => distance / x.Value.Value);
+
+                                var values = new[]
+                                {
+                                    Guid.ToString(),
+                                    fromNode.ToString(),
+                                    toNode.ToString(),
+                                    distance.ValueAsText(),
+                                    $"{{{string.Join(",", intermediates.Select(t => $"\\\"({t.Latitude.ValueAsText()},{t.Longitude.ValueAsText()})\\\""))}}}",
+                                    intermediates.Count switch {
+                                        0=>"SRID=4326;POINT EMPTY",
+                                        1=>
+                                        $"SRID=4326;POINT({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})"
+                                        ,
+                                        _=>
+                                        $"SRID=4326;LINESTRING({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})"
+                                        },
+                                    $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                    $"{string.Join(",", direction.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ToString()}\""))}",
+                                    $"{string.Join(",", weight.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ValueAsText()}\""))}"
+                                };
+
+                                writer.WriteLine(string.Join("\t", values));
+                            }
                         }
 
-                        if (current++ % 1000 == 0) await progressClient.Progress(100f * current / count, id, null);
+                        if (current++ % 1000 == 0)
+                            await progressClient.Progress(100f * current / count, id, session);
                     }
                 }
 
@@ -255,7 +260,7 @@ namespace Placium.Route
                     "Placium.Route.InsertFromTempTables3.pgsql",
                     connection);
 
-                await progressClient.Finalize(id, null);
+                await progressClient.Finalize(id, session);
 
                 await osmConnection.CloseAsync();
                 await osmConnection2.CloseAsync();

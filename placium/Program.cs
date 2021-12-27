@@ -8,6 +8,7 @@ using Loader.Osm.File;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Placium.Common;
+using Placium.Route;
 using Updater.Addrobx.Sphinx;
 using Updater.Addrx.Database;
 using Updater.Addrx.Sphinx;
@@ -21,10 +22,11 @@ namespace placium
         {
             typeof(FileFiasUploadService),
             typeof(FileOsmUploadService),
+            typeof(DatabaseRouteUpdateService),
             typeof(DatabasePlacexUpdateService),
             typeof(DatabaseAddrxUpdateService),
             typeof(SphinxAddrxUpdateService),
-            typeof(SphinxAddrobxUpdateService),
+            typeof(SphinxAddrobxUpdateService)
         };
 
         private static async Task Main(string[] args)
@@ -44,6 +46,7 @@ namespace placium
                 .AddSingleton<IProgressClient, ShellProgressClient>()
                 .AddSingleton<FileFiasUploadService>()
                 .AddSingleton<FileOsmUploadService>()
+                .AddSingleton<DatabaseRouteUpdateService>()
                 .AddSingleton<DatabasePlacexUpdateService>()
                 .AddSingleton<DatabaseAddrxUpdateService>()
                 .AddSingleton<SphinxAddrxUpdateService>()

@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
     <ProjectReference Include="..\Loader.Fias.File\Loader.Fias.File.csproj" />
     <ProjectReference Include="..\Loader.Osm.File\Loader.Osm.File.csproj" />
+    <ProjectReference Include="..\Placium.Route\Placium.Route.csproj" />
     <ProjectReference Include="..\Placium.Services\Placium.Services.csproj" />
     <ProjectReference Include="..\Placium.Types\Placium.Types.csproj" />
     <ProjectReference Include="..\Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj" />
