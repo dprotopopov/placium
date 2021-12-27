@@ -39,7 +39,7 @@ namespace Placium.Route.Algorithms
 	                node BIGINT NOT NULL, 
 	                weight REAL, 
 	                edge BIGINT,
-	                level BIGINT,
+	                in_queue BOOLEAN,
 	                PRIMARY KEY (node)
                 )", @"CREATE TEMP TABLE temp_edge (
 	                id BIGINT NOT NULL, 
@@ -85,9 +85,11 @@ namespace Placium.Route.Algorithms
             }
 
             using (var command =
-                new NpgsqlCommand(string.Join(";", @"CREATE INDEX temp_dijkstra_level_idx ON temp_dijkstra (level)",
-                    @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
-                    @"CREATE UNIQUE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)"), connection))
+                new NpgsqlCommand(string.Join(";",
+                        @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
+                        @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
+                        @"CREATE UNIQUE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)"),
+                    connection))
             {
                 command.Prepare();
                 await command.ExecuteNonQueryAsync();
@@ -98,13 +100,13 @@ namespace Placium.Route.Algorithms
 	                node,
 	                weight,
 	                edge,
-	                level
+	                in_queue
                 )
                 VALUES (
 	                @node,
 	                0,
 	                0,
-	                0
+	                true
                 )
                 ON CONFLICT (node) DO NOTHING", connection))
             {
@@ -124,50 +126,58 @@ namespace Placium.Route.Algorithms
                 }
             }
 
-            using (var command =
-                new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM temp_dijkstra WHERE level=@level",
-                    @"INSERT INTO temp_dijkstra (
+            var node = 0L;
+            using (var command1 =
+                new NpgsqlCommand(
+                    string.Join(";", @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
+                    connection))
+            using (var command2 =
+                new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_dijkstra (
 	                    node,
 	                    weight,
 	                    edge,
-	                    level
+	                    in_queue
                     )
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.to_node AS node,t.weight+e.weight AS weight,e.id AS edge,t.level+1 AS level
+		                    SELECT e.to_node AS node,t.weight+e.weight AS weight,e.id AS edge,true AS in_queue
 		                    FROM temp_edge e JOIN temp_dijkstra t ON e.from_node=t.node
-                            WHERE t.level=@level AND e.direction=ANY(ARRAY[0,1,3,4])
-                            UNION ALL SELECT e.from_node AS node,t.weight+e.weight AS weight,e.id AS edge,t.level+1 AS level
+                            WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.node=@node
+                            UNION ALL SELECT e.from_node AS node,t.weight+e.weight AS weight,e.id AS edge,true AS in_queue
 		                    FROM temp_edge e JOIN temp_dijkstra t ON e.to_node=t.node
-                            WHERE t.level=@level AND e.direction=ANY(ARRAY[0,2,3,5])) q
+                            WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.node=@node) q
                     )
                     SELECT 
 	                    node,
 	                    weight,
 	                    edge,
-	                    level
+	                    in_queue
                     FROM cte
                     WHERE rn = 1
                     ON CONFLICT (node) DO UPDATE SET
 	                    weight=EXCLUDED.weight,
 	                    edge=EXCLUDED.edge,
-                        level=EXCLUDED.level
-                        WHERE temp_dijkstra.weight>EXCLUDED.weight"), connection))
+                        in_queue=EXCLUDED.in_queue
+                        WHERE temp_dijkstra.weight>EXCLUDED.weight",
+                    @"UPDATE temp_dijkstra SET in_queue=false WHERE node=@node"), connection))
             {
-                command.Parameters.Add("level", NpgsqlDbType.Bigint);
-                command.Prepare();
+                command2.Parameters.Add("node", NpgsqlDbType.Bigint);
+                command1.Prepare();
+                command2.Prepare();
 
-                for (var level = 0L;; level++)
+                for (var step = 0L;; step++)
                 {
-                    command.Parameters["level"].Value = level;
-                    using (var reader = await command.ExecuteReaderAsync())
+                    using (var reader = command1.ExecuteReader())
                     {
-                        if (!reader.Read()) throw new NullReferenceException();
-                        var count = reader.GetInt64(0);
-                        Console.WriteLine($"Step level={level} count={count} complete");
-                        if (count == 0) break;
+                        if (!reader.Read()) break;
+                        node = reader.GetInt64(0);
                     }
+
+                    command2.Parameters["node"].Value = node;
+                    command2.ExecuteNonQuery();
+
+                    if (step % 1000 == 0) Console.WriteLine($"Step {step} complete");
                 }
             }
 
@@ -175,10 +185,10 @@ namespace Placium.Route.Algorithms
             if (new[] {0, 1, 3, 4}.Contains(Target.Direction)) targets.Add(Target.FromNode);
             if (new[] {0, 2, 3, 5}.Contains(Target.Direction)) targets.Add(Target.ToNode);
 
-            var node = 0L;
 
             using (var command =
-                new NpgsqlCommand(@"SELECT node FROM temp_dijkstra WHERE node=ANY(@targets) ORDER BY weight LIMIT 1",
+                new NpgsqlCommand(
+                    @"SELECT node FROM temp_dijkstra WHERE node=ANY(@targets) ORDER BY weight LIMIT 1",
                     connection))
             {
                 command.Parameters.AddWithValue("targets", targets.ToArray());
@@ -203,7 +213,7 @@ namespace Placium.Route.Algorithms
                 {
                     command.Parameters["node"].Value = node;
                     using var reader = await command.ExecuteReaderAsync();
-                    
+
                     if (!reader.Read()) break;
 
                     node = reader.GetInt64(0);

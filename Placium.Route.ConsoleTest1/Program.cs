@@ -44,8 +44,8 @@ namespace Placium.Route.ConsoleTest1
 
             // calculate route.
             // this should be the result: http://geojson.io/#id=gist:dprotopopov/34df4ce18b6e974bb2ee9123b29d46c4&map=16/55.8223/37.6331
-            var route = await router.CalculateAsync(new Coordinate(55.823680f, 37.608577f),
-                new Coordinate(55.820427f, 37.639986f), "car.shortest");
+            var route = await router.CalculateAsync(new Coordinate(55.778396f, 37.561693f),
+                new Coordinate(55.768940f, 37.651709f), "car.shortest");
             var routeGeoJson = route.ToGeoJson();
             File.WriteAllText("route1.geojson", routeGeoJson);
         }

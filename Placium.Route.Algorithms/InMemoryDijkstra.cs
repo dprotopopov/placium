@@ -38,7 +38,7 @@ namespace Placium.Route.Algorithms
 	                node INTEGER, 
 	                weight REAL, 
 	                edge INTEGER,
-	                level INTEGER,
+	                in_queue INTEGER,
 	                PRIMARY KEY (node)
                 )", @"CREATE TEMP TABLE temp_edge (
 	                id INTEGER, 
@@ -88,7 +88,7 @@ namespace Placium.Route.Algorithms
             }
 
             using (var command =
-                new SqliteCommand(string.Join(";", @"CREATE INDEX temp_dijkstra_level_idx ON temp_dijkstra (level)",
+                new SqliteCommand(string.Join(";", @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
                         @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
                         @"CREATE UNIQUE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)"),
                     connection))
@@ -102,13 +102,13 @@ namespace Placium.Route.Algorithms
 	                node,
 	                weight,
 	                edge,
-	                level
+	                in_queue
                 )
                 VALUES (
 	                @node,
 	                0,
 	                0,
-	                0
+	                1
                 )", connection))
             {
                 command.Parameters.Add("node", SqliteType.Integer);
@@ -127,59 +127,66 @@ namespace Placium.Route.Algorithms
                 }
             }
 
-            using (var command =
-                new SqliteCommand(string.Join(";", @"SELECT COUNT(*) FROM temp_dijkstra WHERE level=@level",
-                    @"INSERT OR REPLACE INTO temp_dijkstra (
+            var node = 0L;
+
+            using (var command1 =
+                new SqliteCommand(
+                    string.Join(";", @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
+                    connection))
+            using (var command2 =
+                new SqliteCommand(string.Join(";", @"INSERT OR REPLACE INTO temp_dijkstra (
 	                    node,
 	                    weight,
 	                    edge,
-	                    level
+	                    in_queue
                     )
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.to_node AS node,t.weight+e.weight AS weight,e.id AS edge,t.level+1 AS level
+		                    SELECT e.to_node AS node,t.weight+e.weight AS weight,e.id AS edge,1 AS in_queue
 		                    FROM temp_edge e JOIN temp_dijkstra t ON e.from_node=t.node
-                            WHERE t.level=@level AND (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4)
-                            UNION ALL SELECT e.from_node AS node,t.weight+e.weight AS weight,e.id AS edge,t.level+1 AS level
+                            WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
+                            UNION ALL SELECT e.from_node AS node,t.weight+e.weight AS weight,e.id AS edge,1 AS in_queue
 		                    FROM temp_edge e JOIN temp_dijkstra t ON e.to_node=t.node
-                            WHERE t.level=@level AND (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5)
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.edge,t1.level
+                            WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
+                            UNION ALL SELECT t1.node AS node,t1.weight,t1.edge,t1.in_queue
 		                    FROM temp_edge e JOIN temp_dijkstra t ON e.from_node=t.node JOIN temp_dijkstra t1 ON e.to_node=t1.node
-                            WHERE t.level=@level AND (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4)
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.edge,t1.level
+                            WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
+                            UNION ALL SELECT t1.node AS node,t1.weight,t1.edge,t1.in_queue
 		                    FROM temp_edge e JOIN temp_dijkstra t ON e.to_node=t.node JOIN temp_dijkstra t1 ON e.from_node=t1.node
-                            WHERE t.level=@level AND (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5)) q
+                            WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node) q
                     )
                     SELECT 
 	                    node,
 	                    weight,
 	                    edge,
-	                    level
+	                    in_queue
                     FROM cte
-                    WHERE rn = 1"), connection))
+                    WHERE rn = 1",
+                    @"UPDATE temp_dijkstra SET in_queue=0 WHERE node=@node"), connection))
             {
-                command.Parameters.Add("level", SqliteType.Integer);
-                command.Prepare();
+                command2.Parameters.Add("level", SqliteType.Integer);
+                command1.Prepare();
+                command2.Prepare();
 
-                for (var level = 0L;; level++)
+                for (var step = 0L; ; step++)
                 {
-                    command.Parameters["level"].Value = level;
-                    using (var reader = await command.ExecuteReaderAsync())
+                    using (var reader = command1.ExecuteReader())
                     {
-                        if (!reader.Read()) throw new NullReferenceException();
-                        var count = reader.GetInt64(0);
-                        Console.WriteLine($"Step level={level} count={count} complete");
-                        if (count == 0) break;
+                        if (!reader.Read()) break;
+                        node = reader.GetInt64(0);
                     }
+
+                    command2.Parameters["node"].Value = node;
+                    command2.ExecuteNonQuery();
+
+                    if (step % 1000 == 0) Console.WriteLine($"Step {step} complete");
                 }
             }
 
             var targets = new List<long>();
             if (new[] {0, 1, 3, 4}.Contains(Target.Direction)) targets.Add(Target.FromNode);
             if (new[] {0, 2, 3, 5}.Contains(Target.Direction)) targets.Add(Target.ToNode);
-
-            var node = 0L;
 
             using (var command =
                 new SqliteCommand(
