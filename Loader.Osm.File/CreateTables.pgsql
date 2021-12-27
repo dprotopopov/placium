@@ -55,8 +55,8 @@ CREATE TABLE placex (
 CREATE TABLE node (
 	id BIGINT, 
 	version INTEGER, 
-	latitude DOUBLE PRECISION, 
-	longitude DOUBLE PRECISION,
+	latitude REAL, 
+	longitude REAL,
 	change_set_id BIGINT, 
 	time_stamp TIMESTAMP,
 	user_id INT, 

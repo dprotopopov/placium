@@ -86,6 +86,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Navigation.Directions
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.LocalGeo", "Route.LocalGeo\Route.LocalGeo.csproj", "{E3AF1351-E741-402C-8A33-85434BFA90FF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Placium.Route.Algorithms", "Placium.Route.Algorithms\Placium.Route.Algorithms.csproj", "{A64A054D-C582-419C-ACEA-104EF0CFD224}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Placium.Route", "Placium.Route\Placium.Route.csproj", "{B6772668-935B-4E4F-9A9C-C2CA9B39D2DC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Placium.Route.Common", "Placium.Route.Common\Placium.Route.Common.csproj", "{26B7350E-D591-4F8F-A17F-577FEAC2AD99}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Placium.Route.ConsoleTest1", "Placium.Route.ConsoleTest1\Placium.Route.ConsoleTest1.csproj", "{89976F92-64EA-4B9B-9272-7C60940AA18B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -228,6 +236,22 @@ Global
 		{E3AF1351-E741-402C-8A33-85434BFA90FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E3AF1351-E741-402C-8A33-85434BFA90FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E3AF1351-E741-402C-8A33-85434BFA90FF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A64A054D-C582-419C-ACEA-104EF0CFD224}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A64A054D-C582-419C-ACEA-104EF0CFD224}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A64A054D-C582-419C-ACEA-104EF0CFD224}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A64A054D-C582-419C-ACEA-104EF0CFD224}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6772668-935B-4E4F-9A9C-C2CA9B39D2DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6772668-935B-4E4F-9A9C-C2CA9B39D2DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6772668-935B-4E4F-9A9C-C2CA9B39D2DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6772668-935B-4E4F-9A9C-C2CA9B39D2DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26B7350E-D591-4F8F-A17F-577FEAC2AD99}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26B7350E-D591-4F8F-A17F-577FEAC2AD99}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26B7350E-D591-4F8F-A17F-577FEAC2AD99}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26B7350E-D591-4F8F-A17F-577FEAC2AD99}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89976F92-64EA-4B9B-9272-7C60940AA18B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89976F92-64EA-4B9B-9272-7C60940AA18B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89976F92-64EA-4B9B-9272-7C60940AA18B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89976F92-64EA-4B9B-9272-7C60940AA18B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

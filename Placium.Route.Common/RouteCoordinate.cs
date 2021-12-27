@@ -1,6 +1,6 @@
 ﻿using NpgsqlTypes;
 
-namespace Route
+namespace Placium.Route.Common
 {
     public class RouteCoordinate
     {

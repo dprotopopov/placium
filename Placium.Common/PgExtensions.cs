@@ -178,17 +178,17 @@ namespace Placium.Common
 
         public static string ValueAsText(this double? value)
         {
-            return value?.ToString("G", CultureInfo.InvariantCulture) ?? string.Empty;
+            return value?.ToString("F6", CultureInfo.InvariantCulture) ?? string.Empty;
         }
 
         public static string ValueAsText(this double value)
         {
-            return value.ToString("G", CultureInfo.InvariantCulture);
+            return value.ToString("F6", CultureInfo.InvariantCulture);
         }
 
         public static string ValueAsText(this float value)
         {
-            return value.ToString("G", CultureInfo.InvariantCulture);
+            return value.ToString("F6", CultureInfo.InvariantCulture);
         }
 
         public static string ValueAsText(this DateTime? value)

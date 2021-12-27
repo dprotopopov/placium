@@ -442,54 +442,51 @@ namespace Route.IO.Osm.Streams
                     foreach (var processor in Processors)
                         processor.FirstPass(way);
 
-                if (_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes()))
+                if (!_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes())) return;
+
+                if (_osm_connection == null)
                 {
-                    if (!_vehicleCache.AnyCanTraverse(way.Tags.ToAttributes())) return;
-
-                    if (_osm_connection == null)
-                    {
-                        _osm_connection = new NpgsqlConnection(_db.OsmConnectionString);
-                        _osm_connection.Open();
-                    }
-
-                    if (_osm_command == null)
-                    {
-                        _osm_command = new NpgsqlCommand(
-                            @"SELECT id,latitude,longitude FROM node WHERE id=ANY(@ids)",
-                            _osm_connection);
-                        _osm_command.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                        _osm_command.Prepare();
-                    }
-
-                    _osm_command.Parameters["ids"].Value = way.Nodes;
-
-                    var list = new List<NodeItem>(way.Nodes.Length);
-
-                    using (var reader = _osm_command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                            list.Add(new NodeItem
-                            {
-                                Id = reader.GetInt64(0),
-                                Latitude = reader.GetDouble(1),
-                                Longitude = reader.GetDouble(2)
-                            });
-                    }
-
-                    list.ForEach(node =>
-                    {
-                        var nodeValues = new[]
-                        {
-                            _db.Guid.ToString(),
-                            node.Id.ToString(),
-                            node.Latitude.ValueAsText(),
-                            node.Longitude.ValueAsText(),
-                            (node.Id == way.Nodes.First() || node.Id == way.Nodes.Last()).ValueAsText()
-                        };
-
-                        _writer.WriteLine(string.Join("\t", nodeValues));
-                    });
+                    _osm_connection = new NpgsqlConnection(_db.OsmConnectionString);
+                    _osm_connection.Open();
                 }
+
+                if (_osm_command == null)
+                {
+                    _osm_command = new NpgsqlCommand(
+                        @"SELECT id,latitude,longitude FROM node WHERE id=ANY(@ids)",
+                        _osm_connection);
+                    _osm_command.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                    _osm_command.Prepare();
+                }
+
+                _osm_command.Parameters["ids"].Value = way.Nodes;
+
+                var list = new List<NodeItem>(way.Nodes.Length);
+
+                using (var reader = _osm_command.ExecuteReader())
+                {
+                    while (reader.Read())
+                        list.Add(new NodeItem
+                        {
+                            Id = reader.GetInt64(0),
+                            Latitude = reader.GetFloat(1),
+                            Longitude = reader.GetFloat(2)
+                        });
+                }
+
+                list.ForEach(node =>
+                {
+                    var values = new[]
+                    {
+                        _db.Guid.ToString(),
+                        node.Id.ToString(),
+                        node.Latitude.ValueAsText(),
+                        node.Longitude.ValueAsText(),
+                        (node.Id == way.Nodes.First() || node.Id == way.Nodes.Last()).ValueAsText()
+                    };
+
+                    _writer.WriteLine(string.Join("\t", values));
+                });
             }
             else
             {
@@ -547,8 +544,8 @@ namespace Route.IO.Osm.Streams
                             list.Add(new NodeItem
                             {
                                 Id = reader.GetInt64(0),
-                                Latitude = (float) reader.GetDouble(1),
-                                Longitude = (float) reader.GetDouble(2),
+                                Latitude = reader.GetFloat(1),
+                                Longitude = reader.GetFloat(2),
                                 IsCore = reader.GetBoolean(3)
                             });
                     }
@@ -566,7 +563,7 @@ namespace Route.IO.Osm.Streams
                         var distance = 0.0f;
                         if (!dictionary.TryGetValue(way.Nodes[node], out var item)) return;
 
-                        var coordinate = new Coordinate((float) item.Latitude, (float) item.Longitude);
+                        var coordinate = new Coordinate(item.Latitude, item.Longitude);
 
                         var fromVertex = _db.NodeData[way.Nodes[node]];
                         var fromNode = way.Nodes[node];
@@ -582,7 +579,7 @@ namespace Route.IO.Osm.Streams
                                 // an incomplete way, node not in source.
                                 return;
 
-                            coordinate = new Coordinate((float) item.Latitude, (float) item.Longitude);
+                            coordinate = new Coordinate(item.Latitude, item.Longitude);
 
                             distance += Coordinate.DistanceEstimateInMeter(
                                 previousCoordinate, coordinate);
@@ -600,7 +597,7 @@ namespace Route.IO.Osm.Streams
                             node++;
                         }
 
-                        var edgeValues = new[]
+                        var values = new[]
                         {
                             _db.Guid.ToString(),
                             fromNode.ToString(),
@@ -611,7 +608,7 @@ namespace Route.IO.Osm.Streams
                             $"{string.Join(",", profileTags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                         };
 
-                        _writer3.WriteLine(string.Join("\t", edgeValues));
+                        _writer3.WriteLine(string.Join("\t", values));
                     }
                 }
             }
@@ -651,8 +648,8 @@ namespace Route.IO.Osm.Streams
         public class NodeItem
         {
             public long Id { get; set; }
-            public double Latitude { get; set; }
-            public double Longitude { get; set; }
+            public float Latitude { get; set; }
+            public float Longitude { get; set; }
             public bool IsCore { get; set; }
         }
     }

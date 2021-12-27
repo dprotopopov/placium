@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="CreateTempTables.pgsql" />
+    <EmbeddedResource Include="CreateTempTables3.pgsql" />
+    <EmbeddedResource Include="InsertFromTempTables.pgsql" />
+    <EmbeddedResource Include="InsertFromTempTables3.pgsql" />
+    <EmbeddedResource Include="Osm\Vehicles\bicycle.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.bicycle.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Osm\Vehicles\bigtruck.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.bigtruck.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Osm\Vehicles\bus.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.bus.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Osm\Vehicles\car.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.car.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Osm\Vehicles\moped.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.moped.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Osm\Vehicles\motorcycle.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.motorcycle.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Osm\Vehicles\pedestrian.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.pedestrian.lua</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Osm\Vehicles\smalltruck.lua">
+      <LogicalName>Placium.Route.Osm.Vehicles.smalltruck.lua</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Placium.Route.Algorithms\Placium.Route.Algorithms.csproj" />
+    <ProjectReference Include="..\Route.Attributes\Route.Attributes.csproj" />
+    <ProjectReference Include="..\Route.IO\Route.IO.csproj" />
+    <ProjectReference Include="..\Route.Profiles.Lua\Route.Profiles.Lua.csproj" />
+  </ItemGroup>
+
+</Project>

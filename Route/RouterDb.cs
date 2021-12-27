@@ -201,9 +201,8 @@ namespace Route
                 new NpgsqlCommand(
                     @"SELECT id,latitude,longitude,ROW_NUMBER() OVER (ORDER BY id) FROM node WHERE guid=@guid AND is_core",
                     connection);
-            command.Parameters.Add("guid", NpgsqlDbType.Uuid);
+            command.Parameters.AddWithValue("guid", Guid);
             command.Prepare();
-            command.Parameters["guid"].Value = Guid;
             var keyValuePairs = new List<KeyValuePair<long, long>>();
             using var reader = command.ExecuteReader();
             while (reader.Read())
@@ -227,9 +226,8 @@ namespace Route
                 new NpgsqlCommand(
                     @"SELECT vehicle_type,nodes FROM restriction WHERE guid=@guid",
                     connection);
-            command.Parameters.Add("guid", NpgsqlDbType.Uuid);
+            command.Parameters.AddWithValue("guid", Guid);
             command.Prepare();
-            command.Parameters["guid"].Value = Guid;
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -254,9 +252,8 @@ namespace Route
                 new NpgsqlCommand(
                     @"SELECT node,tags FROM meta WHERE guid=@guid",
                     connection);
-            command.Parameters.Add("guid", NpgsqlDbType.Uuid);
+            command.Parameters.AddWithValue("guid", Guid);
             command.Prepare();
-            command.Parameters["guid"].Value = Guid;
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -291,9 +288,8 @@ namespace Route
                 new NpgsqlCommand(
                     @"SELECT from_node,to_node,distance,coordinates,meta_tags,profile_tags FROM edge WHERE guid=@guid",
                     connection);
-            command.Parameters.Add("guid", NpgsqlDbType.Uuid);
+            command.Parameters.AddWithValue("guid", Guid);
             command.Prepare();
-            command.Parameters["guid"].Value = Guid;
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
@@ -389,7 +385,7 @@ namespace Route
                 var meta = EdgeMeta.Add(metaTags);
                 var fromVertex = NodeData[from];
                 var toVertex = NodeData[to];
-                var intermediates = coordinates.Select(x => new Coordinate((float) x.Latitude, (float) x.Longitude))
+                var intermediates = coordinates.Select(x => new Coordinate(x.Latitude, x.Longitude))
                     .ToList();
                 AddCoreEdge(fromVertex, toVertex, new EdgeData
                 {

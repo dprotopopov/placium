@@ -274,8 +274,8 @@ namespace Updater.Placex.Database
                                                     while (reader3.Read())
                                                         dic.Add(reader3.GetInt64(0), new Point
                                                         {
-                                                            longitude = reader3.GetDouble(1),
-                                                            latitude = reader3.GetDouble(2)
+                                                            longitude = reader3.GetFloat(1),
+                                                            latitude = reader3.GetFloat(2)
                                                         });
                                                 }
 
@@ -625,8 +625,8 @@ namespace Updater.Placex.Database
                     while (reader4.Read())
                         dic.Add(reader4.GetInt64(0), new Point
                         {
-                            longitude = reader4.GetDouble(1),
-                            latitude = reader4.GetDouble(2)
+                            longitude = reader4.GetFloat(1),
+                            latitude = reader4.GetFloat(2)
                         });
                 }
 
@@ -710,8 +710,8 @@ namespace Updater.Placex.Database
 
         public class Point
         {
-            public double latitude { get; set; }
-            public double longitude { get; set; }
+            public float latitude { get; set; }
+            public float longitude { get; set; }
         }
     }
 }

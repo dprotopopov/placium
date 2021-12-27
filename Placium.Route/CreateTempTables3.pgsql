@@ -1,4 +1,5 @@
 ﻿CREATE EXTENSION IF NOT EXISTS hstore WITH SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
 
 DROP TABLE IF EXISTS temp_edge;
 
@@ -18,8 +19,10 @@ CREATE TEMP TABLE temp_edge (
 	to_node BIGINT,
 	distance REAL,
 	coordinates coordinate[],
-	meta_tags hstore,
-	profile_tags hstore
+	location GEOMETRY,
+	tags hstore,
+	direction hstore,
+	weight hstore
 );
 
 CREATE TABLE IF NOT EXISTS edge (
@@ -29,8 +32,10 @@ CREATE TABLE IF NOT EXISTS edge (
 	to_node BIGINT,
 	distance REAL, 
 	coordinates coordinate[],
-	meta_tags hstore,
-	profile_tags hstore,
+	location GEOMETRY,
+	tags hstore,
+	direction hstore,
+	weight hstore,
 	PRIMARY KEY (id, guid)
 );
 
