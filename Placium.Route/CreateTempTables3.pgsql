@@ -18,6 +18,10 @@ CREATE TEMP TABLE temp_edge (
 	guid UUID NOT NULL,
 	from_node BIGINT, 
 	to_node BIGINT,
+	from_latitude REAL NOT NULL, 
+	from_longitude REAL NOT NULL, 
+	to_latitude REAL NOT NULL, 
+	to_longitude REAL NOT NULL, 
 	distance REAL,
 	coordinates coordinate[],
 	location GEOMETRY,
@@ -31,13 +35,19 @@ CREATE TABLE IF NOT EXISTS edge (
 	guid UUID NOT NULL,
 	from_node BIGINT, 
 	to_node BIGINT,
+	from_latitude REAL NOT NULL, 
+	from_longitude REAL NOT NULL, 
+	to_latitude REAL NOT NULL, 
+	to_longitude REAL NOT NULL, 
 	distance REAL, 
 	coordinates coordinate[],
 	location GEOMETRY,
 	tags hstore,
 	direction hstore,
 	weight hstore,
+	nodes bigint[],
 	PRIMARY KEY (id, guid)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS edge_guid_from_node_to_node_idx ON edge (guid,from_node,to_node);
+CREATE INDEX IF NOT EXISTS edge_nodes_idx ON edge USING GIN (nodes);

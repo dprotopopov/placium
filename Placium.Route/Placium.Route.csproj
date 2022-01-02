@@ -5,9 +5,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="CreateTempTables2.pgsql" />
+    <None Remove="InsertFromTempTables2.pgsql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="CreateTempTables.pgsql" />
+    <EmbeddedResource Include="CreateTempTables2.pgsql" />
     <EmbeddedResource Include="CreateTempTables3.pgsql" />
     <EmbeddedResource Include="InsertFromTempTables.pgsql" />
+    <EmbeddedResource Include="InsertFromTempTables2.pgsql" />
     <EmbeddedResource Include="InsertFromTempTables3.pgsql" />
     <EmbeddedResource Include="Osm\Vehicles\bicycle.lua">
       <LogicalName>Placium.Route.Osm.Vehicles.bicycle.lua</LogicalName>

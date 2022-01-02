@@ -216,6 +216,11 @@ namespace Placium.Common
             return reader.IsDBNull(ordinal) ? (long?) null : reader.GetInt64(ordinal);
         }
 
+        public static float? SafeGetFloat(this NpgsqlDataReader reader, int ordinal)
+        {
+            return reader.IsDBNull(ordinal) ? (float?) null : reader.GetFloat(ordinal);
+        }
+
         public static double? SafeGetDouble(this NpgsqlDataReader reader, int ordinal)
         {
             return reader.IsDBNull(ordinal) ? (double?) null : reader.GetDouble(ordinal);
@@ -255,49 +260,52 @@ namespace Placium.Common
             return result;
         }
 
-        public static Node Fill(this Node node, NpgsqlDataReader reader)
+        public static Node Fill(this Node node, NpgsqlDataReader reader, int offset = 0)
         {
-            node.Id = reader.SafeGetInt64(0);
-            node.Version = reader.SafeGetInt32(1);
-            node.Latitude = reader.SafeGetDouble(2);
-            node.Longitude = reader.SafeGetDouble(3);
-            node.ChangeSetId = reader.SafeGetInt64(4);
-            node.TimeStamp = reader.SafeGetDateTime(5);
-            node.UserId = reader.SafeGetInt64(6);
-            node.UserName = reader.SafeGetString(7);
-            node.Visible = reader.SafeGetBoolean(8);
-            node.Tags = (reader.SafeGetValue(9) as Dictionary<string, string> ?? new Dictionary<string, string>())
+            node.Id = reader.SafeGetInt64(offset + 0);
+            node.Version = reader.SafeGetInt32(offset + 1);
+            node.Latitude = reader.SafeGetFloat(offset + 2);
+            node.Longitude = reader.SafeGetFloat(offset + 3);
+            node.ChangeSetId = reader.SafeGetInt64(offset + 4);
+            node.TimeStamp = reader.SafeGetDateTime(offset + 5);
+            node.UserId = reader.SafeGetInt64(offset + 6);
+            node.UserName = reader.SafeGetString(offset + 7);
+            node.Visible = reader.SafeGetBoolean(offset + 8);
+            node.Tags = (reader.SafeGetValue(offset + 9) as Dictionary<string, string> ??
+                         new Dictionary<string, string>())
                 .ToTags();
             return node;
         }
 
-        public static Way Fill(this Way way, NpgsqlDataReader reader)
+        public static Way Fill(this Way way, NpgsqlDataReader reader, int offset = 0)
         {
-            way.Id = reader.SafeGetInt64(0);
-            way.Version = reader.SafeGetInt32(1);
-            way.ChangeSetId = reader.SafeGetInt64(2);
-            way.TimeStamp = reader.SafeGetDateTime(3);
-            way.UserId = reader.SafeGetInt64(4);
-            way.UserName = reader.SafeGetString(5);
-            way.Visible = reader.SafeGetBoolean(6);
-            way.Tags = (reader.SafeGetValue(7) as Dictionary<string, string> ?? new Dictionary<string, string>())
+            way.Id = reader.SafeGetInt64(offset + 0);
+            way.Version = reader.SafeGetInt32(offset + 1);
+            way.ChangeSetId = reader.SafeGetInt64(offset + 2);
+            way.TimeStamp = reader.SafeGetDateTime(offset + 3);
+            way.UserId = reader.SafeGetInt64(offset + 4);
+            way.UserName = reader.SafeGetString(offset + 5);
+            way.Visible = reader.SafeGetBoolean(offset + 6);
+            way.Tags = (reader.SafeGetValue(offset + 7) as Dictionary<string, string> ??
+                        new Dictionary<string, string>())
                 .ToTags();
-            way.Nodes = (long[]) reader.SafeGetValue(8);
+            way.Nodes = (long[]) reader.SafeGetValue(offset + 8);
             return way;
         }
 
-        public static Relation Fill(this Relation relation, NpgsqlDataReader reader)
+        public static Relation Fill(this Relation relation, NpgsqlDataReader reader, int offset = 0)
         {
-            relation.Id = reader.SafeGetInt64(0);
-            relation.Version = reader.SafeGetInt32(1);
-            relation.ChangeSetId = reader.SafeGetInt64(2);
-            relation.TimeStamp = reader.SafeGetDateTime(3);
-            relation.UserId = reader.SafeGetInt64(4);
-            relation.UserName = reader.SafeGetString(5);
-            relation.Visible = reader.SafeGetBoolean(6);
-            relation.Tags = (reader.SafeGetValue(7) as Dictionary<string, string> ?? new Dictionary<string, string>())
+            relation.Id = reader.SafeGetInt64(offset + 0);
+            relation.Version = reader.SafeGetInt32(offset + 1);
+            relation.ChangeSetId = reader.SafeGetInt64(offset + 2);
+            relation.TimeStamp = reader.SafeGetDateTime(offset + 3);
+            relation.UserId = reader.SafeGetInt64(offset + 4);
+            relation.UserName = reader.SafeGetString(offset + 5);
+            relation.Visible = reader.SafeGetBoolean(offset + 6);
+            relation.Tags = (reader.SafeGetValue(offset + 7) as Dictionary<string, string> ??
+                             new Dictionary<string, string>())
                 .ToTags();
-            relation.Members = (reader.SafeGetValue(8) as OsmRelationMember[] ?? new OsmRelationMember[0])
+            relation.Members = (reader.SafeGetValue(offset + 8) as OsmRelationMember[] ?? new OsmRelationMember[0])
                 .Select(x => new RelationMember(x.Id, x.Role, (OsmGeoType) x.Type)).ToArray();
             return relation;
         }

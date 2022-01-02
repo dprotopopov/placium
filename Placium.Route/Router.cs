@@ -19,14 +19,19 @@ namespace Placium.Route
 
         public async Task<Route> CalculateAsync(Coordinate source, Coordinate target, string profile)
         {
-            var sourceRouterPoint = await new ResolveAlgorithm(Db.Guid, Db.ConnectionString, profile, source).DoRunAsync();
-            var targetRouterPoint = await new ResolveAlgorithm(Db.Guid, Db.ConnectionString, profile, target).DoRunAsync();
+            var sourceRouterPoint =
+                await new ResolveAlgorithm(Db.Guid, Db.ConnectionString, profile, source).DoRunAsync();
+            var targetRouterPoint =
+                await new ResolveAlgorithm(Db.Guid, Db.ConnectionString, profile, target).DoRunAsync();
             List<long> path = null;
             if (sourceRouterPoint.EdgeId != targetRouterPoint.EdgeId ||
-                new[] { 1, 4 }.Contains(sourceRouterPoint.Direction) && sourceRouterPoint.Offset > targetRouterPoint.Offset ||
-                new[] { 2, 5 }.Contains(sourceRouterPoint.Direction) && sourceRouterPoint.Offset < targetRouterPoint.Offset)
+                new[] {1, 4}.Contains(sourceRouterPoint.Direction) &&
+                sourceRouterPoint.Offset > targetRouterPoint.Offset ||
+                new[] {2, 5}.Contains(sourceRouterPoint.Direction) &&
+                sourceRouterPoint.Offset < targetRouterPoint.Offset)
             {
-                path = await new InMemoryBidirectionalDijkstra(Db.Guid, Db.ConnectionString, profile, sourceRouterPoint, targetRouterPoint)
+                path = await new InMemoryBidirectionalAStar(Db.Guid, Db.ConnectionString, "motorcar", profile,
+                        sourceRouterPoint, targetRouterPoint)
                     .DoRunAsync();
                 path.Insert(0, sourceRouterPoint.EdgeId);
                 path.Add(targetRouterPoint.EdgeId);
@@ -73,6 +78,7 @@ namespace Placium.Route
 
             var dictionary = list.ToDictionary(x => x.Id, x => x);
 
+
             var shape = new List<Coordinate>(list.Select(x => x.Coordinates.Length).Sum());
             var shapeMeta = new List<Route.Meta>(list.Count);
 
@@ -113,7 +119,7 @@ namespace Placium.Route
                 {
                     var prev = dictionary[path[i - 1]];
                     item = dictionary[path[i]];
-                    if (item.Coordinates.Any())
+                    if (item.Coordinates.Length > 1)
                     {
                         shapeMeta.Add(new Route.Meta
                         {
@@ -121,8 +127,8 @@ namespace Placium.Route
                             Attributes = item.Tags.ToAttributes()
                         });
                         if (prev.ToNode == item.FromNode || prev.FromNode == item.FromNode)
-                            shape.AddRange(item.Coordinates);
-                        else shape.AddRange(item.Coordinates.Reverse());
+                            shape.AddRange(item.Coordinates.Skip(1));
+                        else shape.AddRange(item.Coordinates.Reverse().Skip(1));
                     }
                 }
 
@@ -133,10 +139,12 @@ namespace Placium.Route
                     Shape = shape.Count,
                     Attributes = item.Tags.ToAttributes()
                 });
+
                 if (targetRouterPoint.ToNode == item.FromNode || targetRouterPoint.FromNode == item.FromNode)
-                    shape.AddRange(item.Coordinates.Take(targetRouterPoint.Offset));
+                    shape.AddRange(item.Coordinates.Take(targetRouterPoint.Offset).Skip(1));
                 else
-                    shape.AddRange(item.Coordinates.Reverse().Take(item.Coordinates.Length - targetRouterPoint.Offset));
+                    shape.AddRange(item.Coordinates.Reverse().Take(item.Coordinates.Length - targetRouterPoint.Offset)
+                        .Skip(1));
                 shape.Add(targetRouterPoint.Coordinate);
             }
 

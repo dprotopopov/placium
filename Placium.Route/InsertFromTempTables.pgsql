@@ -5,16 +5,28 @@ INSERT INTO node(
 	id,
 	latitude,
 	longitude,
+	tags,
 	is_core
-)
-SELECT 
-	guid,
-	id,
-	MAX(latitude),
-	MAX(longitude),
-	BOOL_OR(is_core) OR COUNT(*)>1
-FROM temp_node
-GROUP BY guid,id
+) WITH cte AS (
+	SELECT 
+		guid,
+		id,
+		BOOL_OR(is_core) OR COUNT(*)>1 AS is_core
+	FROM temp_node
+	GROUP BY guid,id
+), cte1 AS (
+	SELECT 
+		 *, ROW_NUMBER() OVER (PARTITION BY guid,id) rn
+	FROM temp_node
+) SELECT 
+	cte.guid,
+	cte.id,
+	cte1.latitude,
+	cte1.longitude,
+	cte1.tags,
+	cte.is_core
+FROM cte JOIN cte1 ON cte.guid=cte1.guid AND cte.id=cte1.id
+WHERE cte1.rn=1
 ON CONFLICT (guid,id) DO UPDATE SET
 	is_core=true;
 

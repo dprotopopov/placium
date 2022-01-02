@@ -21,6 +21,7 @@ namespace Placium.Route.Algorithms
         {
             using var connection = new NpgsqlConnection(ConnectionString);
             await connection.OpenAsync();
+            connection.ReloadTypes();
             connection.TypeMapper.MapComposite<RouteCoordinate>("coordinate");
             using (var command = new NpgsqlCommand(
                 @"SELECT id,from_node,to_node,coordinates,direction,ST_X(point),ST_Y(point) 
