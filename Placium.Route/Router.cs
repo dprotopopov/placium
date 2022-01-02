@@ -103,16 +103,18 @@ namespace Placium.Route
             else
             {
                 var item = dictionary[path[0]];
+                var item1 = dictionary[path[1]];
+
                 shapeMeta.Add(new Route.Meta
                 {
                     Shape = shape.Count,
                     Attributes = item.Tags.ToAttributes()
                 });
                 shape.Add(sourceRouterPoint.Coordinate);
-                if (sourceRouterPoint.ToNode == item.FromNode || sourceRouterPoint.FromNode == item.FromNode)
+                if (item.ToNode == item1.FromNode || item.ToNode == item1.ToNode)
                     shape.AddRange(item.Coordinates.Skip(sourceRouterPoint.Offset));
                 else
-                    shape.AddRange(item.Coordinates.Reverse()
+                    shape.AddRange(sourceRouterPoint.Coordinates.Reverse()
                         .Skip(item.Coordinates.Length - sourceRouterPoint.Offset));
 
                 for (var i = 1; i < path.Count - 1; i++)
@@ -133,6 +135,7 @@ namespace Placium.Route
                 }
 
                 item = dictionary[path[path.Count - 1]];
+                item1 = dictionary[path[path.Count - 2]];
 
                 shapeMeta.Add(new Route.Meta
                 {
@@ -140,23 +143,24 @@ namespace Placium.Route
                     Attributes = item.Tags.ToAttributes()
                 });
 
-                if (targetRouterPoint.ToNode == item.FromNode || targetRouterPoint.FromNode == item.FromNode)
+                if (item.FromNode == item1.FromNode || item.FromNode == item1.ToNode)
                     shape.AddRange(item.Coordinates.Take(targetRouterPoint.Offset).Skip(1));
                 else
-                    shape.AddRange(item.Coordinates.Reverse().Take(item.Coordinates.Length - targetRouterPoint.Offset)
+                    shape.AddRange(item.Coordinates.Reverse()
+                        .Take(item.Coordinates.Length - targetRouterPoint.Offset)
                         .Skip(1));
                 shape.Add(targetRouterPoint.Coordinate);
             }
 
             // set stops.
-            var stops = new Route.Stop[]
+            var stops = new[]
             {
-                new Route.Stop()
+                new Route.Stop
                 {
                     Shape = 0,
                     Coordinate = sourceRouterPoint.Coordinate
                 },
-                new Route.Stop()
+                new Route.Stop
                 {
                     Shape = shape.Count - 1,
                     Coordinate = targetRouterPoint.Coordinate
