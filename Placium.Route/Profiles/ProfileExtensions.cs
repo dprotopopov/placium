@@ -37,30 +37,6 @@ namespace Placium.Route.Profiles
         }
 
         /// <summary>
-        /// Gets a get factor function based on the given routerdb.
-        /// </summary>
-        public static Func<ushort, Factor> GetGetFactor(this Profile profile, RouterDb routerDb)
-        {
-            return (profileId) =>
-            {
-                var edgeProfile = routerDb.EdgeProfiles.Get(profileId);
-                return profile.Factor(edgeProfile);
-            };
-        }
-
-        /// <summary>
-        /// Gets a get factor function based on the given routerdb.
-        /// </summary>
-        public static Func<ushort, FactorAndSpeed> GetGetFactorAndSpeed(this Profile profile, RouterDb routerDb)
-        {
-            return (profileId) =>
-            {
-                var edgeProfile = routerDb.EdgeProfiles.Get(profileId);
-                return profile.FactorAndSpeed(edgeProfile);
-            };
-        }
-
-        /// <summary>
         /// Gets the factor for the given profile on the link defined by the given attributes.
         /// </summary>
         public static Factor Factor(this Profile profile, IAttributeCollection attributes)

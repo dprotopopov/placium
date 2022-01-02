@@ -13,7 +13,6 @@ using Placium.Common;
 using Placium.Route.Profiles;
 using Placium.Route.Restructions;
 using Placium.Types;
-using Route.Attributes;
 using Route.LocalGeo;
 using Route.Profiles.Lua.DataTypes;
 
@@ -29,17 +28,12 @@ namespace Placium.Route
             Guid = guid;
             ConnectionString = connectionString;
             VehicleCache = new VehicleCache(vehicles);
-            EdgeProfiles = new AttributesIndex(AttributesIndexMode.IncreaseOne
-                                               | AttributesIndexMode.ReverseAll);
-
             _vehicleTypes = new HashSet<string>();
 
             foreach (var vehicle in VehicleCache.Vehicles)
             foreach (var vehicleType in vehicle.VehicleTypes)
                 _vehicleTypes.Add(vehicleType);
         }
-
-        public AttributesIndex EdgeProfiles { get; set; }
 
         public VehicleCache VehicleCache { get; }
         public Guid Guid { get; }

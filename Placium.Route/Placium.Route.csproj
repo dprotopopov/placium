@@ -45,7 +45,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Placium.Route.Algorithms\Placium.Route.Algorithms.csproj" />
     <ProjectReference Include="..\Route.Attributes\Route.Attributes.csproj" />
-    <ProjectReference Include="..\Route.IO\Route.IO.csproj" />
     <ProjectReference Include="..\Route.Profiles.Lua\Route.Profiles.Lua.csproj" />
   </ItemGroup>
 

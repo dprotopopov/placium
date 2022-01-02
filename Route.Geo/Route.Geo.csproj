@@ -11,7 +11,4 @@
     <PackageReference Include="NetTopologySuite" Version="2.1.0" />
     <PackageReference Include="NetTopologySuite.Features" Version="2.1.0" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Route\Route.csproj" />
-  </ItemGroup>
 </Project>

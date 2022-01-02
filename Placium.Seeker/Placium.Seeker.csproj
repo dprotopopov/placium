@@ -16,7 +16,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
 		<ProjectReference Include="..\Placium.Route\Placium.Route.csproj" />
-		<ProjectReference Include="..\Route.IO.Osm\Route.IO.Osm.csproj" />
 	</ItemGroup>
 
 </Project>

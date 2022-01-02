@@ -73,18 +73,7 @@ namespace Placium.Route.Profiles
             return factorAndSpeed;
         }
 
-        /// <summary>
-        /// Gets a function that gets a factor and speed for an edge with the given attributes.
-        /// </summary>
-        public static Func<ushort, FactorAndSpeed> GetGetFactorAndSpeed(this IProfileInstance profileInstance, RouterDb routerDb)
-        {
-            return (profileId) =>
-            {
-                var profile = routerDb.EdgeProfiles.Get(profileId);
-                return profileInstance.FactorAndSpeed(profile);
-            };
-        }
-
+  
         /// <summary>
         /// Gets a the factor for an edge with the given attributes.
         /// </summary>
@@ -93,16 +82,5 @@ namespace Placium.Route.Profiles
             return profileInstance.FactorAndSpeed(attributes).ToFactor();
         }
 
-        /// <summary>
-        /// Gets a function that gets a factor for an edge with the given attributes.
-        /// </summary>
-        public static Func<ushort, Factor> GetGetFactor(this IProfileInstance profileInstance, RouterDb routerDb)
-        {
-            return (profileId) =>
-            {
-                var profile = routerDb.EdgeProfiles.Get(profileId);
-                return profileInstance.Factor(profile);
-            };
-        }
-    }
+     }
 }

@@ -148,10 +148,27 @@ namespace Placium.Route
                 shape.Add(targetRouterPoint.Coordinate);
             }
 
+            // set stops.
+            var stops = new Route.Stop[]
+            {
+                new Route.Stop()
+                {
+                    Shape = 0,
+                    Coordinate = sourceRouterPoint.Coordinate
+                },
+                new Route.Stop()
+                {
+                    Shape = shape.Count - 1,
+                    Coordinate = targetRouterPoint.Coordinate
+                }
+            };
+
+
             return new Route
             {
                 Shape = shape.ToArray(),
-                ShapeMeta = shapeMeta.ToArray()
+                ShapeMeta = shapeMeta.ToArray(),
+                Stops = stops
             };
         }
 

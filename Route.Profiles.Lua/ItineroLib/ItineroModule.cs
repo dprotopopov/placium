@@ -17,7 +17,6 @@
 // along with Itinero. If not, see <http://www.gnu.org/licenses/>.
 
 using Route.Attributes;
-using Route.Logging;
 using Route.Profiles.Lua.DataTypes;
 using Route.Profiles.Lua.Execution;
 using Route.Profiles.Lua.Modules;
@@ -79,7 +78,6 @@ namespace Route.Profiles.Lua.ItineroLib
         {
             DynValue text = args.AsType(0, "log", DataType.String, false);
 
-            Logger.Log("Lua", Logging.TraceEventType.Information, text.String);
             return DynValue.NewBoolean(true);
         }
 

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -6,10 +6,9 @@
   <ItemGroup>
     <PackageReference Include="Reminiscence" Version="1.3.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Route.Algorithms.Collections\Route.Algorithms.Collections.csproj" />
-    <ProjectReference Include="..\Route.Algorithms.Sorting\Route.Algorithms.Sorting.csproj" />
+    <ProjectReference Include="..\Route.Base\Route.Base.csproj" />
   </ItemGroup>
 
 </Project>

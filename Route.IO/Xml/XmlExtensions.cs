@@ -26,7 +26,6 @@ using System.Globalization;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
-using Route.Logging;
 
 namespace Route.IO.Xml
 {
@@ -151,9 +150,8 @@ namespace Route.IO.Xml
         public static double? GetAttributeDouble(this XmlReader reader, string name)
         {
             var valueString = reader.GetAttribute(name);
-            double value = 0;
             if (!string.IsNullOrWhiteSpace(valueString) &&
-               double.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+               double.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
             {
                 return value;
             }
@@ -166,9 +164,8 @@ namespace Route.IO.Xml
         public static float? GetAttributeSingle(this XmlReader reader, string name)
         {
             var valueString = reader.GetAttribute(name);
-            float value = 0;
             if (!string.IsNullOrWhiteSpace(valueString) &&
-               float.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+               float.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
             {
                 return value;
             }
@@ -199,7 +196,6 @@ namespace Route.IO.Xml
                 Action action;
                 if (!getElements.TryGetValue(reader.Name, out action))
                 {
-                    Logger.Log("XmlExtensions", TraceEventType.Verbose, "No action found for xml node with name {0}.", reader.Name);
                     break;
                 }
                 action();
@@ -227,9 +223,8 @@ namespace Route.IO.Xml
         public static int? GetAttributeInt32(this XmlReader reader, string name)
         {
             var valueString = reader.GetAttribute(name);
-            int value = 0;
             if (!string.IsNullOrWhiteSpace(valueString) &&
-               int.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+               int.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
             {
                 return value;
             }
@@ -242,9 +237,8 @@ namespace Route.IO.Xml
         public static bool? GetAttributeBool(this XmlReader reader, string name)
         {
             var valueString = reader.GetAttribute(name);
-            bool value = false;
             if (!string.IsNullOrWhiteSpace(valueString) &&
-               bool.TryParse(valueString, out value))
+               bool.TryParse(valueString, out var value))
             {
                 return value;
             }
@@ -257,9 +251,8 @@ namespace Route.IO.Xml
         public static DateTime? GetAttributeDateTime(this XmlReader reader, string name)
         {
             var valueString = reader.GetAttribute(name);
-            DateTime value;
             if (!string.IsNullOrWhiteSpace(valueString) &&
-               DateTime.TryParse(valueString, out value))
+               DateTime.TryParse(valueString, out var value))
             {
                 return value;
             }
@@ -281,16 +274,12 @@ namespace Route.IO.Xml
             emptyNamespace.Add(string.Empty, string.Empty);
 
             var result = string.Empty;
-            using (var resultStream = new MemoryStream())
-            {
-                using (var stringWriter = XmlWriter.Create(resultStream, settings))
-                {
-                    serializer.Serialize(stringWriter, value, emptyNamespace);
-                    resultStream.Seek(0, SeekOrigin.Begin);
-                    var streamReader = new StreamReader(resultStream);
-                    return streamReader.ReadToEnd();
-                }
-            }
+            using var resultStream = new MemoryStream();
+            using var stringWriter = XmlWriter.Create(resultStream, settings);
+            serializer.Serialize(stringWriter, value, emptyNamespace);
+            resultStream.Seek(0, SeekOrigin.Begin);
+            var streamReader = new StreamReader(resultStream);
+            return streamReader.ReadToEnd();
         }
     }
 }
