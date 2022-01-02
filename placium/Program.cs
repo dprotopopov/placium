@@ -2,11 +2,15 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Loader.Fias.File;
 using Loader.Osm.File;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NetTopologySuite;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Geometries.Implementation;
 using Placium.Common;
 using Placium.Route;
 using Updater.Addrobx.Sphinx;
@@ -32,6 +36,14 @@ namespace placium
         private static async Task Main(string[] args)
         {
             Console.WriteLine("Welcome to Placium!");
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+            NtsGeometryServices.Instance = new NtsGeometryServices(
+                CoordinateArraySequenceFactory.Instance,
+                new PrecisionModel(),
+                4326, GeometryOverlay.NG,
+                new CoordinateEqualityComparer());
 
             var builder = new ConfigurationBuilder();
             builder.AddCommandLine(args);

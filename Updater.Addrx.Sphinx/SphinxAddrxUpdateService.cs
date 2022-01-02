@@ -83,7 +83,7 @@ namespace Updater.Addrx.Sphinx
                 "SELECT COUNT(*) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
             var sql =
-                "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location)),ST_Y(ST_Centroid(placex.location)) FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
+                "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location))::real,ST_Y(ST_Centroid(placex.location))::real FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
             using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
             {
@@ -190,8 +190,8 @@ namespace Updater.Addrx.Sphinx
                     text = string.Join(", ", list),
                     priority = priority,
                     building = dictionary.ContainsKey("addr:housenumber") ? 1 : 0,
-                    lon = reader.SafeGetDouble(2) ?? 0,
-                    lat = reader.SafeGetDouble(3) ?? 0
+                    lon = reader.SafeGetFloat(2) ?? 0,
+                    lat = reader.SafeGetFloat(3) ?? 0
                 };
 
                 result.Add(doc);

@@ -127,7 +127,7 @@ namespace Updater.Placex.Database
                             {
                                 reader.GetInt64(0).ToString(),
                                 reader.GetString(1).TextEscape(),
-                                $"SRID=4326;POINT({reader.GetDouble(2).ToString(_nfi)} {reader.GetDouble(3).ToString(_nfi)})"
+                                $"SRID=4326;POINT({reader.GetFloat(2).ToString(_nfi)} {reader.GetFloat(3).ToString(_nfi)})"
                             };
 
                             writer.WriteLine(string.Join("\t", values));

@@ -24,7 +24,7 @@ namespace Placium.Route.Algorithms
             connection.ReloadTypes();
             connection.TypeMapper.MapComposite<RouteCoordinate>("coordinate");
             using (var command = new NpgsqlCommand(
-                @"SELECT id,from_node,to_node,coordinates,direction,ST_X(point),ST_Y(point) 
+                @"SELECT id,from_node,to_node,coordinates,direction,ST_X(point)::real,ST_Y(point)::real 
                     FROM (SELECT id,from_node,to_node,coordinates,(direction->@profile)::smallint AS direction,
                     ST_ClosestPoint(location, ST_SetSRID( ST_Point( @lon, @lat ), 4326 )::geometry) AS point
                     FROM edge WHERE guid=@guid AND (direction->@profile)::smallint=ANY(ARRAY[0,1,2])
@@ -45,8 +45,8 @@ namespace Placium.Route.Algorithms
                     var toNode = reader.GetInt64(2);
                     var routeCoordinates = (RouteCoordinate[]) reader.GetValue(3);
                     var direction = reader.GetInt16(4);
-                    var longitude = (float) reader.GetDouble(5);
-                    var latitude = (float) reader.GetDouble(6);
+                    var longitude = reader.GetFloat(5);
+                    var latitude = reader.GetFloat(6);
                     var coord1 = new Coordinate(latitude, longitude);
                     var coordinates = routeCoordinates.Select(coord => new Coordinate(coord.Latitude, coord.Longitude))
                         .ToArray();
