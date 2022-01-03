@@ -715,6 +715,285 @@ namespace Placium.Route
                     "Placium.Route.InsertFromTempTables2.pgsql",
                     connection2);
 
+                #region region
+
+#if _REGION
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Placium.Route.CreateTempTables4.pgsql",
+                    connection);
+                using (var command =
+                    new NpgsqlCommand(
+                        @"INSERT INTO region(guid,min_latitude,min_longitude,max_latitude,max_longitude)
+                                VALUES (@guid,-90,-180,90,180)",
+                        connection))
+                {
+                    command.Parameters.AddWithValue("guid", Guid);
+                    command.Prepare();
+                    command.ExecuteNonQuery();
+                }
+
+                var id1 = Guid.NewGuid().ToString();
+                await progressClient.Init(id1, session);
+
+                long totalNodes;
+                using (var command =
+                    new NpgsqlCommand(
+                        @"SELECT COUNT(*) FROM node WHERE guid=@guid",
+                        connection))
+                {
+                    command.Parameters.AddWithValue("guid", Guid);
+                    command.Prepare();
+                    totalNodes = (long) await command.ExecuteScalarAsync();
+                }
+
+                var totalUnits = 1L << (int) Math.Ceiling(Math.Log2(totalNodes) / 3);
+
+                using (var command =
+                    new NpgsqlCommand(
+                        @"SELECT id,min_latitude,min_longitude,max_latitude,max_longitude FROM region WHERE guid=@guid",
+                        connection))
+                using (var command1 =
+                    new NpgsqlCommand(
+                        @"SELECT (PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY latitude))::real FROM node 
+                                WHERE @minLatitude<=latitude AND latitude<=@maxLatitude
+                                AND @minLongitude<=longitude AND longitude<=@maxLongitude
+                                AND guid=@guid",
+                        connection2))
+                using (var command2 =
+                    new NpgsqlCommand(
+                        @"SELECT (PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY longitude))::real FROM node 
+                                WHERE @minLatitude<=latitude AND latitude<=@maxLatitude
+                                AND @minLongitude<=longitude AND longitude<=@maxLongitude
+                                AND guid=@guid",
+                        connection2))
+                using (var command3 =
+                    new NpgsqlCommand(string.Join(";",
+                            @"INSERT INTO region(guid,min_latitude,min_longitude,max_latitude,max_longitude)
+                                VALUES (@guid,@minLatitude1,@minLongitude1,@maxLatitude1,@maxLongitude1),
+                                (@guid,@minLatitude2,@minLongitude2,@maxLatitude2,@maxLongitude2)",
+                            @"DELETE FROM region WHERE id=@id AND guid=@guid"),
+                        connection2))
+                {
+                    command.Parameters.AddWithValue("guid", Guid);
+                    command.Prepare();
+
+                    command1.Parameters.Add("minLatitude", NpgsqlDbType.Real);
+                    command1.Parameters.Add("maxLatitude", NpgsqlDbType.Real);
+                    command1.Parameters.Add("minLongitude", NpgsqlDbType.Real);
+                    command1.Parameters.Add("maxLongitude", NpgsqlDbType.Real);
+                    command1.Parameters.AddWithValue("guid", Guid);
+                    command1.Prepare();
+
+                    command2.Parameters.Add("minLatitude", NpgsqlDbType.Real);
+                    command2.Parameters.Add("maxLatitude", NpgsqlDbType.Real);
+                    command2.Parameters.Add("minLongitude", NpgsqlDbType.Real);
+                    command2.Parameters.Add("maxLongitude", NpgsqlDbType.Real);
+                    command2.Parameters.AddWithValue("guid", Guid);
+                    command2.Prepare();
+
+                    command3.Parameters.Add("id", NpgsqlDbType.Bigint);
+                    command3.Parameters.Add("minLatitude1", NpgsqlDbType.Real);
+                    command3.Parameters.Add("maxLatitude1", NpgsqlDbType.Real);
+                    command3.Parameters.Add("minLongitude1", NpgsqlDbType.Real);
+                    command3.Parameters.Add("maxLongitude1", NpgsqlDbType.Real);
+                    command3.Parameters.Add("minLatitude2", NpgsqlDbType.Real);
+                    command3.Parameters.Add("maxLatitude2", NpgsqlDbType.Real);
+                    command3.Parameters.Add("minLongitude2", NpgsqlDbType.Real);
+                    command3.Parameters.Add("maxLongitude2", NpgsqlDbType.Real);
+                    command3.Parameters.AddWithValue("guid", Guid);
+                    command3.Prepare();
+
+                    var current = 0L;
+
+                    for (var i = totalUnits; i > 1; i >>= 1)
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                long uid;
+                                float minLatitude;
+                                float minLongitude;
+                                float maxLatitude;
+                                float maxLongitude;
+
+
+                                uid = reader.GetInt64(0);
+                                minLatitude = reader.GetFloat(1);
+                                minLongitude = reader.GetFloat(2);
+                                maxLatitude = reader.GetFloat(3);
+                                maxLongitude = reader.GetFloat(4);
+
+
+                                if (maxLatitude - minLatitude > maxLongitude - minLongitude)
+                                {
+                                    command1.Parameters["minLatitude"].Value = minLatitude;
+                                    command1.Parameters["minLongitude"].Value = minLongitude;
+                                    command1.Parameters["maxLatitude"].Value = maxLatitude;
+                                    command1.Parameters["maxLongitude"].Value = maxLongitude;
+
+                                    var latitude = (float) command1.ExecuteScalar();
+
+                                    command3.Parameters["id"].Value = uid;
+                                    command3.Parameters["minLatitude1"].Value = minLatitude;
+                                    command3.Parameters["minLongitude1"].Value = minLongitude;
+                                    command3.Parameters["maxLatitude1"].Value = latitude;
+                                    command3.Parameters["maxLongitude1"].Value = maxLongitude;
+                                    command3.Parameters["minLatitude2"].Value = latitude;
+                                    command3.Parameters["minLongitude2"].Value = minLongitude;
+                                    command3.Parameters["maxLatitude2"].Value = maxLatitude;
+                                    command3.Parameters["maxLongitude2"].Value = maxLongitude;
+
+                                    command3.ExecuteNonQuery();
+                                }
+                                else
+                                {
+                                    command2.Parameters["minLatitude"].Value = minLatitude;
+                                    command2.Parameters["minLongitude"].Value = minLongitude;
+                                    command2.Parameters["maxLatitude"].Value = maxLatitude;
+                                    command2.Parameters["maxLongitude"].Value = maxLongitude;
+
+                                    var longitude = (float) command2.ExecuteScalar();
+
+                                    command3.Parameters["id"].Value = uid;
+                                    command3.Parameters["minLatitude1"].Value = minLatitude;
+                                    command3.Parameters["minLongitude1"].Value = minLongitude;
+                                    command3.Parameters["maxLatitude1"].Value = maxLatitude;
+                                    command3.Parameters["maxLongitude1"].Value = longitude;
+                                    command3.Parameters["minLatitude2"].Value = minLatitude;
+                                    command3.Parameters["minLongitude2"].Value = longitude;
+                                    command3.Parameters["maxLatitude2"].Value = maxLatitude;
+                                    command3.Parameters["maxLongitude2"].Value = maxLongitude;
+
+                                    command3.ExecuteNonQuery();
+                                }
+
+                                await progressClient.Progress(100f * ++current / totalUnits, id1, session);
+                            }
+                        }
+                }
+
+                await progressClient.Finalize(id1, session);
+
+                using (var command =
+                    new NpgsqlCommand(string.Join(";",
+                            @"SELECT COUNT(*) FROM region u1,region u2
+                                WHERE u1.guid=@guid AND u2.guid=@guid AND u1.id<>u2.id",
+                            @"SELECT u1.id,u1.min_latitude,u1.min_longitude,u1.max_latitude,u1.max_longitude,
+                                    u2.id,u2.min_latitude,u2.min_longitude,u2.max_latitude,u2.max_longitude
+                                FROM region u1,region u2
+                                WHERE u1.guid=@guid AND u2.guid=@guid AND u1.id<>u2.id"),
+                        connection2))
+                using (var command2 =
+                    new NpgsqlCommand(
+                        @"SELECT array_agg(q.id) FROM (SELECT DISTINCT id FROM edge,unnest(avals(direction)) v                                                                                        
+                                WHERE (v::smallint=ANY(ARRAY[0,1,3,4])
+                                AND @minLatitude1<=from_latitude AND from_latitude<=@maxLatitude1
+                                AND @minLongitude1<=from_longitude AND from_longitude<=@maxLongitude1
+                                AND @minLatitude2<=to_latitude AND to_latitude<=@maxLatitude2
+                                AND @minLongitude2<=to_longitude AND to_longitude<=@maxLongitude2
+                                OR v::smallint=ANY(ARRAY[0,2,3,5])
+                                AND @minLatitude1<=to_latitude AND to_latitude<=@maxLatitude1
+                                AND @minLongitude1<=to_longitude AND to_longitude<=@maxLongitude1
+                                AND @minLatitude2<=from_latitude AND from_latitude<=@maxLatitude2
+                                AND @minLongitude2<=from_longitude AND from_longitude<=@maxLongitude2)
+                                AND guid=@guid) q",
+                        connection))
+                using (var command3 =
+                    new NpgsqlCommand(@"SELECT hstore(array_agg(q.k),array_agg(q.agg_v)) 
+                                FROM (SELECT k,MIN(v::real)::text AS agg_v 
+                                FROM edge,unnest(akeys(weight)) k,unnest(avals(weight)) v                                                                                        
+                                WHERE id=ANY(@edges) AND guid=@guid GROUP BY k) q",
+                        connection))
+                using (var command4 =
+                    new NpgsqlCommand(
+                        @"INSERT INTO region_edge(guid,from_region,to_region,edges,weight)
+                                VALUES (@guid,@fromRegion,@toRegion,@edges,@weight)",
+                        connection))
+                {
+                    command.Parameters.AddWithValue("guid", Guid);
+                    command.Prepare();
+
+                    command2.Parameters.Add("minLatitude1", NpgsqlDbType.Real);
+                    command2.Parameters.Add("maxLatitude1", NpgsqlDbType.Real);
+                    command2.Parameters.Add("minLongitude1", NpgsqlDbType.Real);
+                    command2.Parameters.Add("maxLongitude1", NpgsqlDbType.Real);
+                    command2.Parameters.Add("minLatitude2", NpgsqlDbType.Real);
+                    command2.Parameters.Add("maxLatitude2", NpgsqlDbType.Real);
+                    command2.Parameters.Add("minLongitude2", NpgsqlDbType.Real);
+                    command2.Parameters.Add("maxLongitude2", NpgsqlDbType.Real);
+                    command2.Parameters.AddWithValue("guid", Guid);
+                    command2.Prepare();
+
+                    command3.Parameters.Add("edges", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                    command3.Parameters.AddWithValue("guid", Guid);
+                    command3.Prepare();
+
+                    command4.Parameters.Add("fromRegion", NpgsqlDbType.Bigint);
+                    command4.Parameters.Add("toRegion", NpgsqlDbType.Bigint);
+                    command4.Parameters.Add("edges", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                    command4.Parameters.Add("weight", NpgsqlDbType.Hstore);
+                    command4.Parameters.AddWithValue("guid", Guid);
+                    command4.Prepare();
+
+                    var id = Guid.NewGuid().ToString();
+                    await progressClient.Init(id, session);
+
+                    var current = 0;
+
+                    using var reader = await command.ExecuteReaderAsync();
+                    if (!reader.Read()) throw new NullReferenceException();
+                    var count = reader.GetInt64(0);
+                    reader.NextResult();
+                    while (reader.Read())
+                    {
+                        var uid1 = reader.GetInt64(0);
+                        var minLatitude1 = reader.GetFloat(1);
+                        var minLongitude1 = reader.GetFloat(2);
+                        var maxLatitude1 = reader.GetFloat(3);
+                        var maxLongitude1 = reader.GetFloat(4);
+
+                        var uid2 = reader.GetInt64(5);
+                        var minLatitude2 = reader.GetFloat(6);
+                        var minLongitude2 = reader.GetFloat(7);
+                        var maxLatitude2 = reader.GetFloat(8);
+                        var maxLongitude2 = reader.GetFloat(9);
+
+                        command2.Parameters["minLatitude1"].Value = minLatitude1;
+                        command2.Parameters["minLongitude1"].Value = minLongitude1;
+                        command2.Parameters["maxLatitude1"].Value = maxLatitude1;
+                        command2.Parameters["maxLongitude1"].Value = maxLongitude1;
+                        command2.Parameters["minLatitude2"].Value = minLatitude2;
+                        command2.Parameters["minLongitude2"].Value = minLongitude2;
+                        command2.Parameters["maxLatitude2"].Value = maxLatitude2;
+                        command2.Parameters["maxLongitude2"].Value = maxLongitude2;
+
+                        if (command2.ExecuteScalar() is long[] edges && edges.Any())
+                        {
+                            command3.Parameters["edges"].Value = edges;
+
+                            if (command3.ExecuteScalar() is Dictionary<string, string> weight && weight.Any())
+                            {
+                                command4.Parameters["fromRegion"].Value = uid1;
+                                command4.Parameters["toRegion"].Value = uid2;
+                                command4.Parameters["edges"].Value = edges;
+                                command4.Parameters["weight"].Value = weight;
+
+                                command4.ExecuteNonQuery();
+                            }
+                        }
+
+                        await progressClient.Progress(100f * ++current / count, id, session);
+                    }
+
+                    await progressClient.Finalize(id, session);
+                }
+#endif
+
+#endregion
+
+
+#region restriction
+
                 using (var command7 =
                     new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM restriction WHERE guid=@guid",
                             @"SELECT id,from_nodes,to_nodes,via_nodes,vehicle_type FROM restriction WHERE guid=@guid"),
@@ -864,6 +1143,8 @@ namespace Placium.Route
 
                     await progressClient.Finalize(id, session);
                 }
+
+#endregion
 
                 await osmConnection.CloseAsync();
                 await osmConnection2.CloseAsync();

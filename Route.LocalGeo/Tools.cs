@@ -65,12 +65,12 @@ namespace Route.LocalGeo
             if (degrees >= 360)
             {
                 var count = System.Math.Floor(degrees / 360.0);
-                degrees = degrees - (360.0 * count);
+                degrees -= (360.0 * count);
             }
             else if(degrees < 0)
             {
                 var count = System.Math.Floor(-degrees / 360.0) + 1;
-                degrees = degrees + (360.0 * count);
+                degrees += (360.0 * count);
             }
             return degrees;
         }

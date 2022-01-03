@@ -4,11 +4,10 @@ using System.Threading.Tasks;
 
 namespace Placium.Route.Algorithms
 {
-    public interface IDatabaseAlgorithm<T>
+    public interface IDatabaseAlgorithm
     {
         Guid Guid { get; }
         string ConnectionString { get; }
 
-        Task<T> DoRunAsync();
     }
 }

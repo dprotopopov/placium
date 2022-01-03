@@ -5,12 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="CreateTempTables.pgsql" />
     <None Remove="CreateTempTables2.pgsql" />
     <None Remove="InsertFromTempTables2.pgsql" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="CreateTempTables.pgsql" />
+    <EmbeddedResource Include="CreateTempTables4.pgsql" />
     <EmbeddedResource Include="CreateTempTables2.pgsql" />
     <EmbeddedResource Include="CreateTempTables3.pgsql" />
     <EmbeddedResource Include="InsertFromTempTables.pgsql" />

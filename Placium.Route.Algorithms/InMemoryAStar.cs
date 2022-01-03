@@ -8,24 +8,18 @@ using Placium.Route.Common;
 
 namespace Placium.Route.Algorithms
 {
-    public class InMemoryAStar : BaseDatabaseAlgorithm<List<long>>
+    public class InMemoryAStar : BasePathFinderAlgorithm
     {
-        public InMemoryAStar(Guid guid, string connectionString, string vehicleType, string profile,
-            RouterPoint source,
-            RouterPoint target) : base(guid, connectionString, profile)
+        public InMemoryAStar(Guid guid, string connectionString, string vehicleType, string profile, float factor) : base(guid,
+            connectionString, vehicleType, profile, factor)
         {
-            Source = source;
-            Target = target;
-            VehicleType = vehicleType;
         }
 
-        public RouterPoint Source { get; }
-        public RouterPoint Target { get; }
-        public string VehicleType { get; }
 
-        public override async Task<List<long>> DoRunAsync()
+        public override async Task<List<long>> FindPathAsync(RouterPoint source,
+            RouterPoint target)
         {
-            using var connection = new SqliteConnection("Data Source=:memory:");
+            using var connection = new SqliteConnection($"Data source=file:{Guid}?mode=memory&cache=shared");
             using var connection2 = new NpgsqlConnection(ConnectionString);
             await connection.OpenAsync();
             await connection2.OpenAsync();
@@ -50,13 +44,14 @@ namespace Placium.Route.Algorithms
                 Math.Min);
 
             using (var command =
-                new SqliteCommand(string.Join(";", @"CREATE TEMP TABLE temp_dijkstra (
+                new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
+                    @"CREATE TEMP TABLE temp_dijkstra (
 	                node INTEGER PRIMARY KEY NOT NULL, 
 	                weight REAL NOT NULL, 
 	                weight1 REAL NOT NULL, 
 	                edge INTEGER NOT NULL,
 	                in_queue INTEGER NOT NULL
-                )", @"CREATE TEMP TABLE temp_edge (
+                )", @"CREATE TEMP TABLE shared_edge (
 	                id INTEGER PRIMARY KEY NOT NULL, 
 	                from_node INTEGER NOT NULL, 
 	                to_node INTEGER NOT NULL,
@@ -66,23 +61,23 @@ namespace Placium.Route.Algorithms
 	                to_longitude REAL NOT NULL, 
 	                weight REAL NOT NULL,
                     direction INTEGER NOT NULL,
-                )", @"CREATE TEMP TABLE temp_restriction (
+                )", @"CREATE TEMP TABLE shared_restriction (
 	                id INTEGER PRIMARY KEY NOT NULL
-                )", @"CREATE TEMP TABLE temp_restriction_from_edge (
+                )", @"CREATE TEMP TABLE shared_restriction_from_edge (
 	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                edge INTEGER NOT NULL,
-                    FOREIGN KEY(rid) REFERENCES temp_restriction(id)
-                )", @"CREATE TEMP TABLE temp_restriction_to_edge (
+                    FOREIGN KEY(rid) REFERENCES shared_restriction(id)
+                )", @"CREATE TEMP TABLE shared_restriction_to_edge (
 	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                edge INTEGER NOT NULL,
-                    FOREIGN KEY(rid) REFERENCES temp_restriction(id)
-                )", @"CREATE TEMP TABLE temp_restriction_via_node (
+                    FOREIGN KEY(rid) REFERENCES shared_restriction(id)
+                )", @"CREATE TEMP TABLE shared_restriction_via_node (
 	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                node INTEGER NOT NULL,
-                    FOREIGN KEY(rid) REFERENCES temp_restriction(id)
+                    FOREIGN KEY(rid) REFERENCES shared_restriction(id)
                 )"), connection))
             {
                 command.Prepare();
@@ -90,7 +85,7 @@ namespace Placium.Route.Algorithms
             }
 
             using (var command = new SqliteCommand(
-                @"INSERT INTO temp_edge (id,from_node,to_node,
+                @"INSERT INTO shared_edge (id,from_node,to_node,
                     from_latitude, 
                     from_longitude,
                     to_latitude,
@@ -149,16 +144,16 @@ namespace Placium.Route.Algorithms
                 new SqliteCommand(@"BEGIN TRANSACTION",
                     connection))
             using (var command2 =
-                new SqliteCommand(@"INSERT INTO temp_restriction(id) VALUES (@id)",
+                new SqliteCommand(@"INSERT INTO shared_restriction(id) VALUES (@id)",
                     connection))
             using (var command3 =
-                new SqliteCommand(@"INSERT INTO temp_restriction_from_edge(rid,edge) VALUES (@id,@edge)",
+                new SqliteCommand(@"INSERT INTO shared_restriction_from_edge(rid,edge) VALUES (@id,@edge)",
                     connection))
             using (var command4 =
-                new SqliteCommand(@"INSERT INTO temp_restriction_to_edge(rid,edge) VALUES (@id,@edge)",
+                new SqliteCommand(@"INSERT INTO shared_restriction_to_edge(rid,edge) VALUES (@id,@edge)",
                     connection))
             using (var command5 =
-                new SqliteCommand(@"INSERT INTO temp_restriction_via_node(rid,node) VALUES (@id,@node)",
+                new SqliteCommand(@"INSERT INTO shared_restriction_via_node(rid,node) VALUES (@id,@node)",
                     connection))
             using (var command6 =
                 new SqliteCommand(@"COMMIT",
@@ -258,10 +253,10 @@ namespace Placium.Route.Algorithms
                 new SqliteCommand(string.Join(";",
                         @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
                         @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
-                        @"CREATE UNIQUE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
-                        @"CREATE INDEX temp_restriction_from_edge_idx ON temp_restriction_from_edge (edge)",
-                        @"CREATE INDEX temp_restriction_to_edge_idx ON temp_restriction_to_edge (edge)",
-                        @"CREATE INDEX temp_restriction_via_node_idx ON temp_restriction_via_node (node)"),
+                        @"CREATE UNIQUE INDEX shared_edge_from_node_to_node_idx ON shared_edge (from_node,to_node)",
+                        @"CREATE INDEX shared_restriction_from_edge_idx ON shared_restriction_from_edge (edge)",
+                        @"CREATE INDEX shared_restriction_to_edge_idx ON shared_restriction_to_edge (edge)",
+                        @"CREATE INDEX shared_restriction_via_node_idx ON shared_restriction_via_node (node)"),
                     connection))
             {
                 command.Prepare();
@@ -278,7 +273,7 @@ namespace Placium.Route.Algorithms
                 )
                 VALUES (
 	                @node,
-                    6371000*acos(max(-1,min(1,sin(radians(@latitude1))*sin(radians(@latitude))+cos(radians(@latitude1))*cos(radians(@latitude))*cos(radians(@longitude1-@longitude))))),
+                    6371000*@factor*acos(max(-1,min(1,sin(radians(@latitude1))*sin(radians(@latitude))+cos(radians(@latitude1))*cos(radians(@latitude))*cos(radians(@longitude1-@longitude))))),
 	                0,
 	                0,
 	                1
@@ -287,23 +282,24 @@ namespace Placium.Route.Algorithms
                 command.Parameters.Add("node", SqliteType.Integer);
                 command.Parameters.Add("latitude1", SqliteType.Real);
                 command.Parameters.Add("longitude1", SqliteType.Real);
-                command.Parameters.AddWithValue("latitude", Target.Coordinate.Latitude);
-                command.Parameters.AddWithValue("longitude", Target.Coordinate.Longitude);
+                command.Parameters.AddWithValue("latitude", target.Coordinate.Latitude);
+                command.Parameters.AddWithValue("longitude", target.Coordinate.Longitude);
+                command.Parameters.AddWithValue("factor", Factor);
                 command.Prepare();
 
-                if (new[] {0, 1, 3, 4}.Contains(Source.Direction))
+                if (new[] {0, 1, 3, 4}.Contains(source.Direction))
                 {
-                    command.Parameters["node"].Value = Source.ToNode;
-                    var coords = Source.Coordinates.Last();
+                    command.Parameters["node"].Value = source.ToNode;
+                    var coords = source.Coordinates.Last();
                     command.Parameters["latitude1"].Value = coords.Latitude;
                     command.Parameters["longitude1"].Value = coords.Longitude;
                     await command.ExecuteNonQueryAsync();
                 }
 
-                if (new[] {0, 2, 3, 5}.Contains(Source.Direction))
+                if (new[] {0, 2, 3, 5}.Contains(source.Direction))
                 {
-                    command.Parameters["node"].Value = Source.FromNode;
-                    var coords = Source.Coordinates.First();
+                    command.Parameters["node"].Value = source.FromNode;
+                    var coords = source.Coordinates.First();
                     command.Parameters["latitude1"].Value = coords.Latitude;
                     command.Parameters["longitude1"].Value = coords.Longitude;
                     await command.ExecuteNonQueryAsync();
@@ -327,29 +323,29 @@ namespace Placium.Route.Algorithms
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.to_node AS node,6371000*acos(max(-1,min(1,sin(radians(e.to_latitude))*sin(radians(@latitude))+
+		                    SELECT e.to_node AS node,6371000*@factor*acos(max(-1,min(1,sin(radians(e.to_latitude))*sin(radians(@latitude))+
                             cos(radians(e.to_latitude))*cos(radians(@latitude))*cos(radians(e.to_longitude-@longitude)))))+
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,1 AS in_queue
-		                    FROM temp_edge e JOIN temp_dijkstra t ON e.from_node=t.node
+		                    FROM shared_edge e JOIN temp_dijkstra t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM  temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT e.from_node AS node,6371000*acos(max(-1,min(1,sin(radians(e.from_latitude))*sin(radians(@latitude))+
+                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            UNION ALL SELECT e.from_node AS node,6371000*@factor*acos(max(-1,min(1,sin(radians(e.from_latitude))*sin(radians(@latitude))+
                             cos(radians(e.from_latitude))*cos(radians(@latitude))*cos(radians(e.from_longitude-@longitude)))))+
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,1 AS in_queue
-		                    FROM temp_edge e JOIN temp_dijkstra t ON e.to_node=t.node
+		                    FROM shared_edge e JOIN temp_dijkstra t ON e.to_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM  temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
                             UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.in_queue
-		                    FROM temp_edge e JOIN temp_dijkstra t ON e.from_node=t.node JOIN temp_dijkstra t1 ON e.to_node=t1.node
+		                    FROM shared_edge e JOIN temp_dijkstra t ON e.from_node=t.node JOIN temp_dijkstra t1 ON e.to_node=t1.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
                             UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.in_queue
-		                    FROM temp_edge e JOIN temp_dijkstra t ON e.to_node=t.node JOIN temp_dijkstra t1 ON e.from_node=t1.node
+		                    FROM shared_edge e JOIN temp_dijkstra t ON e.to_node=t.node JOIN temp_dijkstra t1 ON e.from_node=t1.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node) q
                     )
                     SELECT 
@@ -363,8 +359,9 @@ namespace Placium.Route.Algorithms
                     @"UPDATE temp_dijkstra SET in_queue=0 WHERE node=@node"), connection))
             {
                 command2.Parameters.Add("level", SqliteType.Integer);
-                command2.Parameters.AddWithValue("latitude", Target.Coordinate.Latitude);
-                command2.Parameters.AddWithValue("longitude", Target.Coordinate.Longitude);
+                command2.Parameters.AddWithValue("latitude", target.Coordinate.Latitude);
+                command2.Parameters.AddWithValue("longitude", target.Coordinate.Longitude);
+                command2.Parameters.AddWithValue("factor", Factor);
                 command1.Prepare();
                 command2.Prepare();
 
@@ -384,8 +381,8 @@ namespace Placium.Route.Algorithms
             }
 
             var targets = new List<long>();
-            if (new[] {0, 1, 3, 4}.Contains(Target.Direction)) targets.Add(Target.FromNode);
-            if (new[] {0, 2, 3, 5}.Contains(Target.Direction)) targets.Add(Target.ToNode);
+            if (new[] {0, 1, 3, 4}.Contains(target.Direction)) targets.Add(target.FromNode);
+            if (new[] {0, 2, 3, 5}.Contains(target.Direction)) targets.Add(target.ToNode);
 
             using (var command =
                 new SqliteCommand(
@@ -402,10 +399,10 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new SqliteCommand(@"SELECT e.from_node,e.id 
-                    FROM temp_dijkstra t JOIN temp_edge e ON t.edge=e.id
+                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
-                    FROM temp_dijkstra t JOIN temp_edge e ON t.edge=e.id
+                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.from_node=t.node", connection))
             {
                 command.Parameters.Add("node", SqliteType.Integer);

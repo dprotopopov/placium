@@ -7,7 +7,7 @@ using Npgsql;
 
 namespace Placium.Route.Algorithms
 {
-    public abstract class BaseDatabaseAlgorithm<T> : IDatabaseAlgorithm<T>
+    public abstract class BaseDatabaseAlgorithm : IDatabaseAlgorithm
     {
         public BaseDatabaseAlgorithm(Guid guid, string connectionString, string profile)
         {
@@ -19,10 +19,6 @@ namespace Placium.Route.Algorithms
         public Guid Guid { get; }
         public string ConnectionString { get; }
         public string Profile { get; }
-        public virtual Task<T> DoRunAsync()
-        {
-            throw new NotImplementedException();
-        }
 
         protected async Task ExecuteResourceAsync(Assembly assembly, string resource, NpgsqlConnection connection)
         {

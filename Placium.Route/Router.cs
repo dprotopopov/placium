@@ -10,19 +10,25 @@ namespace Placium.Route
 {
     public class Router
     {
-        public Router(RouterDb db)
+        public Router(RouterDb db, string profile)
         {
             Db = db;
+            Profile = profile;
+            ResolveRouterPointAlgorithm = new ResolveRouterPointAlgorithm(Db.Guid, Db.ConnectionString, Profile);
+            PathFinderAlgorithm = new InMemoryBidirectional(Db.Guid, Db.ConnectionString, "motorcar", Profile, 1f);
         }
 
         public RouterDb Db { get; }
+        public string Profile { get; }
+        public ResolveRouterPointAlgorithm ResolveRouterPointAlgorithm { get; }
+        public BasePathFinderAlgorithm PathFinderAlgorithm { get; }
 
-        public async Task<Route> CalculateAsync(Coordinate source, Coordinate target, string profile)
+        public async Task<Route> CalculateAsync(Coordinate source, Coordinate target)
         {
             var sourceRouterPoint =
-                await new ResolveAlgorithm(Db.Guid, Db.ConnectionString, profile, source).DoRunAsync();
+                await ResolveRouterPointAlgorithm.ResolveRouterPointAsync(source);
             var targetRouterPoint =
-                await new ResolveAlgorithm(Db.Guid, Db.ConnectionString, profile, target).DoRunAsync();
+                await ResolveRouterPointAlgorithm.ResolveRouterPointAsync(target);
             List<long> path = null;
             if (sourceRouterPoint.EdgeId != targetRouterPoint.EdgeId ||
                 new[] {1, 4}.Contains(sourceRouterPoint.Direction) &&
@@ -30,9 +36,7 @@ namespace Placium.Route
                 new[] {2, 5}.Contains(sourceRouterPoint.Direction) &&
                 sourceRouterPoint.Offset < targetRouterPoint.Offset)
             {
-                path = await new InMemoryBidirectionalAStar(Db.Guid, Db.ConnectionString, "motorcar", profile,
-                        sourceRouterPoint, targetRouterPoint)
-                    .DoRunAsync();
+                path = await PathFinderAlgorithm.FindPathAsync(sourceRouterPoint, targetRouterPoint);
                 path.Insert(0, sourceRouterPoint.EdgeId);
                 path.Add(targetRouterPoint.EdgeId);
             }

@@ -34,7 +34,7 @@ namespace Route.IO.Xml
     /// </summary>
     public static class XmlExtensions
     {
-        private static string DATE_FORMAT = "yyyy-MM-ddTHH:mm:ssZ";
+        private const string DATE_FORMAT = "yyyy-MM-ddTHH:mm:ssZ";
 
         /// <summary>
         /// Writes a datetime as an attribute.
@@ -193,8 +193,7 @@ namespace Route.IO.Xml
             while (reader.Read() &&
                 reader.MoveToContent() != XmlNodeType.None)
             {
-                Action action;
-                if (!getElements.TryGetValue(reader.Name, out action))
+                if (!getElements.TryGetValue(reader.Name, out var action))
                 {
                     break;
                 }
@@ -208,9 +207,8 @@ namespace Route.IO.Xml
         public static long? GetAttributeInt64(this XmlReader reader, string name)
         {
             var valueString = reader.GetAttribute(name);
-            long value = 0;
             if (!string.IsNullOrWhiteSpace(valueString) &&
-               long.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+               long.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
             {
                 return value;
             }
@@ -273,7 +271,6 @@ namespace Route.IO.Xml
             var emptyNamespace = new XmlSerializerNamespaces();
             emptyNamespace.Add(string.Empty, string.Empty);
 
-            var result = string.Empty;
             using var resultStream = new MemoryStream();
             using var stringWriter = XmlWriter.Create(resultStream, settings);
             serializer.Serialize(stringWriter, value, emptyNamespace);

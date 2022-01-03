@@ -91,37 +91,19 @@ namespace Route.Algorithms.Collections
         ///     Gets the System.Collections.Generic.IEqualityComparer object that is used
         ///     to determine equality for the values in the System.Collections.Generic.SortedSet.
         /// </summary>
-        public IComparer<T> Comparer
-        {
-            get
-            {
-                return _comparer;
-            }
-        }
+        public IComparer<T> Comparer => _comparer;
 
         /// <summary>
         ///     Gets the maximum value in the System.Collections.Generic.SortedSet, as
         ///     defined by the comparer.
         /// </summary>
-        public T Max
-        {
-            get
-            {
-                return _elements[_elements.Count - 1];
-            }
-        }
+        public T Max => _elements[_elements.Count - 1];
 
         /// <summary>
         ///     Gets the minimum value in the System.Collections.Generic.SortedSet, as
         ///     defined by the comparer.
         /// </summary>
-        public T Min
-        {
-            get
-            {
-                return _elements[0];
-            }
-        }
+        public T Min => _elements[0];
 
         #region ICollection<T> Members
 

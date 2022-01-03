@@ -93,20 +93,19 @@ namespace Route.LocalGeo
         ///     Returns an estimate of the distance between the two given coordinates.
         /// </summary>
         /// <remarks>Accuraccy decreases with distance.</remarks>
-        public static float DistanceEstimateInMeter(float latitude1, float longitude1, float latitude2,
-            float longitude2)
+        public static float DistanceEstimateInMeter(float lat1, float lon1, float lat2, float lon2)
         {
-            var lat1Rad = latitude1 / 180d * Math.PI;
-            var lon1Rad = longitude1 / 180d * Math.PI;
-            var lat2Rad = latitude2 / 180d * Math.PI;
-            var lon2Rad = longitude2 / 180d * Math.PI;
+            var φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+            var φ2 = lat2 * Math.PI / 180;
+            var Δφ = (lat2 - lat1) * Math.PI / 180;
+            var Δλ = (lon2 - lon1) * Math.PI / 180;
 
-            var m = RadiusOfEarth * Math.Acos(Math.Max(-1,
-                        Math.Min(1,
-                            Math.Sin(lat1Rad) * Math.Sin(lat2Rad) +
-                            Math.Cos(lat1Rad) * Math.Cos(lat2Rad) * Math.Cos(lon1Rad - lon2Rad))));
+            var a = Math.Pow(Math.Sin(Δφ / 2), 2) +
+                    Math.Cos(φ1) * Math.Cos(φ2) *
+                    Math.Pow(Math.Sin(Δλ / 2), 2);
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
-            return (float) m;
+            return (float)(RadiusOfEarth * c); // in metres
         }
 
         public static float AngleInDegree(Coordinate from, Coordinate to, Coordinate via)

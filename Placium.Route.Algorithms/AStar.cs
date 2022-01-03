@@ -9,21 +9,16 @@ using Placium.Route.Common;
 
 namespace Placium.Route.Algorithms
 {
-    public class AStar : BaseDatabaseAlgorithm<List<long>>
+    public class AStar : BasePathFinderAlgorithm
     {
-        public AStar(Guid guid, string connectionString, string vehicleType, string profile, RouterPoint source,
-            RouterPoint target) : base(guid, connectionString, profile)
+        public AStar(Guid guid, string connectionString, string vehicleType, string profile, float factor) : base(guid,
+            connectionString, vehicleType, profile, factor)
         {
-            Source = source;
-            Target = target;
-            VehicleType = vehicleType;
         }
 
-        public RouterPoint Source { get; }
-        public RouterPoint Target { get; }
-        public string VehicleType { get; }
 
-        public override async Task<List<long>> DoRunAsync()
+        public override async Task<List<long>> FindPathAsync(RouterPoint source,
+            RouterPoint target)
         {
             using var connection = new NpgsqlConnection(ConnectionString);
             using var connection2 = new NpgsqlConnection(ConnectionString);
@@ -31,13 +26,26 @@ namespace Placium.Route.Algorithms
             await connection2.OpenAsync();
 
             using (var command =
-                new NpgsqlCommand(string.Join(";", @"CREATE TEMP TABLE temp_dijkstra (
+                new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
+                    @"create or replace function distanceInMeters(lat1 real, lon1 real, lat2 real, lon2 real)
+                returns real
+                language plpgsql
+                as
+                $$
+                declare
+                   dist real;
+                begin
+                   select ST_DistanceSphere(ST_MakePoint(lon1,lat1),ST_MakePoint(lon2,lat2)) 
+                   into dist;
+                   return dist;
+                end
+                $$", @"CREATE TEMP TABLE temp_dijkstra (
 	                node BIGINT PRIMARY KEY NOT NULL, 
 	                weight REAL NOT NULL, 
 	                weight1 REAL NOT NULL, 
 	                edge BIGINT NOT NULL,
 	                in_queue BOOLEAN NOT NULL
-                )", @"CREATE TEMP TABLE temp_edge (
+                )", @"CREATE TEMP TABLE shared_edge (
 	                id BIGINT PRIMARY KEY NOT NULL, 
 	                from_node BIGINT NOT NULL, 
 	                to_node BIGINT NOT NULL,
@@ -47,19 +55,19 @@ namespace Placium.Route.Algorithms
 	                to_longitude REAL NOT NULL, 
 	                weight REAL NOT NULL,
                     direction SMALLINT NOT NULL
-                )", @"CREATE TEMP TABLE temp_restriction (
+                )", @"CREATE TEMP TABLE shared_restriction (
 	                id BIGINT PRIMARY KEY NOT NULL
-                )", @"CREATE TEMP TABLE temp_restriction_from_edge (
+                )", @"CREATE TEMP TABLE shared_restriction_from_edge (
 	                id BIGSERIAL PRIMARY KEY NOT NULL, 
-	                rid BIGINT NOT NULL REFERENCES temp_restriction (id), 
+	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                edge BIGINT NOT NULL
-                )", @"CREATE TEMP TABLE temp_restriction_to_edge (
+                )", @"CREATE TEMP TABLE shared_restriction_to_edge (
 	                id BIGSERIAL PRIMARY KEY NOT NULL, 
-	                rid BIGINT NOT NULL REFERENCES temp_restriction (id), 
+	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                edge BIGINT NOT NULL
-                )", @"CREATE TEMP TABLE temp_restriction_via_node (
+                )", @"CREATE TEMP TABLE shared_restriction_via_node (
 	                id BIGSERIAL PRIMARY KEY NOT NULL, 
-	                rid BIGINT NOT NULL REFERENCES temp_restriction (id), 
+	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                node BIGINT NOT NULL
                 )"), connection))
             {
@@ -68,7 +76,7 @@ namespace Placium.Route.Algorithms
             }
 
             using (var writer = connection.BeginTextImport(
-                @"COPY temp_edge (id,from_node,to_node,
+                @"COPY shared_edge (id,from_node,to_node,
                     from_latitude, 
                     from_longitude,
                     to_latitude,
@@ -113,18 +121,6 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new NpgsqlCommand(@"BEGIN", connection))
-            using (var command2 =
-                new NpgsqlCommand(@"INSERT INTO temp_restriction(id) VALUES (@id)",
-                    connection))
-            using (var command3 =
-                new NpgsqlCommand(@"INSERT INTO temp_restriction_from_edge(rid,edge) VALUES (@id,@edge)",
-                    connection))
-            using (var command4 =
-                new NpgsqlCommand(@"INSERT INTO temp_restriction_to_edge(rid,edge) VALUES (@id,@edge)",
-                    connection))
-            using (var command5 =
-                new NpgsqlCommand(@"INSERT INTO temp_restriction_via_node(rid,node) VALUES (@id,@node)",
-                    connection))
             using (var command6 =
                 new NpgsqlCommand(@"COMMIT", connection))
             using (var command7 =
@@ -143,21 +139,6 @@ namespace Placium.Route.Algorithms
                     @"SELECT rid,node FROM restriction_via_node WHERE vehicle_type=@vehicleType AND guid=@guid",
                     connection2))
             {
-                command2.Parameters.Add("id", NpgsqlDbType.Bigint);
-                command2.Prepare();
-
-                command3.Parameters.Add("id", NpgsqlDbType.Bigint);
-                command3.Parameters.Add("edge", NpgsqlDbType.Bigint);
-                command3.Prepare();
-
-                command4.Parameters.Add("id", NpgsqlDbType.Bigint);
-                command4.Parameters.Add("edge", NpgsqlDbType.Bigint);
-                command4.Prepare();
-
-                command5.Parameters.Add("id", NpgsqlDbType.Bigint);
-                command5.Parameters.Add("node", NpgsqlDbType.Bigint);
-                command5.Prepare();
-
                 command7.Parameters.AddWithValue("vehicleType", VehicleType);
                 command7.Parameters.AddWithValue("guid", Guid);
                 command7.Prepare();
@@ -176,42 +157,62 @@ namespace Placium.Route.Algorithms
 
                 await command.ExecuteNonQueryAsync();
 
+                using (var writer = connection.BeginTextImport(
+                    "COPY shared_restriction (id) FROM STDIN WITH NULL AS ''"))
                 using (var reader = await command7.ExecuteReaderAsync())
                 {
                     while (reader.Read())
                     {
-                        command2.Parameters["id"].Value = reader.GetInt64(0);
-                        command2.ExecuteNonQuery();
+                        var values = new[]
+                        {
+                            reader.GetInt64(0).ToString()
+                        };
+                        writer.WriteLine(string.Join("\t", values));
                     }
                 }
 
+                using (var writer = connection.BeginTextImport(
+                    "COPY shared_restriction_from_edge (rid,edge) FROM STDIN WITH NULL AS ''"))
                 using (var reader = await command8.ExecuteReaderAsync())
                 {
                     while (reader.Read())
                     {
-                        command3.Parameters["id"].Value = reader.GetInt64(0);
-                        command3.Parameters["edge"].Value = reader.GetInt64(1);
-                        command3.ExecuteNonQuery();
+                        var values = new[]
+                        {
+                            reader.GetInt64(0).ToString(),
+                            reader.GetInt64(1).ToString()
+                        };
+                        writer.WriteLine(string.Join("\t", values));
                     }
                 }
 
+                using (var writer = connection.BeginTextImport(
+                    "COPY shared_restriction_to_edge (rid,edge) FROM STDIN WITH NULL AS ''"))
                 using (var reader = await command9.ExecuteReaderAsync())
                 {
                     while (reader.Read())
                     {
-                        command4.Parameters["id"].Value = reader.GetInt64(0);
-                        command4.Parameters["edge"].Value = reader.GetInt64(1);
-                        command4.ExecuteNonQuery();
+                        var values = new[]
+                        {
+                            reader.GetInt64(0).ToString(),
+                            reader.GetInt64(1).ToString()
+                        };
+                        writer.WriteLine(string.Join("\t", values));
                     }
                 }
 
+                using (var writer = connection.BeginTextImport(
+                    "COPY shared_restriction_via_node (rid,node) FROM STDIN WITH NULL AS ''"))
                 using (var reader = await command10.ExecuteReaderAsync())
                 {
                     while (reader.Read())
                     {
-                        command5.Parameters["id"].Value = reader.GetInt64(0);
-                        command5.Parameters["node"].Value = reader.GetInt64(1);
-                        command5.ExecuteNonQuery();
+                        var values = new[]
+                        {
+                            reader.GetInt64(0).ToString(),
+                            reader.GetInt64(1).ToString()
+                        };
+                        writer.WriteLine(string.Join("\t", values));
                     }
                 }
 
@@ -222,10 +223,10 @@ namespace Placium.Route.Algorithms
                 new NpgsqlCommand(string.Join(";",
                         @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
                         @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
-                        @"CREATE UNIQUE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
-                        @"CREATE INDEX temp_restriction_from_edge_idx ON temp_restriction_from_edge (edge)",
-                        @"CREATE INDEX temp_restriction_to_edge_idx ON temp_restriction_to_edge (edge)",
-                        @"CREATE INDEX temp_restriction_via_node_idx ON temp_restriction_via_node (node)"),
+                        @"CREATE UNIQUE INDEX shared_edge_from_node_to_node_idx ON shared_edge (from_node,to_node)",
+                        @"CREATE INDEX shared_restriction_from_edge_idx ON shared_restriction_from_edge (edge)",
+                        @"CREATE INDEX shared_restriction_to_edge_idx ON shared_restriction_to_edge (edge)",
+                        @"CREATE INDEX shared_restriction_via_node_idx ON shared_restriction_via_node (node)"),
                     connection))
             {
                 command.Prepare();
@@ -242,7 +243,7 @@ namespace Placium.Route.Algorithms
                 )
                 VALUES (
 	                @node,
-                    6371000*acos(max(-1,min(1,sin(radians(@latitude1))*sin(radians(@latitude))+cos(radians(@latitude1))*cos(radians(@latitude))*cos(radians(@longitude1-@longitude)))))::real,
+                    @factor*distanceInMeters(@latitude,@longitude,@latitude1,@longitude1),
 	                0,
 	                0,
 	                true
@@ -252,23 +253,24 @@ namespace Placium.Route.Algorithms
                 command.Parameters.Add("node", NpgsqlDbType.Bigint);
                 command.Parameters.Add("latitude1", NpgsqlDbType.Real);
                 command.Parameters.Add("longitude1", NpgsqlDbType.Real);
-                command.Parameters.AddWithValue("latitude", Target.Coordinate.Latitude);
-                command.Parameters.AddWithValue("longitude", Target.Coordinate.Longitude);
+                command.Parameters.AddWithValue("latitude", target.Coordinate.Latitude);
+                command.Parameters.AddWithValue("longitude", target.Coordinate.Longitude);
+                command.Parameters.AddWithValue("factor", Factor);
                 command.Prepare();
 
-                if (new[] {0, 1, 3, 4}.Contains(Source.Direction))
+                if (new[] {0, 1, 3, 4}.Contains(source.Direction))
                 {
-                    command.Parameters["node"].Value = Source.ToNode;
-                    var coords = Source.Coordinates.Last();
+                    command.Parameters["node"].Value = source.ToNode;
+                    var coords = source.Coordinates.Last();
                     command.Parameters["latitude1"].Value = coords.Latitude;
                     command.Parameters["longitude1"].Value = coords.Longitude;
                     await command.ExecuteNonQueryAsync();
                 }
 
-                if (new[] {0, 2, 3, 5}.Contains(Source.Direction))
+                if (new[] {0, 2, 3, 5}.Contains(source.Direction))
                 {
-                    command.Parameters["node"].Value = Source.FromNode;
-                    var coords = Source.Coordinates.First();
+                    command.Parameters["node"].Value = source.FromNode;
+                    var coords = source.Coordinates.First();
                     command.Parameters["latitude1"].Value = coords.Latitude;
                     command.Parameters["longitude1"].Value = coords.Longitude;
                     await command.ExecuteNonQueryAsync();
@@ -291,24 +293,22 @@ namespace Placium.Route.Algorithms
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.to_node AS node,6371000*acos(max(-1,min(1,sin(radians(e.to_latitude))*sin(radians(@latitude))+
-                            cos(radians(e.to_latitude))*cos(radians(@latitude))*cos(radians(e.to_longitude-@longitude)))))::real+
+		                    SELECT e.to_node AS node,@factor*distanceInMeters(e.to_latitude,e.to_longitude,@latitude,@longitude)+
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,true AS in_queue
-		                    FROM temp_edge e JOIN temp_dijkstra t ON e.from_node=t.node
+		                    FROM shared_edge e JOIN temp_dijkstra t ON e.from_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.node=@node 
-                            AND NOT EXISTS (SELECT * FROM  temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT e.from_node AS node,6371000*acos(max(-1,min(1,sin(radians(e.from_latitude))*sin(radians(@latitude))+
-                            cos(radians(e.from_latitude))*cos(radians(@latitude))*cos(radians(e.from_longitude-@longitude)))))::real+
+                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            UNION ALL SELECT e.from_node AS node,@factor*distanceInMeters(e.from_latitude,e.from_longitude,@latitude,@longitude)+
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,true AS in_queue
-		                    FROM temp_edge e JOIN temp_dijkstra t ON e.to_node=t.node
+		                    FROM shared_edge e JOIN temp_dijkstra t ON e.to_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM  temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
+                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
                     )
                     SELECT 
 	                    node,
@@ -327,8 +327,9 @@ namespace Placium.Route.Algorithms
                     @"UPDATE temp_dijkstra SET in_queue=false WHERE node=@node"), connection))
             {
                 command2.Parameters.Add("node", NpgsqlDbType.Bigint);
-                command2.Parameters.AddWithValue("latitude", Target.Coordinate.Latitude);
-                command2.Parameters.AddWithValue("longitude", Target.Coordinate.Longitude);
+                command2.Parameters.AddWithValue("latitude", target.Coordinate.Latitude);
+                command2.Parameters.AddWithValue("longitude", target.Coordinate.Longitude);
+                command2.Parameters.AddWithValue("factor", Factor);
                 command1.Prepare();
                 command2.Prepare();
 
@@ -348,8 +349,8 @@ namespace Placium.Route.Algorithms
             }
 
             var targets = new List<long>();
-            if (new[] {0, 1, 3, 4}.Contains(Target.Direction)) targets.Add(Target.FromNode);
-            if (new[] {0, 2, 3, 5}.Contains(Target.Direction)) targets.Add(Target.ToNode);
+            if (new[] {0, 1, 3, 4}.Contains(target.Direction)) targets.Add(target.FromNode);
+            if (new[] {0, 2, 3, 5}.Contains(target.Direction)) targets.Add(target.ToNode);
 
 
             using (var command =
@@ -366,10 +367,10 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new NpgsqlCommand(@"SELECT e.from_node,e.id 
-                    FROM temp_dijkstra t JOIN temp_edge e ON t.edge=e.id
+                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
-                    FROM temp_dijkstra t JOIN temp_edge e ON t.edge=e.id
+                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.from_node=t.node", connection))
             {
                 command.Parameters.Add("node", NpgsqlDbType.Bigint);
