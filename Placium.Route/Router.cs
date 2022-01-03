@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Npgsql;
@@ -10,12 +11,12 @@ namespace Placium.Route
 {
     public class Router
     {
-        public Router(RouterDb db, string profile)
+        public Router(RouterDb db, string profile, float factor = 1f)
         {
             Db = db;
             Profile = profile;
             ResolveRouterPointAlgorithm = new ResolveRouterPointAlgorithm(Db.Guid, Db.ConnectionString, Profile);
-            PathFinderAlgorithm = new InMemoryBidirectional(Db.Guid, Db.ConnectionString, "motorcar", Profile, 1f);
+            PathFinderAlgorithm = new InMemoryBidirectional(Db.Guid, Db.ConnectionString, "motorcar", Profile, factor);
         }
 
         public RouterDb Db { get; }

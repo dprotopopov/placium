@@ -58,15 +58,12 @@ namespace Placium.Route.Algorithms
                 )", @"CREATE TEMP TABLE shared_restriction (
 	                id BIGINT PRIMARY KEY NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_from_edge (
-	                id BIGSERIAL PRIMARY KEY NOT NULL, 
 	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                edge BIGINT NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_to_edge (
-	                id BIGSERIAL PRIMARY KEY NOT NULL, 
 	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                edge BIGINT NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_via_node (
-	                id BIGSERIAL PRIMARY KEY NOT NULL, 
 	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                node BIGINT NOT NULL
                 )"), connection))
@@ -297,7 +294,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,true AS in_queue
 		                    FROM shared_edge e JOIN temp_dijkstra t ON e.from_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.node=@node 
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
@@ -305,7 +302,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,true AS in_queue
 		                    FROM shared_edge e JOIN temp_dijkstra t ON e.to_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q

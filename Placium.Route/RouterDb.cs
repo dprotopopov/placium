@@ -667,7 +667,7 @@ namespace Placium.Route
 
                                     var direction = factorAndSpeeds.ToDictionary(x => x.Key, x => x.Value.Direction);
                                     var weight = factorAndSpeeds.Where(x => x.Value.Value > 0)
-                                        .ToDictionary(x => x.Key, x => distance / x.Value.Value);
+                                        .ToDictionary(x => x.Key, x => distance * x.Value.Value);
 
                                     var fromCoords = intermediates.First();
                                     var toCoords = intermediates.Last();
@@ -989,10 +989,10 @@ namespace Placium.Route
                 }
 #endif
 
-#endregion
+                #endregion
 
 
-#region restriction
+                #region restriction
 
                 using (var command7 =
                     new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM restriction WHERE guid=@guid",
@@ -1144,7 +1144,7 @@ namespace Placium.Route
                     await progressClient.Finalize(id, session);
                 }
 
-#endregion
+                #endregion
 
                 await osmConnection.CloseAsync();
                 await osmConnection2.CloseAsync();

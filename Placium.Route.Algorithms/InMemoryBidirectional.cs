@@ -68,17 +68,14 @@ namespace Placium.Route.Algorithms
                 )", @"CREATE TEMP TABLE shared_restriction (
 	                id INTEGER PRIMARY KEY NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_from_edge (
-	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                edge INTEGER NOT NULL,
                     FOREIGN KEY(rid) REFERENCES shared_restriction(id)
                 )", @"CREATE TEMP TABLE shared_restriction_to_edge (
-	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                edge INTEGER NOT NULL,
                     FOREIGN KEY(rid) REFERENCES shared_restriction(id)
                 )", @"CREATE TEMP TABLE shared_restriction_via_node (
-	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                node INTEGER NOT NULL,
                     FOREIGN KEY(rid) REFERENCES shared_restriction(id)
@@ -271,7 +268,7 @@ namespace Placium.Route.Algorithms
             }
 
             using (var command =
-                new SqliteCommand(@"INSERT OR REPLACE INTO temp_dijkstra1 (
+                new SqliteCommand(@"REPLACE INTO temp_dijkstra1 (
 	                node,
 	                weight,
                     weight1,
@@ -314,7 +311,7 @@ namespace Placium.Route.Algorithms
             }
 
             using (var command =
-                new SqliteCommand(@"INSERT OR REPLACE INTO temp_dijkstra2 (
+                new SqliteCommand(@"REPLACE INTO temp_dijkstra2 (
 	                node,
 	                weight,
                     weight1,
@@ -365,7 +362,7 @@ namespace Placium.Route.Algorithms
                         @"SELECT COUNT(*) FROM temp_dijkstra2 WHERE step=@step"),
                     connection))
             using (var command2 =
-                new SqliteCommand(string.Join(";", @"INSERT OR REPLACE INTO temp_dijkstra1 (
+                new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra1 (
 	                    node,
 	                    weight,
 	                    weight1,
@@ -379,7 +376,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.step=@step
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
@@ -387,16 +384,10 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.to_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.step=@step
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.step
-		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.from_node=t.node JOIN temp_dijkstra1 t1 ON e.to_node=t1.node
-                            WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.step=@step
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.step
-		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.to_node=t.node JOIN temp_dijkstra1 t1 ON e.from_node=t1.node
-                            WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.step=@step) q
+                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
                     )
                     SELECT 
 	                    node,
@@ -405,7 +396,13 @@ namespace Placium.Route.Algorithms
 	                    edge,
 	                    step
                     FROM cte
-                    WHERE rn = 1", @"INSERT OR REPLACE INTO temp_dijkstra2 (
+                    WHERE rn = 1
+                    ON CONFLICT (node) DO UPDATE SET
+	                    weight=EXCLUDED.weight,
+	                    weight1=EXCLUDED.weight1,
+	                    edge=EXCLUDED.edge,
+                        step=EXCLUDED.step
+                        WHERE temp_dijkstra1.weight>EXCLUDED.weight", @"INSERT INTO temp_dijkstra2 (
 	                    node,
 	                    weight,
 	                    weight1,
@@ -419,7 +416,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.to_node=t.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.step=@step
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
@@ -427,16 +424,10 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.step=@step
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.step
-		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.to_node=t.node JOIN temp_dijkstra2 t1 ON e.from_node=t1.node
-                            WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.step=@step
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.step
-		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.from_node=t.node JOIN temp_dijkstra2 t1 ON e.to_node=t1.node
-                            WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.step=@step) q
+                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
                     )
                     SELECT 
 	                    node,
@@ -445,10 +436,16 @@ namespace Placium.Route.Algorithms
 	                    edge,
 	                    step
                     FROM cte
-                    WHERE rn = 1"), connection))
+                    WHERE rn = 1
+                    ON CONFLICT (node) DO UPDATE SET
+	                    weight=EXCLUDED.weight,
+	                    weight1=EXCLUDED.weight1,
+	                    edge=EXCLUDED.edge,
+                        step=EXCLUDED.step
+                        WHERE temp_dijkstra2.weight>EXCLUDED.weight"), connection))
             using (var command3 =
                 new SqliteCommand(string.Join(";", @"SELECT t1.node,t1.weight1+t2.weight1 FROM temp_dijkstra1 t1
-                JOIN temp_dijkstra2 t2 ON t1.node=t2.node WHERE NOT EXISTS (SELECT * FROM  shared_restriction r 
+                JOIN temp_dijkstra2 t2 ON t1.node=t2.node WHERE NOT EXISTS (SELECT * FROM shared_restriction r 
                 JOIN shared_restriction_via_node vn ON vn.node=t1.node AND r.id=vn.rid
                 JOIN shared_restriction_to_edge rt ON rt.edge=t2.edge AND r.id=rt.rid
                 JOIN shared_restriction_from_edge rf ON rf.edge=t1.edge AND r.id=rf.rid)
@@ -456,8 +453,8 @@ namespace Placium.Route.Algorithms
                     connection))
             using (var command4 =
                 new SqliteCommand(string.Join(";",
-                        @"DELETE FROM temp_dijkstra1 WHERE weight>=@weight",
-                        @"DELETE FROM temp_dijkstra2 WHERE weight>=@weight"),
+                        @"DELETE FROM temp_dijkstra1 WHERE weight>@weight",
+                        @"DELETE FROM temp_dijkstra2 WHERE weight>@weight"),
                     connection))
             {
                 command1.Parameters.Add("step", SqliteType.Integer);

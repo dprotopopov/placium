@@ -24,24 +24,24 @@ namespace Placium.Route.Algorithms
             await connection.OpenAsync();
             await connection2.OpenAsync();
 
+
             connection.CreateFunction(
-                "radians",
-                (double x) => Math.PI * x / 180);
-            connection.CreateFunction<double, double>(
-                "sin",
-                Math.Sin);
-            connection.CreateFunction<double, double>(
-                "cos",
-                Math.Cos);
-            connection.CreateFunction<double, double>(
-                "acos",
-                Math.Acos);
-            connection.CreateFunction<double, double, double>(
-                "max",
-                Math.Max);
-            connection.CreateFunction<double, double, double>(
-                "min",
-                Math.Min);
+                "distanceInMeters",
+                (double lat1, double lon1, double lat2, double lon2) =>
+                {
+                    const double R = 6371000; // metres
+                    var φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+                    var φ2 = lat2 * Math.PI / 180;
+                    var Δφ = (lat2 - lat1) * Math.PI / 180;
+                    var Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                    var a = Math.Pow(Math.Sin(Δφ / 2), 2) +
+                            Math.Cos(φ1) * Math.Cos(φ2) *
+                            Math.Pow(Math.Sin(Δλ / 2), 2);
+                    var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+                    return R * c; // in metres
+                });
 
             using (var command =
                 new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
@@ -64,17 +64,14 @@ namespace Placium.Route.Algorithms
                 )", @"CREATE TEMP TABLE shared_restriction (
 	                id INTEGER PRIMARY KEY NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_from_edge (
-	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                edge INTEGER NOT NULL,
                     FOREIGN KEY(rid) REFERENCES shared_restriction(id)
                 )", @"CREATE TEMP TABLE shared_restriction_to_edge (
-	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                edge INTEGER NOT NULL,
                     FOREIGN KEY(rid) REFERENCES shared_restriction(id)
                 )", @"CREATE TEMP TABLE shared_restriction_via_node (
-	                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
 	                rid INTEGER NOT NULL, 
 	                node INTEGER NOT NULL,
                     FOREIGN KEY(rid) REFERENCES shared_restriction(id)
@@ -264,7 +261,7 @@ namespace Placium.Route.Algorithms
             }
 
             using (var command =
-                new SqliteCommand(@"INSERT OR REPLACE INTO temp_dijkstra (
+                new SqliteCommand(@"REPLACE INTO temp_dijkstra (
 	                node,
 	                weight,
                     weight1,
@@ -273,7 +270,7 @@ namespace Placium.Route.Algorithms
                 )
                 VALUES (
 	                @node,
-                    6371000*@factor*acos(max(-1,min(1,sin(radians(@latitude1))*sin(radians(@latitude))+cos(radians(@latitude1))*cos(radians(@latitude))*cos(radians(@longitude1-@longitude))))),
+                    @factor*distanceInMeters(@latitude,@longitude,@latitude1,@longitude1),
 	                0,
 	                0,
 	                1
@@ -313,7 +310,7 @@ namespace Placium.Route.Algorithms
                     string.Join(";", @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
                     connection))
             using (var command2 =
-                new SqliteCommand(string.Join(";", @"INSERT OR REPLACE INTO temp_dijkstra (
+                new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra (
 	                    node,
 	                    weight,
 	                    weight1,
@@ -323,30 +320,22 @@ namespace Placium.Route.Algorithms
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.to_node AS node,6371000*@factor*acos(max(-1,min(1,sin(radians(e.to_latitude))*sin(radians(@latitude))+
-                            cos(radians(e.to_latitude))*cos(radians(@latitude))*cos(radians(e.to_longitude-@longitude)))))+
+		                    SELECT e.to_node AS node,@factor*distanceInMeters(e.to_latitude,e.to_longitude,@latitude,@longitude)+
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,1 AS in_queue
 		                    FROM shared_edge e JOIN temp_dijkstra t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT e.from_node AS node,6371000*@factor*acos(max(-1,min(1,sin(radians(e.from_latitude))*sin(radians(@latitude))+
-                            cos(radians(e.from_latitude))*cos(radians(@latitude))*cos(radians(e.from_longitude-@longitude)))))+
+                            UNION ALL SELECT e.from_node AS node,@factor*distanceInMeters(e.from_latitude,e.from_longitude,@latitude,@longitude)+
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,1 AS in_queue
 		                    FROM shared_edge e JOIN temp_dijkstra t ON e.to_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.in_queue
-		                    FROM shared_edge e JOIN temp_dijkstra t ON e.from_node=t.node JOIN temp_dijkstra t1 ON e.to_node=t1.node
-                            WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
-                            UNION ALL SELECT t1.node AS node,t1.weight,t1.weight1,t1.edge,t1.in_queue
-		                    FROM shared_edge e JOIN temp_dijkstra t ON e.to_node=t.node JOIN temp_dijkstra t1 ON e.from_node=t1.node
-                            WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node) q
+                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
                     )
                     SELECT 
 	                    node,
@@ -355,7 +344,13 @@ namespace Placium.Route.Algorithms
 	                    edge,
 	                    in_queue
                     FROM cte
-                    WHERE rn = 1",
+                    WHERE rn = 1
+                    ON CONFLICT (node) DO UPDATE SET
+	                    weight=EXCLUDED.weight,
+	                    weight1=EXCLUDED.weight1,
+	                    edge=EXCLUDED.edge,
+                        in_queue=EXCLUDED.in_queue
+                        WHERE temp_dijkstra.weight>EXCLUDED.weight",
                     @"UPDATE temp_dijkstra SET in_queue=0 WHERE node=@node"), connection))
             {
                 command2.Parameters.Add("level", SqliteType.Integer);

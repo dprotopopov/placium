@@ -65,15 +65,12 @@ namespace Placium.Route.Algorithms
                 )", @"CREATE TEMP TABLE shared_restriction (
 	                id BIGINT PRIMARY KEY NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_from_edge (
-	                id BIGSERIAL PRIMARY KEY NOT NULL, 
 	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                edge BIGINT NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_to_edge (
-	                id BIGSERIAL PRIMARY KEY NOT NULL, 
 	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                edge BIGINT NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction_via_node (
-	                id BIGSERIAL PRIMARY KEY NOT NULL, 
 	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
 	                node BIGINT NOT NULL
                 )"), connection))
@@ -354,7 +351,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.from_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.step=@step 
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
@@ -362,7 +359,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.to_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.step=@step
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
@@ -394,7 +391,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.to_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.step=@step 
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
@@ -402,7 +399,7 @@ namespace Placium.Route.Algorithms
                             t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
 		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.from_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.step=@step
-                            AND NOT EXISTS (SELECT * FROM  shared_restriction r 
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
@@ -423,7 +420,7 @@ namespace Placium.Route.Algorithms
                         WHERE temp_dijkstra2.weight>EXCLUDED.weight"), connection))
             using (var command3 =
                 new NpgsqlCommand(string.Join(";", @"SELECT t1.node,t1.weight1+t2.weight1 FROM temp_dijkstra1 t1
-                JOIN temp_dijkstra2 t2 ON t1.node=t2.node WHERE NOT EXISTS (SELECT * FROM  shared_restriction r 
+                JOIN temp_dijkstra2 t2 ON t1.node=t2.node WHERE NOT EXISTS (SELECT * FROM shared_restriction r 
                 JOIN shared_restriction_via_node vn ON vn.node=t1.node AND r.id=vn.rid
                 JOIN shared_restriction_to_edge rt ON rt.edge=t2.edge AND r.id=rt.rid
                 JOIN shared_restriction_from_edge rf ON rf.edge=t1.edge AND r.id=rf.rid)
@@ -431,8 +428,8 @@ namespace Placium.Route.Algorithms
                     connection))
             using (var command4 =
                 new NpgsqlCommand(string.Join(";",
-                        @"DELETE FROM temp_dijkstra1 WHERE weight>=@weight",
-                        @"DELETE FROM temp_dijkstra2 WHERE weight>=@weight"),
+                        @"DELETE FROM temp_dijkstra1 WHERE weight>@weight",
+                        @"DELETE FROM temp_dijkstra2 WHERE weight>@weight"),
                     connection))
             {
                 command1.Parameters.Add("step", NpgsqlDbType.Integer);
