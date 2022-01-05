@@ -6,6 +6,7 @@ using Npgsql;
 using NpgsqlTypes;
 using Placium.Common;
 using Placium.Route.Common;
+using Route.LocalGeo;
 
 namespace Placium.Route.Algorithms
 {
@@ -19,7 +20,7 @@ namespace Placium.Route.Algorithms
 
 
         public override async Task<List<long>> FindPathAsync(RouterPoint source,
-            RouterPoint target)
+            RouterPoint target, float maxWeight = float.MaxValue)
         {
             using var connection = new NpgsqlConnection(ConnectionString);
             using var connection2 = new NpgsqlConnection(ConnectionString);
@@ -329,7 +330,6 @@ namespace Placium.Route.Algorithms
             }
 
             var node = 0L;
-            var weight = 0f;
 
             using (var command1 =
                 new NpgsqlCommand(
@@ -428,8 +428,8 @@ namespace Placium.Route.Algorithms
                     connection))
             using (var command4 =
                 new NpgsqlCommand(string.Join(";",
-                        @"DELETE FROM temp_dijkstra1 WHERE weight>@weight",
-                        @"DELETE FROM temp_dijkstra2 WHERE weight>@weight"),
+                        @"DELETE FROM temp_dijkstra1 WHERE weight>@maxWeight",
+                        @"DELETE FROM temp_dijkstra2 WHERE weight>@maxWeight"),
                     connection))
             {
                 command1.Parameters.Add("step", NpgsqlDbType.Integer);
@@ -439,7 +439,7 @@ namespace Placium.Route.Algorithms
                 command2.Parameters.AddWithValue("latitude2", source.Coordinate.Latitude);
                 command2.Parameters.AddWithValue("longitude2", source.Coordinate.Longitude);
                 command2.Parameters.AddWithValue("factor", Factor);
-                command4.Parameters.Add("weight", NpgsqlDbType.Real);
+                command4.Parameters.Add("maxWeight", NpgsqlDbType.Real);
                 command1.Prepare();
                 command2.Prepare();
                 command3.Prepare();
@@ -475,17 +475,14 @@ namespace Placium.Route.Algorithms
                         if (reader.Read())
                         {
                             node = reader.GetInt64(0);
-                            weight = reader.GetFloat(1);
+                            maxWeight = reader.GetFloat(1);
                         }
                     }
 
-                    if (node != 0)
-                    {
-                        command4.Parameters["weight"].Value = weight;
-                        command4.ExecuteNonQuery();
-                    }
+                    command4.Parameters["maxWeight"].Value = maxWeight;
+                    command4.ExecuteNonQuery();
 
-                    if (step % 1 == 0) Console.WriteLine($"Step {step} complete count1={count1} count2={count2}");
+                    if (step % 1 == 0) Console.WriteLine($"Step {step} complete count1={count1} count2={count2} maxWeight={maxWeight}");
                 }
             }
 

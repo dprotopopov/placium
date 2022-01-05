@@ -5,18 +5,20 @@ using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Npgsql;
 using Placium.Route.Common;
+using Route.LocalGeo;
 
 namespace Placium.Route.Algorithms
 {
     public class InMemoryBidirectional : BasePathFinderAlgorithm
     {
-        public InMemoryBidirectional(Guid guid, string connectionString, string vehicleType, string profile, float factor) :
+        public InMemoryBidirectional(Guid guid, string connectionString, string vehicleType, string profile,
+            float factor) :
             base(guid, connectionString, vehicleType, profile, factor)
         {
         }
 
         public override async Task<List<long>> FindPathAsync(RouterPoint source,
-            RouterPoint target)
+            RouterPoint target, float maxWeight = float.MaxValue)
         {
             using var connection = new SqliteConnection($"Data source=file:{Guid}?mode=memory&cache=shared");
             using var connection2 = new NpgsqlConnection(ConnectionString);
@@ -33,9 +35,9 @@ namespace Placium.Route.Algorithms
                     var Δφ = (lat2 - lat1) * Math.PI / 180;
                     var Δλ = (lon2 - lon1) * Math.PI / 180;
 
-                    var a = Math.Pow(Math.Sin(Δφ / 2) , 2) +
-                        Math.Cos(φ1) * Math.Cos(φ2) *
-                        Math.Pow(Math.Sin(Δλ / 2) , 2);
+                    var a = Math.Pow(Math.Sin(Δφ / 2), 2) +
+                            Math.Cos(φ1) * Math.Cos(φ2) *
+                            Math.Pow(Math.Sin(Δλ / 2), 2);
                     var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
                     return R * c; // in metres
@@ -354,7 +356,6 @@ namespace Placium.Route.Algorithms
             }
 
             var node = 0L;
-            var weight = 0f;
 
             using (var command1 =
                 new SqliteCommand(
@@ -453,8 +454,8 @@ namespace Placium.Route.Algorithms
                     connection))
             using (var command4 =
                 new SqliteCommand(string.Join(";",
-                        @"DELETE FROM temp_dijkstra1 WHERE weight>@weight",
-                        @"DELETE FROM temp_dijkstra2 WHERE weight>@weight"),
+                        @"DELETE FROM temp_dijkstra1 WHERE weight>@maxWeight",
+                        @"DELETE FROM temp_dijkstra2 WHERE weight>@maxWeight"),
                     connection))
             {
                 command1.Parameters.Add("step", SqliteType.Integer);
@@ -464,7 +465,7 @@ namespace Placium.Route.Algorithms
                 command2.Parameters.AddWithValue("latitude2", source.Coordinate.Latitude);
                 command2.Parameters.AddWithValue("longitude2", source.Coordinate.Longitude);
                 command2.Parameters.AddWithValue("factor", Factor);
-                command4.Parameters.Add("weight", SqliteType.Real);
+                command4.Parameters.Add("maxWeight", SqliteType.Real);
                 command1.Prepare();
                 command2.Prepare();
                 command3.Prepare();
@@ -500,17 +501,14 @@ namespace Placium.Route.Algorithms
                         if (reader.Read())
                         {
                             node = reader.GetInt64(0);
-                            weight = reader.GetFloat(1);
+                            maxWeight = reader.GetFloat(1);
                         }
                     }
 
-                    if (node != 0)
-                    {
-                        command4.Parameters["weight"].Value = weight;
-                        command4.ExecuteNonQuery();
-                    }
+                    command4.Parameters["maxWeight"].Value = maxWeight;
+                    command4.ExecuteNonQuery();
 
-                    if (step % 1 == 0) Console.WriteLine($"Step {step} complete count1={count1} count2={count2}");
+                    if (step % 1 == 0) Console.WriteLine($"Step {step} complete count1={count1} count2={count2} maxWeight={maxWeight}");
                 }
             }
 

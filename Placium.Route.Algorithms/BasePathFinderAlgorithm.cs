@@ -16,6 +16,6 @@ namespace Placium.Route.Algorithms
         public float Factor { get; }
 
         public abstract Task<List<long>> FindPathAsync(RouterPoint source,
-            RouterPoint target);
+            RouterPoint target, float maxWeight = float.MaxValue);
     }
 }

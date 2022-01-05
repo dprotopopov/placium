@@ -18,7 +18,7 @@ namespace Placium.Route.Algorithms
 
 
         public override async Task<List<long>> FindPathAsync(RouterPoint source,
-            RouterPoint target)
+            RouterPoint target, float maxWeight = float.MaxValue)
         {
             using var connection = new NpgsqlConnection(ConnectionString);
             using var connection2 = new NpgsqlConnection(ConnectionString);
