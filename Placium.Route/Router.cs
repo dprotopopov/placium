@@ -5,22 +5,28 @@ using System.Threading.Tasks;
 using Npgsql;
 using Placium.Route.Algorithms;
 using Placium.Route.Common;
+using Placium.Route.Profiles;
 using Route.LocalGeo;
 
 namespace Placium.Route
 {
     public class Router
     {
-        public Router(RouterDb db, string profile, float factor = 1f)
+        public Router(RouterDb db, string profile, float maxFactor=1f, float minFactor = 1f)
         {
             Db = db;
             Profile = profile;
+            MaxFactor = maxFactor;
+            MinFactor = minFactor;
             ResolveRouterPointAlgorithm = new ResolveRouterPointAlgorithm(Db.Guid, Db.ConnectionString, Profile);
-            PathFinderAlgorithm = new InMemoryBidirectional(Db.Guid, Db.ConnectionString, "motorcar", Profile, factor);
+            PathFinderAlgorithm =
+                new InMemoryBidirectionalAStar(Db.Guid, Db.ConnectionString, "motorcar", Profile, MinFactor);
         }
 
         public RouterDb Db { get; }
         public string Profile { get; }
+        public float MinFactor { get; }
+        public float MaxFactor { get; }
         public ResolveRouterPointAlgorithm ResolveRouterPointAlgorithm { get; }
         public BasePathFinderAlgorithm PathFinderAlgorithm { get; }
 
@@ -30,22 +36,58 @@ namespace Placium.Route
                 await ResolveRouterPointAlgorithm.ResolveRouterPointAsync(source);
             var targetRouterPoint =
                 await ResolveRouterPointAlgorithm.ResolveRouterPointAsync(target);
-            List<long> path = null;
+
+            const float maxDistance = 100000f;
+
+            async Task<float> GetMaxWeightAsync(RouterPoint source, RouterPoint target)
+            {
+                if (Coordinate.DistanceEstimateInMeter(source.Coordinate, target.Coordinate) < maxDistance)
+                {
+                    Console.WriteLine($"{source.Coordinate}->{target.Coordinate}");
+                    var result = await PathFinderAlgorithm.FindPathAsync(source, target);
+                    if(result.Weight==float.MaxValue) return float.MaxValue;
+                    return source.Weight + result.Weight + target.Weight;
+                }
+
+                var middlePoint = new Coordinate((source.Coordinate.Latitude + target.Coordinate.Latitude) / 2,
+                    (source.Coordinate.Longitude + target.Coordinate.Longitude) / 2);
+                var middle = await ResolveRouterPointAlgorithm.ResolveRouterPointAsync(middlePoint);
+
+                var weight1 = await GetMaxWeightAsync(source, middle);
+                var weight2 = await GetMaxWeightAsync(middle, target);
+                if (weight1 == float.MaxValue || weight2 == float.MaxValue)
+                {
+                    Console.WriteLine($"{source.Coordinate}->{target.Coordinate}");
+                    var result = await PathFinderAlgorithm.FindPathAsync(source, target);
+                    if (result.Weight == float.MaxValue) return float.MaxValue;
+                    return source.Weight + result.Weight + target.Weight;
+                }
+                return weight1 + weight2 - middle.Weight;
+            }
+
+            PathFinderResult result = null;
             if (sourceRouterPoint.EdgeId != targetRouterPoint.EdgeId ||
                 new[] {1, 4}.Contains(sourceRouterPoint.Direction) &&
                 sourceRouterPoint.Offset > targetRouterPoint.Offset ||
                 new[] {2, 5}.Contains(sourceRouterPoint.Direction) &&
                 sourceRouterPoint.Offset < targetRouterPoint.Offset)
             {
-                path = await PathFinderAlgorithm.FindPathAsync(sourceRouterPoint, targetRouterPoint);
-                path.Insert(0, sourceRouterPoint.EdgeId);
-                path.Add(targetRouterPoint.EdgeId);
+                var maxWeight = Coordinate.DistanceEstimateInMeter(source, target) < maxDistance
+                    ? float.MaxValue
+                    : await GetMaxWeightAsync(sourceRouterPoint, targetRouterPoint);
+                result = await PathFinderAlgorithm.FindPathAsync(sourceRouterPoint, targetRouterPoint, maxWeight);
+                result.Edges.Insert(0, sourceRouterPoint.EdgeId);
+                result.Edges.Add(targetRouterPoint.EdgeId);
             }
             else
             {
-                path = new List<long> {sourceRouterPoint.EdgeId};
+                result = new PathFinderResult
+                {
+                    Edges = new List<long> {sourceRouterPoint.EdgeId}
+                };
             }
 
+            var edges = result.Edges;
 
             var list = new List<EdgeItem>();
             using var connection = new NpgsqlConnection(Db.ConnectionString);
@@ -58,7 +100,7 @@ namespace Placium.Route
                     connection))
             {
                 command.Parameters.AddWithValue("guid", Db.Guid);
-                command.Parameters.AddWithValue("ids", path.ToArray());
+                command.Parameters.AddWithValue("ids", edges.ToArray());
                 command.Prepare();
                 using var reader = await command.ExecuteReaderAsync();
                 while (reader.Read())
@@ -83,13 +125,12 @@ namespace Placium.Route
 
             var dictionary = list.ToDictionary(x => x.Id, x => x);
 
-
             var shape = new List<Coordinate>(list.Select(x => x.Coordinates.Length).Sum());
             var shapeMeta = new List<Route.Meta>(list.Count);
 
-            if (path.Count == 1)
+            if (edges.Count == 1)
             {
-                var item = dictionary[path[0]];
+                var item = dictionary[edges[0]];
                 shapeMeta.Add(new Route.Meta
                 {
                     Shape = shape.Count,
@@ -100,6 +141,14 @@ namespace Placium.Route
                     sourceRouterPoint.FromNode == targetRouterPoint.FromNode)
                     shape.AddRange(item.Coordinates.Take(targetRouterPoint.Offset)
                         .Skip(sourceRouterPoint.Offset));
+                else if (sourceRouterPoint.ToNode == targetRouterPoint.ToNode ||
+                         sourceRouterPoint.FromNode == targetRouterPoint.ToNode)
+                    shape.AddRange(item.Coordinates.Reverse().Take(item.Coordinates.Length - targetRouterPoint.Offset)
+                        .Skip(item.Coordinates.Length - sourceRouterPoint.Offset));
+                else if (Coordinate.DistanceEstimateInMeter(sourceRouterPoint.Coordinate, item.Coordinates.First()) <=
+                         Coordinate.DistanceEstimateInMeter(sourceRouterPoint.Coordinate, item.Coordinates.Last()))
+                    shape.AddRange(item.Coordinates.Take(targetRouterPoint.Offset)
+                        .Skip(sourceRouterPoint.Offset));
                 else
                     shape.AddRange(item.Coordinates.Reverse().Take(item.Coordinates.Length - targetRouterPoint.Offset)
                         .Skip(item.Coordinates.Length - sourceRouterPoint.Offset));
@@ -107,8 +156,8 @@ namespace Placium.Route
             }
             else
             {
-                var item = dictionary[path[0]];
-                var item1 = dictionary[path[1]];
+                var item = dictionary[edges[0]];
+                var item1 = dictionary[edges[1]];
 
                 shapeMeta.Add(new Route.Meta
                 {
@@ -118,14 +167,21 @@ namespace Placium.Route
                 shape.Add(sourceRouterPoint.Coordinate);
                 if (item.ToNode == item1.FromNode || item.ToNode == item1.ToNode)
                     shape.AddRange(item.Coordinates.Skip(sourceRouterPoint.Offset));
-                else
+                else if (item.FromNode == item1.FromNode || item.FromNode == item1.ToNode)
                     shape.AddRange(sourceRouterPoint.Coordinates.Reverse()
                         .Skip(item.Coordinates.Length - sourceRouterPoint.Offset));
+                else if (Coordinate.DistanceEstimateInMeter(sourceRouterPoint.Coordinate, item.Coordinates.First()) <=
+                         Coordinate.DistanceEstimateInMeter(sourceRouterPoint.Coordinate, item.Coordinates.Last()))
+                    shape.AddRange(item.Coordinates.Skip(sourceRouterPoint.Offset));
+                else
+                    shape.AddRange(item.Coordinates.Reverse()
+                        .Skip(item.Coordinates.Length - sourceRouterPoint.Offset));
 
-                for (var i = 1; i < path.Count - 1; i++)
+
+                for (var i = 1; i < edges.Count - 1; i++)
                 {
-                    var prev = dictionary[path[i - 1]];
-                    item = dictionary[path[i]];
+                    var prev = dictionary[edges[i - 1]];
+                    item = dictionary[edges[i]];
                     if (item.Coordinates.Length > 1)
                     {
                         shapeMeta.Add(new Route.Meta
@@ -135,12 +191,26 @@ namespace Placium.Route
                         });
                         if (prev.ToNode == item.FromNode || prev.FromNode == item.FromNode)
                             shape.AddRange(item.Coordinates.Skip(1));
-                        else shape.AddRange(item.Coordinates.Reverse().Skip(1));
+                        else if (prev.ToNode == item.ToNode || prev.FromNode == item.ToNode)
+                            shape.AddRange(item.Coordinates.Reverse().Skip(1));
+                        else if (Math.Min(
+                                     Coordinate.DistanceEstimateInMeter(prev.Coordinates.First(),
+                                         item.Coordinates.First()),
+                                     Coordinate.DistanceEstimateInMeter(prev.Coordinates.Last(),
+                                         item.Coordinates.First())) <=
+                                 Math.Min(
+                                     Coordinate.DistanceEstimateInMeter(prev.Coordinates.First(),
+                                         item.Coordinates.Last()),
+                                     Coordinate.DistanceEstimateInMeter(prev.Coordinates.Last(),
+                                         item.Coordinates.Last())))
+                            shape.AddRange(item.Coordinates);
+                        else
+                            shape.AddRange(item.Coordinates.Reverse());
                     }
                 }
 
-                item = dictionary[path[path.Count - 1]];
-                item1 = dictionary[path[path.Count - 2]];
+                item = dictionary[edges[edges.Count - 1]];
+                item1 = dictionary[edges[edges.Count - 2]];
 
                 shapeMeta.Add(new Route.Meta
                 {
@@ -150,10 +220,16 @@ namespace Placium.Route
 
                 if (item.FromNode == item1.FromNode || item.FromNode == item1.ToNode)
                     shape.AddRange(item.Coordinates.Take(targetRouterPoint.Offset).Skip(1));
-                else
+                else if (item.ToNode == item1.FromNode || item.ToNode == item1.ToNode)
                     shape.AddRange(item.Coordinates.Reverse()
                         .Take(item.Coordinates.Length - targetRouterPoint.Offset)
                         .Skip(1));
+                else if (Coordinate.DistanceEstimateInMeter(targetRouterPoint.Coordinate, item.Coordinates.First()) <=
+                         Coordinate.DistanceEstimateInMeter(targetRouterPoint.Coordinate, item.Coordinates.Last()))
+                    shape.AddRange(item.Coordinates.Skip(sourceRouterPoint.Offset));
+                else
+                    shape.AddRange(item.Coordinates.Reverse().Skip(item.Coordinates.Length - sourceRouterPoint.Offset));
+                shape.AddRange(item.Coordinates);
                 shape.Add(targetRouterPoint.Coordinate);
             }
 

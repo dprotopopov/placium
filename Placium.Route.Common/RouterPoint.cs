@@ -22,5 +22,6 @@ namespace Placium.Route.Common
         public Coordinate[] Coordinates { get; set; }
         public Coordinate Coordinate { get; set; }
         public short Direction { get; set; }
+        public float Weight { get; set; }
     }
 }

@@ -19,9 +19,11 @@ namespace Placium.Route.Algorithms
         }
 
 
-        public override async Task<List<long>> FindPathAsync(RouterPoint source,
+        public override async Task<PathFinderResult> FindPathAsync(RouterPoint source,
             RouterPoint target, float maxWeight = float.MaxValue)
         {
+            var minWeight = Factor * 1;
+
             using var connection = new NpgsqlConnection(ConnectionString);
             using var connection2 = new NpgsqlConnection(ConnectionString);
             await connection.OpenAsync();
@@ -41,7 +43,11 @@ namespace Placium.Route.Algorithms
                    into dist;
                    return dist;
                 end
-                $$", @"CREATE TEMP TABLE temp_dijkstra1 (
+                $$", @"CREATE TEMP TABLE temp_node (
+	                id INTEGER PRIMARY KEY NOT NULL, 
+	                from_weight REAL NOT NULL, 
+	                to_weight REAL NOT NULL
+                )", @"CREATE TEMP TABLE temp_dijkstra1 (
 	                node BIGINT PRIMARY KEY NOT NULL, 
 	                weight REAL NOT NULL, 
 	                weight1 REAL NOT NULL, 
@@ -81,24 +87,56 @@ namespace Placium.Route.Algorithms
             }
 
             using (var writer = connection.BeginTextImport(
+                @"COPY temp_node (id,from_weight,to_weight) FROM STDIN WITH NULL AS ''")
+            )
+            using (var command2 =
+                new NpgsqlCommand(
+
+                    @"SELECT id,
+                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude),
+                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude)
+                    FROM node WHERE is_core AND guid=@guid
+                    AND @factor*(distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)+
+                    distanceInMeters(latitude,longitude,@toLatitude,@toLongitude))<=@maxWeight",
+                    connection2))
+            {
+                command2.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
+                command2.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
+                command2.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
+                command2.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
+                command2.Parameters.AddWithValue("maxWeight", maxWeight);
+                command2.Parameters.AddWithValue("factor", Factor);
+                command2.Parameters.AddWithValue("profile", Profile);
+                command2.Parameters.AddWithValue("guid", Guid);
+                command2.Prepare();
+
+                using var reader = await command2.ExecuteReaderAsync();
+                while (reader.Read())
+                {
+                    var values = new[]
+                    {
+                        reader.GetInt64(0).ToString(),
+                        reader.GetFloat(1).ValueAsText(),
+                        reader.GetFloat(2).ValueAsText()
+                    };
+
+                    writer.WriteLine(string.Join("\t", values));
+                }
+            }
+
+
+            using (var writer = connection.BeginTextImport(
                 @"COPY shared_edge (id,from_node,to_node,
-                    from_latitude, 
-                    from_longitude,
-                    to_latitude,
-                    to_longitude,
                     weight, direction) FROM STDIN WITH NULL AS ''")
             )
             using (var command2 =
                 new NpgsqlCommand(
                     @"SELECT id,from_node,to_node,
-                    from_latitude, 
-	                from_longitude, 
-	                to_latitude, 
-	                to_longitude, 
-                    (weight->@profile)::real,(direction->@profile)::smallint
+                    GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
                     FROM edge WHERE (weight->@profile)::real>0 AND direction?@profile AND guid=@guid",
                     connection2))
             {
+                command2.Parameters.AddWithValue("minWeight", minWeight);
                 command2.Parameters.AddWithValue("profile", Profile);
                 command2.Parameters.AddWithValue("guid", Guid);
                 command2.Prepare();
@@ -112,11 +150,7 @@ namespace Placium.Route.Algorithms
                         reader2.GetInt64(1).ToString(),
                         reader2.GetInt64(2).ToString(),
                         reader2.GetFloat(3).ValueAsText(),
-                        reader2.GetFloat(4).ValueAsText(),
-                        reader2.GetFloat(5).ValueAsText(),
-                        reader2.GetFloat(6).ValueAsText(),
-                        reader2.GetFloat(7).ValueAsText(),
-                        reader2.GetInt16(8).ToString()
+                        reader2.GetInt16(4).ToString()
                     };
 
                     writer.WriteLine(string.Join("\t", values));
@@ -347,17 +381,15 @@ namespace Placium.Route.Algorithms
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.to_node AS node,@factor*distanceInMeters(e.to_latitude,e.to_longitude,@latitude1,@longitude1)+
-                            t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
-		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.from_node=t.node
+		                    SELECT e.to_node AS node,n.to_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
+		                    FROM shared_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra1 t ON e.from_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.step=@step 
                             AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT e.from_node AS node,@factor*distanceInMeters(e.from_latitude,e.from_longitude,@latitude1,@longitude1)+
-                            t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
-		                    FROM shared_edge e JOIN temp_dijkstra1 t ON e.to_node=t.node
+                            UNION ALL SELECT e.from_node AS node,n.from_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
+		                    FROM shared_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra1 t ON e.to_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.step=@step
                             AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
@@ -371,7 +403,7 @@ namespace Placium.Route.Algorithms
 	                    edge,
 	                    step
                     FROM cte
-                    WHERE rn = 1
+                    WHERE rn = 1 AND weight<@maxWeight
                     ON CONFLICT (node) DO UPDATE SET
 	                    weight=EXCLUDED.weight,
 	                    weight1=EXCLUDED.weight1,
@@ -387,17 +419,15 @@ namespace Placium.Route.Algorithms
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.from_node AS node,@factor*distanceInMeters(e.from_latitude,e.from_longitude,@latitude2,@longitude2)+
-                            t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
-		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.to_node=t.node
+		                    SELECT e.from_node AS node,n.from_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
+		                    FROM shared_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra2 t ON e.to_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.step=@step 
                             AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT e.to_node AS node,@factor*distanceInMeters(e.to_latitude,e.to_longitude,@latitude2,@longitude2)+
-                            t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
-		                    FROM shared_edge e JOIN temp_dijkstra2 t ON e.from_node=t.node
+                            UNION ALL SELECT e.to_node AS node,n.to_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,t.step+1 AS step
+		                    FROM shared_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra2 t ON e.from_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.step=@step
                             AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
@@ -411,7 +441,7 @@ namespace Placium.Route.Algorithms
 	                    edge,
 	                    step
                     FROM cte
-                    WHERE rn = 1
+                    WHERE rn = 1 AND weight<@maxWeight
                     ON CONFLICT (node) DO UPDATE SET
 	                    weight=EXCLUDED.weight,
 	                    weight1=EXCLUDED.weight1,
@@ -419,7 +449,7 @@ namespace Placium.Route.Algorithms
                         step=EXCLUDED.step
                         WHERE temp_dijkstra2.weight>EXCLUDED.weight"), connection))
             using (var command3 =
-                new NpgsqlCommand(string.Join(";", @"SELECT t1.node,t1.weight1+t2.weight1 FROM temp_dijkstra1 t1
+                new NpgsqlCommand(string.Join(";", @"SELECT t1.node,t1.weight1+t2.weight1,t1.step<=@step AND t2.step<=@step FROM temp_dijkstra1 t1
                 JOIN temp_dijkstra2 t2 ON t1.node=t2.node WHERE NOT EXISTS (SELECT * FROM shared_restriction r 
                 JOIN shared_restriction_via_node vn ON vn.node=t1.node AND r.id=vn.rid
                 JOIN shared_restriction_to_edge rt ON rt.edge=t2.edge AND r.id=rt.rid
@@ -434,11 +464,8 @@ namespace Placium.Route.Algorithms
             {
                 command1.Parameters.Add("step", NpgsqlDbType.Integer);
                 command2.Parameters.Add("step", NpgsqlDbType.Integer);
-                command2.Parameters.AddWithValue("latitude1", target.Coordinate.Latitude);
-                command2.Parameters.AddWithValue("longitude1", target.Coordinate.Longitude);
-                command2.Parameters.AddWithValue("latitude2", source.Coordinate.Latitude);
-                command2.Parameters.AddWithValue("longitude2", source.Coordinate.Longitude);
-                command2.Parameters.AddWithValue("factor", Factor);
+                command3.Parameters.Add("step", NpgsqlDbType.Integer);
+                command2.Parameters.Add("maxWeight", NpgsqlDbType.Real);
                 command4.Parameters.Add("maxWeight", NpgsqlDbType.Real);
                 command1.Prepare();
                 command2.Prepare();
@@ -463,19 +490,18 @@ namespace Placium.Route.Algorithms
                     if (count1 > 0 || count2 > 0)
                     {
                         command2.Parameters["step"].Value = step;
+                        command2.Parameters["maxWeight"].Value = maxWeight;
                         command2.ExecuteNonQuery();
                     }
-                    else
-                    {
-                        break;
-                    }
 
+                    command3.Parameters["step"].Value = step;
                     using (var reader = command3.ExecuteReader())
                     {
                         if (reader.Read())
                         {
                             node = reader.GetInt64(0);
                             maxWeight = reader.GetFloat(1);
+                            if (reader.GetBoolean(2)) break;
                         }
                     }
 
@@ -483,6 +509,8 @@ namespace Placium.Route.Algorithms
                     command4.ExecuteNonQuery();
 
                     if (step % 1 == 0) Console.WriteLine($"Step {step} complete count1={count1} count2={count2} maxWeight={maxWeight}");
+
+                    if (count1 == 0 || count2 == 0) break;
                 }
             }
 
@@ -535,7 +563,11 @@ namespace Placium.Route.Algorithms
                 }
             }
 
-            return list;
+            return new PathFinderResult()
+            {
+                Edges = list,
+                Weight = maxWeight
+            };
         }
     }
 }

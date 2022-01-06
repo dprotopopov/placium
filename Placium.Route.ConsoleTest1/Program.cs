@@ -41,12 +41,12 @@ namespace Placium.Route.ConsoleTest1
             // await routerDb.LoadFromOsmAsync(connectionsConfig.GetConnectionString("OsmConnection"), progressClient, null);
 
             // create router.
-            var router = new Router(routerDb, "car", 3.6f / 200f);
+            var router = new Router(routerDb, "car", 3.6f / 5f, 3.6f / 200f);
 
             // calculate route.
             // this should be the result: http://geojson.io/#id=gist:dprotopopov/34df4ce18b6e974bb2ee9123b29d46c4&map=16/55.8223/37.6331
             var route = await router.CalculateAsync(
-                new Coordinate(55.746922f, 37.583120f),
+                new Coordinate(55.820223f, 37.627041f),
                 new Coordinate(55.723780f, 37.654816f)
                 );
             var routeGeoJson = route.ToGeoJson();

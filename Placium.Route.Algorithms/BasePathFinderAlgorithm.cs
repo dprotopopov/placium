@@ -15,7 +15,13 @@ namespace Placium.Route.Algorithms
         public string VehicleType { get; }
         public float Factor { get; }
 
-        public abstract Task<List<long>> FindPathAsync(RouterPoint source,
+        public abstract Task<PathFinderResult> FindPathAsync(RouterPoint source,
             RouterPoint target, float maxWeight = float.MaxValue);
+    }
+
+    public class PathFinderResult
+    {
+        public List<long> Edges { get; set; }
+        public float Weight { get; set; }
     }
 }
