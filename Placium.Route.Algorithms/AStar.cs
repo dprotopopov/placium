@@ -2,10 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Npgsql;
 using NpgsqlTypes;
-using Placium.Common;
 using Placium.Route.Common;
 
 namespace Placium.Route.Algorithms
@@ -43,9 +41,8 @@ namespace Placium.Route.Algorithms
                    return dist;
                 end
                 $$", @"CREATE TEMP TABLE temp_node (
-	                id INTEGER PRIMARY KEY NOT NULL, 
-	                from_weight REAL NOT NULL, 
-	                to_weight REAL NOT NULL
+	                id BIGINT PRIMARY KEY NOT NULL, 
+	                from_weight REAL NOT NULL
                 )", @"CREATE TEMP TABLE temp_dijkstra (
 	                node BIGINT PRIMARY KEY NOT NULL, 
 	                weight REAL NOT NULL, 
@@ -55,6 +52,7 @@ namespace Placium.Route.Algorithms
                 )", @"CREATE TEMP TABLE shared_edge (
 	                id BIGINT PRIMARY KEY NOT NULL, 
 	                from_node BIGINT NOT NULL, 
+	                to_node BIGINT NOT NULL, 
 	                weight REAL NOT NULL,
                     direction SMALLINT NOT NULL
                 )", @"CREATE TEMP TABLE shared_restriction (
@@ -74,83 +72,15 @@ namespace Placium.Route.Algorithms
                 await command.ExecuteNonQueryAsync();
             }
 
-            using (var writer = connection.BeginTextImport(
-                @"COPY temp_node (id,from_weight,to_weight) FROM STDIN WITH NULL AS ''")
-            )
-            using (var command2 =
-                new NpgsqlCommand(
 
-                    @"SELECT id,
-                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude),
-                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude)
-                    FROM node WHERE is_core AND guid=@guid
-                    AND @factor*(distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)+
-                    distanceInMeters(latitude,longitude,@toLatitude,@toLongitude))<=@maxWeight",
-                    connection2))
-            {
-                command2.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
-                command2.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
-                command2.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
-                command2.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
-                command2.Parameters.AddWithValue("maxWeight", maxWeight);
-                command2.Parameters.AddWithValue("factor", Factor);
-                command2.Parameters.AddWithValue("profile", Profile);
-                command2.Parameters.AddWithValue("guid", Guid);
-                command2.Prepare();
+            using var commandBegin =
+                new NpgsqlCommand(@"BEGIN", connection);
+            using var commandCommit =
+                new NpgsqlCommand(@"COMMIT", connection);
 
-                using var reader = await command2.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-                    var values = new[]
-                    {
-                        reader.GetInt64(0).ToString(),
-                        reader.GetFloat(1).ValueAsText(),
-                        reader.GetFloat(2).ValueAsText()
-                    };
+            commandBegin.Prepare();
+            commandCommit.Prepare();
 
-                    writer.WriteLine(string.Join("\t", values));
-                }
-            }
-
-
-            using (var writer = connection.BeginTextImport(
-                @"COPY shared_edge (id,from_node,to_node,
-                    weight, direction) FROM STDIN WITH NULL AS ''")
-            )
-            using (var command2 =
-                new NpgsqlCommand(
-                    @"SELECT id,from_node,to_node,
-                    GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge WHERE (weight->@profile)::real>0 AND direction?@profile AND guid=@guid",
-                    connection2))
-            {
-                command2.Parameters.AddWithValue("minWeight", minWeight);
-                command2.Parameters.AddWithValue("profile", Profile);
-                command2.Parameters.AddWithValue("guid", Guid);
-                command2.Prepare();
-
-                using var reader2 = await command2.ExecuteReaderAsync();
-                while (reader2.Read())
-                {
-                    var values = new[]
-                    {
-                        reader2.GetInt64(0).ToString(),
-                        reader2.GetInt64(1).ToString(),
-                        reader2.GetInt64(2).ToString(),
-                        reader2.GetFloat(3).ValueAsText(),
-                        reader2.GetInt16(4).ToString()
-                    };
-
-                    writer.WriteLine(string.Join("\t", values));
-                }
-            }
-
-
-
-            using (var command =
-                new NpgsqlCommand(@"BEGIN", connection))
-            using (var command6 =
-                new NpgsqlCommand(@"COMMIT", connection))
             using (var command7 =
                 new NpgsqlCommand(@"SELECT id FROM restriction WHERE vehicle_type=@vehicleType AND guid=@guid",
                     connection2))
@@ -183,7 +113,7 @@ namespace Placium.Route.Algorithms
                 command10.Parameters.AddWithValue("guid", Guid);
                 command10.Prepare();
 
-                await command.ExecuteNonQueryAsync();
+                await commandBegin.ExecuteNonQueryAsync();
 
                 using (var writer = connection.BeginTextImport(
                     "COPY shared_restriction (id) FROM STDIN WITH NULL AS ''"))
@@ -244,7 +174,7 @@ namespace Placium.Route.Algorithms
                     }
                 }
 
-                await command6.ExecuteNonQueryAsync();
+                await commandCommit.ExecuteNonQueryAsync();
             }
 
             using (var command =
@@ -259,6 +189,97 @@ namespace Placium.Route.Algorithms
             {
                 command.Prepare();
                 await command.ExecuteNonQueryAsync();
+            }
+
+            using var commandInsertIntoNode = new NpgsqlCommand(
+                @"INSERT INTO temp_node (id,from_weight) VALUES (@id,
+                @fromWeight)
+                ON CONFLICT (id) DO NOTHING",
+                connection);
+            using var commandInsertIntoEdge = new NpgsqlCommand(
+                @"INSERT INTO shared_edge (id,from_node,to_node,
+                weight,direction) VALUES (@id,@fromNode,@toNode,
+                    @weight,@direction)
+                ON CONFLICT (from_node,to_node) DO NOTHING",
+                connection);
+            using var commandSelectFromNode =
+                new NpgsqlCommand(
+                    @"SELECT n.id,
+                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)
+                    FROM node n JOIN edge e ON n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
+                    AND @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)<=@maxWeight
+                    AND @node=ANY(e.nodes) UNION ALL SELECT n.id,
+                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)
+                    FROM node n JOIN edge e ON n.id=e.from_node WHERE n.guid=@guid AND e.guid=@guid
+                    AND @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)<=@maxWeight
+                    AND @node=ANY(e.nodes)",
+                    connection2);
+            using var commandSelectFromEdge =
+                new NpgsqlCommand(
+                    @"SELECT id,from_node,to_node,
+                    GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
+                    FROM edge WHERE (weight->@profile)::real>0 AND direction?@profile AND guid=@guid
+                    AND @node=ANY(nodes)",
+                    connection2);
+
+            commandInsertIntoNode.Parameters.Add("id", NpgsqlDbType.Bigint);
+            commandInsertIntoNode.Parameters.Add("fromWeight", NpgsqlDbType.Real);
+            commandInsertIntoNode.Prepare();
+
+            commandInsertIntoEdge.Parameters.Add("id", NpgsqlDbType.Bigint);
+            commandInsertIntoEdge.Parameters.Add("fromNode", NpgsqlDbType.Bigint);
+            commandInsertIntoEdge.Parameters.Add("toNode", NpgsqlDbType.Bigint);
+            commandInsertIntoEdge.Parameters.Add("weight", NpgsqlDbType.Real);
+            commandInsertIntoEdge.Parameters.Add("direction", NpgsqlDbType.Smallint);
+            commandInsertIntoEdge.Prepare();
+
+            commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
+            commandSelectFromNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
+            commandSelectFromNode.Parameters.AddWithValue("maxWeight", maxWeight);
+            commandSelectFromNode.Parameters.AddWithValue("factor", Factor);
+            commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
+            commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
+            commandSelectFromNode.Prepare();
+
+            commandSelectFromEdge.Parameters.AddWithValue("minWeight", minWeight);
+            commandSelectFromEdge.Parameters.AddWithValue("profile", Profile);
+            commandSelectFromEdge.Parameters.AddWithValue("guid", Guid);
+            commandSelectFromEdge.Parameters.Add("node", NpgsqlDbType.Bigint);
+            commandSelectFromEdge.Prepare();
+
+            void AddEdgesAndNodes(long node)
+            {
+                commandSelectFromNode.Parameters["node"].Value = node;
+                commandSelectFromEdge.Parameters["node"].Value = node;
+
+                commandBegin.ExecuteNonQuery();
+
+                using (var reader = commandSelectFromNode.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoNode.Parameters["fromWeight"].Value = reader.GetFloat(1);
+
+                        commandInsertIntoNode.ExecuteNonQuery();
+                    }
+                }
+
+                using (var reader = commandSelectFromEdge.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        commandInsertIntoEdge.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoEdge.Parameters["fromNode"].Value = reader.GetInt64(1);
+                        commandInsertIntoEdge.Parameters["toNode"].Value = reader.GetInt64(2);
+                        commandInsertIntoEdge.Parameters["weight"].Value = reader.GetFloat(3);
+                        commandInsertIntoEdge.Parameters["direction"].Value = reader.GetInt16(4);
+
+                        commandInsertIntoEdge.ExecuteNonQuery();
+                    }
+                }
+
+                commandCommit.ExecuteNonQuery();
             }
 
             using (var command =
@@ -286,7 +307,7 @@ namespace Placium.Route.Algorithms
                 command.Parameters.AddWithValue("factor", Factor);
                 command.Prepare();
 
-                if (new[] { 0, 1, 3, 4 }.Contains(target.Direction))
+                if (new[] {0, 1, 3, 4}.Contains(target.Direction))
                 {
                     command.Parameters["node"].Value = target.FromNode;
                     var coords = target.Coordinates.First();
@@ -295,7 +316,7 @@ namespace Placium.Route.Algorithms
                     await command.ExecuteNonQueryAsync();
                 }
 
-                if (new[] { 0, 2, 3, 5 }.Contains(target.Direction))
+                if (new[] {0, 2, 3, 5}.Contains(target.Direction))
                 {
                     command.Parameters["node"].Value = target.ToNode;
                     var coords = target.Coordinates.Last();
@@ -307,6 +328,15 @@ namespace Placium.Route.Algorithms
 
             var node = 0L;
 
+            var sources = new List<long>();
+            if (new[] {0, 1, 3, 4}.Contains(target.Direction)) sources.Add(source.ToNode);
+            if (new[] {0, 2, 3, 5}.Contains(target.Direction)) sources.Add(source.FromNode);
+
+
+            using (var command =
+                new NpgsqlCommand(
+                    @"SELECT node,weight FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
+                    connection))
             using (var command1 =
                 new NpgsqlCommand(
                     string.Join(";", @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
@@ -351,47 +381,45 @@ namespace Placium.Route.Algorithms
 	                    edge=EXCLUDED.edge,
                         in_queue=EXCLUDED.in_queue
                         WHERE temp_dijkstra.weight>EXCLUDED.weight",
-                    @"UPDATE temp_dijkstra SET in_queue=false WHERE node=@node"), connection))
+                    @"UPDATE temp_dijkstra SET in_queue=false WHERE node=@node",
+                    @"DELETE FROM temp_dijkstra WHERE weight>@maxWeight"), connection))
             {
+                command.Parameters.AddWithValue("sources", sources.ToArray());
+                command2.Parameters.Add("maxWeight", NpgsqlDbType.Real);
                 command2.Parameters.Add("node", NpgsqlDbType.Bigint);
-                command2.Parameters.AddWithValue("latitude", target.Coordinate.Latitude);
-                command2.Parameters.AddWithValue("longitude", target.Coordinate.Longitude);
-                command2.Parameters.AddWithValue("factor", Factor);
+                command.Prepare();
                 command1.Prepare();
                 command2.Prepare();
 
                 for (var step = 0L;; step++)
                 {
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            node = reader.GetInt64(0);
+                            maxWeight = reader.GetFloat(1);
+                        }
+                    }
+
                     using (var reader = command1.ExecuteReader())
                     {
                         if (!reader.Read()) break;
                         node = reader.GetInt64(0);
                     }
 
+                    AddEdgesAndNodes(node);
+
                     command2.Parameters["node"].Value = node;
+                    command2.Parameters["maxWeight"].Value = maxWeight;
+
                     command2.ExecuteNonQuery();
 
-                    if (step % 1000 == 0) Console.WriteLine($"Step {step} complete");
+
+                    if (step % 100 == 0) Console.WriteLine($"{DateTime.Now:O} Step {step} complete");
                 }
             }
 
-            var sources = new List<long>();
-            if (new[] { 0, 1, 3, 4 }.Contains(target.Direction)) sources.Add(source.ToNode);
-            if (new[] { 0, 2, 3, 5 }.Contains(target.Direction)) sources.Add(source.FromNode);
-
-
-            using (var command =
-                new NpgsqlCommand(
-                    @"SELECT node,weight FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
-                    connection))
-            {
-                command.Parameters.AddWithValue("sources", sources.ToArray());
-                command.Prepare();
-                using var reader = await command.ExecuteReaderAsync();
-                if (!reader.Read()) throw new NullReferenceException();
-                node = reader.GetInt64(0);
-                maxWeight = reader.GetFloat(1);
-            }
 
             using (var command =
                 new NpgsqlCommand(@"SELECT e.from_node,e.id 
@@ -416,7 +444,7 @@ namespace Placium.Route.Algorithms
                     list.Add(edge);
                 }
 
-                return new PathFinderResult()
+                return new PathFinderResult
                 {
                     Edges = list,
                     Weight = maxWeight

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Npgsql;
+using NpgsqlTypes;
 using Placium.Route.Common;
 
 namespace Placium.Route.Algorithms
@@ -113,97 +114,16 @@ namespace Placium.Route.Algorithms
                 await command.ExecuteNonQueryAsync();
             }
 
-            using (var command =
+            using var commandBegin =
                 new SqliteCommand(@"BEGIN TRANSACTION",
-                    connection))
-            using (var command2 = new SqliteCommand(
-                @"INSERT INTO temp_node (id,from_weight,to_weight) VALUES (@id,
-                @fromWeight,
-                @toWeight)",
-                connection))
-            using (var command3 =
+                    connection);
+            using var commandCommit =
                 new SqliteCommand(@"COMMIT",
-                    connection))
-            using (var command4 =
-                new NpgsqlCommand(
-                    @"SELECT id,
-                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude),
-                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude)
-                    FROM node WHERE is_core AND guid=@guid
-                    AND @factor*(distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)+
-                    distanceInMeters(latitude,longitude,@toLatitude,@toLongitude))<=@maxWeight",
-                    connection2))
-            {
-                command2.Parameters.Add("id", SqliteType.Integer);
-                command2.Parameters.Add("fromWeight", SqliteType.Real);
-                command2.Parameters.Add("toWeight", SqliteType.Real);
-                command2.Prepare();
-
-                command4.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
-                command4.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
-                command4.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
-                command4.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
-                command4.Parameters.AddWithValue("maxWeight", maxWeight);
-                command4.Parameters.AddWithValue("factor", Factor);
-                command4.Parameters.AddWithValue("guid", Guid);
-                command4.Prepare();
-
-                command.ExecuteNonQuery();
-
-                using var reader = await command4.ExecuteReaderAsync();
-                while (reader.Read())
-                {
-                    command2.Parameters["id"].Value = reader.GetInt64(0);
-                    command2.Parameters["fromWeight"].Value = reader.GetFloat(1);
-                    command2.Parameters["toWeight"].Value = reader.GetFloat(2);
-
-                    command2.ExecuteNonQuery();
-                }
-
-                command3.ExecuteNonQuery();
-            }
-
-            using (var command = new SqliteCommand(
-                @"INSERT INTO shared_edge (id,from_node,to_node,
-                weight,direction) VALUES (@id,@fromNode,@toNode,
-                    @weight,@direction)",
-                connection))
-            using (var command2 =
-                new NpgsqlCommand(
-                    @"SELECT id,from_node,to_node,
-                    GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge WHERE (weight->@profile)::real>0 AND direction?@profile AND guid=@guid",
-                    connection2))
-            {
-                command.Parameters.Add("id", SqliteType.Integer);
-                command.Parameters.Add("fromNode", SqliteType.Integer);
-                command.Parameters.Add("toNode", SqliteType.Integer);
-                command.Parameters.Add("weight", SqliteType.Real);
-                command.Parameters.Add("direction", SqliteType.Integer);
-                command.Prepare();
-
-                command2.Parameters.AddWithValue("minWeight", minWeight);
-                command2.Parameters.AddWithValue("profile", Profile);
-                command2.Parameters.AddWithValue("guid", Guid);
-                command2.Prepare();
-
-                using var reader2 = await command2.ExecuteReaderAsync();
-                while (reader2.Read())
-                {
-                    command.Parameters["id"].Value = reader2.GetInt64(0);
-                    command.Parameters["fromNode"].Value = reader2.GetInt64(1);
-                    command.Parameters["toNode"].Value = reader2.GetInt64(2);
-                    command.Parameters["weight"].Value = reader2.GetFloat(3);
-                    command.Parameters["direction"].Value = reader2.GetInt16(4);
-
-                    command.ExecuteNonQuery();
-                }
-            }
+                    connection);
+            commandBegin.Prepare();
+            commandCommit.Prepare();
 
 
-            using (var command =
-                new SqliteCommand(@"BEGIN TRANSACTION",
-                    connection))
             using (var command2 =
                 new SqliteCommand(@"INSERT INTO shared_restriction(id) VALUES (@id)",
                     connection))
@@ -215,9 +135,6 @@ namespace Placium.Route.Algorithms
                     connection))
             using (var command5 =
                 new SqliteCommand(@"INSERT INTO shared_restriction_via_node(rid,node) VALUES (@id,@node)",
-                    connection))
-            using (var command6 =
-                new SqliteCommand(@"COMMIT",
                     connection))
             using (var command7 =
                 new NpgsqlCommand(@"SELECT id FROM restriction WHERE vehicle_type=@vehicleType AND guid=@guid",
@@ -266,7 +183,7 @@ namespace Placium.Route.Algorithms
                 command10.Parameters.AddWithValue("guid", Guid);
                 command10.Prepare();
 
-                await command.ExecuteNonQueryAsync();
+                await commandBegin.ExecuteNonQueryAsync();
 
                 using (var reader = await command7.ExecuteReaderAsync())
                 {
@@ -307,7 +224,7 @@ namespace Placium.Route.Algorithms
                     }
                 }
 
-                await command6.ExecuteNonQueryAsync();
+                await commandCommit.ExecuteNonQueryAsync();
             }
 
             using (var command =
@@ -324,6 +241,100 @@ namespace Placium.Route.Algorithms
             {
                 command.Prepare();
                 await command.ExecuteNonQueryAsync();
+            }
+
+            using var commandInsertIntoNode = new SqliteCommand(
+    @"INSERT INTO temp_node (id,from_weight,to_weight) VALUES (@id,
+                @fromWeight,
+                @toWeight)
+                ON CONFLICT (id) DO NOTHING",
+    connection);
+            using var commandSelectFromNode =
+                new NpgsqlCommand(
+                    @"SELECT n.id,
+                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude),
+                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude)
+                    FROM node n JOIN edge e ON n.id=e.from_node OR n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
+                    AND @factor*(distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)+
+                    distanceInMeters(latitude,longitude,@toLatitude,@toLongitude))<=@maxWeight
+                    AND (e.from_node=@node OR e.to_node=@node)",
+                    connection2);
+            using var commandInsertIntoEdge = new SqliteCommand(
+                @"INSERT INTO shared_edge (id,from_node,to_node,
+                weight,direction) VALUES (@id,@fromNode,@toNode,
+                    @weight,@direction)
+                ON CONFLICT (from_node,to_node) DO NOTHING",
+                connection);
+            using var commandSelectFromEdge =
+                new NpgsqlCommand(
+                    @"SELECT id,from_node,to_node,
+                    GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
+                    FROM edge WHERE (weight->@profile)::real>0 AND direction?@profile AND guid=@guid
+                    AND (from_node=@node OR to_node=@node)",
+                    connection2);
+
+            commandInsertIntoNode.Parameters.Add("id", SqliteType.Integer);
+            commandInsertIntoNode.Parameters.Add("fromWeight", SqliteType.Real);
+            commandInsertIntoNode.Parameters.Add("toWeight", SqliteType.Real);
+            commandInsertIntoNode.Prepare();
+
+            commandInsertIntoEdge.Parameters.Add("id", SqliteType.Integer);
+            commandInsertIntoEdge.Parameters.Add("fromNode", SqliteType.Integer);
+            commandInsertIntoEdge.Parameters.Add("toNode", SqliteType.Integer);
+            commandInsertIntoEdge.Parameters.Add("weight", SqliteType.Real);
+            commandInsertIntoEdge.Parameters.Add("direction", SqliteType.Integer);
+            commandInsertIntoEdge.Prepare();
+
+            commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
+            commandSelectFromNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
+            commandSelectFromNode.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
+            commandSelectFromNode.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
+            commandSelectFromNode.Parameters.AddWithValue("maxWeight", maxWeight);
+            commandSelectFromNode.Parameters.AddWithValue("factor", Factor);
+            commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
+            commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
+            commandSelectFromNode.Prepare();
+
+            commandSelectFromEdge.Parameters.AddWithValue("minWeight", minWeight);
+            commandSelectFromEdge.Parameters.AddWithValue("profile", Profile);
+            commandSelectFromEdge.Parameters.AddWithValue("guid", Guid);
+            commandSelectFromEdge.Parameters.Add("node", NpgsqlDbType.Bigint);
+            commandSelectFromEdge.Prepare();
+
+            void AddEdgesAndNodes(long node)
+            {
+                commandSelectFromNode.Parameters["node"].Value = node;
+                commandSelectFromEdge.Parameters["node"].Value = node;
+
+                commandBegin.ExecuteNonQuery();
+
+                using (var reader = commandSelectFromNode.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoNode.Parameters["fromWeight"].Value = reader.GetFloat(1);
+                        commandInsertIntoNode.Parameters["toWeight"].Value = reader.GetFloat(2);
+
+                        commandInsertIntoNode.ExecuteNonQuery();
+                    }
+                }
+
+                using (var reader = commandSelectFromEdge.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        commandInsertIntoEdge.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoEdge.Parameters["fromNode"].Value = reader.GetInt64(1);
+                        commandInsertIntoEdge.Parameters["toNode"].Value = reader.GetInt64(2);
+                        commandInsertIntoEdge.Parameters["weight"].Value = reader.GetFloat(3);
+                        commandInsertIntoEdge.Parameters["direction"].Value = reader.GetInt16(4);
+
+                        commandInsertIntoEdge.ExecuteNonQuery();
+                    }
+                }
+
+                commandCommit.ExecuteNonQuery();
             }
 
             using (var command =
@@ -551,13 +562,15 @@ namespace Placium.Route.Algorithms
                     if (count1 > 0 && (count2 == 0 || count1 <= count2))
                     {
                         var node1 = (long) command1.ExecuteScalar();
+                        AddEdgesAndNodes(node1);
                         command3.Parameters["node"].Value = node1;
                         command3.Parameters["maxWeight"].Value = maxWeight;
                         command3.ExecuteNonQuery();
                     }
                     else if (count2 > 0 && (count1 == 0 || count2 <= count1))
                     {
-                        var node2 = (long)command2.ExecuteScalar();
+                        var node2 = (long) command2.ExecuteScalar();
+                        AddEdgesAndNodes(node2);
                         command4.Parameters["node"].Value = node2;
                         command4.Parameters["maxWeight"].Value = maxWeight;
                         command4.ExecuteNonQuery();
