@@ -39,32 +39,6 @@ namespace Placium.Route
 
             const float maxDistance = 100000f;
 
-            async Task<float> GetMaxWeightAsync(RouterPoint source, RouterPoint target)
-            {
-                if (Coordinate.DistanceEstimateInMeter(source.Coordinate, target.Coordinate) < maxDistance)
-                {
-                    Console.WriteLine($"{source.Coordinate}->{target.Coordinate}");
-                    var result = await PathFinderAlgorithm.FindPathAsync(source, target);
-                    if(result.Weight==float.MaxValue) return float.MaxValue;
-                    return source.Weight + result.Weight + target.Weight;
-                }
-
-                var middlePoint = new Coordinate((source.Coordinate.Latitude + target.Coordinate.Latitude) / 2,
-                    (source.Coordinate.Longitude + target.Coordinate.Longitude) / 2);
-                var middle = await ResolveRouterPointAlgorithm.ResolveRouterPointAsync(middlePoint);
-
-                var weight1 = await GetMaxWeightAsync(source, middle);
-                var weight2 = await GetMaxWeightAsync(middle, target);
-                if (weight1 == float.MaxValue || weight2 == float.MaxValue)
-                {
-                    Console.WriteLine($"{source.Coordinate}->{target.Coordinate}");
-                    var result = await PathFinderAlgorithm.FindPathAsync(source, target);
-                    if (result.Weight == float.MaxValue) return float.MaxValue;
-                    return source.Weight + result.Weight + target.Weight;
-                }
-                return weight1 + weight2 - middle.Weight;
-            }
-
             PathFinderResult result = null;
             if (sourceRouterPoint.EdgeId != targetRouterPoint.EdgeId ||
                 new[] {1, 4}.Contains(sourceRouterPoint.Direction) &&
@@ -72,9 +46,7 @@ namespace Placium.Route
                 new[] {2, 5}.Contains(sourceRouterPoint.Direction) &&
                 sourceRouterPoint.Offset < targetRouterPoint.Offset)
             {
-                var maxWeight = Coordinate.DistanceEstimateInMeter(source, target) < maxDistance
-                    ? float.MaxValue
-                    : await GetMaxWeightAsync(sourceRouterPoint, targetRouterPoint);
+                var maxWeight = MaxFactor* maxDistance;
                 result = await PathFinderAlgorithm.FindPathAsync(sourceRouterPoint, targetRouterPoint, maxWeight);
                 result.Edges.Insert(0, sourceRouterPoint.EdgeId);
                 result.Edges.Add(targetRouterPoint.EdgeId);

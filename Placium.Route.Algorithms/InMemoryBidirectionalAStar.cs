@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
@@ -21,7 +22,7 @@ namespace Placium.Route.Algorithms
         {
             var minWeight = Factor * 1;
 
-            using var connection = new SqliteConnection($"Data source=:memory:");
+            using var connection = new SqliteConnection("Data source=:memory:");
             using var connection2 = new NpgsqlConnection(ConnectionString);
             await connection.OpenAsync();
             await connection2.OpenAsync();
@@ -412,16 +413,23 @@ namespace Placium.Route.Algorithms
             }
 
             var node = 0L;
-            var node1 = 0L;
-            var node2 = 0L;
+            var count1 = 0L;
+            var count2 = 0L;
 
+            using (var command =
+                new SqliteCommand(
+                    string.Join(";", @"SELECT COUNT(*) FROM temp_dijkstra1 WHERE in_queue",
+                        @"SELECT COUNT(*) FROM temp_dijkstra2 WHERE in_queue"),
+                    connection))
             using (var command1 =
                 new SqliteCommand(
-                    string.Join(";", @"SELECT node FROM temp_dijkstra1 WHERE in_queue ORDER BY weight LIMIT 1"),
+                    string.Join(";",
+                        @"SELECT node FROM temp_dijkstra1 WHERE in_queue ORDER BY weight LIMIT 1"),
                     connection))
             using (var command2 =
                 new SqliteCommand(
-                    string.Join(";", @"SELECT node FROM temp_dijkstra2 WHERE in_queue ORDER BY weight LIMIT 1"),
+                    string.Join(";",
+                        @"SELECT node FROM temp_dijkstra2 WHERE in_queue ORDER BY weight LIMIT 1"),
                     connection))
             using (var command3 =
                 new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra1 (
@@ -508,7 +516,8 @@ namespace Placium.Route.Algorithms
                     @"UPDATE temp_dijkstra2 SET in_queue=0 WHERE node=@node",
                     @"DELETE FROM temp_dijkstra2 WHERE weight>@maxWeight"), connection))
             using (var command5 =
-                new SqliteCommand(string.Join(";", @"SELECT t1.node,t1.weight1+t2.weight1,NOT t1.in_queue AND NOT t2.in_queue FROM temp_dijkstra1 t1
+                new SqliteCommand(string.Join(";",
+                        @"SELECT t1.node,t1.weight1+t2.weight1,NOT t1.in_queue AND NOT t2.in_queue FROM temp_dijkstra1 t1
                 JOIN temp_dijkstra2 t2 ON t1.node=t2.node WHERE NOT EXISTS (SELECT * FROM shared_restriction r 
                 JOIN shared_restriction_via_node vn ON vn.node=t1.node AND r.id=vn.rid
                 JOIN shared_restriction_to_edge rt ON rt.edge=t2.edge AND r.id=rt.rid
@@ -520,6 +529,7 @@ namespace Placium.Route.Algorithms
                 command3.Parameters.Add("maxWeight", SqliteType.Real);
                 command4.Parameters.Add("node", SqliteType.Integer);
                 command4.Parameters.Add("maxWeight", SqliteType.Real);
+                command.Prepare();
                 command1.Prepare();
                 command2.Prepare();
                 command3.Prepare();
@@ -528,28 +538,34 @@ namespace Placium.Route.Algorithms
 
                 for (var step = 0L;; step++)
                 {
-                    using (var reader = command1.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
                     {
-                        node1 = reader.Read() ? reader.GetInt64(0) : 0L;
+                        reader.Read();
+                        count1 = reader.GetInt64(0);
+                        reader.NextResult();
+                        reader.Read();
+                        count2 = reader.GetInt64(0);
+                        reader.NextResult();
                     }
 
-                    if (node1 != 0)
+                    if (count1 > 0 && (count2 == 0 || count1 <= count2))
                     {
+                        var node1 = (long) command1.ExecuteScalar();
                         command3.Parameters["node"].Value = node1;
                         command3.Parameters["maxWeight"].Value = maxWeight;
                         command3.ExecuteNonQuery();
                     }
-
-                    using (var reader = command2.ExecuteReader())
+                    else if (count2 > 0 && (count1 == 0 || count2 <= count1))
                     {
-                        node2 = reader.Read() ? reader.GetInt64(0) : 0L;
-                    }
-
-                    if (node2 != 0)
-                    {
+                        var node2 = (long)command2.ExecuteScalar();
                         command4.Parameters["node"].Value = node2;
                         command4.Parameters["maxWeight"].Value = maxWeight;
                         command4.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        Debug.Assert(count1 + count2 == 0);
+                        break;
                     }
 
                     using (var reader = command5.ExecuteReader())
@@ -562,16 +578,11 @@ namespace Placium.Route.Algorithms
                         }
                     }
 
-                    if (step % 10 == 0)
+                    if (step % 100 == 0)
                         Console.WriteLine($"{DateTime.Now:O} Step {step} complete " +
                                           $" temp_dijkstra1={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +
                                           $" temp_dijkstra2={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra2 WHERE in_queue", connection).ExecuteScalar()}" +
-                                          $" maxWeight={maxWeight}" +
-                                          $" node={node}" +
-                                          $" node1={node1}" +
-                                          $" node2={node2}");
-
-                    if (node1 == 0 || node2 == 0) break;
+                                          $" maxWeight={maxWeight}");
                 }
             }
 
@@ -586,7 +597,7 @@ namespace Placium.Route.Algorithms
             {
                 command.Parameters.Add("node", SqliteType.Integer);
                 command.Prepare();
-                for (node1 = node;;)
+                for (var node1 = node;;)
                 {
                     command.Parameters["node"].Value = node1;
                     using var reader = await command.ExecuteReaderAsync();
@@ -611,7 +622,7 @@ namespace Placium.Route.Algorithms
             {
                 command.Parameters.Add("node", SqliteType.Integer);
                 command.Prepare();
-                for (node2 = node;;)
+                for (var node2 = node;;)
                 {
                     command.Parameters["node"].Value = node2;
                     using var reader = await command.ExecuteReaderAsync();
@@ -624,7 +635,7 @@ namespace Placium.Route.Algorithms
                 }
             }
 
-            return new PathFinderResult()
+            return new PathFinderResult
             {
                 Edges = list,
                 Weight = maxWeight
