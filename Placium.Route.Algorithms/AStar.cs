@@ -10,8 +10,9 @@ namespace Placium.Route.Algorithms
 {
     public class AStar : BasePathFinderAlgorithm
     {
-        public AStar(Guid guid, string connectionString, string vehicleType, string profile, float minFactor, float maxFactor) : base(guid,
-            connectionString, vehicleType, profile, minFactor,  maxFactor)
+        public AStar(Guid guid, string connectionString, string vehicleType, string profile, float minFactor,
+            float maxFactor) : base(guid,
+            connectionString, vehicleType, profile, minFactor, maxFactor)
         {
         }
 
@@ -22,9 +23,7 @@ namespace Placium.Route.Algorithms
             var minWeight = MinFactor * 1;
 
             using var connection = new NpgsqlConnection(ConnectionString);
-            using var connection2 = new NpgsqlConnection(ConnectionString);
             await connection.OpenAsync();
-            await connection2.OpenAsync();
 
             using (var command =
                 new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
@@ -46,25 +45,25 @@ namespace Placium.Route.Algorithms
                 )", @"CREATE TEMP TABLE temp_dijkstra (
 	                node BIGINT PRIMARY KEY NOT NULL, 
 	                weight REAL NOT NULL, 
-	                weight1 REAL NOT NULL, 
+	                g REAL NOT NULL, 
 	                edge BIGINT NOT NULL,
 	                in_queue BOOLEAN NOT NULL
-                )", @"CREATE TEMP TABLE shared_edge (
+                )", @"CREATE TEMP TABLE temp_edge (
 	                id BIGINT PRIMARY KEY NOT NULL, 
 	                from_node BIGINT NOT NULL, 
 	                to_node BIGINT NOT NULL, 
 	                weight REAL NOT NULL,
                     direction SMALLINT NOT NULL
-                )", @"CREATE TEMP TABLE shared_restriction (
+                )", @"CREATE TEMP TABLE temp_restriction (
 	                id BIGINT PRIMARY KEY NOT NULL
-                )", @"CREATE TEMP TABLE shared_restriction_from_edge (
-	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
+                )", @"CREATE TEMP TABLE temp_restriction_from_edge (
+	                rid BIGINT NOT NULL REFERENCES temp_restriction (id), 
 	                edge BIGINT NOT NULL
-                )", @"CREATE TEMP TABLE shared_restriction_to_edge (
-	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
+                )", @"CREATE TEMP TABLE temp_restriction_to_edge (
+	                rid BIGINT NOT NULL REFERENCES temp_restriction (id), 
 	                edge BIGINT NOT NULL
-                )", @"CREATE TEMP TABLE shared_restriction_via_node (
-	                rid BIGINT NOT NULL REFERENCES shared_restriction (id), 
+                )", @"CREATE TEMP TABLE temp_restriction_via_node (
+	                rid BIGINT NOT NULL REFERENCES temp_restriction (id), 
 	                node BIGINT NOT NULL
                 )"), connection))
             {
@@ -72,6 +71,20 @@ namespace Placium.Route.Algorithms
                 await command.ExecuteNonQueryAsync();
             }
 
+
+            using (var command =
+                new NpgsqlCommand(string.Join(";",
+                        @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
+                        @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
+                        @"CREATE UNIQUE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
+                        @"CREATE INDEX temp_restriction_from_edge_idx ON temp_restriction_from_edge (edge)",
+                        @"CREATE INDEX temp_restriction_to_edge_idx ON temp_restriction_to_edge (edge)",
+                        @"CREATE INDEX temp_restriction_via_node_idx ON temp_restriction_via_node (node)"),
+                    connection))
+            {
+                command.Prepare();
+                await command.ExecuteNonQueryAsync();
+            }
 
             using var commandBegin =
                 new NpgsqlCommand(@"BEGIN", connection);
@@ -81,130 +94,29 @@ namespace Placium.Route.Algorithms
             commandBegin.Prepare();
             commandCommit.Prepare();
 
-            using (var command7 =
-                new NpgsqlCommand(@"SELECT id FROM restriction WHERE vehicle_type=@vehicleType AND guid=@guid",
-                    connection2))
-            using (var command8 =
-                new NpgsqlCommand(
-                    @"SELECT rid,edge FROM restriction_from_edge WHERE vehicle_type=@vehicleType AND guid=@guid",
-                    connection2))
-            using (var command9 =
-                new NpgsqlCommand(
-                    @"SELECT rid,edge FROM restriction_to_edge WHERE vehicle_type=@vehicleType AND guid=@guid",
-                    connection2))
-            using (var command10 =
-                new NpgsqlCommand(
-                    @"SELECT rid,node FROM restriction_via_node WHERE vehicle_type=@vehicleType AND guid=@guid",
-                    connection2))
-            {
-                command7.Parameters.AddWithValue("vehicleType", VehicleType);
-                command7.Parameters.AddWithValue("guid", Guid);
-                command7.Prepare();
+            using var commandSelectFromRestriction =
+                new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_restriction(id) WITH cte AS (
+                    SELECT rid FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid
+                    UNION SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    UNION SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid)
+                    SELECT DISTINCT rid FROM cte ON CONFLICT DO NOTHING",
+                        @"INSERT INTO temp_restriction_from_edge(rid,edge) SELECT DISTINCT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid ON CONFLICT DO NOTHING",
+                        @"INSERT INTO temp_restriction_to_edge(rid,edge) SELECT DISTINCT r.rid,r.edge FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid ON CONFLICT DO NOTHING",
+                        @"INSERT INTO temp_restriction_via_node(rid,node) SELECT rid,node FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid ON CONFLICT DO NOTHING"),
+                    connection);
 
-                command8.Parameters.AddWithValue("vehicleType", VehicleType);
-                command8.Parameters.AddWithValue("guid", Guid);
-                command8.Prepare();
+            commandSelectFromRestriction.Parameters.Add("node", NpgsqlDbType.Bigint);
+            commandSelectFromRestriction.Parameters.AddWithValue("vehicleType", VehicleType);
+            commandSelectFromRestriction.Parameters.AddWithValue("guid", Guid);
+            commandSelectFromRestriction.Prepare();
 
-                command9.Parameters.AddWithValue("vehicleType", VehicleType);
-                command9.Parameters.AddWithValue("guid", Guid);
-                command9.Prepare();
-
-                command10.Parameters.AddWithValue("vehicleType", VehicleType);
-                command10.Parameters.AddWithValue("guid", Guid);
-                command10.Prepare();
-
-                await commandBegin.ExecuteNonQueryAsync();
-
-                using (var writer = connection.BeginTextImport(
-                    "COPY shared_restriction (id) FROM STDIN WITH NULL AS ''"))
-                using (var reader = await command7.ExecuteReaderAsync())
-                {
-                    while (reader.Read())
-                    {
-                        var values = new[]
-                        {
-                            reader.GetInt64(0).ToString()
-                        };
-                        writer.WriteLine(string.Join("\t", values));
-                    }
-                }
-
-                using (var writer = connection.BeginTextImport(
-                    "COPY shared_restriction_from_edge (rid,edge) FROM STDIN WITH NULL AS ''"))
-                using (var reader = await command8.ExecuteReaderAsync())
-                {
-                    while (reader.Read())
-                    {
-                        var values = new[]
-                        {
-                            reader.GetInt64(0).ToString(),
-                            reader.GetInt64(1).ToString()
-                        };
-                        writer.WriteLine(string.Join("\t", values));
-                    }
-                }
-
-                using (var writer = connection.BeginTextImport(
-                    "COPY shared_restriction_to_edge (rid,edge) FROM STDIN WITH NULL AS ''"))
-                using (var reader = await command9.ExecuteReaderAsync())
-                {
-                    while (reader.Read())
-                    {
-                        var values = new[]
-                        {
-                            reader.GetInt64(0).ToString(),
-                            reader.GetInt64(1).ToString()
-                        };
-                        writer.WriteLine(string.Join("\t", values));
-                    }
-                }
-
-                using (var writer = connection.BeginTextImport(
-                    "COPY shared_restriction_via_node (rid,node) FROM STDIN WITH NULL AS ''"))
-                using (var reader = await command10.ExecuteReaderAsync())
-                {
-                    while (reader.Read())
-                    {
-                        var values = new[]
-                        {
-                            reader.GetInt64(0).ToString(),
-                            reader.GetInt64(1).ToString()
-                        };
-                        writer.WriteLine(string.Join("\t", values));
-                    }
-                }
-
-                await commandCommit.ExecuteNonQueryAsync();
-            }
-
-            using (var command =
-                new NpgsqlCommand(string.Join(";",
-                        @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
-                        @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
-                        @"CREATE UNIQUE INDEX shared_edge_from_node_to_node_idx ON shared_edge (from_node,to_node)",
-                        @"CREATE INDEX shared_restriction_from_edge_idx ON shared_restriction_from_edge (edge)",
-                        @"CREATE INDEX shared_restriction_to_edge_idx ON shared_restriction_to_edge (edge)",
-                        @"CREATE INDEX shared_restriction_via_node_idx ON shared_restriction_via_node (node)"),
-                    connection))
-            {
-                command.Prepare();
-                await command.ExecuteNonQueryAsync();
-            }
-
-            using var commandInsertIntoNode = new NpgsqlCommand(
-                @"INSERT INTO temp_node (id,from_weight) VALUES (@id,
-                @fromWeight)
-                ON CONFLICT (id) DO NOTHING",
-                connection);
-            using var commandInsertIntoEdge = new NpgsqlCommand(
-                @"INSERT INTO shared_edge (id,from_node,to_node,
-                weight,direction) VALUES (@id,@fromNode,@toNode,
-                    @weight,@direction)
-                ON CONFLICT (from_node,to_node) DO NOTHING",
-                connection);
             using var commandSelectFromNode =
-                new NpgsqlCommand(
-                    @"SELECT n.id,
+                new NpgsqlCommand(string.Join(";",
+                        @"INSERT INTO temp_node (id,from_weight) SELECT n.id,
                     @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)
                     FROM node n JOIN edge e ON n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
                     AND @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)<=@maxWeight
@@ -212,73 +124,31 @@ namespace Placium.Route.Algorithms
                     @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)
                     FROM node n JOIN edge e ON n.id=e.from_node WHERE n.guid=@guid AND e.guid=@guid
                     AND @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)<=@maxWeight
-                    AND @node=ANY(e.nodes)",
-                    connection2);
-            using var commandSelectFromEdge =
-                new NpgsqlCommand(
-                    @"SELECT id,from_node,to_node,
+                    AND @node=ANY(e.nodes) ON CONFLICT (id) DO NOTHING", @"INSERT INTO temp_edge (id,from_node,to_node,
+                    weight,direction) SELECT id,from_node,to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
                     FROM edge WHERE weight?@profile AND direction?@profile AND guid=@guid
-                    AND @node=ANY(nodes)",
-                    connection2);
-
-            commandInsertIntoNode.Parameters.Add("id", NpgsqlDbType.Bigint);
-            commandInsertIntoNode.Parameters.Add("fromWeight", NpgsqlDbType.Real);
-            commandInsertIntoNode.Prepare();
-
-            commandInsertIntoEdge.Parameters.Add("id", NpgsqlDbType.Bigint);
-            commandInsertIntoEdge.Parameters.Add("fromNode", NpgsqlDbType.Bigint);
-            commandInsertIntoEdge.Parameters.Add("toNode", NpgsqlDbType.Bigint);
-            commandInsertIntoEdge.Parameters.Add("weight", NpgsqlDbType.Real);
-            commandInsertIntoEdge.Parameters.Add("direction", NpgsqlDbType.Smallint);
-            commandInsertIntoEdge.Prepare();
+                    AND @node=ANY(nodes) ON CONFLICT (from_node,to_node) DO NOTHING"),
+                    connection);
 
             commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
             commandSelectFromNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
             commandSelectFromNode.Parameters.AddWithValue("maxWeight", maxWeight);
+            commandSelectFromNode.Parameters.AddWithValue("minWeight", minWeight);
+            commandSelectFromNode.Parameters.AddWithValue("profile", Profile);
             commandSelectFromNode.Parameters.AddWithValue("factor", MinFactor);
             commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
             commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
             commandSelectFromNode.Prepare();
 
-            commandSelectFromEdge.Parameters.AddWithValue("minWeight", minWeight);
-            commandSelectFromEdge.Parameters.AddWithValue("profile", Profile);
-            commandSelectFromEdge.Parameters.AddWithValue("guid", Guid);
-            commandSelectFromEdge.Parameters.Add("node", NpgsqlDbType.Bigint);
-            commandSelectFromEdge.Prepare();
-
             void LoadEdgesAndNodes(long node)
             {
                 commandSelectFromNode.Parameters["node"].Value = node;
-                commandSelectFromEdge.Parameters["node"].Value = node;
+                commandSelectFromRestriction.Parameters["node"].Value = node;
 
                 commandBegin.ExecuteNonQuery();
-
-                using (var reader = commandSelectFromNode.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoNode.Parameters["fromWeight"].Value = reader.GetFloat(1);
-
-                        commandInsertIntoNode.ExecuteNonQuery();
-                    }
-                }
-
-                using (var reader = commandSelectFromEdge.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        commandInsertIntoEdge.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoEdge.Parameters["fromNode"].Value = reader.GetInt64(1);
-                        commandInsertIntoEdge.Parameters["toNode"].Value = reader.GetInt64(2);
-                        commandInsertIntoEdge.Parameters["weight"].Value = reader.GetFloat(3);
-                        commandInsertIntoEdge.Parameters["direction"].Value = reader.GetInt16(4);
-
-                        commandInsertIntoEdge.ExecuteNonQuery();
-                    }
-                }
-
+                commandSelectFromNode.ExecuteNonQuery();
+                commandSelectFromRestriction.ExecuteNonQuery();
                 commandCommit.ExecuteNonQuery();
             }
 
@@ -286,7 +156,7 @@ namespace Placium.Route.Algorithms
                 new NpgsqlCommand(@"INSERT INTO temp_dijkstra (
 	                node,
 	                weight,
-                    weight1,
+                    g,
 	                edge,
 	                in_queue
                 )
@@ -336,49 +206,46 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new NpgsqlCommand(
-                    @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
-                    connection))
-            using (var command1 =
-                new NpgsqlCommand(
-                    string.Join(";", @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
+                    string.Join(";", @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
+                    @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
                     connection))
             using (var command2 =
                 new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_dijkstra (
 	                    node,
 	                    weight,
-	                    weight1,
+	                    g,
 	                    edge,
 	                    in_queue
                     )
                     WITH cte AS
                     (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.from_node AS node,n.from_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,true AS in_queue
-		                    FROM shared_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra t ON e.to_node=t.node
+		                    SELECT e.from_node AS node,n.from_weight+t.g+e.weight AS weight,t.g+e.weight AS g,e.id AS edge,true AS in_queue
+		                    FROM temp_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra t ON e.to_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,1,3,4]) AND t.node=@node 
-                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
-                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT e.to_node AS node,n.from_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,true AS in_queue
-		                    FROM shared_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra t ON e.from_node=t.node
+                            AND NOT EXISTS (SELECT * FROM temp_restriction r 
+                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            UNION ALL SELECT e.to_node AS node,n.from_weight+t.g+e.weight AS weight,t.g+e.weight AS g,e.id AS edge,true AS in_queue
+		                    FROM temp_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra t ON e.from_node=t.node
                             WHERE e.direction=ANY(ARRAY[0,2,3,5]) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
-                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
+                            AND NOT EXISTS (SELECT * FROM temp_restriction r 
+                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
                     )
                     SELECT 
 	                    node,
 	                    weight,
-	                    weight1,
+	                    g,
 	                    edge,
 	                    in_queue
                     FROM cte
                     WHERE rn = 1 AND weight<@maxWeight
                     ON CONFLICT (node) DO UPDATE SET
 	                    weight=EXCLUDED.weight,
-	                    weight1=EXCLUDED.weight1,
+	                    g=EXCLUDED.g,
 	                    edge=EXCLUDED.edge,
                         in_queue=EXCLUDED.in_queue
                         WHERE temp_dijkstra.weight>EXCLUDED.weight",
@@ -389,11 +256,11 @@ namespace Placium.Route.Algorithms
                 command2.Parameters.Add("maxWeight", NpgsqlDbType.Real);
                 command2.Parameters.Add("node", NpgsqlDbType.Bigint);
                 command.Prepare();
-                command1.Prepare();
                 command2.Prepare();
 
                 for (var step = 0L;; step++)
                 {
+                    var node1 = 0L;
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.Read())
@@ -404,13 +271,12 @@ namespace Placium.Route.Algorithms
                                 weight = maxWeight = maxWeightNew;
                                 node = reader.GetInt64(0);
                             }
+
                             if (reader.GetBoolean(2)) break;
                         }
-                    }
 
-                    var node1 = 0L;
-                    using (var reader = command1.ExecuteReader())
-                    {
+                        reader.NextResult();
+
                         if (!reader.Read()) break;
                         node1 = reader.GetInt64(0);
                     }
@@ -430,10 +296,10 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new NpgsqlCommand(@"SELECT e.from_node,e.id 
-                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
+                    FROM temp_dijkstra t JOIN temp_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
-                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
+                    FROM temp_dijkstra t JOIN temp_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.from_node=t.node", connection))
             {
                 command.Parameters.Add("node", NpgsqlDbType.Bigint);
