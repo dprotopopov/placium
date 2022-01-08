@@ -25,7 +25,7 @@ namespace Placium.Route.Algorithms
                 @"SELECT id,from_node,to_node,coordinates,weight,direction,ST_X(point)::real,ST_Y(point)::real 
                     FROM (SELECT id,from_node,to_node,coordinates,(weight->@profile)::real AS weight,(direction->@profile)::smallint AS direction,
                     ST_ClosestPoint(location, ST_SetSRID( ST_Point( @lon, @lat ), 4326 )::geometry) AS point
-                    FROM edge WHERE guid=@guid AND (weight->@profile)::real>0 AND (direction->@profile)::smallint=ANY(ARRAY[0,1,2])
+                    FROM edge WHERE guid=@guid AND weight?@profile AND (direction->@profile)::smallint=ANY(ARRAY[0,1,2])
                     ORDER BY location <-> ST_SetSRID( ST_Point( @lon, @lat ), 4326 )::geometry
                     LIMIT 1) q", connection);
             command.Parameters.AddWithValue("lat", coordinate.Latitude);

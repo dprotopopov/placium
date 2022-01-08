@@ -9,9 +9,10 @@ using Placium.Route.Common;
 
 namespace Placium.Route.Algorithms
 {
-    public class InMemoryAStar : BasePathFinderAlgorithm
+    public class InMemoryMm : BasePathFinderAlgorithm
     {
-        public InMemoryAStar(Guid guid, string connectionString, string vehicleType, string profile, float minFactor, float maxFactor) :
+        public InMemoryMm(Guid guid, string connectionString, string vehicleType, string profile,
+            float minFactor, float maxFactor) :
             base(guid,
                 connectionString, vehicleType, profile, minFactor, maxFactor)
         {
@@ -47,6 +48,8 @@ namespace Placium.Route.Algorithms
                     return R * c; // in metres
                 });
 
+            connection.CreateFunction<double, double, double>("GREATEST", Math.Max);
+
             using (var command =
                 new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
                     @"create or replace function distanceInMeters(lat1 real, lon1 real, lat2 real, lon2 real)
@@ -71,11 +74,18 @@ namespace Placium.Route.Algorithms
                 new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
                     @"CREATE TEMP TABLE temp_node (
 	                id INTEGER PRIMARY KEY NOT NULL, 
-	                from_weight REAL NOT NULL
-                )", @"CREATE TEMP TABLE temp_dijkstra (
+	                from_weight REAL NOT NULL, 
+	                to_weight REAL NOT NULL
+                )", @"CREATE TEMP TABLE temp_dijkstra1 (
 	                node INTEGER PRIMARY KEY NOT NULL, 
-	                weight REAL NOT NULL, 
-	                weight1 REAL NOT NULL, 
+	                f REAL NOT NULL, 
+	                g REAL NOT NULL, 
+	                edge INTEGER NOT NULL,
+	                in_queue INTEGER NOT NULL
+                )", @"CREATE TEMP TABLE temp_dijkstra2 (
+	                node INTEGER PRIMARY KEY NOT NULL, 
+	                f REAL NOT NULL, 
+	                g REAL NOT NULL, 
 	                edge INTEGER NOT NULL,
 	                in_queue INTEGER NOT NULL
                 )", @"CREATE TEMP TABLE shared_edge (
@@ -219,8 +229,10 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new SqliteCommand(string.Join(";",
-                        @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
-                        @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
+                        @"CREATE INDEX temp_dijkstra1_in_queue_idx ON temp_dijkstra1 (in_queue)",
+                        @"CREATE INDEX temp_dijkstra1_f_idx ON temp_dijkstra1 (f)",
+                        @"CREATE INDEX temp_dijkstra2_in_queue_idx ON temp_dijkstra2 (in_queue)",
+                        @"CREATE INDEX temp_dijkstra2_f_idx ON temp_dijkstra2 (f)",
                         @"CREATE UNIQUE INDEX shared_edge_from_node_to_node_idx ON shared_edge (from_node,to_node)",
                         @"CREATE INDEX shared_restriction_from_edge_idx ON shared_restriction_from_edge (edge)",
                         @"CREATE INDEX shared_restriction_to_edge_idx ON shared_restriction_to_edge (edge)",
@@ -232,15 +244,17 @@ namespace Placium.Route.Algorithms
             }
 
             using var commandInsertIntoNode = new SqliteCommand(
-                @"INSERT INTO temp_node (id,from_weight) VALUES (@id,@fromWeight)
+                @"INSERT INTO temp_node (id,from_weight,to_weight) VALUES (@id,@fromWeight,@toWeight)
                 ON CONFLICT (id) DO NOTHING",
                 connection);
             using var commandSelectFromNode =
                 new NpgsqlCommand(
                     @"SELECT n.id,
-                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)
+                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude),
+                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude)
                     FROM node n JOIN edge e ON n.id=e.from_node OR n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
-                    AND @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)<=@maxWeight
+                    AND @factor*(distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)+
+                    distanceInMeters(latitude,longitude,@toLatitude,@toLongitude))<=@maxWeight
                     AND (e.from_node=@node OR e.to_node=@node)",
                     connection2);
             using var commandInsertIntoEdge = new SqliteCommand(
@@ -258,6 +272,7 @@ namespace Placium.Route.Algorithms
 
             commandInsertIntoNode.Parameters.Add("id", SqliteType.Integer);
             commandInsertIntoNode.Parameters.Add("fromWeight", SqliteType.Real);
+            commandInsertIntoNode.Parameters.Add("toWeight", SqliteType.Real);
             commandInsertIntoNode.Prepare();
 
             commandInsertIntoEdge.Parameters.Add("id", SqliteType.Integer);
@@ -269,6 +284,8 @@ namespace Placium.Route.Algorithms
 
             commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
             commandSelectFromNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
+            commandSelectFromNode.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
+            commandSelectFromNode.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
             commandSelectFromNode.Parameters.AddWithValue("maxWeight", maxWeight);
             commandSelectFromNode.Parameters.AddWithValue("factor", MinFactor);
             commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
@@ -294,6 +311,7 @@ namespace Placium.Route.Algorithms
                     {
                         commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
                         commandInsertIntoNode.Parameters["fromWeight"].Value = reader.GetFloat(1);
+                        commandInsertIntoNode.Parameters["toWeight"].Value = reader.GetFloat(2);
 
                         commandInsertIntoNode.ExecuteNonQuery();
                     }
@@ -317,10 +335,53 @@ namespace Placium.Route.Algorithms
             }
 
             using (var command =
-                new SqliteCommand(@"REPLACE INTO temp_dijkstra (
+                new SqliteCommand(@"REPLACE INTO temp_dijkstra1 (
 	                node,
-	                weight,
-                    weight1,
+	                f,
+	                g,
+	                edge,
+	                in_queue
+                )
+                VALUES (
+	                @node,
+                    @factor*distanceInMeters(@latitude,@longitude,@latitude1,@longitude1),
+	                0,
+	                0,
+	                1
+                )", connection))
+            {
+                command.Parameters.Add("node", SqliteType.Integer);
+                command.Parameters.Add("latitude1", SqliteType.Real);
+                command.Parameters.Add("longitude1", SqliteType.Real);
+                command.Parameters.AddWithValue("latitude", target.Coordinate.Latitude);
+                command.Parameters.AddWithValue("longitude", target.Coordinate.Longitude);
+                command.Parameters.AddWithValue("factor", MinFactor);
+                command.Prepare();
+
+                if (new[] {0, 1, 3, 4}.Contains(source.Direction))
+                {
+                    command.Parameters["node"].Value = source.ToNode;
+                    var coords = source.Coordinates.Last();
+                    command.Parameters["latitude1"].Value = coords.Latitude;
+                    command.Parameters["longitude1"].Value = coords.Longitude;
+                    await command.ExecuteNonQueryAsync();
+                }
+
+                if (new[] {0, 2, 3, 5}.Contains(source.Direction))
+                {
+                    command.Parameters["node"].Value = source.FromNode;
+                    var coords = source.Coordinates.First();
+                    command.Parameters["latitude1"].Value = coords.Latitude;
+                    command.Parameters["longitude1"].Value = coords.Longitude;
+                    await command.ExecuteNonQueryAsync();
+                }
+            }
+
+            using (var command =
+                new SqliteCommand(@"REPLACE INTO temp_dijkstra2 (
+	                node,
+	                f,
+	                g,
 	                edge,
 	                in_queue
                 )
@@ -362,39 +423,38 @@ namespace Placium.Route.Algorithms
             var node = 0L;
             float? weight = null;
 
-
-            var sources = new List<long>();
-            if (new[] {0, 1, 3, 4}.Contains(target.Direction)) sources.Add(source.ToNode);
-            if (new[] {0, 2, 3, 5}.Contains(target.Direction)) sources.Add(source.FromNode);
-
             using (var command =
                 new SqliteCommand(
-                    @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=@sourceFirst OR node=@sourceLast ORDER BY weight LIMIT 1",
+                    @"SELECT t1.node,t1.g+t2.g FROM temp_dijkstra1 t1 JOIN temp_dijkstra2 t2 ON t1.node=t2.node ORDER BY t1.g+t2.g LIMIT 1",
                     connection))
             using (var command1 =
                 new SqliteCommand(
-                    string.Join(";", @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
+                    string.Join(";",
+                        @"WITH cte AS (SELECT node,GREATEST(f,2*g) AS pr,f,g FROM temp_dijkstra1 WHERE in_queue)
+                        SELECT node,pr,f,g FROM cte ORDER BY pr,g LIMIT 1",
+                        @"WITH cte AS (SELECT node,GREATEST(f,2*g) AS pr,f,g FROM temp_dijkstra2 WHERE in_queue)
+                        SELECT node,pr,f,g FROM cte ORDER BY pr,g LIMIT 1"),
                     connection))
-            using (var command2 =
-                new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra (
+            using (var commandStep1 =
+                new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra1 (
 	                    node,
-	                    weight,
-	                    weight1,
+	                    f,
+	                    g,
 	                    edge,
 	                    in_queue
                     )
                     WITH cte AS
                     (
-	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY weight) AS rn FROM (
-		                    SELECT e.from_node AS node,n.from_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,1 AS in_queue
-		                    FROM shared_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra t ON e.to_node=t.node
+	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY g) AS rn FROM (
+		                    SELECT e.to_node AS node,n.to_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
+		                    FROM shared_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra1 t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
                             AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
                             JOIN shared_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
                             JOIN shared_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
-                            UNION ALL SELECT e.to_node AS node,n.from_weight+t.weight1+e.weight AS weight,t.weight1+e.weight AS weight1,e.id AS edge,1 AS in_queue
-		                    FROM shared_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra t ON e.from_node=t.node
+                            UNION ALL SELECT e.from_node AS node,n.to_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
+		                    FROM shared_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra1 t ON e.to_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
                             AND NOT EXISTS (SELECT * FROM shared_restriction r 
                             JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
@@ -403,28 +463,71 @@ namespace Placium.Route.Algorithms
                     )
                     SELECT 
 	                    node,
-	                    weight,
-	                    weight1,
+	                    f,
+	                    g,
 	                    edge,
 	                    in_queue
                     FROM cte
-                    WHERE rn = 1 AND weight<@maxWeight
+                    WHERE rn = 1 AND f<@maxWeight
                     ON CONFLICT (node) DO UPDATE SET
-	                    weight=EXCLUDED.weight,
-	                    weight1=EXCLUDED.weight1,
+	                    f=EXCLUDED.f,
+	                    g=EXCLUDED.g,
 	                    edge=EXCLUDED.edge,
                         in_queue=EXCLUDED.in_queue
-                        WHERE temp_dijkstra.weight>EXCLUDED.weight",
-                    @"UPDATE temp_dijkstra SET in_queue=0 WHERE node=@node",
-                    @"DELETE FROM temp_dijkstra WHERE weight>@maxWeight"), connection))
+                        WHERE temp_dijkstra1.g>EXCLUDED.g",
+                    @"UPDATE temp_dijkstra1 SET in_queue=0 WHERE node=@node",
+                    @"DELETE FROM temp_dijkstra1 WHERE f>@maxWeight"), connection))
+            using (var commandStep2 =
+                new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra2 (
+	                    node,
+	                    f,
+	                    g,
+	                    edge,
+	                    in_queue
+                    )
+                    WITH cte AS
+                    (
+	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY node ORDER BY g) AS rn FROM (
+		                    SELECT e.from_node AS node,n.from_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
+		                    FROM shared_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra2 t ON e.to_node=t.node
+                            WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
+                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN shared_restriction_from_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN shared_restriction_to_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            UNION ALL SELECT e.to_node AS node,n.from_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
+		                    FROM shared_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra2 t ON e.from_node=t.node
+                            WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
+                            AND NOT EXISTS (SELECT * FROM shared_restriction r 
+                            JOIN shared_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
+                            JOIN shared_restriction_from_edge rt ON rt.edge=e.id AND r.id=rt.rid
+                            JOIN shared_restriction_to_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
+                    )
+                    SELECT 
+	                    node,
+	                    f,
+	                    g,
+	                    edge,
+	                    in_queue
+                    FROM cte
+                    WHERE rn = 1 AND f<@maxWeight
+                    ON CONFLICT (node) DO UPDATE SET
+	                    f=EXCLUDED.f,
+	                    g=EXCLUDED.g,
+	                    edge=EXCLUDED.edge,
+                        in_queue=EXCLUDED.in_queue
+                        WHERE temp_dijkstra2.g>EXCLUDED.g",
+                    @"UPDATE temp_dijkstra2 SET in_queue=0 WHERE node=@node",
+                    @"DELETE FROM temp_dijkstra2 WHERE f>@maxWeight"), connection))
             {
-                command.Parameters.AddWithValue("sourceFirst", sources.First());
-                command.Parameters.AddWithValue("sourceLast", sources.Last());
-                command2.Parameters.Add("maxWeight", SqliteType.Real);
-                command2.Parameters.Add("node", SqliteType.Integer);
+                commandStep1.Parameters.Add("maxWeight", SqliteType.Real);
+                commandStep1.Parameters.Add("node", SqliteType.Integer);
+                commandStep2.Parameters.Add("maxWeight", SqliteType.Real);
+                commandStep2.Parameters.Add("node", SqliteType.Integer);
                 command.Prepare();
                 command1.Prepare();
-                command2.Prepare();
+                commandStep1.Prepare();
+                commandStep2.Prepare();
 
                 for (var step = 0L;; step++)
                 {
@@ -438,63 +541,121 @@ namespace Placium.Route.Algorithms
                                 weight = maxWeight = maxWeightNew;
                                 node = reader.GetInt64(0);
                             }
-
-                            if (reader.GetBoolean(2)) break;
                         }
                     }
 
                     var node1 = 0L;
+                    var node2 = 0L;
+                    var pr1 = maxWeight;
+                    var pr2 = maxWeight;
+                    var fmin1 = 0f;
+                    var fmin2 = 0f;
+                    var gmin1 = 0f;
+                    var gmin2 = 0f;
+
                     using (var reader = command1.ExecuteReader())
                     {
                         if (!reader.Read()) break;
                         node1 = reader.GetInt64(0);
+                        pr1 = reader.GetFloat(1);
+                        fmin1 = reader.GetFloat(2);
+                        gmin1 = reader.GetFloat(3);
+
+                        reader.NextResult();
+                        if (!reader.Read()) break;
+                        node2 = reader.GetInt64(0);
+                        pr2 = reader.GetFloat(1);
+                        fmin2 = reader.GetFloat(2);
+                        gmin2 = reader.GetFloat(3);
                     }
 
-                    LoadEdgesAndNodes(node1);
+                    var c = Math.Min(pr1, pr2);
+                    if (maxWeight <= new[] {c, fmin1, fmin2, gmin1 + gmin2 + minWeight}.Max()) break;
 
-                    command2.Parameters["node"].Value = node1;
-                    command2.Parameters["maxWeight"].Value = maxWeight;
+                    if (pr1 < pr2)
+                    {
+                        LoadEdgesAndNodes(node1);
 
-                    command2.ExecuteNonQuery();
+                        commandStep1.Parameters["node"].Value = node1;
+                        commandStep1.Parameters["maxWeight"].Value = maxWeight;
+
+                        commandStep1.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        LoadEdgesAndNodes(node2);
+
+                        commandStep2.Parameters["node"].Value = node2;
+                        commandStep2.Parameters["maxWeight"].Value = maxWeight;
+
+                        commandStep2.ExecuteNonQuery();
+                    }
+
 
                     if (step % 10 == 0)
                         Console.WriteLine($"{DateTime.Now:O} Step {step} complete" +
-                                          $" temp_dijkstra={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra WHERE in_queue", connection).ExecuteScalar()}" +
-                                          $" MIN(weight)={new SqliteCommand("SELECT MIN(weight) FROM temp_dijkstra WHERE in_queue", connection).ExecuteScalar()}" +
-                                          $" MAX(weight)={new SqliteCommand("SELECT MAX(weight) FROM temp_dijkstra WHERE in_queue", connection).ExecuteScalar()}");
+                                          $" temp_dijkstra1={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +
+                                          $" temp_dijkstra2={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra2 WHERE in_queue", connection).ExecuteScalar()}" +
+                                          $" MIN(g1)={new SqliteCommand("SELECT MIN(g) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +
+                                          $" MIN(g2)={new SqliteCommand("SELECT MIN(g) FROM temp_dijkstra2 WHERE in_queue", connection).ExecuteScalar()}");
                 }
             }
 
+            var list = new List<long>();
+
             using (var command =
                 new SqliteCommand(@"SELECT e.from_node,e.id 
-                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
+                    FROM temp_dijkstra1 t JOIN shared_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
-                    FROM temp_dijkstra t JOIN shared_edge e ON t.edge=e.id
+                    FROM temp_dijkstra1 t JOIN shared_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.from_node=t.node", connection))
             {
                 command.Parameters.Add("node", SqliteType.Integer);
                 command.Prepare();
-                var list = new List<long>();
-                for (;;)
+                for (var node1 = node;;)
                 {
-                    command.Parameters["node"].Value = node;
+                    command.Parameters["node"].Value = node1;
                     using var reader = await command.ExecuteReaderAsync();
 
                     if (!reader.Read()) break;
 
-                    node = reader.GetInt64(0);
+                    node1 = reader.GetInt64(0);
+                    list.Add(reader.GetInt64(1));
+                }
+            }
+
+            list.Reverse();
+
+            using (var command =
+                new SqliteCommand(@"SELECT e.from_node,e.id 
+                    FROM temp_dijkstra2 t JOIN shared_edge e ON t.edge=e.id
+                    WHERE t.node=@node AND e.to_node=t.node
+                    UNION ALL SELECT e.to_node,e.id 
+                    FROM temp_dijkstra2 t JOIN shared_edge e ON t.edge=e.id
+                    WHERE t.node=@node AND e.from_node=t.node", connection))
+            {
+                command.Parameters.Add("node", SqliteType.Integer);
+                command.Prepare();
+
+                for (var node2 = node;;)
+                {
+                    command.Parameters["node"].Value = node2;
+                    using var reader = await command.ExecuteReaderAsync();
+
+                    if (!reader.Read()) break;
+
+                    node2 = reader.GetInt64(0);
                     var edge = reader.GetInt64(1);
                     list.Add(edge);
                 }
-
-
-                return new PathFinderResult
-                {
-                    Edges = list,
-                    Weight = weight
-                };
             }
+
+            return new PathFinderResult
+            {
+                Edges = list,
+                Weight = weight
+            };
         }
     }
 }

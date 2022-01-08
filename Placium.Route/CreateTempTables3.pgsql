@@ -27,7 +27,7 @@ CREATE TEMP TABLE temp_edge (
 	location GEOMETRY,
 	tags hstore,
 	direction hstore,
-	weight hstore
+	weight hstore 
 );
 
 CREATE TABLE IF NOT EXISTS edge (

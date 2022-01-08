@@ -10,8 +10,8 @@ namespace Placium.Route.Algorithms
 {
     public class AStar : BasePathFinderAlgorithm
     {
-        public AStar(Guid guid, string connectionString, string vehicleType, string profile, float factor) : base(guid,
-            connectionString, vehicleType, profile, factor)
+        public AStar(Guid guid, string connectionString, string vehicleType, string profile, float minFactor, float maxFactor) : base(guid,
+            connectionString, vehicleType, profile, minFactor,  maxFactor)
         {
         }
 
@@ -19,7 +19,7 @@ namespace Placium.Route.Algorithms
         public override async Task<PathFinderResult> FindPathAsync(RouterPoint source,
             RouterPoint target, float maxWeight = float.MaxValue)
         {
-            var minWeight = Factor * 1;
+            var minWeight = MinFactor * 1;
 
             using var connection = new NpgsqlConnection(ConnectionString);
             using var connection2 = new NpgsqlConnection(ConnectionString);
@@ -218,7 +218,7 @@ namespace Placium.Route.Algorithms
                 new NpgsqlCommand(
                     @"SELECT id,from_node,to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge WHERE (weight->@profile)::real>0 AND direction?@profile AND guid=@guid
+                    FROM edge WHERE weight?@profile AND direction?@profile AND guid=@guid
                     AND @node=ANY(nodes)",
                     connection2);
 
@@ -236,7 +236,7 @@ namespace Placium.Route.Algorithms
             commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
             commandSelectFromNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
             commandSelectFromNode.Parameters.AddWithValue("maxWeight", maxWeight);
-            commandSelectFromNode.Parameters.AddWithValue("factor", Factor);
+            commandSelectFromNode.Parameters.AddWithValue("factor", MinFactor);
             commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
             commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
             commandSelectFromNode.Prepare();
@@ -247,7 +247,7 @@ namespace Placium.Route.Algorithms
             commandSelectFromEdge.Parameters.Add("node", NpgsqlDbType.Bigint);
             commandSelectFromEdge.Prepare();
 
-            void AddEdgesAndNodes(long node)
+            void LoadEdgesAndNodes(long node)
             {
                 commandSelectFromNode.Parameters["node"].Value = node;
                 commandSelectFromEdge.Parameters["node"].Value = node;
@@ -304,7 +304,7 @@ namespace Placium.Route.Algorithms
                 command.Parameters.Add("longitude1", NpgsqlDbType.Real);
                 command.Parameters.AddWithValue("latitude", source.Coordinate.Latitude);
                 command.Parameters.AddWithValue("longitude", source.Coordinate.Longitude);
-                command.Parameters.AddWithValue("factor", Factor);
+                command.Parameters.AddWithValue("factor", MinFactor);
                 command.Prepare();
 
                 if (new[] {0, 1, 3, 4}.Contains(target.Direction))
@@ -327,6 +327,7 @@ namespace Placium.Route.Algorithms
             }
 
             var node = 0L;
+            float? weight = null;
 
             var sources = new List<long>();
             if (new[] {0, 1, 3, 4}.Contains(target.Direction)) sources.Add(source.ToNode);
@@ -335,7 +336,7 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new NpgsqlCommand(
-                    @"SELECT node,weight FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
+                    @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
                     connection))
             using (var command1 =
                 new NpgsqlCommand(
@@ -397,20 +398,26 @@ namespace Placium.Route.Algorithms
                     {
                         if (reader.Read())
                         {
-                            node = reader.GetInt64(0);
-                            maxWeight = reader.GetFloat(1);
+                            var maxWeightNew = reader.GetFloat(1);
+                            if (maxWeightNew <= maxWeight)
+                            {
+                                weight = maxWeight = maxWeightNew;
+                                node = reader.GetInt64(0);
+                            }
+                            if (reader.GetBoolean(2)) break;
                         }
                     }
 
+                    var node1 = 0L;
                     using (var reader = command1.ExecuteReader())
                     {
                         if (!reader.Read()) break;
-                        node = reader.GetInt64(0);
+                        node1 = reader.GetInt64(0);
                     }
 
-                    AddEdgesAndNodes(node);
+                    LoadEdgesAndNodes(node1);
 
-                    command2.Parameters["node"].Value = node;
+                    command2.Parameters["node"].Value = node1;
                     command2.Parameters["maxWeight"].Value = maxWeight;
 
                     command2.ExecuteNonQuery();
@@ -447,7 +454,7 @@ namespace Placium.Route.Algorithms
                 return new PathFinderResult
                 {
                     Edges = list,
-                    Weight = maxWeight
+                    Weight = weight
                 };
             }
         }

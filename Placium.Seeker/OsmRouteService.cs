@@ -20,7 +20,7 @@ namespace Placium.Seeker
                 new[] { Vehicle.Car });
 
             // create router.
-            var router = new Router(routerDb, "car", 3.6f / 5f, 3.6f / 200f);
+            var router = new Router(routerDb, "car", 3.6f / 5f, 3.6f / 120f);
 
             // calculate route.
             var route = await router.CalculateAsync(source, target);

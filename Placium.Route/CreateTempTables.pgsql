@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS node (
 	latitude REAL NOT NULL, 
 	longitude REAL NOT NULL, 
 	tags hstore,
-	is_core BOOLEAN,
+	is_core BOOLEAN, 
 	PRIMARY KEY (guid, id)
 );
 

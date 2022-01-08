@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Placium.Route.Algorithms
 {
@@ -8,6 +6,5 @@ namespace Placium.Route.Algorithms
     {
         Guid Guid { get; }
         string ConnectionString { get; }
-
     }
 }
