@@ -20,7 +20,7 @@ namespace Placium.Route
             MinFactor = minFactor;
             ResolveRouterPointAlgorithm = new ResolveRouterPointAlgorithm(Db.Guid, Db.ConnectionString, Profile);
             PathFinderAlgorithm =
-                new InMemoryMm(Db.Guid, Db.ConnectionString, "motorcar", Profile, MinFactor, MaxFactor);
+                new LinqMm(Db.Guid, Db.ConnectionString, "motorcar", Profile, MinFactor, MaxFactor);
         }
 
         public RouterDb Db { get; }

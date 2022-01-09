@@ -95,17 +95,19 @@ namespace Placium.Route.Algorithms
             commandCommit.Prepare();
 
             using var commandSelectFromRestriction =
-                new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_restriction(id) WITH cte AS (
+                new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_restriction(id) SELECT rid FROM (
                     SELECT rid FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid
                     UNION SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
                     WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
                     UNION SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid)
-                    SELECT DISTINCT rid FROM cte ON CONFLICT DO NOTHING",
-                        @"INSERT INTO temp_restriction_from_edge(rid,edge) SELECT DISTINCT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid ON CONFLICT DO NOTHING",
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid) q
+                    GROUP BY rid ON CONFLICT DO NOTHING",
+                        @"INSERT INTO temp_restriction_from_edge(rid,edge) SELECT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    GROUP BY r.rid,r.edge ON CONFLICT DO NOTHING",
                         @"INSERT INTO temp_restriction_to_edge(rid,edge) SELECT DISTINCT r.rid,r.edge FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid ON CONFLICT DO NOTHING",
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    GROUP BY r.rid,r.edge ON CONFLICT DO NOTHING",
                         @"INSERT INTO temp_restriction_via_node(rid,node) SELECT rid,node FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid ON CONFLICT DO NOTHING"),
                     connection);
 
@@ -206,8 +208,9 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new NpgsqlCommand(
-                    string.Join(";", @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
-                    @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
+                    string.Join(";",
+                        @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
+                        @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
                     connection))
             using (var command2 =
                 new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_dijkstra (

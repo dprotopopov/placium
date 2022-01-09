@@ -9,9 +9,9 @@ using Placium.Route.Common;
 
 namespace Placium.Route.Algorithms
 {
-    public class InMemoryBhffa2 : BasePathFinderAlgorithm
+    public class MemoryBhffa2 : BasePathFinderAlgorithm
     {
-        public InMemoryBhffa2(Guid guid, string connectionString, string vehicleType, string profile,
+        public MemoryBhffa2(Guid guid, string connectionString, string vehicleType, string profile,
             float minFactor, float maxFactor) :
             base(guid, connectionString, vehicleType, profile, minFactor, maxFactor)
         {
@@ -179,19 +179,22 @@ namespace Placium.Route.Algorithms
             commandInsertIntoRestrictionViaNode.Prepare();
 
             using var commandSelectFromRestriction =
-                new NpgsqlCommand(string.Join(";", @"WITH cte AS (
+                new NpgsqlCommand(string.Join(";", @"SELECT rid FROM (
                     SELECT rid FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid
                     UNION SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
                     WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
                     UNION SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid)
-                    SELECT DISTINCT rid FROM cte",
-                        @"SELECT DISTINCT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
-                        @"SELECT DISTINCT r.rid,r.edge FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid) q
+                    GROUP BY rid",
+                        @"SELECT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    GROUP BY r.rid,r.edge",
+                        @"SELECT r.rid,r.edge FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    GROUP BY r.rid,r.edge",
                         @"SELECT rid,node FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid"),
                     connection2);
+
 
             commandSelectFromRestriction.Parameters.Add("node", NpgsqlDbType.Bigint);
             commandSelectFromRestriction.Parameters.AddWithValue("vehicleType", VehicleType);
