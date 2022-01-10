@@ -132,9 +132,9 @@ namespace Placium.Route.Algorithms
             using var commandSelectFromRestriction =
                 new NpgsqlCommand(string.Join(";", @"SELECT rid FROM (
                     SELECT rid FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid
-                    UNION SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
+                    UNION ALL SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
                     WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    UNION SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
+                    UNION ALL SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
                     WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid) q
                     GROUP BY rid",
                         @"SELECT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
@@ -164,8 +164,10 @@ namespace Placium.Route.Algorithms
             using var commandSelectFromNode =
                 new NpgsqlCommand(string.Join(";",
                         @"SELECT n.id
-                    FROM node n JOIN edge e ON n.id=e.from_node OR n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
-                    AND (e.from_node=@node OR e.to_node=@node)", @"SELECT id,from_node,to_node,
+                    FROM node n JOIN edge e ON n.id=e.from_node WHERE n.guid=@guid AND e.guid=@guid
+                    AND e.to_node=@node UNION ALL SELECT n.id
+                    FROM node n JOIN edge e ON n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
+                    AND e.from_node=@node", @"SELECT id,from_node,to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
                     FROM edge WHERE weight?@profile AND direction?@profile AND guid=@guid
                     AND (from_node=@node OR to_node=@node)"),

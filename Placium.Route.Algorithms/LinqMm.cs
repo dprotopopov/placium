@@ -35,13 +35,26 @@ namespace Placium.Route.Algorithms
                 language plpgsql
                 as
                 $$
-                declare
-                   dist real;
-                begin
-                   select ST_DistanceSphere(ST_MakePoint(lon1,lat1),ST_MakePoint(lon2,lat2)) 
-                   into dist;
-                   return dist;
-                end
+                    DECLARE
+                        dist float = 0;
+                        thi1 float;
+                        thi2 float;
+                        dthi float;
+                        lamda float;
+                        a float;
+                    BEGIN
+                        IF lat1 = lat2 AND lon1 = lon2
+                            THEN RETURN dist;
+                        ELSE
+                            thi1 = pi() * lat1 / 180;
+                            thi2 = pi() * lat2 / 180;
+                            dthi = pi() * (lat2 - lat1) / 180;
+                            lamda = pi() * (lon2 - lon1) / 180;
+                            a = pow(sin(dthi/2),2) + cos(thi1) * cos(thi2) * pow(sin(lamda/2),2);
+                            dist = 2 * 6371000 * atan2(sqrt(a),sqrt(1-a));
+                            RETURN dist;
+                        END IF;
+                    END
                 $$"), connection2))
             {
                 command.Prepare();
@@ -60,19 +73,11 @@ namespace Placium.Route.Algorithms
 
 
             using var commandSelectFromRestriction =
-                new NpgsqlCommand(string.Join(";", @"SELECT rid FROM (
-                    SELECT rid FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid
-                    UNION SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    UNION SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid) q
-                    GROUP BY rid",
+                new NpgsqlCommand(string.Join(";",
                         @"SELECT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    GROUP BY r.rid,r.edge",
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
                         @"SELECT r.rid,r.edge FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    GROUP BY r.rid,r.edge",
+                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
                         @"SELECT rid,node FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid"),
                     connection2);
 
@@ -84,13 +89,15 @@ namespace Placium.Route.Algorithms
 
             using var commandSelectFromNode =
                 new NpgsqlCommand(string.Join(";",
-                        @"SELECT n.id,
-                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude),
-                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude)
-                    FROM node n JOIN edge e ON n.id=e.from_node OR n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
-                    AND @factor*(distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)+
-                    distanceInMeters(latitude,longitude,@toLatitude,@toLongitude))<=@maxWeight
-                    AND (e.from_node=@node OR e.to_node=@node)", @"SELECT id,from_node,to_node,
+                        @"SELECT id,from_weight,to_weight FROM (SELECT n.id,
+                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude) AS from_weight,
+                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude) AS to_weight
+                    FROM node n JOIN edge e ON n.id=e.from_node WHERE n.guid=@guid AND e.guid=@guid
+                    AND e.to_node=@node) q WHERE from_weight+to_weight<=@maxWeight", @"SELECT id,from_weight,to_weight FROM (SELECT n.id,
+                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude) AS from_weight,
+                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude) AS to_weight
+                    FROM node n JOIN edge e ON n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
+                    AND e.from_node=@node) q WHERE from_weight+to_weight<=@maxWeight", @"SELECT id,from_node,to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
                     FROM edge WHERE weight?@profile AND direction?@profile AND guid=@guid
                     AND (from_node=@node OR to_node=@node)"),
@@ -115,16 +122,19 @@ namespace Placium.Route.Algorithms
 
                 using (var reader = commandSelectFromNode.ExecuteReader())
                 {
-                    while (reader.Read())
+                    for (var i = 0; i < 2; i++)
                     {
-                        var item = new TempNode();
-                        item.Id = reader.GetInt64(0);
-                        item.FromWeight = reader.GetFloat(1);
-                        item.ToWeight = reader.GetFloat(2);
-                        tempNode.TryAdd(item.Id, item);
-                    }
+                        while (reader.Read())
+                        {
+                            var item = new TempNode();
+                            item.Id = reader.GetInt64(0);
+                            item.FromWeight = reader.GetFloat(1);
+                            item.ToWeight = reader.GetFloat(2);
+                            tempNode.TryAdd(item.Id, item);
+                        }
 
-                    reader.NextResult();
+                        reader.NextResult();
+                    }
 
                     while (reader.Read())
                     {
@@ -139,20 +149,13 @@ namespace Placium.Route.Algorithms
                     }
                 }
 
-
                 using (var reader = commandSelectFromRestriction.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        var item = new TempRestriction();
-                        item.Id = reader.GetInt64(0);
-                        tempRestriction.TryAdd(item.Id, item);
-                    }
-
-                    reader.NextResult();
-
-                    while (reader.Read())
-                    {
+                        var restriction = new TempRestriction();
+                        restriction.Id = reader.GetInt64(0);
+                        tempRestriction.TryAdd(restriction.Id, restriction);
                         var item = new TempRestrictionFromEdge();
                         item.Rid = reader.GetInt64(0);
                         item.Edge = reader.GetInt64(1);
@@ -163,6 +166,9 @@ namespace Placium.Route.Algorithms
 
                     while (reader.Read())
                     {
+                        var restriction = new TempRestriction();
+                        restriction.Id = reader.GetInt64(0);
+                        tempRestriction.TryAdd(restriction.Id, restriction);
                         var item = new TempRestrictionToEdge();
                         item.Rid = reader.GetInt64(0);
                         item.Edge = reader.GetInt64(1);
@@ -173,6 +179,9 @@ namespace Placium.Route.Algorithms
 
                     while (reader.Read())
                     {
+                        var restriction = new TempRestriction();
+                        restriction.Id = reader.GetInt64(0);
+                        tempRestriction.TryAdd(restriction.Id, restriction);
                         var item = new TempRestrictionViaNode();
                         item.Rid = reader.GetInt64(0);
                         item.Node = reader.GetInt64(1);
@@ -278,108 +287,108 @@ namespace Placium.Route.Algorithms
                 var c = Math.Min(pr1, pr2);
                 if (maxWeight <= new[] {c, fmin1, fmin2, gmin1 + gmin2 + minWeight}.Max()) break;
 
-                LoadEdgesAndNodes(node1);
-                LoadEdgesAndNodes(node2);
+                if (pr1 < pr2)
+                {
+                    LoadEdgesAndNodes(node1);
 
-                Task.WaitAll(Task.Run(() =>
+                    tempDijkstra1[node1].InQueue = false;
+
+                    tempDijkstra1.Where(x => x.Value.F > maxWeight).ToList().AsParallel().ForAll(item =>
+                        tempDijkstra1.Remove(item.Key, out var value));
+
+                    var s1 = (from e in tempEdge.AsParallel()
+                              where e.Value.FromNode == node1 && new[] { 0, 1, 3, 4 }.Contains(e.Value.Direction)
+                              let n = tempNode[e.Value.ToNode]
+                              let t = tempDijkstra1[e.Value.FromNode]
+                              where !(from via in tempRestrictionViaNode
+                                      where via.Value.Node == node1
+                                            && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, t.Edge))
+                                            && tempRestrictionToEdge.ContainsKey((via.Value.Rid, e.Value.Id))
+                                      select 0).Any()
+                              select new TempDijkstra
+                              {
+                                  Node = n.Id,
+                                  Edge = e.Value.Id,
+                                  F = n.ToWeight + t.G + e.Value.Weight,
+                                  G = t.G + e.Value.Weight,
+                                  InQueue = true
+                              }).Union(from e in tempEdge.AsParallel()
+                                       where e.Value.ToNode == node1 && new[] { 0, 2, 3, 5 }.Contains(e.Value.Direction)
+                                       let n = tempNode[e.Value.FromNode]
+                                       let t = tempDijkstra1[e.Value.ToNode]
+                                       where !(from via in tempRestrictionViaNode
+                                               where via.Value.Node == node1
+                                                     && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, t.Edge))
+                                                     && tempRestrictionToEdge.ContainsKey((via.Value.Rid, e.Value.Id))
+                                               select 0).Any()
+                                       select new TempDijkstra
+                                       {
+                                           Node = n.Id,
+                                           Edge = e.Value.Id,
+                                           F = n.ToWeight + t.G + e.Value.Weight,
+                                           G = t.G + e.Value.Weight,
+                                           InQueue = true
+                                       });
+
+                    s1.Where(x => x.G <= maxWeight).ToList().AsParallel().ForAll(item =>
                     {
-                        tempDijkstra1[node1].InQueue = false;
+                        if (tempDijkstra1.TryAdd(item.Node, item)) return;
+                        var item1 = tempDijkstra1[item.Node];
+                        if (item1.G > item.G)
+                            tempDijkstra1[item.Node] = item;
+                    });
+                }
+                else
+                {
+                    LoadEdgesAndNodes(node2);
 
-                        tempDijkstra1.Where(x => x.Value.F > maxWeight).ToList().AsParallel().ForAll(item =>
-                            tempDijkstra1.Remove(item.Key, out var value));
+                    tempDijkstra2[node2].InQueue = false;
 
-                        var s1 = (from e in tempEdge.AsParallel()
-                            where e.Value.FromNode == node1 && new[] {0, 1, 3, 4}.Contains(e.Value.Direction)
-                            let n = tempNode[e.Value.ToNode]
-                            let t = tempDijkstra1[e.Value.FromNode]
-                            where !(from via in tempRestrictionViaNode
-                                where via.Value.Node == node1
-                                      && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                      && tempRestrictionToEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                select 0).Any()
-                            select new TempDijkstra
-                            {
-                                Node = n.Id,
-                                Edge = e.Value.Id,
-                                F = n.ToWeight + t.G + e.Value.Weight,
-                                G = t.G + e.Value.Weight,
-                                InQueue = true
-                            }).Union(from e in tempEdge.AsParallel()
-                            where e.Value.ToNode == node1 && new[] {0, 2, 3, 5}.Contains(e.Value.Direction)
-                            let n = tempNode[e.Value.FromNode]
-                            let t = tempDijkstra1[e.Value.ToNode]
-                            where !(from via in tempRestrictionViaNode
-                                where via.Value.Node == node1
-                                      && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                      && tempRestrictionToEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                select 0).Any()
-                            select new TempDijkstra
-                            {
-                                Node = n.Id,
-                                Edge = e.Value.Id,
-                                F = n.ToWeight + t.G + e.Value.Weight,
-                                G = t.G + e.Value.Weight,
-                                InQueue = true
-                            });
+                    tempDijkstra2.Where(x => x.Value.F > maxWeight).ToList().AsParallel().ForAll(item =>
+                        tempDijkstra2.Remove(item.Key, out var value));
 
-                        s1.Where(x => x.G <= maxWeight).ToList().AsParallel().ForAll(item =>
-                        {
-                            if (tempDijkstra1.TryAdd(item.Node, item)) return;
-                            var item1 = tempDijkstra1[item.Node];
-                            if (item1.G > item.G)
-                                tempDijkstra1[item.Node] = item;
-                        });
-                    }),
-                    Task.Run(() =>
+                    var s2 = (from e in tempEdge.AsParallel()
+                              where e.Value.ToNode == node2 && new[] { 0, 1, 3, 4 }.Contains(e.Value.Direction)
+                              let n = tempNode[e.Value.FromNode]
+                              let t = tempDijkstra2[e.Value.ToNode]
+                              where !(from via in tempRestrictionViaNode
+                                      where via.Value.Node == node2
+                                            && tempRestrictionToEdge.ContainsKey((via.Value.Rid, t.Edge))
+                                            && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, e.Value.Id))
+                                      select 0).Any()
+                              select new TempDijkstra
+                              {
+                                  Node = n.Id,
+                                  Edge = e.Value.Id,
+                                  F = n.FromWeight + t.G + e.Value.Weight,
+                                  G = t.G + e.Value.Weight,
+                                  InQueue = true
+                              }).Union(from e in tempEdge.AsParallel()
+                                       where e.Value.FromNode == node2 && new[] { 0, 2, 3, 5 }.Contains(e.Value.Direction)
+                                       let n = tempNode[e.Value.ToNode]
+                                       let t = tempDijkstra2[e.Value.FromNode]
+                                       where !(from via in tempRestrictionViaNode
+                                               where via.Value.Node == node2
+                                                     && tempRestrictionToEdge.ContainsKey((via.Value.Rid, t.Edge))
+                                                     && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, e.Value.Id))
+                                               select 0).Any()
+                                       select new TempDijkstra
+                                       {
+                                           Node = n.Id,
+                                           Edge = e.Value.Id,
+                                           F = n.FromWeight + t.G + e.Value.Weight,
+                                           G = t.G + e.Value.Weight,
+                                           InQueue = true
+                                       });
+
+                    s2.Where(x => x.G <= maxWeight).ToList().AsParallel().ForAll(item =>
                     {
-                        tempDijkstra2[node2].InQueue = false;
-
-                        tempDijkstra2.Where(x => x.Value.F > maxWeight).ToList().AsParallel().ForAll(item =>
-                            tempDijkstra2.Remove(item.Key, out var value));
-
-                        var s2 = (from e in tempEdge.AsParallel()
-                            where e.Value.ToNode == node2 && new[] {0, 1, 3, 4}.Contains(e.Value.Direction)
-                            let n = tempNode[e.Value.FromNode]
-                            let t = tempDijkstra2[e.Value.ToNode]
-                            where !(from via in tempRestrictionViaNode
-                                where via.Value.Node == node2
-                                      && tempRestrictionToEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                      && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                select 0).Any()
-                            select new TempDijkstra
-                            {
-                                Node = n.Id,
-                                Edge = e.Value.Id,
-                                F = n.FromWeight + t.G + e.Value.Weight,
-                                G = t.G + e.Value.Weight,
-                                InQueue = true
-                            }).Union(from e in tempEdge.AsParallel()
-                            where e.Value.FromNode == node2 && new[] {0, 2, 3, 5}.Contains(e.Value.Direction)
-                            let n = tempNode[e.Value.ToNode]
-                            let t = tempDijkstra2[e.Value.FromNode]
-                            where !(from via in tempRestrictionViaNode
-                                where via.Value.Node == node2
-                                      && tempRestrictionToEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                      && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                select 0).Any()
-                            select new TempDijkstra
-                            {
-                                Node = n.Id,
-                                Edge = e.Value.Id,
-                                F = n.FromWeight + t.G + e.Value.Weight,
-                                G = t.G + e.Value.Weight,
-                                InQueue = true
-                            });
-
-                        s2.Where(x => x.G <= maxWeight).ToList().AsParallel().ForAll(item =>
-                        {
-                            if (tempDijkstra2.TryAdd(item.Node, item)) return;
-                            var item1 = tempDijkstra2[item.Node];
-                            if (item1.G > item.G)
-                                tempDijkstra2[item.Node] = item;
-                        });
-                    })
-                );
+                        if (tempDijkstra2.TryAdd(item.Node, item)) return;
+                        var item1 = tempDijkstra2[item.Node];
+                        if (item1.G > item.G)
+                            tempDijkstra2[item.Node] = item;
+                    });
+                }
 
 
                 if (step % 100 == 0)

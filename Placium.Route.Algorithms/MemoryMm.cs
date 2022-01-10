@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
@@ -22,6 +23,9 @@ namespace Placium.Route.Algorithms
         public override async Task<PathFinderResult> FindPathAsync(RouterPoint source,
             RouterPoint target, float maxWeight = float.MaxValue)
         {
+            var stopWatch1 = new Stopwatch();
+            var stopWatch2 = new Stopwatch();
+
             var minWeight = MinFactor * 1;
 
             using var connection = new SqliteConnection("Data source=:memory:");
@@ -57,13 +61,26 @@ namespace Placium.Route.Algorithms
                 language plpgsql
                 as
                 $$
-                declare
-                   dist real;
-                begin
-                   select ST_DistanceSphere(ST_MakePoint(lon1,lat1),ST_MakePoint(lon2,lat2)) 
-                   into dist;
-                   return dist;
-                end
+                    DECLARE
+                        dist float = 0;
+                        thi1 float;
+                        thi2 float;
+                        dthi float;
+                        lamda float;
+                        a float;
+                    BEGIN
+                        IF lat1 = lat2 AND lon1 = lon2
+                            THEN RETURN dist;
+                        ELSE
+                            thi1 = pi() * lat1 / 180;
+                            thi2 = pi() * lat2 / 180;
+                            dthi = pi() * (lat2 - lat1) / 180;
+                            lamda = pi() * (lon2 - lon1) / 180;
+                            a = pow(sin(dthi/2),2) + cos(thi1) * cos(thi2) * pow(sin(lamda/2),2);
+                            dist = 2 * 6371000 * atan2(sqrt(a),sqrt(1-a));
+                            RETURN dist;
+                        END IF;
+                    END
                 $$"), connection2))
             {
                 command.Prepare();
@@ -72,8 +89,14 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
-                    @"CREATE TEMP TABLE temp_node (
+                    @"CREATE TEMP TABLE temp_prefetched (
 	                id INTEGER PRIMARY KEY NOT NULL, 
+	                latitude REAL NOT NULL, 
+	                longitude REAL NOT NULL
+                )", @"CREATE TEMP TABLE temp_node (
+	                id INTEGER PRIMARY KEY NOT NULL, 
+	                latitude REAL NOT NULL, 
+	                longitude REAL NOT NULL, 
 	                from_weight REAL NOT NULL, 
 	                to_weight REAL NOT NULL
                 )", @"CREATE TEMP TABLE temp_dijkstra1 (
@@ -119,6 +142,10 @@ namespace Placium.Route.Algorithms
 
             using (var command =
                 new SqliteCommand(string.Join(";",
+                    @"CREATE INDEX temp_prefetched_latitude_idx ON temp_prefetched (latitude)",
+                    @"CREATE INDEX temp_prefetched_longitude_idx ON temp_prefetched (longitude)",
+                    @"CREATE INDEX temp_node_latitude_idx ON temp_node (latitude)",
+                    @"CREATE INDEX temp_node_longitude_idx ON temp_node (longitude)",
                     @"CREATE INDEX temp_dijkstra1_in_queue_idx ON temp_dijkstra1 (in_queue)",
                     @"CREATE INDEX temp_dijkstra1_f_idx ON temp_dijkstra1 (f)",
                     @"CREATE INDEX temp_dijkstra2_in_queue_idx ON temp_dijkstra2 (in_queue)",
@@ -173,32 +200,26 @@ namespace Placium.Route.Algorithms
             commandInsertIntoRestrictionViaNode.Parameters.Add("node", SqliteType.Integer);
             commandInsertIntoRestrictionViaNode.Prepare();
 
-            using var commandSelectFromRestriction =
-                new NpgsqlCommand(string.Join(";", @"SELECT rid FROM (
-                    SELECT rid FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid
-                    UNION SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    UNION SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid) q
-                    GROUP BY rid",
-                        @"SELECT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    GROUP BY r.rid,r.edge",
-                        @"SELECT r.rid,r.edge FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    GROUP BY r.rid,r.edge",
-                        @"SELECT rid,node FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid"),
-                    connection2);
+            using var commandSelectFromPrefedched = new SqliteCommand(
+                @"SELECT COUNT(*) FROM temp_prefetched n1 JOIN temp_node n2 ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
+                WHERE n2.id=@node", connection);
 
+            commandSelectFromPrefedched.Parameters.Add("node", SqliteType.Integer);
+            commandSelectFromPrefedched.Prepare();
 
-            commandSelectFromRestriction.Parameters.Add("node", NpgsqlDbType.Bigint);
-            commandSelectFromRestriction.Parameters.AddWithValue("vehicleType", VehicleType);
-            commandSelectFromRestriction.Parameters.AddWithValue("guid", Guid);
-            commandSelectFromRestriction.Prepare();
+            using var commandInsertIntoPrefedched = new SqliteCommand(
+                @"INSERT INTO temp_prefetched (id,latitude,longitude) VALUES (@id,@latitude,@longitude) ON CONFLICT DO NOTHING", connection);
 
+            commandInsertIntoPrefedched.Parameters.Add("id", SqliteType.Integer);
+            commandInsertIntoPrefedched.Parameters.Add("latitude", SqliteType.Real);
+            commandInsertIntoPrefedched.Parameters.Add("longitude", SqliteType.Real);
+            commandInsertIntoPrefedched.Prepare();
 
             using var commandInsertIntoNode = new SqliteCommand(
-                @"INSERT INTO temp_node (id,from_weight,to_weight) VALUES (@id,@fromWeight,@toWeight)
+                @"INSERT INTO temp_node (id,latitude,longitude,from_weight,to_weight) 
+                VALUES (@id,@latitude,@longitude,
+                    @factor*distanceInMeters(@latitude,@longitude,@fromLatitude,@fromLongitude),
+                    @factor*distanceInMeters(@latitude,@longitude,@toLatitude,@toLongitude))
                 ON CONFLICT (id) DO NOTHING",
                 connection);
             using var commandInsertIntoEdge = new SqliteCommand(
@@ -209,21 +230,41 @@ namespace Placium.Route.Algorithms
 
             using var commandSelectFromNode =
                 new NpgsqlCommand(string.Join(";",
-                        @"SELECT n.id,
-                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude),
-                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude)
-                    FROM node n JOIN edge e ON n.id=e.from_node OR n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
-                    AND @factor*(distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude)+
-                    distanceInMeters(latitude,longitude,@toLatitude,@toLongitude))<=@maxWeight
-                    AND (e.from_node=@node OR e.to_node=@node)", @"SELECT id,from_node,to_node,
+                        @"SELECT id,latitude,longitude FROM node WHERE id=@node", @"SELECT n.id,n.latitude,n.longitude
+                    FROM node n JOIN edge e ON n.id=e.from_node JOIN node n1 ON n1.id=e.to_node JOIN node n2
+                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
+                    WHERE n.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid
+                    AND n2.id=@node", @"SELECT n.id,n.latitude,n.longitude
+                    FROM node n JOIN edge e ON n.id=e.to_node JOIN node n1 ON n1.id=e.from_node JOIN node n2
+                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
+                    WHERE n.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid
+                    AND n2.id=@node", @"SELECT e.id,e.from_node,e.to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge WHERE weight?@profile AND direction?@profile AND guid=@guid
-                    AND (from_node=@node OR to_node=@node)"),
+                    FROM edge e JOIN node n1 ON e.from_node=n1.id OR e.to_node=n1.id JOIN node n2
+                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
+                    WHERE weight?@profile AND direction?@profile AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid
+                    AND n2.id=@node",
+                        @"SELECT r.rid,r.edge FROM restriction_from_edge r 
+                    JOIN edge e ON r.edge=e.id JOIN node n1 ON e.from_node=n1.id OR e.to_node=n1.id JOIN node n2
+                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
+                    WHERE n2.id=@node AND r.vehicle_type=@vehicleType AND r.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid",
+                        @"SELECT r.rid,r.edge FROM restriction_to_edge r 
+                    JOIN edge e ON r.edge=e.id JOIN node n1 ON e.from_node=n1.id OR e.to_node=n1.id JOIN node n2
+                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
+                    WHERE n2.id=@node AND r.vehicle_type=@vehicleType AND r.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid",
+                        @"SELECT rid,r.node FROM restriction_via_node r JOIN node n1 ON r.node=n1.id JOIN node n2
+                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1 
+                    WHERE n2.id=@node AND vehicle_type=@vehicleType AND r.guid=@guid AND n1.guid=@guid AND n2.guid=@guid"),
                     connection2);
 
             commandInsertIntoNode.Parameters.Add("id", SqliteType.Integer);
-            commandInsertIntoNode.Parameters.Add("fromWeight", SqliteType.Real);
-            commandInsertIntoNode.Parameters.Add("toWeight", SqliteType.Real);
+            commandInsertIntoNode.Parameters.Add("latitude", SqliteType.Real);
+            commandInsertIntoNode.Parameters.Add("longitude", SqliteType.Real);
+            commandInsertIntoNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
+            commandInsertIntoNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
+            commandInsertIntoNode.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
+            commandInsertIntoNode.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
+            commandInsertIntoNode.Parameters.AddWithValue("factor", MinFactor);
             commandInsertIntoNode.Prepare();
 
             commandInsertIntoEdge.Parameters.Add("id", SqliteType.Integer);
@@ -233,37 +274,52 @@ namespace Placium.Route.Algorithms
             commandInsertIntoEdge.Parameters.Add("direction", SqliteType.Integer);
             commandInsertIntoEdge.Prepare();
 
-            commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
-            commandSelectFromNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
-            commandSelectFromNode.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
-            commandSelectFromNode.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
             commandSelectFromNode.Parameters.AddWithValue("minWeight", minWeight);
-            commandSelectFromNode.Parameters.AddWithValue("maxWeight", maxWeight);
+            commandSelectFromNode.Parameters.AddWithValue("vehicleType", VehicleType);
             commandSelectFromNode.Parameters.AddWithValue("profile", Profile);
-            commandSelectFromNode.Parameters.AddWithValue("factor", MinFactor);
             commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
             commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
             commandSelectFromNode.Prepare();
 
             void LoadEdgesAndNodes(long node)
             {
+                commandSelectFromPrefedched.Parameters["node"].Value = node;
+
+                if((long) commandSelectFromPrefedched.ExecuteScalar() >0) return;
+
                 commandSelectFromNode.Parameters["node"].Value = node;
-                commandSelectFromRestriction.Parameters["node"].Value = node;
 
                 commandBegin.ExecuteNonQuery();
 
+                stopWatch1.Start();
                 using (var reader = commandSelectFromNode.ExecuteReader())
                 {
+                    stopWatch1.Stop();
+
                     while (reader.Read())
                     {
-                        commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoNode.Parameters["fromWeight"].Value = reader.GetFloat(1);
-                        commandInsertIntoNode.Parameters["toWeight"].Value = reader.GetFloat(2);
+                        commandInsertIntoPrefedched.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoPrefedched.Parameters["latitude"].Value = reader.GetFloat(1);
+                        commandInsertIntoPrefedched.Parameters["longitude"].Value = reader.GetFloat(2);
 
-                        commandInsertIntoNode.ExecuteNonQuery();
+                        commandInsertIntoPrefedched.ExecuteNonQuery();
                     }
 
                     reader.NextResult();
+
+                    for (var i = 0; i < 2; i++)
+                    {
+                        while (reader.Read())
+                        {
+                            commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
+                            commandInsertIntoNode.Parameters["latitude"].Value = reader.GetFloat(1);
+                            commandInsertIntoNode.Parameters["longitude"].Value = reader.GetFloat(2);
+
+                            commandInsertIntoNode.ExecuteNonQuery();
+                        }
+
+                        reader.NextResult();
+                    }
 
                     while (reader.Read())
                     {
@@ -275,21 +331,13 @@ namespace Placium.Route.Algorithms
 
                         commandInsertIntoEdge.ExecuteNonQuery();
                     }
-                }
-
-
-                using (var reader = commandSelectFromRestriction.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoRestriction.ExecuteNonQuery();
-                    }
 
                     reader.NextResult();
 
                     while (reader.Read())
                     {
+                        commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoRestriction.ExecuteNonQuery();
                         commandInsertIntoRestrictionFromEdge.Parameters["id"].Value = reader.GetInt64(0);
                         commandInsertIntoRestrictionFromEdge.Parameters["edge"].Value = reader.GetInt64(1);
                         commandInsertIntoRestrictionFromEdge.ExecuteNonQuery();
@@ -299,6 +347,8 @@ namespace Placium.Route.Algorithms
 
                     while (reader.Read())
                     {
+                        commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoRestriction.ExecuteNonQuery();
                         commandInsertIntoRestrictionToEdge.Parameters["id"].Value = reader.GetInt64(0);
                         commandInsertIntoRestrictionToEdge.Parameters["edge"].Value = reader.GetInt64(1);
                         commandInsertIntoRestrictionToEdge.ExecuteNonQuery();
@@ -308,6 +358,8 @@ namespace Placium.Route.Algorithms
 
                     while (reader.Read())
                     {
+                        commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoRestriction.ExecuteNonQuery();
                         commandInsertIntoRestrictionViaNode.Parameters["id"].Value = reader.GetInt64(0);
                         commandInsertIntoRestrictionViaNode.Parameters["node"].Value = reader.GetInt64(1);
                         commandInsertIntoRestrictionViaNode.ExecuteNonQuery();
@@ -509,6 +561,8 @@ namespace Placium.Route.Algorithms
 
                 for (var step = 0L;; step++)
                 {
+                    stopWatch2.Start();
+
                     var node1 = 0L;
                     var node2 = 0L;
                     var pr1 = maxWeight;
@@ -569,9 +623,12 @@ namespace Placium.Route.Algorithms
                         commandStep2.ExecuteNonQuery();
                     }
 
+                    stopWatch2.Stop();
 
                     if (step % 100 == 0)
                         Console.WriteLine($"{DateTime.Now:O} Step {step} complete" +
+                                          $" stopWatch1={stopWatch1.ElapsedMilliseconds}" +
+                                          $" stopWatch2={stopWatch2.ElapsedMilliseconds}" +
                                           $" temp_dijkstra1={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +
                                           $" temp_dijkstra2={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra2 WHERE in_queue", connection).ExecuteScalar()}" +
                                           $" MIN(g1)={new SqliteCommand("SELECT MIN(g) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +

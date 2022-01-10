@@ -54,13 +54,26 @@ namespace Placium.Route.Algorithms
                 language plpgsql
                 as
                 $$
-                declare
-                   dist real;
-                begin
-                   select ST_DistanceSphere(ST_MakePoint(lon1,lat1),ST_MakePoint(lon2,lat2)) 
-                   into dist;
-                   return dist;
-                end
+                    DECLARE
+                        dist float = 0;
+                        thi1 float;
+                        thi2 float;
+                        dthi float;
+                        lamda float;
+                        a float;
+                    BEGIN
+                        IF lat1 = lat2 AND lon1 = lon2
+                            THEN RETURN dist;
+                        ELSE
+                            thi1 = pi() * lat1 / 180;
+                            thi2 = pi() * lat2 / 180;
+                            dthi = pi() * (lat2 - lat1) / 180;
+                            lamda = pi() * (lon2 - lon1) / 180;
+                            a = pow(sin(dthi/2),2) + cos(thi1) * cos(thi2) * pow(sin(lamda/2),2);
+                            dist = 2 * 6371000 * atan2(sqrt(a),sqrt(1-a));
+                            RETURN dist;
+                        END IF;
+                    END
                 $$"), connection2))
             {
                 command.Prepare();
@@ -163,9 +176,9 @@ namespace Placium.Route.Algorithms
             using var commandSelectFromRestriction =
                 new NpgsqlCommand(string.Join(";", @"SELECT rid FROM (
                     SELECT rid FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid
-                    UNION SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
+                    UNION ALL SELECT rid FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
                     WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    UNION SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
+                    UNION ALL SELECT rid FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
                     WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid) q
                     GROUP BY rid",
                         @"SELECT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id

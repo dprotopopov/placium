@@ -34,4 +34,3 @@ FROM temp_edge;
 
 DROP TABLE temp_edge;
 
-CREATE INDEX ON edge (direction);

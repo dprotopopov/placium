@@ -31,7 +31,7 @@ CREATE TEMP TABLE temp_edge (
 );
 
 CREATE TABLE IF NOT EXISTS edge (
-	id BIGSERIAL NOT NULL, 
+	id BIGSERIAL PRIMARY KEY NOT NULL, 
 	guid UUID NOT NULL,
 	from_node BIGINT NOT NULL, 
 	to_node BIGINT NOT NULL,
@@ -45,8 +45,7 @@ CREATE TABLE IF NOT EXISTS edge (
 	tags hstore,
 	direction hstore,
 	weight hstore,
-	nodes bigint[],
-	PRIMARY KEY (id, guid)
+	nodes bigint[]
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS edge_guid_from_node_to_node_idx ON edge (guid,from_node,to_node);
@@ -55,3 +54,5 @@ CREATE INDEX IF NOT EXISTS edge_from_latitude_idx ON edge (from_latitude);
 CREATE INDEX IF NOT EXISTS edge_from_longitude_idx ON edge (from_longitude);
 CREATE INDEX IF NOT EXISTS edge_to_latitude_idx ON edge (to_latitude);
 CREATE INDEX IF NOT EXISTS edge_to_longitude_idx ON edge (to_longitude);
+CREATE INDEX IF NOT EXISTS edge_direction_idx ON edge USING HASH (direction);
+CREATE INDEX IF NOT EXISTS edge_weight_idx ON edge USING HASH (weight);
