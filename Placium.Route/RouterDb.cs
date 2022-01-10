@@ -76,7 +76,7 @@ namespace Placium.Route
                     {
                         Guid.ToString(),
                         vehicleType,
-                        $"{{{string.Join(",", @from.Select(t => $"{t}"))}}}",
+                        $"{{{string.Join(",", from.Select(t => $"{t}"))}}}",
                         $"{{{string.Join(",", to.Select(t => $"{t}"))}}}",
                         $"{{{string.Join(",", via.Select(t => $"{t}"))}}}",
                         $"{string.Join(",", tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
@@ -321,7 +321,7 @@ namespace Placium.Route
                                 switch (member.Role)
                                 {
                                     case "from":
-                                        @from = member.Id;
+                                        from = member.Id;
                                         break;
                                     case "to":
                                         to = member.Id;
@@ -339,9 +339,9 @@ namespace Placium.Route
                                 list.Add(way);
                             }
 
-                            var fromWay = list.FirstOrDefault(x => x.Id == @from);
+                            var fromWay = list.FirstOrDefault(x => x.Id == from);
                             if (fromWay != null)
-                                foreach (var way in list.Where(x => x.Id != @from && x.Id != to))
+                                foreach (var way in list.Where(x => x.Id != from && x.Id != to))
                                     FoundRestriction(vehicleType, fromWay.Nodes, way.Nodes, via,
                                         new TagsCollection(
                                             new Tag("type", type),
@@ -454,7 +454,7 @@ namespace Placium.Route
                                     var from = way1.Nodes[index1 - 1];
                                     var to = way2.Nodes[index2 - 1];
 
-                                    var fromCoords = dictionary[@from];
+                                    var fromCoords = dictionary[from];
                                     var toCoords = dictionary[to];
                                     var viaCoords = dictionary[via];
 
@@ -478,7 +478,7 @@ namespace Placium.Route
                                     var from = way1.Nodes[index1 - 1];
                                     var to = way2.Nodes[index2 + 1];
 
-                                    var fromCoords = dictionary[@from];
+                                    var fromCoords = dictionary[from];
                                     var toCoords = dictionary[to];
                                     var viaCoords = dictionary[via];
 
@@ -502,7 +502,7 @@ namespace Placium.Route
                                     var from = way1.Nodes[index1 + 1];
                                     var to = way2.Nodes[index2 + 1];
 
-                                    var fromCoords = dictionary[@from];
+                                    var fromCoords = dictionary[from];
                                     var toCoords = dictionary[to];
                                     var viaCoords = dictionary[via];
 
@@ -526,7 +526,7 @@ namespace Placium.Route
                                     var from = way1.Nodes[index1 + 1];
                                     var to = way2.Nodes[index2 - 1];
 
-                                    var fromCoords = dictionary[@from];
+                                    var fromCoords = dictionary[from];
                                     var toCoords = dictionary[to];
                                     var viaCoords = dictionary[via];
 
@@ -693,7 +693,7 @@ namespace Placium.Route
                                         },
                                     $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
                                     $"{string.Join(",", direction.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ToString()}\""))}",
-                                    $"{string.Join(",", weight.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ValueAsText()}\""))}",
+                                    $"{string.Join(",", weight.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ValueAsText()}\""))}"
                                 };
 
                                 writer.WriteLine(string.Join("\t", values));
@@ -1018,10 +1018,8 @@ namespace Placium.Route
                 Parallel.For(0, 4, i =>
                 {
                     using var connection4 = new NpgsqlConnection(ConnectionString);
-                    using var connection5 = new NpgsqlConnection(ConnectionString);
 
                     connection4.Open();
-                    connection5.Open();
 
                     using var commandBegin =
                         new NpgsqlCommand(@"BEGIN",
@@ -1033,103 +1031,38 @@ namespace Placium.Route
                     commandCommit.Prepare();
 
                     using var command3 =
-                        new NpgsqlCommand(
-                            @"INSERT INTO restriction_from_edge(rid,edge,vehicle_type,guid) VALUES (@id,@edge,@vehicleType,@guid)",
+                        new NpgsqlCommand(string.Join(";",
+                            @"INSERT INTO restriction_from_edge(rid,edge,vehicle_type,guid)
+                            WITH cte AS (SELECT id,from_nodes AS nodes,vehicle_type,guid FROM restriction WHERE id=@id AND guid=@guid)
+                            SELECT r.id,e.id,r.vehicle_type,r.guid FROM cte r JOIN edge e ON r.nodes&&e.nodes WHERE e.guid=@guid",
+                            @"INSERT INTO restriction_to_edge(rid,edge,vehicle_type,guid)
+                            WITH cte AS (SELECT id,to_nodes AS nodes,vehicle_type,guid FROM restriction WHERE id=@id AND guid=@guid)
+                            SELECT r.id,e.id,r.vehicle_type,r.guid FROM cte r JOIN edge e ON r.nodes&&e.nodes WHERE e.guid=@guid",
+                            @"INSERT INTO restriction_via_node(rid,node,vehicle_type,guid)
+                            WITH cte AS (SELECT id,via_nodes AS nodes,vehicle_type,guid FROM restriction WHERE id=@id AND guid=@guid)
+                            SELECT r.id,node,r.vehicle_type,r.guid FROM cte r,unnest(r.nodes) node"),
                             connection4);
-                    using var command4 =
-                        new NpgsqlCommand(
-                            @"INSERT INTO restriction_to_edge(rid,edge,vehicle_type,guid) VALUES (@id,@edge,@vehicleType,@guid)",
-                            connection4);
-                    using var command5 =
-                        new NpgsqlCommand(
-                            @"INSERT INTO restriction_via_node(rid,node,vehicle_type,guid) VALUES (@id,@node,@vehicleType,@guid)",
-                            connection4);
-                    using var command8 =
-                        new NpgsqlCommand(
-                            @"SELECT id FROM edge WHERE nodes&&@nodes AND guid=@guid",
-                            connection5);
 
                     command3.Parameters.Add("id", NpgsqlDbType.Bigint);
-                    command3.Parameters.Add("edge", NpgsqlDbType.Bigint);
-                    command3.Parameters.Add("vehicleType", NpgsqlDbType.Varchar);
                     command3.Parameters.AddWithValue("guid", Guid);
                     command3.Prepare();
-
-                    command4.Parameters.Add("id", NpgsqlDbType.Bigint);
-                    command4.Parameters.Add("edge", NpgsqlDbType.Bigint);
-                    command4.Parameters.Add("vehicleType", NpgsqlDbType.Varchar);
-                    command4.Parameters.AddWithValue("guid", Guid);
-                    command4.Prepare();
-
-                    command5.Parameters.Add("id", NpgsqlDbType.Bigint);
-                    command5.Parameters.Add("node", NpgsqlDbType.Bigint);
-                    command5.Parameters.Add("vehicleType", NpgsqlDbType.Varchar);
-                    command5.Parameters.AddWithValue("guid", Guid);
-                    command5.Prepare();
-
-
-                    command8.Parameters.Add("nodes", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                    command8.Parameters.AddWithValue("guid", Guid);
-                    command8.Prepare();
 
                     commandBegin.ExecuteNonQuery();
 
                     while (true)
                     {
                         long rid;
-                        long[] fromNodes;
-                        long[] toNodes;
-                        long[] viaNodes;
-                        string vehicleType;
                         lock (obj)
                         {
                             if (!doIt) break;
                             doIt = reader.Read();
                             if (!doIt) break;
                             rid = reader.GetInt64(0);
-                            fromNodes = (long[]) reader.GetValue(1);
-                            toNodes = (long[]) reader.GetValue(2);
-                            viaNodes = (long[]) reader.GetValue(3);
-                            vehicleType = reader.GetString(4);
                         }
 
-                        command8.Parameters["nodes"].Value = fromNodes;
-                        var fromEdges = new List<long>();
-                        using (var reader5 = command8.ExecuteReader())
-                        {
-                            while (reader5.Read()) fromEdges.Add(reader5.GetInt64(0));
-                        }
 
-                        command8.Parameters["nodes"].Value = toNodes;
-                        var toEdges = new List<long>();
-                        using (var reader5 = command8.ExecuteReader())
-                        {
-                            while (reader5.Read()) toEdges.Add(reader5.GetInt64(0));
-                        }
-
-                        fromEdges.ForEach(edge =>
-                        {
-                            command3.Parameters["id"].Value = rid;
-                            command3.Parameters["edge"].Value = edge;
-                            command3.Parameters["vehicleType"].Value = vehicleType;
-                            command3.ExecuteNonQuery();
-                        });
-
-                        toEdges.ForEach(edge =>
-                        {
-                            command4.Parameters["id"].Value = rid;
-                            command4.Parameters["edge"].Value = edge;
-                            command4.Parameters["vehicleType"].Value = vehicleType;
-                            command4.ExecuteNonQuery();
-                        });
-
-                        viaNodes.ToList().ForEach(via =>
-                        {
-                            command5.Parameters["id"].Value = rid;
-                            command5.Parameters["node"].Value = via;
-                            command5.Parameters["vehicleType"].Value = vehicleType;
-                            command5.ExecuteNonQuery();
-                        });
+                        command3.Parameters["id"].Value = rid;
+                        command3.ExecuteNonQuery();
 
                         lock (obj)
                         {

@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS restriction_from_edge (
 	vehicle_type VARCHAR(255),
     rid BIGINT NOT NULL, 
     edge BIGINT NOT NULL, 
-	FOREIGN KEY (rid, guid, vehicle_type) REFERENCES restriction (id, guid, vehicle_type)
+	FOREIGN KEY (rid) REFERENCES restriction (id)
 );
 
 CREATE TABLE IF NOT EXISTS restriction_to_edge (
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS restriction_to_edge (
 	vehicle_type VARCHAR(255),
     rid BIGINT NOT NULL, 
     edge BIGINT NOT NULL, 
-	FOREIGN KEY (rid, guid, vehicle_type) REFERENCES restriction (id, guid, vehicle_type)
+	FOREIGN KEY (rid) REFERENCES restriction (id)
 );
 
 CREATE TABLE IF NOT EXISTS restriction_via_node (
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS restriction_via_node (
 	vehicle_type VARCHAR(255),
     rid BIGINT NOT NULL, 
     node BIGINT NOT NULL, 
-	FOREIGN KEY (rid, guid, vehicle_type) REFERENCES restriction (id, guid, vehicle_type)
+	FOREIGN KEY (rid) REFERENCES restriction (id)
 );
 
 CREATE INDEX IF NOT EXISTS restriction_from_nodes_idx ON restriction USING GIN (from_nodes);

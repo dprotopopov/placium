@@ -201,8 +201,12 @@ namespace Placium.Route.Algorithms
             commandInsertIntoRestrictionViaNode.Prepare();
 
             using var commandSelectFromPrefedched = new SqliteCommand(
-                @"SELECT COUNT(*) FROM temp_prefetched n1 JOIN temp_node n2 ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
-                WHERE n2.id=@node", connection);
+                @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
+                cte1 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude<=n.latitude+0.01),
+                cte2 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude<=n.longitude+0.01),
+                cte3 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude>=n.latitude-0.01),
+                cte4 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude>=n.longitude-0.01)
+                SELECT COUNT(*) FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id", connection);
 
             commandSelectFromPrefedched.Parameters.Add("node", SqliteType.Integer);
             commandSelectFromPrefedched.Prepare();
@@ -230,31 +234,65 @@ namespace Placium.Route.Algorithms
 
             using var commandSelectFromNode =
                 new NpgsqlCommand(string.Join(";",
-                        @"SELECT id,latitude,longitude FROM node WHERE id=@node", @"SELECT n.id,n.latitude,n.longitude
-                    FROM node n JOIN edge e ON n.id=e.from_node JOIN node n1 ON n1.id=e.to_node JOIN node n2
-                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
-                    WHERE n.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid
-                    AND n2.id=@node", @"SELECT n.id,n.latitude,n.longitude
-                    FROM node n JOIN edge e ON n.id=e.to_node JOIN node n1 ON n1.id=e.from_node JOIN node n2
-                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
-                    WHERE n.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid
-                    AND n2.id=@node", @"SELECT e.id,e.from_node,e.to_node,
+                        @"SELECT id,latitude,longitude FROM node WHERE id=@node",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                    SELECT n.id,n.latitude,n.longitude
+                    FROM node n JOIN edge e ON n.id=e.from_node JOIN cte5 n1 ON n1.id=e.to_node
+                    WHERE n.guid=@guid AND e.guid=@guid
+                    UNION ALL SELECT n.id,n.latitude,n.longitude
+                    FROM node n JOIN edge e ON n.id=e.to_node JOIN cte5 n1 ON n1.id=e.from_node
+                    WHERE n.guid=@guid AND e.guid=@guid",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                    SELECT e.id,e.from_node,e.to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge e JOIN node n1 ON e.from_node=n1.id OR e.to_node=n1.id JOIN node n2
-                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
-                    WHERE weight?@profile AND direction?@profile AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid
-                    AND n2.id=@node",
-                        @"SELECT r.rid,r.edge FROM restriction_from_edge r 
-                    JOIN edge e ON r.edge=e.id JOIN node n1 ON e.from_node=n1.id OR e.to_node=n1.id JOIN node n2
-                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
-                    WHERE n2.id=@node AND r.vehicle_type=@vehicleType AND r.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid",
-                        @"SELECT r.rid,r.edge FROM restriction_to_edge r 
-                    JOIN edge e ON r.edge=e.id JOIN node n1 ON e.from_node=n1.id OR e.to_node=n1.id JOIN node n2
-                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1
-                    WHERE n2.id=@node AND r.vehicle_type=@vehicleType AND r.guid=@guid AND n1.guid=@guid AND n2.guid=@guid AND e.guid=@guid",
-                        @"SELECT rid,r.node FROM restriction_via_node r JOIN node n1 ON r.node=n1.id JOIN node n2
-                    ON n1.latitude<=n2.latitude+0.1 AND n2.latitude<=n1.latitude+0.1 AND n1.longitude<=n2.longitude+0.1 AND n2.longitude<=n1.longitude+0.1 
-                    WHERE n2.id=@node AND vehicle_type=@vehicleType AND r.guid=@guid AND n1.guid=@guid AND n2.guid=@guid"),
+                    FROM edge e JOIN cte5 n1 ON e.from_node=n1.id
+                    WHERE weight?@profile AND direction?@profile AND e.guid=@guid
+                    UNION ALL SELECT e.id,e.from_node,e.to_node,
+                    GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
+                    FROM edge e JOIN cte5 n1 ON e.to_node=n1.id
+                    WHERE weight?@profile AND direction?@profile AND e.guid=@guid",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                    SELECT r.rid,r.edge FROM restriction_from_edge r 
+                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.from_node=n1.id
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    UNION ALL SELECT r.rid,r.edge FROM restriction_from_edge r 
+                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.to_node=n1.id
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                    SELECT r.rid,r.edge FROM restriction_to_edge r 
+                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.from_node=n1.id
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    UNION ALL SELECT r.rid,r.edge FROM restriction_to_edge r 
+                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.to_node=n1.id
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                    SELECT rid,r.node FROM restriction_via_node r JOIN cte5 n1 ON r.node=n1.id
+                    WHERE vehicle_type=@vehicleType AND r.guid=@guid"),
                     connection2);
 
             commandInsertIntoNode.Parameters.Add("id", SqliteType.Integer);
@@ -307,19 +345,16 @@ namespace Placium.Route.Algorithms
 
                     reader.NextResult();
 
-                    for (var i = 0; i < 2; i++)
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
-                            commandInsertIntoNode.Parameters["latitude"].Value = reader.GetFloat(1);
-                            commandInsertIntoNode.Parameters["longitude"].Value = reader.GetFloat(2);
+                        commandInsertIntoNode.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoNode.Parameters["latitude"].Value = reader.GetFloat(1);
+                        commandInsertIntoNode.Parameters["longitude"].Value = reader.GetFloat(2);
 
-                            commandInsertIntoNode.ExecuteNonQuery();
-                        }
-
-                        reader.NextResult();
+                        commandInsertIntoNode.ExecuteNonQuery();
                     }
+
+                    reader.NextResult();
 
                     while (reader.Read())
                     {
@@ -333,6 +368,7 @@ namespace Placium.Route.Algorithms
                     }
 
                     reader.NextResult();
+
 
                     while (reader.Read())
                     {
@@ -524,15 +560,15 @@ namespace Placium.Route.Algorithms
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
                             AND NOT EXISTS (SELECT * FROM temp_restriction r 
                             JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_from_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_to_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            JOIN temp_restriction_from_edge rf ON rf.edge=e.id AND r.id=rf.rid
+                            JOIN temp_restriction_to_edge rt ON rt.edge=t.edge AND r.id=rt.rid)
                             UNION ALL SELECT e.to_node AS node,n.from_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
 		                    FROM temp_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra2 t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
                             AND NOT EXISTS (SELECT * FROM temp_restriction r 
                             JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_from_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_to_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
+                            JOIN temp_restriction_from_edge rf ON rf.edge=e.id AND r.id=rf.rid
+                            JOIN temp_restriction_to_edge rt ON rt.edge=t.edge AND r.id=rt.rid)) q
                     )
                     SELECT 
 	                    node,
@@ -625,8 +661,10 @@ namespace Placium.Route.Algorithms
 
                     stopWatch2.Stop();
 
-                    if (step % 100 == 0)
+                    if (step % 1 == 0)
                         Console.WriteLine($"{DateTime.Now:O} Step {step} complete" +
+                                          $" node1={node1}" +
+                                          $" node2={node2}" +
                                           $" stopWatch1={stopWatch1.ElapsedMilliseconds}" +
                                           $" stopWatch2={stopWatch2.ElapsedMilliseconds}" +
                                           $" temp_dijkstra1={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +

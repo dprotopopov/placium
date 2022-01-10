@@ -535,15 +535,15 @@ namespace Placium.Route.Algorithms
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@y
                             AND NOT EXISTS (SELECT * FROM temp_restriction r 
                             JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_from_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_to_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            JOIN temp_restriction_from_edge rf ON rf.edge=e.id AND r.id=rf.rid
+                            JOIN temp_restriction_to_edge rt ON rt.edge=t.edge AND r.id=rt.rid)
                             UNION ALL SELECT e.to_node AS node
 		                    FROM temp_edge e JOIN temp_dijkstra2 t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@y
                             AND NOT EXISTS (SELECT * FROM temp_restriction r 
                             JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_from_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_to_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
+                            JOIN temp_restriction_from_edge rf ON rf.edge=e.id AND r.id=rf.rid
+                            JOIN temp_restriction_to_edge rt ON rt.edge=t.edge AND r.id=rt.rid)) q
                     ), cte AS (SELECT t1.node AS x,t2.node AS y,t1.weight1,t2.weight2,
                     @factor*distanceInMeters(n1.latitude,n1.longitude,n2.latitude,n2.longitude) AS weight3
                     FROM cte1 JOIN temp_dijkstra1 t1 ON cte1.node=t1.node JOIN temp_node n1 ON t1.node=n1.id,
