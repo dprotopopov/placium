@@ -121,7 +121,7 @@ namespace Placium.Route.Algorithms
                 new SqliteCommand(string.Join(";",
                         @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
                         @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
-                        @"CREATE UNIQUE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
+                        @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
                         @"CREATE INDEX temp_restriction_from_edge_idx ON temp_restriction_from_edge (edge)",
                         @"CREATE INDEX temp_restriction_to_edge_idx ON temp_restriction_to_edge (edge)",
                         @"CREATE INDEX temp_restriction_via_node_idx ON temp_restriction_via_node (node)"),

@@ -62,8 +62,7 @@ namespace Placium.Route.Algorithms
             }
 
             var tempNode = new ConcurrentDictionary<long, TempNode>();
-            var tempEdge = new ConcurrentDictionary<(long, long), TempEdge>();
-            var tempEdge1 = new ConcurrentDictionary<long, TempEdge>();
+            var tempEdge = new ConcurrentDictionary<long, TempEdge>();
             var tempDijkstra1 = new ConcurrentDictionary<long, TempDijkstra>();
             var tempDijkstra2 = new ConcurrentDictionary<long, TempDijkstra>();
             var tempRestriction = new ConcurrentDictionary<long, TempRestriction>();
@@ -144,8 +143,7 @@ namespace Placium.Route.Algorithms
                         item.ToNode = reader.GetInt64(2);
                         item.Weight = reader.GetFloat(3);
                         item.Direction = reader.GetInt16(4);
-                        tempEdge.TryAdd((item.FromNode, item.ToNode), item);
-                        tempEdge1.TryAdd(item.Id, item);
+                        tempEdge.TryAdd(item.Id, item);
                     }
                 }
 
@@ -406,8 +404,8 @@ namespace Placium.Route.Algorithms
             for (var node1 = node;;)
             {
                 var q = (from t in tempDijkstra1
-                    where t.Value.Node == node1 && tempEdge1.ContainsKey(t.Value.Edge)
-                    let e = tempEdge1[t.Value.Edge]
+                    where t.Value.Node == node1 && tempEdge.ContainsKey(t.Value.Edge)
+                    let e = tempEdge[t.Value.Edge]
                     select (e.Id, e.FromNode == node1 ? e.ToNode : e.FromNode)).ToList();
                 if (!q.Any()) break;
                 var (key, value) = q.First();
@@ -420,8 +418,8 @@ namespace Placium.Route.Algorithms
             for (var node2 = node;;)
             {
                 var q = (from t in tempDijkstra2
-                    where t.Value.Node == node2 && tempEdge1.ContainsKey(t.Value.Edge)
-                    let e = tempEdge1[t.Value.Edge]
+                    where t.Value.Node == node2 && tempEdge.ContainsKey(t.Value.Edge)
+                    let e = tempEdge[t.Value.Edge]
                     select (e.Id, e.FromNode == node2 ? e.ToNode : e.FromNode)).ToList();
                 if (!q.Any()) break;
                 var (key, value) = q.First();
