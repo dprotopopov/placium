@@ -141,7 +141,7 @@ namespace Placium.Route.Algorithms
                     weight,direction) SELECT id,from_node,to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
                     FROM edge WHERE weight?@profile AND direction?@profile AND guid=@guid
-                    AND @node=ANY(nodes) ON CONFLICT (from_node,to_node) DO NOTHING"),
+                    AND @node=ANY(nodes) ON CONFLICT (id) DO NOTHING"),
                     connection);
 
             commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);

@@ -223,7 +223,7 @@ namespace Placium.Route.Algorithms
                 @"INSERT INTO temp_edge (id,from_node,to_node,
                 weight,direction) VALUES (@id,@fromNode,@toNode,
                     @weight,@direction)
-                ON CONFLICT (from_node,to_node) DO NOTHING",
+                ON CONFLICT (id) DO NOTHING",
                 connection);
             using var commandSelectFromNode =
                 new NpgsqlCommand(string.Join(";", @"SELECT n.id,latitude,longitude
