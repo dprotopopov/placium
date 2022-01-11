@@ -1,4 +1,11 @@
-﻿CREATE TEMP TABLE temp_restriction2 AS SELECT
+﻿INSERT INTO temp_restriction2 (
+	guid,
+	vehicle_type,
+	from_edge,
+	to_edge,
+	via_node,
+	tags
+) SELECT
 	t.guid,
 	t.vehicle_type,
 	ef.id AS from_edge,
@@ -32,3 +39,4 @@ FROM cte WHERE rn=1
 ON CONFLICT (guid,vehicle_type,from_edge,to_edge,via_node) DO NOTHING;
 
 DROP TABLE temp_restriction2;
+DROP TABLE temp_restriction;

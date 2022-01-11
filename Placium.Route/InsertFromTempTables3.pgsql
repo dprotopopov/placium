@@ -1,4 +1,4 @@
-﻿CREATE INDEX IF NOT EXISTS temp_edge_guid_from_node_to_node_way_idx ON edge (guid,from_node,to_node,way);
+﻿CREATE INDEX ON temp_edge (guid,from_node,to_node,way);
 
 INSERT INTO edge(
 	guid,

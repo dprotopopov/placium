@@ -59,3 +59,8 @@ CREATE INDEX IF NOT EXISTS edge_to_latitude_idx ON edge (to_latitude);
 CREATE INDEX IF NOT EXISTS edge_to_longitude_idx ON edge (to_longitude);
 CREATE INDEX IF NOT EXISTS edge_direction_idx ON edge USING HASH (direction);
 CREATE INDEX IF NOT EXISTS edge_weight_idx ON edge USING HASH (weight);
+CREATE INDEX IF NOT EXISTS edge_guid_weight_direction_idx ON edge (guid,weight,direction);
+CREATE INDEX IF NOT EXISTS edge_guid_from_node_idx ON edge (guid,from_node);
+CREATE INDEX IF NOT EXISTS edge_guid_to_node_idx ON edge (guid,to_node);
+CREATE INDEX IF NOT EXISTS edge_guid_from_node_weight_direction_idx ON edge (guid,from_node,weight,direction);
+CREATE INDEX IF NOT EXISTS edge_guid_to_node_weight_direction_idx ON edge (guid,to_node,weight,direction);

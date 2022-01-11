@@ -239,7 +239,7 @@ namespace Placium.Route.Algorithms
                     WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
                     UNION ALL SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
                     JOIN cte5 n1 ON r.via_node=n1.id
-                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid"),
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid"),
                     connection2);
 
             commandInsertIntoNode.Parameters.Add("id", SqliteType.Integer);
@@ -270,16 +270,21 @@ namespace Placium.Route.Algorithms
             {
                 commandSelectFromPrefedched.Parameters["node"].Value = node;
 
-                if((long) commandSelectFromPrefedched.ExecuteScalar() >0) return;
+                stopWatch1.Start();
+                if ((long) commandSelectFromPrefedched.ExecuteScalar() > 0)
+                {
+                    stopWatch1.Stop();
+                    return;
+                }
+                stopWatch1.Stop();
 
                 commandSelectFromNode.Parameters["node"].Value = node;
 
                 commandBegin.ExecuteNonQuery();
 
-                stopWatch1.Start();
+                stopWatch2.Start();
                 using (var reader = commandSelectFromNode.ExecuteReader())
                 {
-                    stopWatch1.Stop();
 
                     while (reader.Read())
                     {
@@ -320,12 +325,14 @@ namespace Placium.Route.Algorithms
                     while (reader.Read())
                     {
                         commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoRestriction.Parameters["fromWay"].Value = reader.GetInt64(1);
-                        commandInsertIntoRestriction.Parameters["toWay"].Value = reader.GetInt64(2);
+                        commandInsertIntoRestriction.Parameters["fromEdge"].Value = reader.GetInt64(1);
+                        commandInsertIntoRestriction.Parameters["toEdge"].Value = reader.GetInt64(2);
                         commandInsertIntoRestriction.Parameters["viaNode"].Value = reader.GetInt64(3);
                         commandInsertIntoRestriction.ExecuteNonQuery();
                     }
                 }
+
+                stopWatch2.Stop();
 
                 commandCommit.ExecuteNonQuery();
             }
@@ -510,8 +517,6 @@ namespace Placium.Route.Algorithms
 
                 for (var step = 0L;; step++)
                 {
-                    stopWatch2.Start();
-
                     var node1 = 0L;
                     var node2 = 0L;
                     var pr1 = maxWeight;
@@ -572,12 +577,8 @@ namespace Placium.Route.Algorithms
                         commandStep2.ExecuteNonQuery();
                     }
 
-                    stopWatch2.Stop();
-
-                    if (step % 1 == 0)
+                    if (step % 100 == 0)
                         Console.WriteLine($"{DateTime.Now:O} Step {step} complete" +
-                                          $" node1={node1}" +
-                                          $" node2={node2}" +
                                           $" stopWatch1={stopWatch1.ElapsedMilliseconds}" +
                                           $" stopWatch2={stopWatch2.ElapsedMilliseconds}" +
                                           $" temp_dijkstra1={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +
