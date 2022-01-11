@@ -203,10 +203,10 @@ namespace Placium.Route.Algorithms
                 new NpgsqlCommand(string.Join(";",
                         @"SELECT id,latitude,longitude FROM node WHERE id=@node",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
                         cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
                     SELECT n.id,n.latitude,n.longitude
                     FROM node n JOIN edge e ON n.id=e.from_node JOIN cte5 n1 ON n1.id=e.to_node
@@ -215,10 +215,10 @@ namespace Placium.Route.Algorithms
                     FROM node n JOIN edge e ON n.id=e.to_node JOIN cte5 n1 ON n1.id=e.from_node
                     WHERE n.guid=@guid AND e.guid=@guid",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
                         cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
                     SELECT e.id,e.from_node,e.to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
@@ -229,10 +229,10 @@ namespace Placium.Route.Algorithms
                     FROM edge e JOIN cte5 n1 ON e.to_node=n1.id
                     WHERE weight?@profile AND direction?@profile AND e.guid=@guid",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
+                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
+                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
                         cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
                     SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
                     JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte5 n1 ON e.from_node=n1.id OR e.to_node=n1.id
