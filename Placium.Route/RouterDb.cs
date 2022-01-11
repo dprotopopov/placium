@@ -64,10 +64,10 @@ namespace Placium.Route
                 "Placium.Route.CreateTempTables2.pgsql",
                 connection2);
             using (var writer2 = connection2.BeginTextImport(
-                "COPY temp_restriction (guid,vehicle_type,from_nodes,to_nodes,via_nodes,tags) FROM STDIN WITH NULL AS ''")
+                "COPY temp_restriction (guid,vehicle_type,from_way,to_way,via_node,tags) FROM STDIN WITH NULL AS ''")
             )
             {
-                void FoundRestriction(string vehicleType, long[] from, long[] to, long[] via,
+                void FoundRestriction(string vehicleType, long fromWay, long toWay, long viaNode,
                     TagsCollectionBase tags)
                 {
                     if (vehicleType == null) vehicleType = string.Empty;
@@ -76,9 +76,9 @@ namespace Placium.Route
                     {
                         Guid.ToString(),
                         vehicleType,
-                        $"{{{string.Join(",", from.Select(t => $"{t}"))}}}",
-                        $"{{{string.Join(",", to.Select(t => $"{t}"))}}}",
-                        $"{{{string.Join(",", via.Select(t => $"{t}"))}}}",
+                        fromWay.ToString(),
+                        toWay.ToString(),
+                        viaNode.ToString(),
                         $"{string.Join(",", tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
                     };
 
@@ -146,8 +146,8 @@ namespace Placium.Route
                                          nodeTags.Contains("barrier", "gate")))
                                     {
                                         is_core = true;
-                                        var via = new[] {node.Id.Value};
-                                        FoundRestriction("motorcar", way.Nodes, way.Nodes, via, nodeTags);
+                                        FoundRestriction("motorcar", way.Id.Value, way.Id.Value, node.Id.Value,
+                                            nodeTags);
                                     }
 
                                     foreach (var vehicle in VehicleCache.Vehicles)
@@ -183,8 +183,8 @@ namespace Placium.Route
                                                     is_core = true;
 
                                                     var vehicleType = vehicleTypeVal.String;
-                                                    var via = new[] {node.Id.Value};
-                                                    FoundRestriction(vehicleType, way.Nodes, way.Nodes, via,
+                                                    FoundRestriction(vehicleType, way.Id.Value, way.Id.Value,
+                                                        node.Id.Value,
                                                         nodeTags);
                                                 }
                                             }
@@ -307,6 +307,10 @@ namespace Placium.Route
                         var relation = new Relation().Fill(reader);
                         var via = (long[]) reader.GetValue(9);
 
+                        if (via.Length != 1) continue;
+
+                        var viaNode = via.First();
+
                         if (relation.IsRestriction(out var vehicleType) &&
                             relation.Members != null)
                         {
@@ -315,37 +319,13 @@ namespace Placium.Route
                             var type = "restriction";
                             if (!string.IsNullOrWhiteSpace(vehicleType)) type = type + ":" + vehicleType;
 
-                            long? from = null;
-                            long? to = null;
-                            foreach (var member in relation.Members)
-                                switch (member.Role)
-                                {
-                                    case "from":
-                                        from = member.Id;
-                                        break;
-                                    case "to":
-                                        to = member.Id;
-                                        break;
-                                }
-
-                            command2.Parameters["nodes"].Value = via;
-
-                            using var reader2 = await command2.ExecuteReaderAsync();
-
-                            var list = new List<Way>();
-                            while (reader2.Read())
-                            {
-                                var way = new Way().Fill(reader2);
-                                list.Add(way);
-                            }
-
-                            var fromWay = list.FirstOrDefault(x => x.Id == from);
-                            if (fromWay != null)
-                                foreach (var way in list.Where(x => x.Id != from && x.Id != to))
-                                    FoundRestriction(vehicleType, fromWay.Nodes, way.Nodes, via,
-                                        new TagsCollection(
-                                            new Tag("type", type),
-                                            new Tag("restriction", "no_turn")));
+                            foreach (var fromWay in relation.Members
+                                .Where(m => m.Role == "from" && m.Type == OsmGeoType.Way).ToList())
+                            foreach (var toWay in relation.Members
+                                .Where(m => m.Role == "to" && m.Type == OsmGeoType.Way).ToList())
+                                FoundRestriction(vehicleType, fromWay.Id, toWay.Id, viaNode, new TagsCollection(
+                                    new Tag("type", type),
+                                    new Tag("restriction", "no_turn")));
                         }
 
                         if (current++ % 1000 == 0)
@@ -422,17 +402,21 @@ namespace Placium.Route
                             VehicleCache.AnyCanTraverse(attributes1) &&
                             VehicleCache.AnyCanTraverse(attributes2))
                         {
-                            var intersection =
-                                (from n1 in way1.Nodes join n2 in way2.Nodes on n1 equals n2 select n1)
-                                .ToList();
+                            var ids = new[]
+                            {
+                                way1.Nodes[0],
+                                way1.Nodes[1],
+                                way1.Nodes[^1],
+                                way1.Nodes[^2],
+                                way2.Nodes[0],
+                                way2.Nodes[1],
+                                way2.Nodes[^1],
+                                way2.Nodes[^2]
+                            };
 
-                            var ids = new List<long>(way1.Nodes.Length + way2.Nodes.Length);
-                            ids.AddRange(way1.Nodes);
-                            ids.AddRange(way2.Nodes);
+                            command2.Parameters["ids"].Value = ids;
 
-                            command2.Parameters["ids"].Value = ids.ToArray();
-
-                            var list = new List<Node>(way1.Nodes.Length + way2.Nodes.Length - intersection.Count);
+                            var list = new List<Node>(8);
                             using var reader2 = command2.ExecuteReader();
 
                             while (reader2.Read())
@@ -443,106 +427,87 @@ namespace Placium.Route
 
                             var dictionary = list.ToDictionary(x => x.Id,
                                 x => new Coordinate((float) x.Latitude, (float) x.Longitude));
-
-                            foreach (var via in intersection)
+                            if (way1.Nodes.First() == way2.Nodes.First())
                             {
-                                var index1 = way1.Nodes.TakeWhile(node => node != via).Count();
-                                var index2 = way2.Nodes.TakeWhile(node => node != via).Count();
+                                var fromCoords = dictionary[way1.Nodes[1]];
+                                var toCoords = dictionary[way2.Nodes[1]];
+                                var viaCoords = dictionary[way1.Nodes[0]];
 
-                                if (index1 > 0 && index2 > 0)
+                                if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
                                 {
-                                    var from = way1.Nodes[index1 - 1];
-                                    var to = way2.Nodes[index2 - 1];
-
-                                    var fromCoords = dictionary[from];
-                                    var toCoords = dictionary[to];
-                                    var viaCoords = dictionary[via];
-
-                                    if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
-                                    {
-                                        FoundRestriction(vehicleType, way1.Nodes.Take(index1).ToArray(),
-                                            way2.Nodes.Take(index2).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                        FoundRestriction(vehicleType, way2.Nodes.Take(index2).ToArray(),
-                                            way1.Nodes.Take(index1).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                    }
+                                    FoundRestriction(vehicleType, way1.Id.Value,
+                                        way2.Id.Value, way1.Nodes[0],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
+                                    FoundRestriction(vehicleType, way2.Id.Value, way1.Id.Value,
+                                        way1.Nodes[0],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
                                 }
+                            }
 
-                                if (index1 > 0 && index2 < way2.Nodes.Length - 1)
+                            if (way1.Nodes.First() == way2.Nodes.Last())
+                            {
+                                var fromCoords = dictionary[way1.Nodes[1]];
+                                var toCoords = dictionary[way2.Nodes[^2]];
+                                var viaCoords = dictionary[way1.Nodes[0]];
+
+                                if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
                                 {
-                                    var from = way1.Nodes[index1 - 1];
-                                    var to = way2.Nodes[index2 + 1];
-
-                                    var fromCoords = dictionary[from];
-                                    var toCoords = dictionary[to];
-                                    var viaCoords = dictionary[via];
-
-                                    if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
-                                    {
-                                        FoundRestriction(vehicleType, way1.Nodes.Take(index1).ToArray(),
-                                            way2.Nodes.Skip(index2 + 1).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                        FoundRestriction(vehicleType, way2.Nodes.Skip(index2 + 1).ToArray(),
-                                            way1.Nodes.Take(index1).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                    }
+                                    FoundRestriction(vehicleType, way1.Id.Value,
+                                        way2.Id.Value, way1.Nodes[0],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
+                                    FoundRestriction(vehicleType, way2.Id.Value, way1.Id.Value,
+                                        way1.Nodes[0],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
                                 }
+                            }
 
-                                if (index1 < way1.Nodes.Length - 1 && index2 < way2.Nodes.Length - 1)
+                            if (way1.Nodes.Last() == way2.Nodes.Last())
+                            {
+                                var fromCoords = dictionary[way1.Nodes[^2]];
+                                var toCoords = dictionary[way2.Nodes[^2]];
+                                var viaCoords = dictionary[way1.Nodes[^1]];
+
+                                if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
                                 {
-                                    var from = way1.Nodes[index1 + 1];
-                                    var to = way2.Nodes[index2 + 1];
-
-                                    var fromCoords = dictionary[from];
-                                    var toCoords = dictionary[to];
-                                    var viaCoords = dictionary[via];
-
-                                    if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
-                                    {
-                                        FoundRestriction(vehicleType, way1.Nodes.Skip(index1 + 1).ToArray(),
-                                            way2.Nodes.Skip(index2 + 1).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                        FoundRestriction(vehicleType, way2.Nodes.Skip(index2 + 1).ToArray(),
-                                            way1.Nodes.Skip(index1 + 1).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                    }
+                                    FoundRestriction(vehicleType, way1.Id.Value,
+                                        way2.Id.Value, way1.Nodes[^1],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
+                                    FoundRestriction(vehicleType, way2.Id.Value, way1.Id.Value,
+                                        way1.Nodes[^1],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
                                 }
+                            }
 
-                                if (index1 < way1.Nodes.Length - 1 && index2 > 0)
+                            if (way1.Nodes.Last() == way2.Nodes.First())
+                            {
+                                var fromCoords = dictionary[way1.Nodes[^2]];
+                                var toCoords = dictionary[way2.Nodes[1]];
+                                var viaCoords = dictionary[way2.Nodes[0]];
+
+                                if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
                                 {
-                                    var from = way1.Nodes[index1 + 1];
-                                    var to = way2.Nodes[index2 - 1];
-
-                                    var fromCoords = dictionary[from];
-                                    var toCoords = dictionary[to];
-                                    var viaCoords = dictionary[via];
-
-                                    if (Coordinate.AngleInDegree(fromCoords, toCoords, viaCoords) < 60f)
-                                    {
-                                        FoundRestriction(vehicleType, way1.Nodes.Skip(index1 + 1).ToArray(),
-                                            way2.Nodes.Take(index2).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                        FoundRestriction(vehicleType, way2.Nodes.Take(index2).ToArray(),
-                                            way1.Nodes.Skip(index1 + 1).ToArray(), new[] {via},
-                                            new TagsCollection(
-                                                new Tag("type", type),
-                                                new Tag("restriction", "no_turn")));
-                                    }
+                                    FoundRestriction(vehicleType, way1.Id.Value,
+                                        way2.Id.Value, way2.Nodes[0],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
+                                    FoundRestriction(vehicleType, way2.Id.Value, way1.Id.Value,
+                                        way2.Nodes[0],
+                                        new TagsCollection(
+                                            new Tag("type", type),
+                                            new Tag("restriction", "no_turn")));
                                 }
                             }
                         }
@@ -558,7 +523,7 @@ namespace Placium.Route
                 await progressClient.Init(id, session);
 
                 using (var writer = connection.BeginTextImport(
-                    @"COPY temp_edge (guid,from_node,to_node,
+                    @"COPY temp_edge (guid,from_node,to_node,way,
 	                    from_latitude, 
 	                    from_longitude, 
 	                    to_latitude, 
@@ -677,6 +642,7 @@ namespace Placium.Route
                                     Guid.ToString(),
                                     fromNode.ToString(),
                                     toNode.ToString(),
+                                    way.Id.ToString(),
                                     fromCoords.Latitude.ValueAsText(),
                                     fromCoords.Longitude.ValueAsText(),
                                     toCoords.Latitude.ValueAsText(),
@@ -715,370 +681,6 @@ namespace Placium.Route
                 "Placium.Route.InsertFromTempTables2.pgsql",
                 connection2);
 
-            #region region
-
-#if _REGION
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Placium.Route.CreateTempTables4.pgsql",
-                    connection);
-                using (var command =
-                    new NpgsqlCommand(
-                        @"INSERT INTO region(guid,min_latitude,min_longitude,max_latitude,max_longitude)
-                                VALUES (@guid,-90,-180,90,180)",
-                        connection))
-                {
-                    command.Parameters.AddWithValue("guid", Guid);
-                    command.Prepare();
-                    command.ExecuteNonQuery();
-                }
-
-                var id1 = Guid.NewGuid().ToString();
-                await progressClient.Init(id1, session);
-
-                long totalNodes;
-                using (var command =
-                    new NpgsqlCommand(
-                        @"SELECT COUNT(*) FROM node WHERE guid=@guid",
-                        connection))
-                {
-                    command.Parameters.AddWithValue("guid", Guid);
-                    command.Prepare();
-                    totalNodes = (long) await command.ExecuteScalarAsync();
-                }
-
-                var totalUnits = 1L << (int) Math.Ceiling(Math.Log2(totalNodes) / 3);
-
-                using (var command =
-                    new NpgsqlCommand(
-                        @"SELECT id,min_latitude,min_longitude,max_latitude,max_longitude FROM region WHERE guid=@guid",
-                        connection))
-                using (var command1 =
-                    new NpgsqlCommand(
-                        @"SELECT (PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY latitude))::real FROM node 
-                                WHERE @minLatitude<=latitude AND latitude<=@maxLatitude
-                                AND @minLongitude<=longitude AND longitude<=@maxLongitude
-                                AND guid=@guid",
-                        connection2))
-                using (var command2 =
-                    new NpgsqlCommand(
-                        @"SELECT (PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY longitude))::real FROM node 
-                                WHERE @minLatitude<=latitude AND latitude<=@maxLatitude
-                                AND @minLongitude<=longitude AND longitude<=@maxLongitude
-                                AND guid=@guid",
-                        connection2))
-                using (var command3 =
-                    new NpgsqlCommand(string.Join(";",
-                            @"INSERT INTO region(guid,min_latitude,min_longitude,max_latitude,max_longitude)
-                                VALUES (@guid,@minLatitude1,@minLongitude1,@maxLatitude1,@maxLongitude1),
-                                (@guid,@minLatitude2,@minLongitude2,@maxLatitude2,@maxLongitude2)",
-                            @"DELETE FROM region WHERE id=@id AND guid=@guid"),
-                        connection2))
-                {
-                    command.Parameters.AddWithValue("guid", Guid);
-                    command.Prepare();
-
-                    command1.Parameters.Add("minLatitude", NpgsqlDbType.Real);
-                    command1.Parameters.Add("maxLatitude", NpgsqlDbType.Real);
-                    command1.Parameters.Add("minLongitude", NpgsqlDbType.Real);
-                    command1.Parameters.Add("maxLongitude", NpgsqlDbType.Real);
-                    command1.Parameters.AddWithValue("guid", Guid);
-                    command1.Prepare();
-
-                    command2.Parameters.Add("minLatitude", NpgsqlDbType.Real);
-                    command2.Parameters.Add("maxLatitude", NpgsqlDbType.Real);
-                    command2.Parameters.Add("minLongitude", NpgsqlDbType.Real);
-                    command2.Parameters.Add("maxLongitude", NpgsqlDbType.Real);
-                    command2.Parameters.AddWithValue("guid", Guid);
-                    command2.Prepare();
-
-                    command3.Parameters.Add("id", NpgsqlDbType.Bigint);
-                    command3.Parameters.Add("minLatitude1", NpgsqlDbType.Real);
-                    command3.Parameters.Add("maxLatitude1", NpgsqlDbType.Real);
-                    command3.Parameters.Add("minLongitude1", NpgsqlDbType.Real);
-                    command3.Parameters.Add("maxLongitude1", NpgsqlDbType.Real);
-                    command3.Parameters.Add("minLatitude2", NpgsqlDbType.Real);
-                    command3.Parameters.Add("maxLatitude2", NpgsqlDbType.Real);
-                    command3.Parameters.Add("minLongitude2", NpgsqlDbType.Real);
-                    command3.Parameters.Add("maxLongitude2", NpgsqlDbType.Real);
-                    command3.Parameters.AddWithValue("guid", Guid);
-                    command3.Prepare();
-
-                    var current = 0L;
-
-                    for (var i = totalUnits; i > 1; i >>= 1)
-                        using (var reader = command.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                long uid;
-                                float minLatitude;
-                                float minLongitude;
-                                float maxLatitude;
-                                float maxLongitude;
-
-
-                                uid = reader.GetInt64(0);
-                                minLatitude = reader.GetFloat(1);
-                                minLongitude = reader.GetFloat(2);
-                                maxLatitude = reader.GetFloat(3);
-                                maxLongitude = reader.GetFloat(4);
-
-
-                                if (maxLatitude - minLatitude > maxLongitude - minLongitude)
-                                {
-                                    command1.Parameters["minLatitude"].Value = minLatitude;
-                                    command1.Parameters["minLongitude"].Value = minLongitude;
-                                    command1.Parameters["maxLatitude"].Value = maxLatitude;
-                                    command1.Parameters["maxLongitude"].Value = maxLongitude;
-
-                                    var latitude = (float) command1.ExecuteScalar();
-
-                                    command3.Parameters["id"].Value = uid;
-                                    command3.Parameters["minLatitude1"].Value = minLatitude;
-                                    command3.Parameters["minLongitude1"].Value = minLongitude;
-                                    command3.Parameters["maxLatitude1"].Value = latitude;
-                                    command3.Parameters["maxLongitude1"].Value = maxLongitude;
-                                    command3.Parameters["minLatitude2"].Value = latitude;
-                                    command3.Parameters["minLongitude2"].Value = minLongitude;
-                                    command3.Parameters["maxLatitude2"].Value = maxLatitude;
-                                    command3.Parameters["maxLongitude2"].Value = maxLongitude;
-
-                                    command3.ExecuteNonQuery();
-                                }
-                                else
-                                {
-                                    command2.Parameters["minLatitude"].Value = minLatitude;
-                                    command2.Parameters["minLongitude"].Value = minLongitude;
-                                    command2.Parameters["maxLatitude"].Value = maxLatitude;
-                                    command2.Parameters["maxLongitude"].Value = maxLongitude;
-
-                                    var longitude = (float) command2.ExecuteScalar();
-
-                                    command3.Parameters["id"].Value = uid;
-                                    command3.Parameters["minLatitude1"].Value = minLatitude;
-                                    command3.Parameters["minLongitude1"].Value = minLongitude;
-                                    command3.Parameters["maxLatitude1"].Value = maxLatitude;
-                                    command3.Parameters["maxLongitude1"].Value = longitude;
-                                    command3.Parameters["minLatitude2"].Value = minLatitude;
-                                    command3.Parameters["minLongitude2"].Value = longitude;
-                                    command3.Parameters["maxLatitude2"].Value = maxLatitude;
-                                    command3.Parameters["maxLongitude2"].Value = maxLongitude;
-
-                                    command3.ExecuteNonQuery();
-                                }
-
-                                await progressClient.Progress(100f * ++current / totalUnits, id1, session);
-                            }
-                        }
-                }
-
-                await progressClient.Finalize(id1, session);
-
-                using (var command =
-                    new NpgsqlCommand(string.Join(";",
-                            @"SELECT COUNT(*) FROM region u1,region u2
-                                WHERE u1.guid=@guid AND u2.guid=@guid AND u1.id<>u2.id",
-                            @"SELECT u1.id,u1.min_latitude,u1.min_longitude,u1.max_latitude,u1.max_longitude,
-                                    u2.id,u2.min_latitude,u2.min_longitude,u2.max_latitude,u2.max_longitude
-                                FROM region u1,region u2
-                                WHERE u1.guid=@guid AND u2.guid=@guid AND u1.id<>u2.id"),
-                        connection2))
-                using (var command2 =
-                    new NpgsqlCommand(
-                        @"SELECT array_agg(q.id) FROM (SELECT DISTINCT id FROM edge,unnest(avals(direction)) v                                                                                        
-                                WHERE (v::smallint=ANY(ARRAY[0,1,3,4])
-                                AND @minLatitude1<=from_latitude AND from_latitude<=@maxLatitude1
-                                AND @minLongitude1<=from_longitude AND from_longitude<=@maxLongitude1
-                                AND @minLatitude2<=to_latitude AND to_latitude<=@maxLatitude2
-                                AND @minLongitude2<=to_longitude AND to_longitude<=@maxLongitude2
-                                OR v::smallint=ANY(ARRAY[0,2,3,5])
-                                AND @minLatitude1<=to_latitude AND to_latitude<=@maxLatitude1
-                                AND @minLongitude1<=to_longitude AND to_longitude<=@maxLongitude1
-                                AND @minLatitude2<=from_latitude AND from_latitude<=@maxLatitude2
-                                AND @minLongitude2<=from_longitude AND from_longitude<=@maxLongitude2)
-                                AND guid=@guid) q",
-                        connection))
-                using (var command3 =
-                    new NpgsqlCommand(@"SELECT hstore(array_agg(q.k),array_agg(q.agg_v)) 
-                                FROM (SELECT k,MIN(v::real)::text AS agg_v 
-                                FROM edge,unnest(akeys(weight)) k,unnest(avals(weight)) v                                                                                        
-                                WHERE id=ANY(@edges) AND guid=@guid GROUP BY k) q",
-                        connection))
-                using (var command4 =
-                    new NpgsqlCommand(
-                        @"INSERT INTO region_edge(guid,from_region,to_region,edges,weight)
-                                VALUES (@guid,@fromRegion,@toRegion,@edges,@weight)",
-                        connection))
-                {
-                    command.Parameters.AddWithValue("guid", Guid);
-                    command.Prepare();
-
-                    command2.Parameters.Add("minLatitude1", NpgsqlDbType.Real);
-                    command2.Parameters.Add("maxLatitude1", NpgsqlDbType.Real);
-                    command2.Parameters.Add("minLongitude1", NpgsqlDbType.Real);
-                    command2.Parameters.Add("maxLongitude1", NpgsqlDbType.Real);
-                    command2.Parameters.Add("minLatitude2", NpgsqlDbType.Real);
-                    command2.Parameters.Add("maxLatitude2", NpgsqlDbType.Real);
-                    command2.Parameters.Add("minLongitude2", NpgsqlDbType.Real);
-                    command2.Parameters.Add("maxLongitude2", NpgsqlDbType.Real);
-                    command2.Parameters.AddWithValue("guid", Guid);
-                    command2.Prepare();
-
-                    command3.Parameters.Add("edges", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                    command3.Parameters.AddWithValue("guid", Guid);
-                    command3.Prepare();
-
-                    command4.Parameters.Add("fromRegion", NpgsqlDbType.Bigint);
-                    command4.Parameters.Add("toRegion", NpgsqlDbType.Bigint);
-                    command4.Parameters.Add("edges", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                    command4.Parameters.Add("weight", NpgsqlDbType.Hstore);
-                    command4.Parameters.AddWithValue("guid", Guid);
-                    command4.Prepare();
-
-                    var id = Guid.NewGuid().ToString();
-                    await progressClient.Init(id, session);
-
-                    var current = 0;
-
-                    using var reader = await command.ExecuteReaderAsync();
-                    if (!reader.Read()) throw new NullReferenceException();
-                    var count = reader.GetInt64(0);
-                    reader.NextResult();
-                    while (reader.Read())
-                    {
-                        var uid1 = reader.GetInt64(0);
-                        var minLatitude1 = reader.GetFloat(1);
-                        var minLongitude1 = reader.GetFloat(2);
-                        var maxLatitude1 = reader.GetFloat(3);
-                        var maxLongitude1 = reader.GetFloat(4);
-
-                        var uid2 = reader.GetInt64(5);
-                        var minLatitude2 = reader.GetFloat(6);
-                        var minLongitude2 = reader.GetFloat(7);
-                        var maxLatitude2 = reader.GetFloat(8);
-                        var maxLongitude2 = reader.GetFloat(9);
-
-                        command2.Parameters["minLatitude1"].Value = minLatitude1;
-                        command2.Parameters["minLongitude1"].Value = minLongitude1;
-                        command2.Parameters["maxLatitude1"].Value = maxLatitude1;
-                        command2.Parameters["maxLongitude1"].Value = maxLongitude1;
-                        command2.Parameters["minLatitude2"].Value = minLatitude2;
-                        command2.Parameters["minLongitude2"].Value = minLongitude2;
-                        command2.Parameters["maxLatitude2"].Value = maxLatitude2;
-                        command2.Parameters["maxLongitude2"].Value = maxLongitude2;
-
-                        if (command2.ExecuteScalar() is long[] edges && edges.Any())
-                        {
-                            command3.Parameters["edges"].Value = edges;
-
-                            if (command3.ExecuteScalar() is Dictionary<string, string> weight && weight.Any())
-                            {
-                                command4.Parameters["fromRegion"].Value = uid1;
-                                command4.Parameters["toRegion"].Value = uid2;
-                                command4.Parameters["edges"].Value = edges;
-                                command4.Parameters["weight"].Value = weight;
-
-                                command4.ExecuteNonQuery();
-                            }
-                        }
-
-                        await progressClient.Progress(100f * ++current / count, id, session);
-                    }
-
-                    await progressClient.Finalize(id, session);
-                }
-#endif
-
-            #endregion
-
-
-            #region restriction
-
-            using (var command7 =
-                new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM restriction WHERE guid=@guid",
-                        @"SELECT id,from_nodes,to_nodes,via_nodes,vehicle_type FROM restriction WHERE guid=@guid"),
-                    connection2))
-            {
-                command7.Parameters.AddWithValue("guid", Guid);
-                command7.Prepare();
-
-                var id = Guid.NewGuid().ToString();
-                await progressClient.Init(id, session);
-
-                var current = 0;
-
-                using var reader = await command7.ExecuteReaderAsync();
-                if (!reader.Read()) throw new NullReferenceException();
-                var count = reader.GetInt64(0);
-                reader.NextResult();
-
-                var doIt = true;
-                var obj = new object();
-
-                Parallel.For(0, 4, i =>
-                {
-                    using var connection4 = new NpgsqlConnection(ConnectionString);
-
-                    connection4.Open();
-
-                    using var commandBegin =
-                        new NpgsqlCommand(@"BEGIN",
-                            connection4);
-                    using var commandCommit =
-                        new NpgsqlCommand(@"COMMIT",
-                            connection4);
-                    commandBegin.Prepare();
-                    commandCommit.Prepare();
-
-                    using var command3 =
-                        new NpgsqlCommand(string.Join(";",
-                            @"INSERT INTO restriction_from_edge(rid,edge,vehicle_type,guid)
-                            WITH cte AS (SELECT id,from_nodes AS nodes,vehicle_type,guid FROM restriction WHERE id=@id AND guid=@guid)
-                            SELECT r.id,e.id,r.vehicle_type,r.guid FROM cte r JOIN edge e ON r.nodes&&e.nodes WHERE e.guid=@guid",
-                            @"INSERT INTO restriction_to_edge(rid,edge,vehicle_type,guid)
-                            WITH cte AS (SELECT id,to_nodes AS nodes,vehicle_type,guid FROM restriction WHERE id=@id AND guid=@guid)
-                            SELECT r.id,e.id,r.vehicle_type,r.guid FROM cte r JOIN edge e ON r.nodes&&e.nodes WHERE e.guid=@guid",
-                            @"INSERT INTO restriction_via_node(rid,node,vehicle_type,guid)
-                            WITH cte AS (SELECT id,via_nodes AS nodes,vehicle_type,guid FROM restriction WHERE id=@id AND guid=@guid)
-                            SELECT r.id,node,r.vehicle_type,r.guid FROM cte r,unnest(r.nodes) node"),
-                            connection4);
-
-                    command3.Parameters.Add("id", NpgsqlDbType.Bigint);
-                    command3.Parameters.AddWithValue("guid", Guid);
-                    command3.Prepare();
-
-                    commandBegin.ExecuteNonQuery();
-
-                    while (true)
-                    {
-                        long rid;
-                        lock (obj)
-                        {
-                            if (!doIt) break;
-                            doIt = reader.Read();
-                            if (!doIt) break;
-                            rid = reader.GetInt64(0);
-                        }
-
-
-                        command3.Parameters["id"].Value = rid;
-                        command3.ExecuteNonQuery();
-
-                        lock (obj)
-                        {
-                            if (current++ % 100 == 0)
-                                progressClient.Progress(100f * current / count, id, session).GetAwaiter()
-                                    .GetResult();
-                        }
-                    }
-
-                    commandCommit.ExecuteNonQuery();
-                });
-
-                await progressClient.Finalize(id, session);
-            }
-
-            #endregion
 
             await osmConnection.CloseAsync();
             await osmConnection2.CloseAsync();

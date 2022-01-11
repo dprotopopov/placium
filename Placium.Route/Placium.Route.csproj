@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="CreateTempTables.pgsql" />
-    <EmbeddedResource Include="CreateTempTables4.pgsql" />
     <EmbeddedResource Include="CreateTempTables2.pgsql" />
     <EmbeddedResource Include="CreateTempTables3.pgsql" />
     <EmbeddedResource Include="InsertFromTempTables.pgsql" />

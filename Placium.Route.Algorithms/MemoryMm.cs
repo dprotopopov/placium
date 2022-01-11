@@ -118,22 +118,10 @@ namespace Placium.Route.Algorithms
 	                weight REAL NOT NULL,
                     direction INTEGER NOT NULL
                 )", @"CREATE TEMP TABLE temp_restriction (
-	                id INTEGER PRIMARY KEY NOT NULL
-                )", @"CREATE TEMP TABLE temp_restriction_from_edge (
-	                rid INTEGER NOT NULL, 
-	                edge INTEGER NOT NULL,
-                    PRIMARY KEY(rid,edge),
-                    FOREIGN KEY(rid) REFERENCES temp_restriction(id)
-                )", @"CREATE TEMP TABLE temp_restriction_to_edge (
-	                rid INTEGER NOT NULL, 
-	                edge INTEGER NOT NULL,
-                    PRIMARY KEY(rid,edge),
-                    FOREIGN KEY(rid) REFERENCES temp_restriction(id)
-                )", @"CREATE TEMP TABLE temp_restriction_via_node (
-	                rid INTEGER NOT NULL, 
-	                node INTEGER NOT NULL,
-                    PRIMARY KEY(rid,node),
-                    FOREIGN KEY(rid) REFERENCES temp_restriction(id)
+	                id INTEGER PRIMARY KEY NOT NULL,
+	                from_edge INTEGER NOT NULL,
+	                to_edge INTEGER NOT NULL,
+	                via_node INTEGER NOT NULL
                 )"), connection))
             {
                 command.Prepare();
@@ -151,9 +139,7 @@ namespace Placium.Route.Algorithms
                     @"CREATE INDEX temp_dijkstra2_in_queue_idx ON temp_dijkstra2 (in_queue)",
                     @"CREATE INDEX temp_dijkstra2_f_idx ON temp_dijkstra2 (f)",
                     @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
-                    @"CREATE INDEX temp_restriction_from_edge_idx ON temp_restriction_from_edge (edge)",
-                    @"CREATE INDEX temp_restriction_to_edge_idx ON temp_restriction_to_edge (edge)",
-                    @"CREATE INDEX temp_restriction_via_node_idx ON temp_restriction_via_node (node)"), connection))
+                    @"CREATE UNIQUE INDEX temp_restriction_from_edge_to_edge_via_node_idx ON temp_restriction (from_edge,to_edge,via_node)"), connection))
             {
                 command.Prepare();
                 await command.ExecuteNonQueryAsync();
@@ -170,35 +156,16 @@ namespace Placium.Route.Algorithms
             commandCommit.Prepare();
 
             using var commandInsertIntoRestriction =
-                new SqliteCommand(@"INSERT INTO temp_restriction(id) VALUES (@id) ON CONFLICT DO NOTHING",
-                    connection);
-            using var commandInsertIntoRestrictionFromEdge =
-                new SqliteCommand(
-                    @"INSERT INTO temp_restriction_from_edge(rid,edge) VALUES (@id,@edge) ON CONFLICT DO NOTHING",
-                    connection);
-            using var commandInsertIntoRestrictionToEdge =
-                new SqliteCommand(
-                    @"INSERT INTO temp_restriction_to_edge(rid,edge) VALUES (@id,@edge) ON CONFLICT DO NOTHING",
-                    connection);
-            using var commandInsertIntoRestrictionViaNode =
-                new SqliteCommand(
-                    @"INSERT INTO temp_restriction_via_node(rid,node) VALUES (@id,@node) ON CONFLICT DO NOTHING",
+                new SqliteCommand(@"INSERT INTO temp_restriction(id,from_edge,to_edge,via_node)
+                VALUES (@id,@fromEdge,@toEdge,@viaNode)
+                ON CONFLICT (from_edge,to_edge,via_node) DO NOTHING",
                     connection);
 
             commandInsertIntoRestriction.Parameters.Add("id", SqliteType.Integer);
+            commandInsertIntoRestriction.Parameters.Add("fromEdge", SqliteType.Integer);
+            commandInsertIntoRestriction.Parameters.Add("toEdge", SqliteType.Integer);
+            commandInsertIntoRestriction.Parameters.Add("viaNode", SqliteType.Integer);
             commandInsertIntoRestriction.Prepare();
-
-            commandInsertIntoRestrictionFromEdge.Parameters.Add("id", SqliteType.Integer);
-            commandInsertIntoRestrictionFromEdge.Parameters.Add("edge", SqliteType.Integer);
-            commandInsertIntoRestrictionFromEdge.Prepare();
-
-            commandInsertIntoRestrictionToEdge.Parameters.Add("id", SqliteType.Integer);
-            commandInsertIntoRestrictionToEdge.Parameters.Add("edge", SqliteType.Integer);
-            commandInsertIntoRestrictionToEdge.Prepare();
-
-            commandInsertIntoRestrictionViaNode.Parameters.Add("id", SqliteType.Integer);
-            commandInsertIntoRestrictionViaNode.Parameters.Add("node", SqliteType.Integer);
-            commandInsertIntoRestrictionViaNode.Prepare();
 
             using var commandSelectFromPrefedched = new SqliteCommand(
                 @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
@@ -267,32 +234,12 @@ namespace Placium.Route.Algorithms
                         cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
                         cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
                         cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
-                    SELECT r.rid,r.edge FROM restriction_from_edge r 
-                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.from_node=n1.id
+                    SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
+                    JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte5 n1 ON e.from_node=n1.id OR e.to_node=n1.id
                     WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    UNION ALL SELECT r.rid,r.edge FROM restriction_from_edge r 
-                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.to_node=n1.id
-                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
-                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
-                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
-                    SELECT r.rid,r.edge FROM restriction_to_edge r 
-                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.from_node=n1.id
-                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
-                    UNION ALL SELECT r.rid,r.edge FROM restriction_to_edge r 
-                    JOIN edge e ON r.edge=e.id JOIN cte5 n1 ON e.to_node=n1.id
-                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
-                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid),
-                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
-                    SELECT rid,r.node FROM restriction_via_node r JOIN cte5 n1 ON r.node=n1.id
-                    WHERE vehicle_type=@vehicleType AND r.guid=@guid"),
+                    UNION ALL SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
+                    JOIN cte5 n1 ON r.via_node=n1.id
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid"),
                     connection2);
 
             commandInsertIntoNode.Parameters.Add("id", SqliteType.Integer);
@@ -373,32 +320,10 @@ namespace Placium.Route.Algorithms
                     while (reader.Read())
                     {
                         commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
+                        commandInsertIntoRestriction.Parameters["fromWay"].Value = reader.GetInt64(1);
+                        commandInsertIntoRestriction.Parameters["toWay"].Value = reader.GetInt64(2);
+                        commandInsertIntoRestriction.Parameters["viaNode"].Value = reader.GetInt64(3);
                         commandInsertIntoRestriction.ExecuteNonQuery();
-                        commandInsertIntoRestrictionFromEdge.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoRestrictionFromEdge.Parameters["edge"].Value = reader.GetInt64(1);
-                        commandInsertIntoRestrictionFromEdge.ExecuteNonQuery();
-                    }
-
-                    reader.NextResult();
-
-                    while (reader.Read())
-                    {
-                        commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoRestriction.ExecuteNonQuery();
-                        commandInsertIntoRestrictionToEdge.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoRestrictionToEdge.Parameters["edge"].Value = reader.GetInt64(1);
-                        commandInsertIntoRestrictionToEdge.ExecuteNonQuery();
-                    }
-
-                    reader.NextResult();
-
-                    while (reader.Read())
-                    {
-                        commandInsertIntoRestriction.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoRestriction.ExecuteNonQuery();
-                        commandInsertIntoRestrictionViaNode.Parameters["id"].Value = reader.GetInt64(0);
-                        commandInsertIntoRestrictionViaNode.Parameters["node"].Value = reader.GetInt64(1);
-                        commandInsertIntoRestrictionViaNode.ExecuteNonQuery();
                     }
                 }
 
@@ -516,17 +441,11 @@ namespace Placium.Route.Algorithms
 		                    SELECT e.to_node AS node,n.to_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
 		                    FROM temp_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra1 t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)
+                            AND NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=t.node AND from_edge=t.edge AND to_edge=e.id)
                             UNION ALL SELECT e.from_node AS node,n.to_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
 		                    FROM temp_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra1 t ON e.to_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=e.id AND r.id=rt.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=t.edge AND r.id=rf.rid)) q
+                            AND NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=t.node AND from_edge=t.edge AND to_edge=e.id)) q
                     )
                     SELECT 
 	                    node,
@@ -558,17 +477,11 @@ namespace Placium.Route.Algorithms
 		                    SELECT e.from_node AS node,n.from_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
 		                    FROM temp_edge e JOIN temp_node n ON e.from_node=n.id JOIN temp_dijkstra2 t ON e.to_node=t.node
                             WHERE (e.direction=0 OR e.direction=1 OR e.direction=3 OR e.direction=4) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=e.id AND r.id=rf.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=t.edge AND r.id=rt.rid)
+                            AND NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=t.node AND to_edge=t.edge AND from_edge=e.id)
                             UNION ALL SELECT e.to_node AS node,n.from_weight+t.g+e.weight AS f,t.g+e.weight AS g,e.id AS edge,1 AS in_queue
 		                    FROM temp_edge e JOIN temp_node n ON e.to_node=n.id JOIN temp_dijkstra2 t ON e.from_node=t.node
                             WHERE (e.direction=0 OR e.direction=2 OR e.direction=3 OR e.direction=5) AND t.node=@node
-                            AND NOT EXISTS (SELECT * FROM temp_restriction r 
-                            JOIN temp_restriction_via_node vn ON vn.node=t.node AND r.id=vn.rid
-                            JOIN temp_restriction_from_edge rf ON rf.edge=e.id AND r.id=rf.rid
-                            JOIN temp_restriction_to_edge rt ON rt.edge=t.edge AND r.id=rt.rid)) q
+                            AND NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=t.node AND to_edge=t.edge AND from_edge=e.id)) q
                     )
                     SELECT 
 	                    node,
