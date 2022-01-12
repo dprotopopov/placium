@@ -203,42 +203,41 @@ namespace Placium.Route.Algorithms
                 new NpgsqlCommand(string.Join(";",
                         @"SELECT id,latitude,longitude FROM node WHERE id=@node",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                        cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
+                        ON n2.latitude<=n1.latitude+0.01 
+                        AND n2.longitude<=n1.longitude+0.01 
+                        AND n2.latitude>=n1.latitude-0.01 
+                        AND n2.longitude>=n1.longitude-0.01
+                        WHERE n2.guid=@guid AND n2.is_core)
                     SELECT n.id,n.latitude,n.longitude
-                    FROM node n JOIN edge e ON n.id=e.from_node JOIN cte5 n1 ON n1.id=e.to_node
+                    FROM node n JOIN edge e ON n.id=e.from_node JOIN cte2 n1 ON n1.id=e.to_node
                     WHERE n.guid=@guid AND e.guid=@guid
                     UNION ALL SELECT n.id,n.latitude,n.longitude
-                    FROM node n JOIN edge e ON n.id=e.to_node JOIN cte5 n1 ON n1.id=e.from_node
+                    FROM node n JOIN edge e ON n.id=e.to_node JOIN cte2 n1 ON n1.id=e.from_node
                     WHERE n.guid=@guid AND e.guid=@guid",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                        cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
+                        ON n2.latitude<=n1.latitude+0.01 
+                        AND n2.longitude<=n1.longitude+0.01 
+                        AND n2.latitude>=n1.latitude-0.01 
+                        AND n2.longitude>=n1.longitude-0.01
+                        WHERE n2.guid=@guid AND n2.is_core)
                     SELECT e.id,e.from_node,e.to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge e JOIN cte5 n1 ON e.from_node=n1.id
-                    WHERE weight?@profile AND direction?@profile AND e.guid=@guid
-                    UNION ALL SELECT e.id,e.from_node,e.to_node,
-                    GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge e JOIN cte5 n1 ON e.to_node=n1.id
+                    FROM edge e JOIN cte2 n1 ON e.from_node=n1.id OR e.to_node=n1.id
                     WHERE weight?@profile AND direction?@profile AND e.guid=@guid",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
-                        cte1 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude<=n2.latitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte2 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude<=n2.longitude+0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte3 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.latitude>=n2.latitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte4 AS (SELECT n1.id FROM node n1 JOIN cte n2 ON n1.longitude>=n2.longitude-0.01 WHERE n1.guid=@guid AND n1.is_core),
-                        cte5 AS (SELECT cte1.id FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)
+                        cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
+                        ON n2.latitude<=n1.latitude+0.01 
+                        AND n2.longitude<=n1.longitude+0.01 
+                        AND n2.latitude>=n1.latitude-0.01 
+                        AND n2.longitude>=n1.longitude-0.01
+                        WHERE n2.guid=@guid AND n2.is_core)
                     SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
-                    JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte5 n1 ON e.from_node=n1.id OR e.to_node=n1.id
+                    JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte2 n1 ON e.from_node=n1.id OR e.to_node=n1.id
                     WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
                     UNION ALL SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
-                    JOIN cte5 n1 ON r.via_node=n1.id
+                    JOIN cte2 n1 ON r.via_node=n1.id
                     WHERE r.vehicle_type=@vehicleType AND r.guid=@guid"),
                     connection2);
 
@@ -270,13 +269,8 @@ namespace Placium.Route.Algorithms
             {
                 commandSelectFromPrefedched.Parameters["node"].Value = node;
 
-                stopWatch1.Start();
                 if ((long) commandSelectFromPrefedched.ExecuteScalar() > 0)
-                {
-                    stopWatch1.Stop();
                     return;
-                }
-                stopWatch1.Stop();
 
                 commandSelectFromNode.Parameters["node"].Value = node;
 
@@ -517,6 +511,8 @@ namespace Placium.Route.Algorithms
 
                 for (var step = 0L;; step++)
                 {
+                    stopWatch1.Start();
+
                     var node1 = 0L;
                     var node2 = 0L;
                     var pr1 = maxWeight;
@@ -577,7 +573,9 @@ namespace Placium.Route.Algorithms
                         commandStep2.ExecuteNonQuery();
                     }
 
-                    if (step % 100 == 0)
+                    stopWatch1.Stop();
+
+                    if (step % 1000 == 0)
                         Console.WriteLine($"{DateTime.Now:O} Step {step} complete" +
                                           $" stopWatch1={stopWatch1.ElapsedMilliseconds}" +
                                           $" stopWatch2={stopWatch2.ElapsedMilliseconds}" +
