@@ -27,6 +27,7 @@ namespace Placium.Route.Algorithms
             var stopWatch2 = new Stopwatch();
 
             var minWeight = MinFactor * 1;
+            var size = 0.01f;
 
             using var connection = new SqliteConnection("Data source=:memory:");
             using var connection2 = new NpgsqlConnection(ConnectionString);
@@ -169,13 +170,14 @@ namespace Placium.Route.Algorithms
 
             using var commandSelectFromPrefedched = new SqliteCommand(
                 @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
-                cte1 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude<=n.latitude+0.01),
-                cte2 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude<=n.longitude+0.01),
-                cte3 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude>=n.latitude-0.01),
-                cte4 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude>=n.longitude-0.01)
+                cte1 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude<=n.latitude+@size),
+                cte2 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude<=n.longitude+@size),
+                cte3 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude>=n.latitude-@size),
+                cte4 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude>=n.longitude-@size)
                 SELECT COUNT(*) FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id", connection);
 
             commandSelectFromPrefedched.Parameters.Add("node", SqliteType.Integer);
+            commandSelectFromPrefedched.Parameters.AddWithValue("size", size);
             commandSelectFromPrefedched.Prepare();
 
             using var commandInsertIntoPrefedched = new SqliteCommand(
@@ -204,40 +206,40 @@ namespace Placium.Route.Algorithms
                         @"SELECT id,latitude,longitude FROM node WHERE id=@node",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
                         cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
-                        ON n2.latitude<=n1.latitude+0.01 
-                        AND n2.longitude<=n1.longitude+0.01 
-                        AND n2.latitude>=n1.latitude-0.01 
-                        AND n2.longitude>=n1.longitude-0.01
+                        ON n2.latitude<=n1.latitude+@size 
+                        AND n2.longitude<=n1.longitude+@size 
+                        AND n2.latitude>=n1.latitude-@size 
+                        AND n2.longitude>=n1.longitude-@size
                         WHERE n2.guid=@guid AND n2.is_core)
                     SELECT n.id,n.latitude,n.longitude
-                    FROM node n JOIN edge e ON n.id=e.from_node JOIN cte2 n1 ON n1.id=e.to_node
+                    FROM node n JOIN edge e ON n.id=e.from_node JOIN cte2 n2 ON n2.id=e.to_node
                     WHERE n.guid=@guid AND e.guid=@guid
                     UNION ALL SELECT n.id,n.latitude,n.longitude
-                    FROM node n JOIN edge e ON n.id=e.to_node JOIN cte2 n1 ON n1.id=e.from_node
+                    FROM node n JOIN edge e ON n.id=e.to_node JOIN cte2 n2 ON n2.id=e.from_node
                     WHERE n.guid=@guid AND e.guid=@guid",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
                         cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
-                        ON n2.latitude<=n1.latitude+0.01 
-                        AND n2.longitude<=n1.longitude+0.01 
-                        AND n2.latitude>=n1.latitude-0.01 
-                        AND n2.longitude>=n1.longitude-0.01
+                        ON n2.latitude<=n1.latitude+@size 
+                        AND n2.longitude<=n1.longitude+@size 
+                        AND n2.latitude>=n1.latitude-@size 
+                        AND n2.longitude>=n1.longitude-@size
                         WHERE n2.guid=@guid AND n2.is_core)
                     SELECT e.id,e.from_node,e.to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge e JOIN cte2 n1 ON e.from_node=n1.id OR e.to_node=n1.id
+                    FROM edge e JOIN cte2 n2 ON e.from_node=n2.id OR e.to_node=n2.id
                     WHERE weight?@profile AND direction?@profile AND e.guid=@guid",
                         @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
                         cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
-                        ON n2.latitude<=n1.latitude+0.01 
-                        AND n2.longitude<=n1.longitude+0.01 
-                        AND n2.latitude>=n1.latitude-0.01 
-                        AND n2.longitude>=n1.longitude-0.01
+                        ON n2.latitude<=n1.latitude+@size 
+                        AND n2.longitude<=n1.longitude+@size 
+                        AND n2.latitude>=n1.latitude-@size 
+                        AND n2.longitude>=n1.longitude-@size
                         WHERE n2.guid=@guid AND n2.is_core)
                     SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
-                    JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte2 n1 ON e.from_node=n1.id OR e.to_node=n1.id
+                    JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte2 n2 ON e.from_node=n2.id OR e.to_node=n2.id
                     WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
                     UNION ALL SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
-                    JOIN cte2 n1 ON r.via_node=n1.id
+                    JOIN cte2 n2 ON r.via_node=n2.id
                     WHERE r.vehicle_type=@vehicleType AND r.guid=@guid"),
                     connection2);
 
@@ -262,6 +264,7 @@ namespace Placium.Route.Algorithms
             commandSelectFromNode.Parameters.AddWithValue("vehicleType", VehicleType);
             commandSelectFromNode.Parameters.AddWithValue("profile", Profile);
             commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
+            commandSelectFromNode.Parameters.AddWithValue("size", size);
             commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
             commandSelectFromNode.Prepare();
 
