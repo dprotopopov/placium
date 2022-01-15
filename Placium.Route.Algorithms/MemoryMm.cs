@@ -23,8 +23,9 @@ namespace Placium.Route.Algorithms
         public override async Task<PathFinderResult> FindPathAsync(RouterPoint source,
             RouterPoint target, float maxWeight = float.MaxValue)
         {
-            var stopWatch1 = new Stopwatch();
-            var stopWatch2 = new Stopwatch();
+            var stopWatch = new Stopwatch();
+
+            stopWatch.Start();
 
             var minWeight = MinFactor * 1;
             var size = 0.01f;
@@ -100,24 +101,28 @@ namespace Placium.Route.Algorithms
 	                longitude REAL NOT NULL, 
 	                from_weight REAL NOT NULL, 
 	                to_weight REAL NOT NULL
-                )", @"CREATE TEMP TABLE temp_dijkstra1 (
-	                node INTEGER PRIMARY KEY NOT NULL, 
-	                f REAL NOT NULL, 
-	                g REAL NOT NULL, 
-	                edge INTEGER NOT NULL,
-	                in_queue INTEGER NOT NULL
-                )", @"CREATE TEMP TABLE temp_dijkstra2 (
-	                node INTEGER PRIMARY KEY NOT NULL, 
-	                f REAL NOT NULL, 
-	                g REAL NOT NULL, 
-	                edge INTEGER NOT NULL,
-	                in_queue INTEGER NOT NULL
                 )", @"CREATE TEMP TABLE temp_edge (
 	                id INTEGER PRIMARY KEY NOT NULL, 
 	                from_node INTEGER NOT NULL, 
 	                to_node INTEGER NOT NULL,
 	                weight REAL NOT NULL,
                     direction INTEGER NOT NULL
+                )", @"CREATE TEMP TABLE temp_dijkstra1 (
+	                node INTEGER PRIMARY KEY NOT NULL, 
+	                f REAL NOT NULL, 
+	                g REAL NOT NULL, 
+	                edge INTEGER NULL,
+	                in_queue INTEGER NOT NULL,
+                    FOREIGN KEY(node) REFERENCES temp_node(id),
+                    FOREIGN KEY(edge) REFERENCES temp_edge(id)
+                )", @"CREATE TEMP TABLE temp_dijkstra2 (
+	                node INTEGER PRIMARY KEY NOT NULL, 
+	                f REAL NOT NULL, 
+	                g REAL NOT NULL, 
+	                edge INTEGER NULL,
+	                in_queue INTEGER NOT NULL,
+                    FOREIGN KEY(node) REFERENCES temp_node(id),
+                    FOREIGN KEY(edge) REFERENCES temp_edge(id)
                 )", @"CREATE TEMP TABLE temp_restriction (
 	                id INTEGER PRIMARY KEY NOT NULL,
 	                from_edge INTEGER NOT NULL,
@@ -279,7 +284,6 @@ namespace Placium.Route.Algorithms
 
                 commandBegin.ExecuteNonQuery();
 
-                stopWatch2.Start();
                 using (var reader = commandSelectFromNode.ExecuteReader())
                 {
 
@@ -329,8 +333,6 @@ namespace Placium.Route.Algorithms
                     }
                 }
 
-                stopWatch2.Stop();
-
                 commandCommit.ExecuteNonQuery();
             }
 
@@ -346,7 +348,7 @@ namespace Placium.Route.Algorithms
 	                @node,
                     @factor*distanceInMeters(@latitude,@longitude,@latitude1,@longitude1),
 	                0,
-	                0,
+	                null,
 	                1
                 )", connection))
             {
@@ -360,6 +362,8 @@ namespace Placium.Route.Algorithms
 
                 if (new[] {0, 1, 3, 4}.Contains(source.Direction))
                 {
+                    LoadEdgesAndNodes(source.ToNode);
+
                     command.Parameters["node"].Value = source.ToNode;
                     var coords = source.Coordinates.Last();
                     command.Parameters["latitude1"].Value = coords.Latitude;
@@ -369,6 +373,8 @@ namespace Placium.Route.Algorithms
 
                 if (new[] {0, 2, 3, 5}.Contains(source.Direction))
                 {
+                    LoadEdgesAndNodes(source.FromNode);
+
                     command.Parameters["node"].Value = source.FromNode;
                     var coords = source.Coordinates.First();
                     command.Parameters["latitude1"].Value = coords.Latitude;
@@ -389,7 +395,7 @@ namespace Placium.Route.Algorithms
 	                @node,
                     @factor*distanceInMeters(@latitude,@longitude,@latitude1,@longitude1),
 	                0,
-	                0,
+	                null,
 	                1
                 )", connection))
             {
@@ -403,6 +409,8 @@ namespace Placium.Route.Algorithms
 
                 if (new[] {0, 1, 3, 4}.Contains(target.Direction))
                 {
+                    LoadEdgesAndNodes(target.FromNode);
+
                     command.Parameters["node"].Value = target.FromNode;
                     var coords = target.Coordinates.First();
                     command.Parameters["latitude1"].Value = coords.Latitude;
@@ -412,6 +420,8 @@ namespace Placium.Route.Algorithms
 
                 if (new[] {0, 2, 3, 5}.Contains(target.Direction))
                 {
+                    LoadEdgesAndNodes(target.ToNode);
+
                     command.Parameters["node"].Value = target.ToNode;
                     var coords = target.Coordinates.Last();
                     command.Parameters["latitude1"].Value = coords.Latitude;
@@ -420,12 +430,15 @@ namespace Placium.Route.Algorithms
                 }
             }
 
+            var steps = 0L;
             var node = 0L;
             float? weight = null;
 
             using (var command =
                 new SqliteCommand(string.Join(";",
-                        @"SELECT t1.node,t1.g+t2.g FROM temp_dijkstra1 t1 JOIN temp_dijkstra2 t2 ON t1.node=t2.node ORDER BY t1.g+t2.g LIMIT 1",
+                        @"SELECT t1.node,t1.g+t2.g FROM temp_dijkstra1 t1 JOIN temp_dijkstra2 t2 ON t1.node=t2.node
+                        WHERE NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=t1.node AND from_edge=t1.edge AND to_edge=t2.edge)
+                        ORDER BY t1.g+t2.g LIMIT 1",
                         @"WITH cte AS (SELECT node,GREATEST(f,2*g) AS pr,f,g FROM temp_dijkstra1 WHERE in_queue)
                         SELECT node,pr,f,g FROM cte ORDER BY pr,g LIMIT 1",
                         @"WITH cte AS (SELECT node,GREATEST(f,2*g) AS pr,f,g FROM temp_dijkstra2 WHERE in_queue)
@@ -512,10 +525,8 @@ namespace Placium.Route.Algorithms
                 commandStep1.Prepare();
                 commandStep2.Prepare();
 
-                for (var step = 0L;; step++)
+                for (;; steps++)
                 {
-                    stopWatch1.Start();
-
                     var node1 = 0L;
                     var node2 = 0L;
                     var pr1 = maxWeight;
@@ -575,17 +586,6 @@ namespace Placium.Route.Algorithms
 
                         commandStep2.ExecuteNonQuery();
                     }
-
-                    stopWatch1.Stop();
-
-                    if (step % 1000 == 0)
-                        Console.WriteLine($"{DateTime.Now:O} Step {step} complete" +
-                                          $" stopWatch1={stopWatch1.ElapsedMilliseconds}" +
-                                          $" stopWatch2={stopWatch2.ElapsedMilliseconds}" +
-                                          $" temp_dijkstra1={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +
-                                          $" temp_dijkstra2={new SqliteCommand("SELECT COUNT(*) FROM temp_dijkstra2 WHERE in_queue", connection).ExecuteScalar()}" +
-                                          $" MIN(g1)={new SqliteCommand("SELECT MIN(g) FROM temp_dijkstra1 WHERE in_queue", connection).ExecuteScalar()}" +
-                                          $" MIN(g2)={new SqliteCommand("SELECT MIN(g) FROM temp_dijkstra2 WHERE in_queue", connection).ExecuteScalar()}");
                 }
             }
 
@@ -638,6 +638,10 @@ namespace Placium.Route.Algorithms
                     list.Add(edge);
                 }
             }
+
+            stopWatch.Stop();
+
+            Console.WriteLine($"{nameof(MemoryMm)} steps={steps} ElapsedMilliseconds={stopWatch.ElapsedMilliseconds}");
 
             return new PathFinderResult
             {

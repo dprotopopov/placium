@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Npgsql;
@@ -22,118 +23,116 @@ namespace Placium.Route.Algorithms
         public override async Task<PathFinderResult> FindPathAsync(RouterPoint source,
             RouterPoint target, float maxWeight = float.MaxValue)
         {
+            var stopWatch = new Stopwatch();
+
+            stopWatch.Start();
+
             var minWeight = MinFactor * 1;
+            var size = 0.01f;
 
             using var connection2 = new NpgsqlConnection(ConnectionString);
             await connection2.OpenAsync();
 
 
-            using (var command =
-                new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
-                    @"create or replace function distanceInMeters(lat1 real, lon1 real, lat2 real, lon2 real)
-                returns real
-                language plpgsql
-                as
-                $$
-                    DECLARE
-                        dist float = 0;
-                        thi1 float;
-                        thi2 float;
-                        dthi float;
-                        lamda float;
-                        a float;
-                    BEGIN
-                        IF lat1 = lat2 AND lon1 = lon2
-                            THEN RETURN dist;
-                        ELSE
-                            thi1 = pi() * lat1 / 180;
-                            thi2 = pi() * lat2 / 180;
-                            dthi = pi() * (lat2 - lat1) / 180;
-                            lamda = pi() * (lon2 - lon1) / 180;
-                            a = pow(sin(dthi/2),2) + cos(thi1) * cos(thi2) * pow(sin(lamda/2),2);
-                            dist = 2 * 6371000 * atan2(sqrt(a),sqrt(1-a));
-                            RETURN dist;
-                        END IF;
-                    END
-                $$"), connection2))
-            {
-                command.Prepare();
-                await command.ExecuteNonQueryAsync();
-            }
-
+            var tempPrefetched = new ConcurrentDictionary<long, TempPrefetched>();
             var tempNode = new ConcurrentDictionary<long, TempNode>();
             var tempEdge = new ConcurrentDictionary<long, TempEdge>();
             var tempDijkstra1 = new ConcurrentDictionary<long, TempDijkstra>();
             var tempDijkstra2 = new ConcurrentDictionary<long, TempDijkstra>();
             var tempRestriction = new ConcurrentDictionary<long, TempRestriction>();
-            var tempRestrictionFromEdge = new ConcurrentDictionary<(long, long), TempRestrictionFromEdge>();
-            var tempRestrictionToEdge = new ConcurrentDictionary<(long, long), TempRestrictionToEdge>();
-            var tempRestrictionViaNode = new ConcurrentDictionary<(long, long), TempRestrictionViaNode>();
-
-
-            using var commandSelectFromRestriction =
-                new NpgsqlCommand(string.Join(";",
-                        @"SELECT r.rid,r.edge FROM restriction_from_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
-                        @"SELECT r.rid,r.edge FROM restriction_to_edge r JOIN edge e ON r.edge=e.id
-                    WHERE (e.from_node=@node OR e.to_node=@node) AND r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid",
-                        @"SELECT rid,node FROM restriction_via_node WHERE node=@node AND vehicle_type=@vehicleType AND guid=@guid"),
-                    connection2);
-
-            commandSelectFromRestriction.Parameters.Add("node", NpgsqlDbType.Bigint);
-            commandSelectFromRestriction.Parameters.AddWithValue("vehicleType", VehicleType);
-            commandSelectFromRestriction.Parameters.AddWithValue("guid", Guid);
-            commandSelectFromRestriction.Prepare();
 
 
             using var commandSelectFromNode =
                 new NpgsqlCommand(string.Join(";",
-                        @"SELECT id,from_weight,to_weight FROM (SELECT n.id,
-                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude) AS from_weight,
-                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude) AS to_weight
-                    FROM node n JOIN edge e ON n.id=e.from_node WHERE n.guid=@guid AND e.guid=@guid
-                    AND e.to_node=@node) q WHERE from_weight+to_weight<=@maxWeight", @"SELECT id,from_weight,to_weight FROM (SELECT n.id,
-                    @factor*distanceInMeters(latitude,longitude,@fromLatitude,@fromLongitude) AS from_weight,
-                    @factor*distanceInMeters(latitude,longitude,@toLatitude,@toLongitude) AS to_weight
-                    FROM node n JOIN edge e ON n.id=e.to_node WHERE n.guid=@guid AND e.guid=@guid
-                    AND e.from_node=@node) q WHERE from_weight+to_weight<=@maxWeight", @"SELECT id,from_node,to_node,
+                        @"SELECT id,latitude,longitude FROM node WHERE id=@node",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
+                        ON n2.latitude<=n1.latitude+@size 
+                        AND n2.longitude<=n1.longitude+@size 
+                        AND n2.latitude>=n1.latitude-@size 
+                        AND n2.longitude>=n1.longitude-@size
+                        WHERE n2.guid=@guid AND n2.is_core)
+                    SELECT n.id,n.latitude,n.longitude
+                    FROM node n JOIN edge e ON n.id=e.from_node JOIN cte2 n2 ON n2.id=e.to_node
+                    WHERE n.guid=@guid AND e.guid=@guid
+                    UNION ALL SELECT n.id,n.latitude,n.longitude
+                    FROM node n JOIN edge e ON n.id=e.to_node JOIN cte2 n2 ON n2.id=e.from_node
+                    WHERE n.guid=@guid AND e.guid=@guid",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
+                        ON n2.latitude<=n1.latitude+@size 
+                        AND n2.longitude<=n1.longitude+@size 
+                        AND n2.latitude>=n1.latitude-@size 
+                        AND n2.longitude>=n1.longitude-@size
+                        WHERE n2.guid=@guid AND n2.is_core)
+                    SELECT e.id,e.from_node,e.to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
-                    FROM edge WHERE weight?@profile AND direction?@profile AND guid=@guid
-                    AND (from_node=@node OR to_node=@node)"),
+                    FROM edge e JOIN cte2 n2 ON e.from_node=n2.id OR e.to_node=n2.id
+                    WHERE weight?@profile AND direction?@profile AND e.guid=@guid",
+                        @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
+                        cte2 AS (SELECT n2.id FROM node n2 JOIN cte n1
+                        ON n2.latitude<=n1.latitude+@size 
+                        AND n2.longitude<=n1.longitude+@size 
+                        AND n2.latitude>=n1.latitude-@size 
+                        AND n2.longitude>=n1.longitude-@size
+                        WHERE n2.guid=@guid AND n2.is_core)
+                    SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
+                    JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte2 n2 ON e.from_node=n2.id OR e.to_node=n2.id
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
+                    UNION ALL SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
+                    JOIN cte2 n2 ON r.via_node=n2.id
+                    WHERE r.vehicle_type=@vehicleType AND r.guid=@guid"),
                     connection2);
 
-            commandSelectFromNode.Parameters.AddWithValue("fromLatitude", source.Coordinate.Latitude);
-            commandSelectFromNode.Parameters.AddWithValue("fromLongitude", source.Coordinate.Longitude);
-            commandSelectFromNode.Parameters.AddWithValue("toLatitude", target.Coordinate.Latitude);
-            commandSelectFromNode.Parameters.AddWithValue("toLongitude", target.Coordinate.Longitude);
+
             commandSelectFromNode.Parameters.AddWithValue("minWeight", minWeight);
-            commandSelectFromNode.Parameters.AddWithValue("maxWeight", maxWeight);
+            commandSelectFromNode.Parameters.AddWithValue("vehicleType", VehicleType);
             commandSelectFromNode.Parameters.AddWithValue("profile", Profile);
-            commandSelectFromNode.Parameters.AddWithValue("factor", MinFactor);
             commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
+            commandSelectFromNode.Parameters.AddWithValue("size", size);
             commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
             commandSelectFromNode.Prepare();
 
             void LoadEdgesAndNodes(long node)
             {
+                if (tempNode.TryGetValue(node, out var item1) && tempPrefetched.Any(x =>
+                        x.Value.Latitude <= item1.Latitude + size &&
+                        x.Value.Latitude >= item1.Latitude - size &&
+                        x.Value.Longitude <= item1.Longitude + size &&
+                        x.Value.Longitude >= item1.Longitude - size))
+                    return;
+
                 commandSelectFromNode.Parameters["node"].Value = node;
-                commandSelectFromRestriction.Parameters["node"].Value = node;
 
                 using (var reader = commandSelectFromNode.ExecuteReader())
                 {
-                    for (var i = 0; i < 2; i++)
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            var item = new TempNode();
-                            item.Id = reader.GetInt64(0);
-                            item.FromWeight = reader.GetFloat(1);
-                            item.ToWeight = reader.GetFloat(2);
-                            tempNode.TryAdd(item.Id, item);
-                        }
-
-                        reader.NextResult();
+                        var item = new TempPrefetched();
+                        item.Id = reader.GetInt64(0);
+                        item.Latitude = reader.GetFloat(1);
+                        item.Longitude = reader.GetFloat(2);
+                        tempPrefetched.TryAdd(item.Id, item);
                     }
+
+                    reader.NextResult();
+
+                    while (reader.Read())
+                    {
+                        var item = new TempNode();
+                        item.Id = reader.GetInt64(0);
+                        var latitude = reader.GetFloat(1);
+                        var longitude = reader.GetFloat(2);
+                        item.Latitude = latitude;
+                        item.Longitude = longitude;
+                        item.FromWeight = MinFactor * Coordinate.DistanceEstimateInMeter(source.Coordinate,
+                                              new Coordinate(latitude, longitude));
+                        item.ToWeight = MinFactor * Coordinate.DistanceEstimateInMeter(target.Coordinate,
+                                            new Coordinate(latitude, longitude));
+                        tempNode.TryAdd(item.Id, item);
+                    }
+
+                    reader.NextResult();
 
                     while (reader.Read())
                     {
@@ -145,20 +144,6 @@ namespace Placium.Route.Algorithms
                         item.Direction = reader.GetInt16(4);
                         tempEdge.TryAdd(item.Id, item);
                     }
-                }
-
-                using (var reader = commandSelectFromRestriction.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        var restriction = new TempRestriction();
-                        restriction.Id = reader.GetInt64(0);
-                        tempRestriction.TryAdd(restriction.Id, restriction);
-                        var item = new TempRestrictionFromEdge();
-                        item.Rid = reader.GetInt64(0);
-                        item.Edge = reader.GetInt64(1);
-                        tempRestrictionFromEdge.TryAdd((item.Rid, item.Edge), item);
-                    }
 
                     reader.NextResult();
 
@@ -166,24 +151,10 @@ namespace Placium.Route.Algorithms
                     {
                         var restriction = new TempRestriction();
                         restriction.Id = reader.GetInt64(0);
+                        restriction.FromEdge = reader.GetInt64(1);
+                        restriction.ToEdge = reader.GetInt64(2);
+                        restriction.ViaNode = reader.GetInt64(3);
                         tempRestriction.TryAdd(restriction.Id, restriction);
-                        var item = new TempRestrictionToEdge();
-                        item.Rid = reader.GetInt64(0);
-                        item.Edge = reader.GetInt64(1);
-                        tempRestrictionToEdge.TryAdd((item.Rid, item.Edge), item);
-                    }
-
-                    reader.NextResult();
-
-                    while (reader.Read())
-                    {
-                        var restriction = new TempRestriction();
-                        restriction.Id = reader.GetInt64(0);
-                        tempRestriction.TryAdd(restriction.Id, restriction);
-                        var item = new TempRestrictionViaNode();
-                        item.Rid = reader.GetInt64(0);
-                        item.Node = reader.GetInt64(1);
-                        tempRestrictionViaNode.TryAdd((item.Rid, item.Node), item);
                     }
                 }
             }
@@ -191,6 +162,7 @@ namespace Placium.Route.Algorithms
 
             if (new[] {0, 1, 3, 4}.Contains(source.Direction))
             {
+                LoadEdgesAndNodes(source.ToNode);
                 var coords = source.Coordinates.Last();
                 var item = new TempDijkstra();
                 item.Node = source.ToNode;
@@ -201,6 +173,7 @@ namespace Placium.Route.Algorithms
 
             if (new[] {0, 2, 3, 5}.Contains(source.Direction))
             {
+                LoadEdgesAndNodes(source.FromNode);
                 var coords = source.Coordinates.First();
                 var item = new TempDijkstra();
                 item.Node = source.FromNode;
@@ -211,6 +184,7 @@ namespace Placium.Route.Algorithms
 
             if (new[] {0, 1, 3, 4}.Contains(target.Direction))
             {
+                LoadEdgesAndNodes(target.FromNode);
                 var coords = target.Coordinates.First();
                 var item = new TempDijkstra();
                 item.Node = target.FromNode;
@@ -221,6 +195,7 @@ namespace Placium.Route.Algorithms
 
             if (new[] {0, 2, 3, 5}.Contains(target.Direction))
             {
+                LoadEdgesAndNodes(target.ToNode);
                 var coords = target.Coordinates.Last();
                 var item = new TempDijkstra();
                 item.Node = target.ToNode;
@@ -229,10 +204,11 @@ namespace Placium.Route.Algorithms
                 tempDijkstra2.TryAdd(item.Node, item);
             }
 
+            var steps = 0L;
             var node = 0L;
             float? weight = null;
 
-            for (var step = 0L;; step++)
+            for (; ; steps++)
             {
                 var node1 = 0L;
                 var node2 = 0L;
@@ -245,6 +221,11 @@ namespace Placium.Route.Algorithms
 
                 var q = from t1 in tempDijkstra1
                     join t2 in tempDijkstra2 on t1.Key equals t2.Key
+                    where !(from r in tempRestriction
+                        where r.Value.ViaNode == t1.Key
+                              && r.Value.FromEdge == t1.Value.Edge
+                              && r.Value.ToEdge == t2.Value.Edge
+                        select 0).Any()
                     let g = t1.Value.G + t2.Value.G
                     orderby g
                     select new {Node = t1.Key, Weight = g};
@@ -260,12 +241,12 @@ namespace Placium.Route.Algorithms
                     orderby pr
                     select new {Node = t2.Key, Pr = pr, t2.Value.F, t2.Value.G};
 
-                var r = q.FirstOrDefault();
-                if (r != null)
-                    if (r.Weight <= maxWeight)
+                var r0 = q.FirstOrDefault();
+                if (r0 != null)
+                    if (r0.Weight <= maxWeight)
                     {
-                        weight = maxWeight = r.Weight;
-                        node = r.Node;
+                        weight = maxWeight = r0.Weight;
+                        node = r0.Node;
                     }
 
                 var r1 = q1.FirstOrDefault();
@@ -295,38 +276,38 @@ namespace Placium.Route.Algorithms
                         tempDijkstra1.Remove(item.Key, out var value));
 
                     var s1 = (from e in tempEdge.AsParallel()
-                              where e.Value.FromNode == node1 && new[] { 0, 1, 3, 4 }.Contains(e.Value.Direction)
-                              let n = tempNode[e.Value.ToNode]
-                              let t = tempDijkstra1[e.Value.FromNode]
-                              where !(from via in tempRestrictionViaNode
-                                      where via.Value.Node == node1
-                                            && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                            && tempRestrictionToEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                      select 0).Any()
-                              select new TempDijkstra
-                              {
-                                  Node = n.Id,
-                                  Edge = e.Value.Id,
-                                  F = n.ToWeight + t.G + e.Value.Weight,
-                                  G = t.G + e.Value.Weight,
-                                  InQueue = true
-                              }).Union(from e in tempEdge.AsParallel()
-                                       where e.Value.ToNode == node1 && new[] { 0, 2, 3, 5 }.Contains(e.Value.Direction)
-                                       let n = tempNode[e.Value.FromNode]
-                                       let t = tempDijkstra1[e.Value.ToNode]
-                                       where !(from via in tempRestrictionViaNode
-                                               where via.Value.Node == node1
-                                                     && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                                     && tempRestrictionToEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                               select 0).Any()
-                                       select new TempDijkstra
-                                       {
-                                           Node = n.Id,
-                                           Edge = e.Value.Id,
-                                           F = n.ToWeight + t.G + e.Value.Weight,
-                                           G = t.G + e.Value.Weight,
-                                           InQueue = true
-                                       });
+                        where e.Value.FromNode == node1 && new[] {0, 1, 3, 4}.Contains(e.Value.Direction)
+                        let n = tempNode[e.Value.ToNode]
+                        let t = tempDijkstra1[e.Value.FromNode]
+                        where !(from r in tempRestriction
+                            where r.Value.ViaNode == node1
+                                  && r.Value.FromEdge == t.Edge
+                                  && r.Value.ToEdge == e.Value.Id
+                            select 0).Any()
+                        select new TempDijkstra
+                        {
+                            Node = n.Id,
+                            Edge = e.Value.Id,
+                            F = n.ToWeight + t.G + e.Value.Weight,
+                            G = t.G + e.Value.Weight,
+                            InQueue = true
+                        }).Union(from e in tempEdge.AsParallel()
+                        where e.Value.ToNode == node1 && new[] {0, 2, 3, 5}.Contains(e.Value.Direction)
+                        let n = tempNode[e.Value.FromNode]
+                        let t = tempDijkstra1[e.Value.ToNode]
+                        where !(from r in tempRestriction
+                            where r.Value.ViaNode == node1
+                                  && r.Value.FromEdge == t.Edge
+                                  && r.Value.ToEdge == e.Value.Id
+                            select 0).Any()
+                        select new TempDijkstra
+                        {
+                            Node = n.Id,
+                            Edge = e.Value.Id,
+                            F = n.ToWeight + t.G + e.Value.Weight,
+                            G = t.G + e.Value.Weight,
+                            InQueue = true
+                        });
 
                     s1.Where(x => x.G <= maxWeight).ToList().AsParallel().ForAll(item =>
                     {
@@ -346,38 +327,38 @@ namespace Placium.Route.Algorithms
                         tempDijkstra2.Remove(item.Key, out var value));
 
                     var s2 = (from e in tempEdge.AsParallel()
-                              where e.Value.ToNode == node2 && new[] { 0, 1, 3, 4 }.Contains(e.Value.Direction)
-                              let n = tempNode[e.Value.FromNode]
-                              let t = tempDijkstra2[e.Value.ToNode]
-                              where !(from via in tempRestrictionViaNode
-                                      where via.Value.Node == node2
-                                            && tempRestrictionToEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                            && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                      select 0).Any()
-                              select new TempDijkstra
-                              {
-                                  Node = n.Id,
-                                  Edge = e.Value.Id,
-                                  F = n.FromWeight + t.G + e.Value.Weight,
-                                  G = t.G + e.Value.Weight,
-                                  InQueue = true
-                              }).Union(from e in tempEdge.AsParallel()
-                                       where e.Value.FromNode == node2 && new[] { 0, 2, 3, 5 }.Contains(e.Value.Direction)
-                                       let n = tempNode[e.Value.ToNode]
-                                       let t = tempDijkstra2[e.Value.FromNode]
-                                       where !(from via in tempRestrictionViaNode
-                                               where via.Value.Node == node2
-                                                     && tempRestrictionToEdge.ContainsKey((via.Value.Rid, t.Edge))
-                                                     && tempRestrictionFromEdge.ContainsKey((via.Value.Rid, e.Value.Id))
-                                               select 0).Any()
-                                       select new TempDijkstra
-                                       {
-                                           Node = n.Id,
-                                           Edge = e.Value.Id,
-                                           F = n.FromWeight + t.G + e.Value.Weight,
-                                           G = t.G + e.Value.Weight,
-                                           InQueue = true
-                                       });
+                        where e.Value.ToNode == node2 && new[] {0, 1, 3, 4}.Contains(e.Value.Direction)
+                        let n = tempNode[e.Value.FromNode]
+                        let t = tempDijkstra2[e.Value.ToNode]
+                        where !(from r in tempRestriction
+                            where r.Value.ViaNode == node2
+                                  && r.Value.ToEdge == t.Edge
+                                  && r.Value.FromEdge == e.Value.Id
+                            select 0).Any()
+                        select new TempDijkstra
+                        {
+                            Node = n.Id,
+                            Edge = e.Value.Id,
+                            F = n.FromWeight + t.G + e.Value.Weight,
+                            G = t.G + e.Value.Weight,
+                            InQueue = true
+                        }).Union(from e in tempEdge.AsParallel()
+                        where e.Value.FromNode == node2 && new[] {0, 2, 3, 5}.Contains(e.Value.Direction)
+                        let n = tempNode[e.Value.ToNode]
+                        let t = tempDijkstra2[e.Value.FromNode]
+                        where !(from r in tempRestriction
+                            where r.Value.ViaNode == node2
+                                  && r.Value.ToEdge == t.Edge
+                                  && r.Value.FromEdge == e.Value.Id
+                            select 0).Any()
+                        select new TempDijkstra
+                        {
+                            Node = n.Id,
+                            Edge = e.Value.Id,
+                            F = n.FromWeight + t.G + e.Value.Weight,
+                            G = t.G + e.Value.Weight,
+                            InQueue = true
+                        });
 
                     s2.Where(x => x.G <= maxWeight).ToList().AsParallel().ForAll(item =>
                     {
@@ -387,14 +368,6 @@ namespace Placium.Route.Algorithms
                             tempDijkstra2[item.Node] = item;
                     });
                 }
-
-
-                if (step % 100 == 0)
-                    Console.WriteLine($"{DateTime.Now:O} Step {step} complete" +
-                                      $" temp_dijkstra1={tempDijkstra1.Count(x => x.Value.InQueue)}" +
-                                      $" temp_dijkstra2={tempDijkstra2.Count(x => x.Value.InQueue)}" +
-                                      $" MIN(g1)={tempDijkstra1.Where(x => x.Value.InQueue).Min(x => x.Value.G)}" +
-                                      $" MIN(g2)={tempDijkstra2.Where(x => x.Value.InQueue).Min(x => x.Value.G)}");
             }
 
             Console.WriteLine($"node = {node}");
@@ -427,6 +400,10 @@ namespace Placium.Route.Algorithms
                 node2 = value;
             }
 
+            stopWatch.Stop();
+
+            Console.WriteLine($"{nameof(LinqMm)} steps={steps} ElapsedMilliseconds={stopWatch.ElapsedMilliseconds}");
+
             return new PathFinderResult
             {
                 Edges = list,
@@ -434,9 +411,18 @@ namespace Placium.Route.Algorithms
             };
         }
 
+        public class TempPrefetched
+        {
+            public long Id { get; set; }
+            public float Latitude { get; set; }
+            public float Longitude { get; set; }
+        }
+
         public class TempNode
         {
             public long Id { get; set; }
+            public float Latitude { get; set; }
+            public float Longitude { get; set; }
             public float FromWeight { get; set; }
             public float ToWeight { get; set; }
         }
@@ -462,24 +448,9 @@ namespace Placium.Route.Algorithms
         public class TempRestriction
         {
             public long Id { get; set; }
-        }
-
-        public class TempRestrictionFromEdge
-        {
-            public long Rid { get; set; }
-            public long Edge { get; set; }
-        }
-
-        public class TempRestrictionToEdge
-        {
-            public long Rid { get; set; }
-            public long Edge { get; set; }
-        }
-
-        public class TempRestrictionViaNode
-        {
-            public long Rid { get; set; }
-            public long Node { get; set; }
+            public long FromEdge { get; set; }
+            public long ToEdge { get; set; }
+            public long ViaNode { get; set; }
         }
     }
 }

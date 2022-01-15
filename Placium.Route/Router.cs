@@ -5,14 +5,13 @@ using System.Threading.Tasks;
 using Npgsql;
 using Placium.Route.Algorithms;
 using Placium.Route.Common;
-using Placium.Route.Profiles;
 using Route.LocalGeo;
 
 namespace Placium.Route
 {
     public class Router
     {
-        public Router(RouterDb db, string profile, float maxFactor=1f, float minFactor = 1f)
+        public Router(RouterDb db, string profile, float maxFactor = 1f, float minFactor = 1f)
         {
             Db = db;
             Profile = profile;
@@ -37,8 +36,6 @@ namespace Placium.Route
             var targetRouterPoint =
                 await ResolveRouterPointAlgorithm.ResolveRouterPointAsync(target);
 
-            const float maxDistance = 100000f;
-
             PathFinderResult result = null;
             if (sourceRouterPoint.EdgeId != targetRouterPoint.EdgeId ||
                 new[] {1, 4}.Contains(sourceRouterPoint.Direction) &&
@@ -46,8 +43,7 @@ namespace Placium.Route
                 new[] {2, 5}.Contains(sourceRouterPoint.Direction) &&
                 sourceRouterPoint.Offset < targetRouterPoint.Offset)
             {
-                var maxWeight = MaxFactor* maxDistance;
-                result = await PathFinderAlgorithm.FindPathAsync(sourceRouterPoint, targetRouterPoint, maxWeight);
+                result = await PathFinderAlgorithm.FindPathAsync(sourceRouterPoint, targetRouterPoint);
                 result.Edges.Insert(0, sourceRouterPoint.EdgeId);
                 result.Edges.Add(targetRouterPoint.EdgeId);
             }
