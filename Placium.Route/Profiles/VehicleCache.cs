@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Route.Attributes;
@@ -10,7 +11,7 @@ namespace Placium.Route.Profiles
     /// </summary>
     public class VehicleCache
     {
-        private readonly Dictionary<long, WhitelistAndFlags> _cache;
+        private readonly ConcurrentDictionary<long, WhitelistAndFlags> _cache;
         private readonly Vehicle[] _vehicles;
         private readonly AttributesIndex _edgeProfiles;
 
@@ -19,7 +20,7 @@ namespace Placium.Route.Profiles
         /// </summary>
         public VehicleCache(Vehicle[] vehicles)
         {
-            _cache = new Dictionary<long, WhitelistAndFlags>();
+            _cache = new ConcurrentDictionary<long, WhitelistAndFlags>();
             _vehicles = vehicles;
             _edgeProfiles = new AttributesIndex(AttributesIndexMode.IncreaseOne
                  | AttributesIndexMode.ReverseAll);
