@@ -17,10 +17,10 @@ namespace Placium.Seeker
         public async Task<string> CalculateAsync(Coordinate source, Coordinate target)
         {
             var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"), GetRouteConnectionString(),
-                new[] { Vehicle.Car });
+                new Car());
 
             // create router.
-            var router = new Router(routerDb, "car", 3.6f / 5f, 3.6f / 120f);
+            var router = new Router(routerDb, "Car", 3.6f / 5f, 3.6f / 120f);
 
             // calculate route.
             var route = await router.CalculateAsync(source, target);

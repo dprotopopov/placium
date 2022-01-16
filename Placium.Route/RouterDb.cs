@@ -10,34 +10,27 @@ using NpgsqlTypes;
 using OsmSharp;
 using OsmSharp.Tags;
 using Placium.Common;
-using Placium.Route.Profiles;
+using Placium.Route.Osm.Vehicles;
 using Placium.Route.Restructions;
 using Placium.Types;
 using Route.LocalGeo;
-using Route.Profiles.Lua.DataTypes;
 
 namespace Placium.Route
 {
     public class RouterDb
     {
-        private readonly HashSet<string> _vehicleTypes;
-
         public RouterDb(Guid guid, string connectionString,
-            Vehicle[] vehicles)
+            Car vehicle)
         {
             Guid = guid;
             ConnectionString = connectionString;
-            VehicleCache = new VehicleCache(vehicles);
-            _vehicleTypes = new HashSet<string>();
-
-            foreach (var vehicle in VehicleCache.Vehicles)
-            foreach (var vehicleType in vehicle.VehicleTypes)
-                _vehicleTypes.Add(vehicleType);
+            Vehicle = vehicle;
         }
 
-        public VehicleCache VehicleCache { get; }
         public Guid Guid { get; }
         public string ConnectionString { get; }
+
+        public Car Vehicle { get; }
 
         public async Task LoadFromOsmAsync(string osmConnectionString, IProgressClient progressClient, string session)
         {
@@ -109,7 +102,6 @@ namespace Placium.Route
                         var objFoundRestriction = new object();
                         var objWriter = new object();
                         var objProgress = new object();
-                        var objVehicleCache = new object();
                         var doIt = true;
 
                         Parallel.For(0, 8, i =>
@@ -142,14 +134,9 @@ namespace Placium.Route
                                     way.Fill(reader);
                                 }
 
-                                var attributes = way.Tags.ToAttributes();
-                                bool anyCanTraverse;
-                                lock (objVehicleCache)
-                                {
-                                    anyCanTraverse = VehicleCache.AnyCanTraverse(attributes);
-                                }
+                                var attributes = way.Tags;
 
-                                if (anyCanTraverse)
+                                if (Vehicle.CanTraverse(attributes))
                                 {
                                     command2.Parameters["ids"].Value = way.Nodes;
 
@@ -174,94 +161,24 @@ namespace Placium.Route
                                             }
                                         }
 
-                                        lock (objVehicleCache)
+                                        var nodeRestriction = Vehicle.NodeRestriction(attributes);
+                                        if (nodeRestriction != null && !string.IsNullOrEmpty(nodeRestriction.Vehicle))
                                         {
-                                            foreach (var vehicle in VehicleCache.Vehicles)
-                                                if (vehicle is DynamicVehicle dynamicVehicle)
-                                                {
-                                                    var nodeRestrictionFunc =
-                                                        dynamicVehicle.Script.Globals["node_restriction"];
+                                            is_core = true;
 
-                                                    if (nodeRestrictionFunc == null) continue;
-
-                                                    var attributesTable = new Table(dynamicVehicle.Script);
-                                                    var resultsTable = new Table(dynamicVehicle.Script);
-
-                                                    lock (dynamicVehicle.Script)
-                                                    {
-                                                        // build lua table.
-                                                        attributesTable.Clear();
-                                                        foreach (var attribute in nodeTags)
-                                                            attributesTable.Set(attribute.Key,
-                                                                DynValue.NewString(attribute.Value));
-
-                                                        // call factor_and_speed function.
-                                                        resultsTable.Clear();
-                                                        dynamicVehicle.Script.Call(nodeRestrictionFunc, attributesTable,
-                                                            resultsTable);
-
-                                                        // get the vehicle type if any.
-                                                        var vehicleTypeVal = resultsTable.Get("vehicle");
-                                                        if (vehicleTypeVal != null &&
-                                                            vehicleTypeVal.Type == DataType.String)
-                                                        {
-                                                            // restriction found.
-                                                            is_core = true;
-
-                                                            var vehicleType = vehicleTypeVal.String;
-                                                            lock (objFoundRestriction)
-                                                            {
-                                                                FoundRestriction(vehicleType, way.Id.Value,
-                                                                    way.Id.Value,
-                                                                    node.Id.Value,
-                                                                    nodeTags);
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                            lock (objFoundRestriction)
+                                            {
+                                                FoundRestriction(nodeRestriction.Vehicle, way.Id.Value,
+                                                    way.Id.Value,
+                                                    node.Id.Value,
+                                                    nodeTags);
+                                            }
                                         }
 
-                                        if (!is_core && nodeTags != null && nodeTags.Any())
-                                            lock (objVehicleCache)
-                                            {
-                                                foreach (var vehicle in VehicleCache.Vehicles)
-                                                    if (vehicle is DynamicVehicle dynamicVehicle)
-                                                    {
-                                                        var nodeTagProcessor =
-                                                            dynamicVehicle.Script.Globals["node_tag_processor"];
 
-                                                        if (nodeTagProcessor == null) continue;
-
-                                                        var attributesTable = new Table(dynamicVehicle.Script);
-                                                        var resultsTable = new Table(dynamicVehicle.Script);
-
-                                                        lock (dynamicVehicle.Script)
-                                                        {
-                                                            // build lua table.
-                                                            attributesTable.Clear();
-                                                            foreach (var attribute in nodeTags)
-                                                                attributesTable.Set(attribute.Key,
-                                                                    DynValue.NewString(attribute.Value));
-
-                                                            // call factor_and_speed function.
-                                                            resultsTable.Clear();
-                                                            dynamicVehicle.Script.Call(nodeTagProcessor,
-                                                                attributesTable,
-                                                                resultsTable);
-
-                                                            // get the result.
-                                                            var dynAttributesToKeep =
-                                                                resultsTable.Get("attributes_to_keep");
-                                                            if (dynAttributesToKeep != null &&
-                                                                dynAttributesToKeep.Type != DataType.Nil &&
-                                                                dynAttributesToKeep.Table.Keys.Any())
-                                                            {
-                                                                is_core = true;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                            }
+                                        if (!is_core && nodeTags != null && nodeTags.Any() &&
+                                            Vehicle.NodeTagProcessor(nodeTags))
+                                            is_core = true;
 
                                         var values = new[]
                                         {
@@ -412,7 +329,6 @@ namespace Placium.Route
                     var objReader = new object();
                     var objFoundRestriction = new object();
                     var objProgress = new object();
-                    var objVehicleCache = new object();
                     var doIt = true;
 
                     Parallel.For(0, 8, i =>
@@ -448,17 +364,12 @@ namespace Placium.Route
                                 way2.Fill(reader, 9);
                             }
 
-                            var attributes1 = way1.Tags.ToAttributes();
-                            var attributes2 = way2.Tags.ToAttributes();
-                            bool anyCanTraverse;
-                            lock (objVehicleCache)
-                            {
-                                anyCanTraverse = way1.Nodes.Length > 1 && way2.Nodes.Length > 1 &&
-                                                 VehicleCache.AnyCanTraverse(attributes1) &&
-                                                 VehicleCache.AnyCanTraverse(attributes2);
-                            }
+                            var attributes1 = way1.Tags;
+                            var attributes2 = way2.Tags;
 
-                            if (anyCanTraverse)
+                            if (way1.Nodes.Length > 1 && way2.Nodes.Length > 1 &&
+                                Vehicle.CanTraverse(attributes1) &&
+                                Vehicle.CanTraverse(attributes2))
                             {
                                 var ids = new[]
                                 {
@@ -621,7 +532,6 @@ namespace Placium.Route
                     var objReader = new object();
                     var objWriter = new object();
                     var objProgress = new object();
-                    var objVehicleCache = new object();
                     var doIt = true;
 
                     Parallel.For(0, 8, j =>
@@ -648,19 +558,11 @@ namespace Placium.Route
                                 way.Fill(reader);
                             }
 
-                            var attributes = way.Tags.ToAttributes();
-                            bool anyCanTraverse;
-                            lock (objVehicleCache)
-                            {
-                                anyCanTraverse = VehicleCache.AnyCanTraverse(attributes);
-                            }
+                            var attributes = way.Tags;
 
-                            if (anyCanTraverse)
+                            if (Vehicle.CanTraverse(attributes))
                             {
-                                var factorAndSpeeds = new Dictionary<string, FactorAndSpeed>();
-                                foreach (var vehicle in VehicleCache.Vehicles)
-                                foreach (var profile in vehicle.GetProfiles())
-                                    factorAndSpeeds.Add(profile.FullName, profile.FactorAndSpeed(attributes));
+                                var factorAndSpeeds = Vehicle.FactorAndSpeeds(attributes);
 
                                 command3.Parameters["ids"].Value = way.Nodes;
 
@@ -726,8 +628,8 @@ namespace Placium.Route
                                     if (toNode == null) break;
 
                                     var direction = factorAndSpeeds.ToDictionary(x => x.Key, x => x.Value.Direction);
-                                    var weight = factorAndSpeeds.Where(x => x.Value.Value > 0)
-                                        .ToDictionary(x => x.Key, x => distance * x.Value.Value);
+                                    var weight = factorAndSpeeds.Where(x => x.Value.Factor > 0)
+                                        .ToDictionary(x => x.Key, x => distance * x.Value.Factor);
 
                                     var fromCoords = intermediates.First();
                                     var toCoords = intermediates.Last();

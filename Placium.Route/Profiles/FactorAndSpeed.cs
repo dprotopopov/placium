@@ -8,7 +8,7 @@
         /// <summary>
         /// Gets or sets the actual factor.
         /// </summary>
-        public float Value { get; set; }
+        public float Factor { get; set; }
 
         /// <summary>
         /// Gets or sets the speed (1/m/s).
@@ -27,9 +27,5 @@
         /// </summary>
         public float[] Constraints { get; set; }
         
-        /// <summary>
-        /// Returns a non-value.
-        /// </summary>
-        public static FactorAndSpeed NoFactor { get { return new FactorAndSpeed() { Direction = 0, Value = 0, SpeedFactor = 0, Constraints = null }; } }
     }
 }

@@ -50,8 +50,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySql.QueryTools.WebApp", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Attributes", "Route.Attributes\Route.Attributes.csproj", "{294445CA-C94D-4F25-837F-542D60A07B9E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Profiles.Lua", "Route.Profiles.Lua\Route.Profiles.Lua.csproj", "{12F02C05-B3F6-4C61-B539-3C7CCFB5FA59}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Navigation.Directions", "Route.Navigation.Directions\Route.Navigation.Directions.csproj", "{0DCFA33B-9BC4-4217-BA34-B0F3C1686741}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.LocalGeo", "Route.LocalGeo\Route.LocalGeo.csproj", "{E3AF1351-E741-402C-8A33-85434BFA90FF}"
@@ -144,10 +142,6 @@ Global
 		{294445CA-C94D-4F25-837F-542D60A07B9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{294445CA-C94D-4F25-837F-542D60A07B9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{294445CA-C94D-4F25-837F-542D60A07B9E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{12F02C05-B3F6-4C61-B539-3C7CCFB5FA59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{12F02C05-B3F6-4C61-B539-3C7CCFB5FA59}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12F02C05-B3F6-4C61-B539-3C7CCFB5FA59}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{12F02C05-B3F6-4C61-B539-3C7CCFB5FA59}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0DCFA33B-9BC4-4217-BA34-B0F3C1686741}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0DCFA33B-9BC4-4217-BA34-B0F3C1686741}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0DCFA33B-9BC4-4217-BA34-B0F3C1686741}.Release|Any CPU.ActiveCfg = Release|Any CPU

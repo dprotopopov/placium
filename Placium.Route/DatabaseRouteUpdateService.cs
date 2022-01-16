@@ -18,7 +18,7 @@ namespace Placium.Route
         public async Task UpdateAsync(string session, bool full)
         {
             var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"), GetRouteConnectionString(),
-                new[] {Vehicle.Car});
+                new Car());
             await routerDb.LoadFromOsmAsync(GetOsmConnectionString(), _progressClient, session);
         }
     }

@@ -37,11 +37,11 @@ namespace Placium.Route.ConsoleTest1
 
             var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"),
                 connectionsConfig.GetConnectionString("RouteConnection"),
-                new[] {Vehicle.Car});
+                new Car());
             // await routerDb.LoadFromOsmAsync(connectionsConfig.GetConnectionString("OsmConnection"), progressClient, null);
 
             // create router.
-            var router = new Router(routerDb, "car", 3.6f / 5f, 3.6f / 120f);
+            var router = new Router(routerDb, "Car", 3.6f / 5f, 3.6f / 120f);
 
             // calculate route.
             // this should be the result: http://geojson.io/#id=gist:dprotopopov/34df4ce18b6e974bb2ee9123b29d46c4&map=16/55.8223/37.6331
