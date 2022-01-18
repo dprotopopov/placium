@@ -46,6 +46,8 @@ namespace Placium.Route
             osmConnection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
             osmConnection.TypeMapper.MapEnum<OsmType>("osm_type");
 
+            var id = string.Empty;
+
             await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
                 "Placium.Route.CreateTempTables.pgsql",
                 connection);
@@ -74,7 +76,7 @@ namespace Placium.Route
                     writer2.WriteLine(string.Join("\t", values));
                 }
 
-                var id = Guid.NewGuid().ToString();
+                id = Guid.NewGuid().ToString();
                 await progressClient.Init(id, session);
                 using (var writer = connection.BeginTextImport(
                     "COPY temp_node (guid,id,latitude,longitude,tags,is_core) FROM STDIN WITH NULL AS ''"))
@@ -210,15 +212,85 @@ namespace Placium.Route
                     }
                 }
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Placium.Route.InsertFromTempTables.pgsql",
-                    connection);
                 await progressClient.Finalize(id, session);
 
                 id = Guid.NewGuid().ToString();
                 await progressClient.Init(id, session);
 
-                using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) 
+                //await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                //    "Placium.Route.InsertFromTempTables.pgsql",
+                //    connection);
+
+                using (var command1 = new NpgsqlCommand(string.Join(";",
+                    @"SELECT COUNT(*) FROM temp_node",
+                    @"CREATE INDEX ON temp_node (guid,id)"), connection))
+                using (var command2 = new NpgsqlCommand(string.Join(";",
+                    @"INSERT INTO node(
+	                    guid,
+	                    id,
+	                    latitude,
+	                    longitude,
+	                    tags,
+	                    is_core
+                    ) WITH cte AS (
+	                    SELECT 
+		                    guid,
+		                    id,
+		                    BOOL_OR(is_core) OR COUNT(*)>1 AS is_core
+	                    FROM temp_node
+	                    GROUP BY guid,id
+                    ), cte1 AS (
+	                    SELECT 
+		                     *, ROW_NUMBER() OVER (PARTITION BY guid,id) rn
+	                    FROM (SELECT * FROM temp_node LIMIT @limit OFFSET @skip) q
+                    ) SELECT 
+	                    cte.guid,
+	                    cte.id,
+	                    cte1.latitude,
+	                    cte1.longitude,
+	                    cte1.tags,
+	                    cte.is_core
+                    FROM cte JOIN cte1 ON cte.guid=cte1.guid AND cte.id=cte1.id
+                    WHERE cte1.rn=1
+                    ON CONFLICT (guid,id) DO UPDATE SET
+	                    is_core=true"), connection))
+                using (var command3 = new NpgsqlCommand(string.Join(";",
+                    @"DROP TABLE temp_node"), connection))
+                {
+                    command1.Prepare();
+                    command2.Parameters.Add("skip", NpgsqlDbType.Bigint);
+                    command2.Parameters.Add("limit", NpgsqlDbType.Bigint);
+                    command2.Prepare();
+                    command3.Prepare();
+
+                    var count = 0L;
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        if (reader.Read())
+                            count = reader.GetInt64(0);
+                    }
+
+                    var limit = 10000L;
+                    var current = 0L;
+                    for (var skip = 0L; skip < count; skip +=limit)
+                    {
+                        command2.Parameters["skip"].Value = skip;
+                        command2.Parameters["limit"].Value = limit;
+                        command2.ExecuteNonQuery();
+                        current = Math.Min(count, skip + limit);
+                        await progressClient.Progress(100f * current / count, id, session);
+                    }
+
+                    command3.ExecuteNonQuery();
+                }
+
+                await progressClient.Finalize(id, session);
+
+
+                id = Guid.NewGuid().ToString();
+                await progressClient.Init(id, session);
+
+                using (var command = new NpgsqlCommand(string.Join("; ", @"SELECT COUNT(*) 
                             FROM relation r,unnest(r.members) m WHERE m.role='via'", @"SELECT
 	                            r.id,
 	                            r.version,
@@ -290,6 +362,7 @@ namespace Placium.Route
                 await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
                     "Placium.Route.CreateTempTables3.pgsql",
                     connection);
+
 
                 using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) 
                             FROM way w1 JOIN way w2 ON w1.nodes&&w2.nodes WHERE w1.id<w2.id", @"SELECT
@@ -678,16 +751,198 @@ namespace Placium.Route
                     });
                 }
 
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Placium.Route.InsertFromTempTables3.pgsql",
-                    connection);
                 await progressClient.Finalize(id, session);
             }
 
-            await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                "Placium.Route.InsertFromTempTables2.pgsql",
-                connection2);
 
+            id = Guid.NewGuid().ToString();
+            await progressClient.Init(id, session);
+
+            //await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+            //        "Placium.Route.InsertFromTempTables3.pgsql",
+            //        connection);
+
+            using (var command1 = new NpgsqlCommand(string.Join(";",
+                @"SELECT COUNT(*) FROM temp_edge",
+                @"CREATE INDEX ON temp_edge (guid,from_node,to_node,way)"), connection))
+            using (var command2 = new NpgsqlCommand(string.Join(";",
+                @"INSERT INTO edge(
+	                    guid,
+	                    from_node,
+	                    to_node,
+	                    way,
+	                    from_latitude, 
+	                    from_longitude, 
+	                    to_latitude, 
+	                    to_longitude, 
+	                    distance,
+	                    coordinates,
+	                    location,
+	                    tags,
+	                    direction,
+	                    weight,
+	                    nodes
+                    ) WITH cte AS (
+	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY guid,from_node,to_node,way) AS rn 
+                        FROM (SELECT * FROM temp_edge LIMIT @limit OFFSET @skip) q
+                    ) SELECT 
+	                    guid,
+	                    from_node,
+	                    to_node,
+	                    way,
+	                    from_latitude, 
+	                    from_longitude, 
+	                    to_latitude, 
+	                    to_longitude, 
+	                    distance,
+	                    coordinates,
+	                    location,
+	                    tags,
+	                    direction,
+	                    weight,
+	                    ARRAY[from_node,to_node]
+                    FROM cte WHERE rn=1
+                    ON CONFLICT (guid,from_node,to_node,way) DO NOTHING"), connection))
+            using (var command3 = new NpgsqlCommand(string.Join(";",
+                @"DROP TABLE temp_edge"), connection))
+            {
+                command1.Prepare();
+                command2.Parameters.Add("skip", NpgsqlDbType.Bigint);
+                command2.Parameters.Add("limit", NpgsqlDbType.Bigint);
+                command2.Prepare();
+                command3.Prepare();
+
+                var count = 0L;
+                using (var reader = command1.ExecuteReader())
+                {
+                    if (reader.Read())
+                        count = reader.GetInt64(0);
+                }
+
+                var limit = 10000L;
+                var current = 0L;
+                for (var skip = 0L; skip < count; skip += limit)
+                {
+                    command2.Parameters["skip"].Value = skip;
+                    command2.Parameters["limit"].Value = limit;
+                    command2.ExecuteNonQuery();
+                    current = Math.Min(count, skip + limit);
+                    await progressClient.Progress(100f * current / count, id, session);
+                }
+
+                command3.ExecuteNonQuery();
+            }
+
+            await progressClient.Finalize(id, session);
+
+            id = Guid.NewGuid().ToString();
+            await progressClient.Init(id, session);
+
+
+            //await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+            //    "Placium.Route.InsertFromTempTables2.pgsql",
+            //    connection2);
+
+            using (var command1 = new NpgsqlCommand(string.Join(";",
+    @"SELECT COUNT(*) FROM temp_restriction"), connection2))
+            using (var command2 = new NpgsqlCommand(string.Join(";",
+                @"INSERT INTO temp_restriction2 (
+	                            guid,
+	                            vehicle_type,
+	                            from_edge,
+	                            to_edge,
+	                            via_node,
+	                            tags
+                            ) SELECT
+	                            t.guid,
+	                            t.vehicle_type,
+	                            ef.id AS from_edge,
+	                            et.id AS to_edge,
+	                            t.via_node,
+	                            t.tags
+                            FROM (SELECT * FROM temp_restriction LIMIT @limit OFFSET @skip) t JOIN edge ef ON t.from_way=ef.way JOIN edge et ON t.to_way=et.way
+                            WHERE ef.guid=t.guid AND et.guid=t.guid
+                            AND (ef.from_node=t.via_node OR ef.to_node=t.via_node)
+                            AND (et.from_node=t.via_node OR et.to_node=t.via_node)"), connection2))
+            using (var command3 = new NpgsqlCommand(string.Join(";",
+                @"SELECT COUNT(*) FROM temp_restriction2",
+                @"CREATE INDEX ON temp_restriction2 (guid,vehicle_type,from_edge,to_edge,via_node)"), connection2))
+            using (var command4 = new NpgsqlCommand(string.Join(";",
+                @"INSERT INTO restriction(
+	                guid,
+	                vehicle_type,
+	                from_edge,
+	                to_edge,
+	                via_node,
+	                tags
+                ) WITH cte AS (
+	                SELECT *,ROW_NUMBER() OVER (PARTITION BY guid,vehicle_type,from_edge,to_edge,via_node) AS rn 
+                    FROM (SELECT * FROM temp_restriction2 LIMIT @limit OFFSET @skip) q
+                ) SELECT
+	                guid,
+	                vehicle_type,
+	                from_edge,
+	                to_edge,
+	                via_node,
+	                tags
+                FROM cte WHERE rn=1
+                ON CONFLICT (guid,vehicle_type,from_edge,to_edge,via_node) DO NOTHING"), connection2))
+            using (var command5 = new NpgsqlCommand(string.Join(";",
+                @"DROP TABLE temp_restriction2",
+                @"DROP TABLE temp_restriction"), connection2))
+            {
+                command1.Prepare();
+                command2.Parameters.Add("skip", NpgsqlDbType.Bigint);
+                command2.Parameters.Add("limit", NpgsqlDbType.Bigint);
+                command2.Prepare();
+                command3.Prepare();
+                command4.Parameters.Add("skip", NpgsqlDbType.Bigint);
+                command4.Parameters.Add("limit", NpgsqlDbType.Bigint);
+                command4.Prepare();
+                command5.Prepare();
+
+                var count = 0L;
+                using (var reader = command1.ExecuteReader())
+                {
+                    if (reader.Read())
+                        count = reader.GetInt64(0);
+                }
+
+                var limit = 10000L;
+                var current = 0L;
+                for (var skip = 0L; skip < count; skip += limit)
+                {
+                    command2.Parameters["skip"].Value = skip;
+                    command2.Parameters["limit"].Value = limit;
+                    command2.ExecuteNonQuery();
+                    current = Math.Min(count, skip + limit);
+                    await progressClient.Progress(100f * current / count, id, session);
+                }
+
+                await progressClient.Finalize(id, session);
+                id = Guid.NewGuid().ToString();
+                await progressClient.Init(id, session);
+
+                using (var reader = command3.ExecuteReader())
+                {
+                    if (reader.Read())
+                        count = reader.GetInt64(0);
+                }
+                current = 0L;
+                for (var skip = 0L; skip < count; skip += limit)
+                {
+                    command4.Parameters["skip"].Value = skip;
+                    command4.Parameters["limit"].Value = limit;
+                    command4.ExecuteNonQuery();
+                    current = Math.Min(count, skip + limit);
+                    await progressClient.Progress(100f * current / count, id, session);
+                }
+
+                command5.ExecuteNonQuery();
+
+            }
+
+            await progressClient.Finalize(id, session);
 
             await osmConnection.CloseAsync();
             await connection.CloseAsync();
