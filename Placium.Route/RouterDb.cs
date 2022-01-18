@@ -242,7 +242,7 @@ namespace Placium.Route
                     ), cte1 AS (
 	                    SELECT 
 		                     *, ROW_NUMBER() OVER (PARTITION BY guid,id) rn
-	                    FROM (SELECT * FROM temp_node ORDER BY id LIMIT @limit OFFSET @skip) q
+	                    FROM (SELECT * FROM temp_node ORDER BY temp_id LIMIT @limit OFFSET @skip) q
                     ) SELECT 
 	                    cte.guid,
 	                    cte.id,
@@ -784,7 +784,7 @@ namespace Placium.Route
 	                    nodes
                     ) WITH cte AS (
 	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY guid,from_node,to_node,way) AS rn 
-                        FROM (SELECT * FROM temp_edge ORDER BY id LIMIT @limit OFFSET @skip) q
+                        FROM (SELECT * FROM temp_edge ORDER BY temp_id LIMIT @limit OFFSET @skip) q
                     ) SELECT 
 	                    guid,
 	                    from_node,
@@ -860,7 +860,7 @@ namespace Placium.Route
 	                            et.id AS to_edge,
 	                            t.via_node,
 	                            t.tags
-                            FROM (SELECT * FROM temp_restriction ORDER BY id LIMIT @limit OFFSET @skip) t JOIN edge ef ON t.from_way=ef.way JOIN edge et ON t.to_way=et.way
+                            FROM (SELECT * FROM temp_restriction ORDER BY temp_id LIMIT @limit OFFSET @skip) t JOIN edge ef ON t.from_way=ef.way JOIN edge et ON t.to_way=et.way
                             WHERE ef.guid=t.guid AND et.guid=t.guid
                             AND (ef.from_node=t.via_node OR ef.to_node=t.via_node)
                             AND (et.from_node=t.via_node OR et.to_node=t.via_node)"), connection2))
@@ -877,7 +877,7 @@ namespace Placium.Route
 	                tags
                 ) WITH cte AS (
 	                SELECT *,ROW_NUMBER() OVER (PARTITION BY guid,vehicle_type,from_edge,to_edge,via_node) AS rn 
-                    FROM (SELECT * FROM temp_restriction2 ORDER BY id LIMIT @limit OFFSET @skip) q
+                    FROM (SELECT * FROM temp_restriction2 ORDER BY temp_id LIMIT @limit OFFSET @skip) q
                 ) SELECT
 	                guid,
 	                vehicle_type,

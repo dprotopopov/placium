@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS temp_restriction2;
 DROP TABLE IF EXISTS restriction;
 
 CREATE TEMP TABLE temp_restriction (
-	id BIGSERIAL PRIMARY KEY NOT NULL, 
+	temp_id BIGSERIAL PRIMARY KEY NOT NULL, 
 	guid UUID NOT NULL,
 	vehicle_type VARCHAR(255),
 	from_way BIGINT NOT NULL,
@@ -15,7 +15,7 @@ CREATE TEMP TABLE temp_restriction (
 );
 
 CREATE TEMP TABLE temp_restriction2 (
-	id BIGSERIAL PRIMARY KEY NOT NULL, 
+	temp_id BIGSERIAL PRIMARY KEY NOT NULL, 
 	guid UUID NOT NULL,
 	vehicle_type VARCHAR(255),
 	from_edge BIGINT NOT NULL,
