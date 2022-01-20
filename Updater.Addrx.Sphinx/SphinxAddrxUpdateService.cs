@@ -99,7 +99,7 @@ namespace Updater.Addrx.Sphinx
 
                 reader.NextResult();
 
-                while (true)
+                for(;;)
                 {
                     var docs = ReadDocs(reader, take);
 

@@ -137,7 +137,7 @@ namespace Updater.Addrobx.Sphinx
 
                             command2.Prepare();
 
-                            while (true)
+                            for (;;)
                             {
                                 var docs1 = new List<Doc1>(take);
 
@@ -280,7 +280,7 @@ namespace Updater.Addrobx.Sphinx
 
                             command2.Prepare();
 
-                            while (true)
+                            for (;;)
                             {
                                 var docs1 = new List<Doc1>(take);
 
@@ -437,7 +437,7 @@ namespace Updater.Addrobx.Sphinx
 
                             command3.Prepare();
 
-                            while (true)
+                            for (;;)
                             {
                                 var docs1 = new List<Doc1>(take);
 
@@ -623,7 +623,7 @@ namespace Updater.Addrobx.Sphinx
 
                             command2.Prepare();
 
-                            while (true)
+                            for (;;)
                             {
                                 List<Doc1> docs1;
                                 lock (obj)

@@ -186,7 +186,7 @@ namespace Placium.Common
 
         protected int ExecuteNonQueryWithRepeatOnError(string sql, MySqlConnection connection)
         {
-            while (true)
+            for (;;)
                 try
                 {
                     connection.TryOpen();

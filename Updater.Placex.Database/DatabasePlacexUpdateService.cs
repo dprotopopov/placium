@@ -245,7 +245,7 @@ namespace Updater.Placex.Database
 
                                         command3.Prepare();
 
-                                        while (true)
+                                        for (;;)
                                         {
                                             long id0;
                                             string tags;
@@ -458,7 +458,7 @@ namespace Updater.Placex.Database
 
                                         command4.Prepare();
 
-                                        while (true)
+                                        for (;;)
                                         {
                                             long id0;
                                             string tags;

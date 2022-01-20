@@ -133,46 +133,12 @@ namespace Placium.Route
 	                            tags hstore,
 	                            is_core BOOLEAN
                             )"), connection3);
-                        using var command4 = new NpgsqlCommand(string.Join(";",
-                            @"CREATE INDEX ON temp_node (guid,id)"), connection3);
-                        using var command5 = new NpgsqlCommand(string.Join(";",
-                            @"INSERT INTO node(
-	                            guid,
-	                            id,
-	                            latitude,
-	                            longitude,
-	                            tags,
-	                            is_core
-                            ) WITH cte AS (
-	                            SELECT 
-		                            guid,
-		                            id,
-		                            BOOL_OR(is_core) OR COUNT(*)>1 AS is_core
-	                            FROM temp_node
-	                            GROUP BY guid,id
-                            ), cte1 AS (
-	                            SELECT 
-		                             *, ROW_NUMBER() OVER (PARTITION BY guid,id) rn
-	                            FROM temp_node
-                            ) SELECT 
-	                            cte.guid,
-	                            cte.id,
-	                            cte1.latitude,
-	                            cte1.longitude,
-	                            cte1.tags,
-	                            cte.is_core
-                            FROM cte JOIN cte1 ON cte.guid=cte1.guid AND cte.id=cte1.id
-                            WHERE cte1.rn=1
-                            ON CONFLICT (guid,id) DO UPDATE SET
-	                            is_core=true", @"TRUNCATE TABLE temp_node"), connection3);
 
                         command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
                         command2.Prepare();
                         command3.Prepare();
                         command3.ExecuteNonQuery();
-                        command4.Prepare();
-                        command5.Prepare();
 
 
                         var way = new Way();
@@ -258,10 +224,79 @@ namespace Placium.Route
                             }
                         }
 
-                        command4.ExecuteNonQuery();
-                        lock (objInsert)
+
+                        using (var command1 = new NpgsqlCommand(string.Join(";",
+                            @"SELECT COUNT(*) FROM temp_node",
+                            @"CREATE INDEX ON temp_node (guid,id)"), connection3))
+                        using (var command6 = new NpgsqlCommand(string.Join(";",
+                            @"INSERT INTO node(
+	                            guid,
+	                            id,
+	                            latitude,
+	                            longitude,
+	                            tags,
+	                            is_core
+                            ) WITH cte AS (
+	                            SELECT 
+		                            guid,
+		                            id,
+		                            BOOL_OR(is_core) OR COUNT(*)>1 AS is_core
+	                            FROM temp_node
+	                            GROUP BY guid,id
+                            ), cte1 AS (
+	                            SELECT 
+		                             *, ROW_NUMBER() OVER (PARTITION BY guid,id) rn
+	                            FROM (SELECT * FROM temp_node ORDER BY temp_id LIMIT @limit OFFSET @skip) q
+                            ) SELECT 
+	                            cte.guid,
+	                            cte.id,
+	                            cte1.latitude,
+	                            cte1.longitude,
+	                            cte1.tags,
+	                            cte.is_core
+                            FROM cte JOIN cte1 ON cte.guid=cte1.guid AND cte.id=cte1.id
+                            WHERE cte1.rn=1
+                            ON CONFLICT (guid,id) DO UPDATE SET
+	                            is_core=true"), connection3))
+                        using (var command7 = new NpgsqlCommand(string.Join(";",
+                            @"DROP TABLE temp_node"), connection3))
                         {
-                            command5.ExecuteNonQuery();
+                            command1.Prepare();
+                            command6.Parameters.Add("skip", NpgsqlDbType.Bigint);
+                            command6.Parameters.Add("limit", NpgsqlDbType.Bigint);
+                            command6.Prepare();
+                            command7.Prepare();
+
+                            count = 0L;
+                            using (var reader2 = command1.ExecuteReader())
+                            {
+                                if (reader2.Read())
+                                    count = reader2.GetInt64(0);
+                            }
+
+                            lock (objInsert)
+                            {
+                                progressClient.Finalize(id, session).GetAwaiter()
+                                    .GetResult();
+
+                                id = Guid.NewGuid().ToString();
+                                progressClient.Init(id, session).GetAwaiter()
+                                    .GetResult();
+
+                                var limit = 10000L;
+                                current = 0L;
+                                for (var skip = 0L; skip < count; skip += limit)
+                                {
+                                    command6.Parameters["skip"].Value = skip;
+                                    command6.Parameters["limit"].Value = limit;
+                                    command6.ExecuteNonQuery();
+                                    current = Math.Min(count, skip + limit);
+                                    progressClient.Progress(100f * current / count, id, session).GetAwaiter()
+                                        .GetResult();
+                                }
+                            }
+
+                            command7.ExecuteNonQuery();
                         }
 
                         osmConnection2.Close();
@@ -658,7 +693,7 @@ namespace Placium.Route
                                     i++;
 
                                     var toNode = (long?) null;
-                                    while (true)
+                                    for (;;)
                                     {
                                         if (i >= way.Nodes.Length ||
                                             !dictionary.TryGetValue(way.Nodes[i], out item))
