@@ -79,17 +79,18 @@ namespace Placium.Route
                 id = Guid.NewGuid().ToString();
                 await progressClient.Init(id, session);
 
-                using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM way", @"SELECT
-                            id,
-                            version,
-                            change_set_id,
-                            time_stamp,
-                            user_id,
-                            user_name,
-                            visible,
-                            tags,
-                            nodes
-                        FROM way"), osmConnection))
+                using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM node", @"SELECT
+	                            id,
+	                            version,
+	                            latitude,
+	                            longitude,
+	                            change_set_id,
+	                            time_stamp,
+	                            user_id,
+	                            user_name,
+	                            visible,
+	                            tags
+                        FROM node"), osmConnection))
                 {
                     command.Prepare();
 
@@ -101,7 +102,6 @@ namespace Placium.Route
                     var objReader = new object();
                     var objFoundRestriction = new object();
                     var objProgress = new object();
-                    var objInsert = new object();
                     var doIt = true;
 
                     Parallel.For(0, 12, i =>
@@ -114,189 +114,107 @@ namespace Placium.Route
                         using var command2 = new NpgsqlCommand(@"SELECT 
 	                            id,
 	                            version,
-	                            latitude,
-	                            longitude,
 	                            change_set_id,
 	                            time_stamp,
 	                            user_id,
 	                            user_name,
 	                            visible,
-	                            tags
-                            FROM node WHERE id=ANY(@ids)", osmConnection2);
-                        using var command3 = new NpgsqlCommand(string.Join(";",
-                            @"CREATE TEMP TABLE temp_node (
-	                            temp_id BIGSERIAL PRIMARY KEY NOT NULL, 
-	                            guid UUID NOT NULL, 
-	                            id BIGINT NOT NULL, 
-	                            latitude REAL NOT NULL, 
-	                            longitude REAL NOT NULL, 
-	                            tags hstore,
-	                            is_core BOOLEAN
-                            )"), connection3);
+	                            tags,
+	                            nodes
+                            FROM way WHERE ARRAY[@node]::bigint[] <@ nodes", osmConnection2);
 
-                        command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                        command2.Parameters.Add("node", NpgsqlDbType.Bigint);
 
                         command2.Prepare();
-                        command3.Prepare();
-                        command3.ExecuteNonQuery();
 
-
-                        var way = new Way();
                         var node = new Node();
-                        for (;;)
+                        using (var writer = connection3.BeginTextImport(
+                            "COPY node (guid,id,latitude,longitude,tags,is_core) FROM STDIN WITH NULL AS ''"))
                         {
-                            lock (objReader)
+                            for (;;)
                             {
-                                if (!doIt) break;
-                                doIt = reader.Read();
-                                if (!doIt) break;
-                                way.Fill(reader);
-                            }
-
-                            var attributes = way.Tags;
-
-                            if (Vehicle.CanTraverse(attributes))
-                                using (var writer = connection3.BeginTextImport(
-                                    "COPY temp_node (guid,id,latitude,longitude,tags,is_core) FROM STDIN WITH NULL AS ''")
-                                )
+                                lock (objReader)
                                 {
-                                    command2.Parameters["ids"].Value = way.Nodes;
+                                    if (!doIt) break;
+                                    doIt = reader.Read();
+                                    if (!doIt) break;
+                                    node.Fill(reader);
+                                }
 
-                                    using var reader2 = command2.ExecuteReader();
+                                command2.Parameters["node"].Value = node.Id.Value;
+
+                                var list = new List<Way>();
+                                using (var reader2 = command2.ExecuteReader())
+                                {
                                     while (reader2.Read())
                                     {
-                                        node.Fill(reader2);
+                                        var way = new Way().Fill(reader2);
+                                        var wayTags = way.Tags;
+                                        if (Vehicle.CanTraverse(wayTags)) list.Add(way);
+                                    }
+                                }
 
-                                        var is_core = node.Id == way.Nodes.First() || node.Id == way.Nodes.Last();
+                                if (list.Any())
+                                {
+                                    var is_core = list.Any(way =>
+                                        node.Id == way.Nodes.First() || node.Id == way.Nodes.Last());
 
-                                        var nodeTags = node.Tags;
-                                        if (nodeTags != null &&
-                                            (nodeTags.Contains("barrier", "bollard") ||
-                                             nodeTags.Contains("barrier", "fence") ||
-                                             nodeTags.Contains("barrier", "gate")))
+                                    var nodeTags = node.Tags;
+                                    if (nodeTags != null &&
+                                        (nodeTags.Contains("barrier", "bollard") ||
+                                         nodeTags.Contains("barrier", "fence") ||
+                                         nodeTags.Contains("barrier", "gate")))
+                                    {
+                                        is_core = true;
+                                        lock (objFoundRestriction)
                                         {
-                                            is_core = true;
-                                            lock (objFoundRestriction)
-                                            {
+                                            foreach (var way in list)
                                                 FoundRestriction("motorcar", way.Id.Value, way.Id.Value, node.Id.Value,
                                                     nodeTags);
-                                            }
                                         }
-
-                                        var nodeRestriction = Vehicle.NodeRestriction(attributes);
+                                    }
+                                    else
+                                    {
+                                        var nodeRestriction = Vehicle.NodeRestriction(nodeTags);
                                         if (nodeRestriction != null && !string.IsNullOrEmpty(nodeRestriction.Vehicle))
                                         {
                                             is_core = true;
 
                                             lock (objFoundRestriction)
                                             {
-                                                FoundRestriction(nodeRestriction.Vehicle, way.Id.Value,
-                                                    way.Id.Value,
-                                                    node.Id.Value,
-                                                    nodeTags);
+                                                foreach (var way in list)
+                                                    FoundRestriction(nodeRestriction.Vehicle, way.Id.Value,
+                                                        way.Id.Value,
+                                                        node.Id.Value,
+                                                        nodeTags);
                                             }
                                         }
-
-
-                                        if (!is_core && nodeTags != null && nodeTags.Any() &&
-                                            Vehicle.NodeTagProcessor(nodeTags))
-                                            is_core = true;
-
-                                        var values = new[]
-                                        {
-                                            Guid.ToString(),
-                                            node.Id.ToString(),
-                                            node.Latitude.ValueAsText(),
-                                            node.Longitude.ValueAsText(),
-                                            $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                            is_core.ValueAsText()
-                                        };
-
-                                        writer.WriteLine(string.Join("\t", values));
                                     }
+
+                                    if (!is_core && nodeTags != null && nodeTags.Any() &&
+                                        Vehicle.NodeTagProcessor(nodeTags))
+                                        is_core = true;
+
+                                    var values = new[]
+                                    {
+                                        Guid.ToString(),
+                                        node.Id.ToString(),
+                                        node.Latitude.ValueAsText(),
+                                        node.Longitude.ValueAsText(),
+                                        $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                        is_core.ValueAsText()
+                                    };
+
+                                    writer.WriteLine(string.Join("\t", values));
                                 }
 
-                            lock (objProgress)
-                            {
-                                if (current++ % 1000 == 0)
-                                    progressClient.Progress(100f * current / count, id, session).GetAwaiter()
-                                        .GetResult();
-                            }
-                        }
-
-
-                        using (var command1 = new NpgsqlCommand(string.Join(";",
-                            @"SELECT COUNT(*) FROM temp_node",
-                            @"CREATE INDEX ON temp_node (guid,id)"), connection3))
-                        using (var command6 = new NpgsqlCommand(string.Join(";",
-                            @"INSERT INTO node(
-	                            guid,
-	                            id,
-	                            latitude,
-	                            longitude,
-	                            tags,
-	                            is_core
-                            ) WITH cte AS (
-	                            SELECT 
-		                            guid,
-		                            id,
-		                            BOOL_OR(is_core) OR COUNT(*)>1 AS is_core
-	                            FROM temp_node
-	                            GROUP BY guid,id
-                            ), cte1 AS (
-	                            SELECT 
-		                             *, ROW_NUMBER() OVER (PARTITION BY guid,id) rn
-	                            FROM (SELECT * FROM temp_node ORDER BY temp_id LIMIT @limit OFFSET @skip) q
-                            ) SELECT 
-	                            cte.guid,
-	                            cte.id,
-	                            cte1.latitude,
-	                            cte1.longitude,
-	                            cte1.tags,
-	                            cte.is_core
-                            FROM cte JOIN cte1 ON cte.guid=cte1.guid AND cte.id=cte1.id
-                            WHERE cte1.rn=1
-                            ON CONFLICT (guid,id) DO UPDATE SET
-	                            is_core=true"), connection3))
-                        using (var command7 = new NpgsqlCommand(string.Join(";",
-                            @"DROP TABLE temp_node"), connection3))
-                        {
-                            command1.Prepare();
-                            command6.Parameters.Add("skip", NpgsqlDbType.Bigint);
-                            command6.Parameters.Add("limit", NpgsqlDbType.Bigint);
-                            command6.Prepare();
-                            command7.Prepare();
-
-                            count = 0L;
-                            using (var reader2 = command1.ExecuteReader())
-                            {
-                                if (reader2.Read())
-                                    count = reader2.GetInt64(0);
-                            }
-
-                            lock (objInsert)
-                            {
-                                progressClient.Finalize(id, session).GetAwaiter()
-                                    .GetResult();
-
-                                id = Guid.NewGuid().ToString();
-                                progressClient.Init(id, session).GetAwaiter()
-                                    .GetResult();
-
-                                var limit = 10000L;
-                                current = 0L;
-                                for (var skip = 0L; skip < count; skip += limit)
+                                lock (objProgress)
                                 {
-                                    command6.Parameters["skip"].Value = skip;
-                                    command6.Parameters["limit"].Value = limit;
-                                    command6.ExecuteNonQuery();
-                                    current = Math.Min(count, skip + limit);
-                                    progressClient.Progress(100f * current / count, id, session).GetAwaiter()
-                                        .GetResult();
+                                    if (current++ % 1000 == 0)
+                                        progressClient.Progress(100f * current / count, id, session).GetAwaiter()
+                                            .GetResult();
                                 }
                             }
-
-                            command7.ExecuteNonQuery();
                         }
 
                         osmConnection2.Close();
