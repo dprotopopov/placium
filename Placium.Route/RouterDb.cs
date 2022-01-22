@@ -79,7 +79,8 @@ namespace Placium.Route
                 id = Guid.NewGuid().ToString();
                 await progressClient.Init(id, session);
 
-                using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM node n WHERE EXISTS (SELECT * FROM way WHERE ARRAY[n.id] <@ nodes)", @"SELECT
+                using (var command = new NpgsqlCommand(string.Join(";",
+                    @"SELECT COUNT(*) FROM node n WHERE EXISTS (SELECT * FROM way WHERE ARRAY[n.id] <@ nodes)", @"SELECT
 	                            id,
 	                            version,
 	                            latitude,
@@ -121,98 +122,110 @@ namespace Placium.Route
 	                            visible,
 	                            tags,
 	                            nodes
-                            FROM way WHERE ARRAY[@node]::bigint[] <@ nodes", osmConnection2);
+                            FROM way WHERE @ids && nodes", osmConnection2);
 
-                        command2.Parameters.Add("node", NpgsqlDbType.Bigint);
+                        command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
                         command2.Prepare();
 
-                        var node = new Node();
+                        var take = 1000;
+
                         using (var writer = connection3.BeginTextImport(
                             "COPY node (guid,id,latitude,longitude,tags,is_core) FROM STDIN WITH NULL AS ''"))
                         {
                             for (;;)
                             {
+                                var nodes = new List<Node>(take);
                                 lock (objReader)
                                 {
                                     if (!doIt) break;
-                                    doIt = reader.Read();
-                                    if (!doIt) break;
-                                    node.Fill(reader);
+                                    for (var j = 0; j < take; j++)
+                                    {
+                                        doIt = reader.Read();
+                                        if (!doIt) break;
+                                        nodes.Add(new Node().Fill(reader));
+                                    }
+                                    if (!nodes.Any()) break;
                                 }
 
-                                command2.Parameters["node"].Value = node.Id.Value;
+                                command2.Parameters["ids"].Value = nodes.Select(x => x.Id.Value).ToArray();
 
-                                var list = new List<Way>();
+                                var ways = new List<Way>();
                                 using (var reader2 = command2.ExecuteReader())
                                 {
                                     while (reader2.Read())
                                     {
                                         var way = new Way().Fill(reader2);
                                         var wayTags = way.Tags;
-                                        if (Vehicle.CanTraverse(wayTags)) list.Add(way);
+                                        if (Vehicle.CanTraverse(wayTags)) ways.Add(way);
                                     }
                                 }
 
-                                if (list.Any())
+                                foreach (var node in nodes)
                                 {
-                                    var is_core = list.Any(way =>
-                                        node.Id == way.Nodes.First() || node.Id == way.Nodes.Last());
+                                    var list = ways.Where(x => x.Nodes.Contains(node.Id.Value)).ToList();
+                                    if (list.Any())
+                                    {
+                                        var is_core = list.Any(way =>
+                                            node.Id == way.Nodes.First() || node.Id == way.Nodes.Last());
 
-                                    var nodeTags = node.Tags;
-                                    if (nodeTags != null &&
-                                        (nodeTags.Contains("barrier", "bollard") ||
-                                         nodeTags.Contains("barrier", "fence") ||
-                                         nodeTags.Contains("barrier", "gate")))
-                                    {
-                                        is_core = true;
-                                        lock (objFoundRestriction)
-                                        {
-                                            foreach (var way in list)
-                                                FoundRestriction("motorcar", way.Id.Value, way.Id.Value, node.Id.Value,
-                                                    nodeTags);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        var nodeRestriction = Vehicle.NodeRestriction(nodeTags);
-                                        if (nodeRestriction != null && !string.IsNullOrEmpty(nodeRestriction.Vehicle))
+                                        var nodeTags = node.Tags;
+                                        if (nodeTags != null &&
+                                            (nodeTags.Contains("barrier", "bollard") ||
+                                             nodeTags.Contains("barrier", "fence") ||
+                                             nodeTags.Contains("barrier", "gate")))
                                         {
                                             is_core = true;
-
                                             lock (objFoundRestriction)
                                             {
                                                 foreach (var way in list)
-                                                    FoundRestriction(nodeRestriction.Vehicle, way.Id.Value,
-                                                        way.Id.Value,
+                                                    FoundRestriction("motorcar", way.Id.Value, way.Id.Value,
                                                         node.Id.Value,
                                                         nodeTags);
                                             }
                                         }
+                                        else
+                                        {
+                                            var nodeRestriction = Vehicle.NodeRestriction(nodeTags);
+                                            if (nodeRestriction != null &&
+                                                !string.IsNullOrEmpty(nodeRestriction.Vehicle))
+                                            {
+                                                is_core = true;
+
+                                                lock (objFoundRestriction)
+                                                {
+                                                    foreach (var way in list)
+                                                        FoundRestriction(nodeRestriction.Vehicle, way.Id.Value,
+                                                            way.Id.Value,
+                                                            node.Id.Value,
+                                                            nodeTags);
+                                                }
+                                            }
+                                        }
+
+                                        if (!is_core && nodeTags != null && nodeTags.Any() &&
+                                            Vehicle.NodeTagProcessor(nodeTags))
+                                            is_core = true;
+
+                                        var values = new[]
+                                        {
+                                            Guid.ToString(),
+                                            node.Id.ToString(),
+                                            node.Latitude.ValueAsText(),
+                                            node.Longitude.ValueAsText(),
+                                            $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                            is_core.ValueAsText()
+                                        };
+
+                                        writer.WriteLine(string.Join("\t", values));
                                     }
 
-                                    if (!is_core && nodeTags != null && nodeTags.Any() &&
-                                        Vehicle.NodeTagProcessor(nodeTags))
-                                        is_core = true;
-
-                                    var values = new[]
+                                    lock (objProgress)
                                     {
-                                        Guid.ToString(),
-                                        node.Id.ToString(),
-                                        node.Latitude.ValueAsText(),
-                                        node.Longitude.ValueAsText(),
-                                        $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                        is_core.ValueAsText()
-                                    };
-
-                                    writer.WriteLine(string.Join("\t", values));
-                                }
-
-                                lock (objProgress)
-                                {
-                                    if (current++ % 1000 == 0)
-                                        progressClient.Progress(100f * current / count, id, session).GetAwaiter()
-                                            .GetResult();
+                                        if (current++ % 1000 == 0)
+                                            progressClient.Progress(100f * current / count, id, session).GetAwaiter()
+                                                .GetResult();
+                                    }
                                 }
                             }
                         }
