@@ -130,37 +130,38 @@ namespace Placium.Route
 
                         var take = 1000;
 
-                        using (var writer = connection3.BeginTextImport(
-                            "COPY node (guid,id,latitude,longitude,tags,is_core) FROM STDIN WITH NULL AS ''"))
+                        for (;;)
                         {
-                            for (;;)
+                            var nodes = new List<Node>(take);
+                            lock (objReader)
                             {
-                                var nodes = new List<Node>(take);
-                                lock (objReader)
+                                if (!doIt) break;
+                                for (var j = 0; j < take; j++)
                                 {
+                                    doIt = reader.Read();
                                     if (!doIt) break;
-                                    for (var j = 0; j < take; j++)
-                                    {
-                                        doIt = reader.Read();
-                                        if (!doIt) break;
-                                        nodes.Add(new Node().Fill(reader));
-                                    }
-                                    if (!nodes.Any()) break;
+                                    nodes.Add(new Node().Fill(reader));
                                 }
 
-                                command2.Parameters["ids"].Value = nodes.Select(x => x.Id.Value).ToArray();
+                                if (!nodes.Any()) break;
+                            }
 
-                                var ways = new List<Way>();
-                                using (var reader2 = command2.ExecuteReader())
+                            command2.Parameters["ids"].Value = nodes.Select(x => x.Id.Value).ToArray();
+
+                            var ways = new List<Way>();
+                            using (var reader2 = command2.ExecuteReader())
+                            {
+                                while (reader2.Read())
                                 {
-                                    while (reader2.Read())
-                                    {
-                                        var way = new Way().Fill(reader2);
-                                        var wayTags = way.Tags;
-                                        if (Vehicle.CanTraverse(wayTags)) ways.Add(way);
-                                    }
+                                    var way = new Way().Fill(reader2);
+                                    var wayTags = way.Tags;
+                                    if (Vehicle.CanTraverse(wayTags)) ways.Add(way);
                                 }
+                            }
 
+                            using (var writer = connection3.BeginTextImport(
+                                "COPY node (guid,id,latitude,longitude,tags,is_core) FROM STDIN WITH NULL AS ''"))
+                            {
                                 foreach (var node in nodes)
                                 {
                                     var list = ways.Where(x => x.Nodes.Contains(node.Id.Value)).ToList();
@@ -219,14 +220,14 @@ namespace Placium.Route
 
                                         writer.WriteLine(string.Join("\t", values));
                                     }
-
-                                    lock (objProgress)
-                                    {
-                                        if (current++ % 1000 == 0)
-                                            progressClient.Progress(100f * current / count, id, session).GetAwaiter()
-                                                .GetResult();
-                                    }
                                 }
+                            }
+
+                            lock (objProgress)
+                            {
+                                current += nodes.Count;
+                                progressClient.Progress(100f * current / count, id, session).GetAwaiter()
+                                    .GetResult();
                             }
                         }
 
