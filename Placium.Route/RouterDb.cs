@@ -105,6 +105,10 @@ namespace Placium.Route
                     var objProgress = new object();
                     var doIt = true;
 
+                    await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                        "Placium.Route.DropIndices.pgsql",
+                        connection);
+
                     Parallel.For(0, 8, i =>
                     {
                         using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
@@ -235,6 +239,9 @@ namespace Placium.Route
                         connection3.Close();
                     });
                 }
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Placium.Route.CreateIndices.pgsql",
+                    connection);
 
                 await progressClient.Finalize(id, session);
 

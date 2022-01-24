@@ -5,11 +5,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="CreateIndices.pgsql" />
     <None Remove="CreateTempTables.pgsql" />
     <None Remove="CreateTempTables2.pgsql" />
+    <None Remove="DropIndices.pgsql" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="DropIndices.pgsql" />
+    <EmbeddedResource Include="CreateIndices.pgsql" />
     <EmbeddedResource Include="CreateTempTables.pgsql" />
     <EmbeddedResource Include="CreateTempTables2.pgsql" />
     <EmbeddedResource Include="CreateTempTables3.pgsql" />
