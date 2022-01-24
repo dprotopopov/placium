@@ -152,7 +152,7 @@ namespace Placium.Route
 
                             command2.Parameters["ids"].Value = nodes.Select(x => x.Id.Value).ToArray();
 
-                            var ways = new List<Way>();
+                            var ways = new List<Way>(take);
                             using (var reader2 = command2.ExecuteReader())
                             {
                                 while (reader2.Read())
