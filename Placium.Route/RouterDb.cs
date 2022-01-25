@@ -109,7 +109,7 @@ namespace Placium.Route
                         "Placium.Route.DropIndices.pgsql",
                         connection);
 
-                    Parallel.For(0, 8, i =>
+                    Parallel.For(0, 6, i =>
                     {
                         using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
                         using var connection3 = new NpgsqlConnection(ConnectionString);
@@ -132,7 +132,7 @@ namespace Placium.Route
 
                         command2.Prepare();
 
-                        var take = 1000;
+                        var take = 10000;
 
                         for (;;)
                         {
@@ -363,7 +363,7 @@ namespace Placium.Route
                     var objProgress = new object();
                     var doIt = true;
 
-                    Parallel.For(0, 8, i =>
+                    Parallel.For(0, 6, i =>
                     {
                         using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
                         osmConnection2.Open();
@@ -566,7 +566,7 @@ namespace Placium.Route
                     var objProgress = new object();
                     var doIt = true;
 
-                    Parallel.For(0, 8, j =>
+                    Parallel.For(0, 6, j =>
                     {
                         using var connection3 = new NpgsqlConnection(ConnectionString);
                         connection3.Open();
