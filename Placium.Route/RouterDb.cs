@@ -132,7 +132,7 @@ namespace Placium.Route
 
                         command2.Prepare();
 
-                        var take = 10000;
+                        var take = 1000;
 
                         for (;;)
                         {
