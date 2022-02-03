@@ -62,6 +62,9 @@ namespace Placium.Seeker
         public async Task<IEnumerable<AddressEntry>> GetByNameAsync(string searchString, int limit = 20)
         {
             var result = new List<AddressEntry>();
+
+            if (string.IsNullOrEmpty(searchString)) return result;
+
             var list = searchString.Split(",").ToList();
 
             var match = list.ToMatch();
