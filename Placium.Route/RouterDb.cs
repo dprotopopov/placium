@@ -80,7 +80,7 @@ namespace Placium.Route
                 await progressClient.Init(id, session);
 
                 using (var command = new NpgsqlCommand(string.Join(";",
-                    @"SELECT COUNT(*) FROM node n", @"SELECT
+                    @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'node'", @"SELECT
 	                            id,
 	                            version,
 	                            latitude,
@@ -91,7 +91,7 @@ namespace Placium.Route
 	                            user_name,
 	                            visible,
 	                            tags
-                        FROM node n"), osmConnection))
+                        FROM node"), osmConnection))
                 {
                     command.Prepare();
 
@@ -544,7 +544,7 @@ namespace Placium.Route
 	                    to_longitude,
                         distance,coordinates,location,tags,direction,weight) FROM STDIN WITH NULL AS ''")
                 )
-                using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) FROM way", @"SELECT
+                using (var command = new NpgsqlCommand(string.Join(";", @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'way'", @"SELECT
                         id,
                         version,
                         change_set_id,
