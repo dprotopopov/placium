@@ -164,7 +164,7 @@ namespace Placium.Route
                             }
 
                             using (var writer = connection3.BeginTextImport(
-                                "COPY node (guid,id,latitude,longitude,tags,is_core) FROM STDIN WITH NULL AS ''"))
+                                "COPY node (guid,id,latitude,longitude,tags) FROM STDIN WITH NULL AS ''"))
                             {
                                 foreach (var node in nodes)
                                 {
@@ -212,17 +212,19 @@ namespace Placium.Route
                                             Vehicle.NodeTagProcessor(nodeTags))
                                             is_core = true;
 
-                                        var values = new[]
+                                        if (is_core)
                                         {
-                                            Guid.ToString(),
-                                            node.Id.ToString(),
-                                            node.Latitude.ValueAsText(),
-                                            node.Longitude.ValueAsText(),
-                                            $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                            is_core.ValueAsText()
-                                        };
+                                            var values = new[]
+                                            {
+                                                Guid.ToString(),
+                                                node.Id.ToString(),
+                                                node.Latitude.ValueAsText(),
+                                                node.Longitude.ValueAsText(),
+                                                $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                            };
 
-                                        writer.WriteLine(string.Join("\t", values));
+                                            writer.WriteLine(string.Join("\t", values));
+                                        }
                                     }
                                 }
                             }
@@ -568,16 +570,23 @@ namespace Placium.Route
 
                     Parallel.For(0, 6, j =>
                     {
+                        using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
                         using var connection3 = new NpgsqlConnection(ConnectionString);
+                        osmConnection2.Open();
                         connection3.Open();
 
                         using var command3 = new NpgsqlCommand(
-                            @"SELECT id,latitude,longitude,is_core FROM node WHERE id=ANY(@ids) AND guid=@guid",
+                            @"SELECT id FROM node WHERE id=ANY(@ids) AND guid=@guid",
                             connection3);
+                        using var command4 = new NpgsqlCommand(
+                            @"SELECT id,latitude,longitude FROM node WHERE id=ANY(@ids)",
+                            osmConnection2);
 
                         command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
                         command3.Parameters.AddWithValue("guid", Guid);
                         command3.Prepare();
+                        command4.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                        command4.Prepare();
 
                         var way = new Way();
                         for (;;)
@@ -597,19 +606,25 @@ namespace Placium.Route
                                 var factorAndSpeeds = Vehicle.FactorAndSpeeds(attributes);
 
                                 command3.Parameters["ids"].Value = way.Nodes;
+                                command4.Parameters["ids"].Value = way.Nodes;
 
                                 var list = new List<NodeItem>(way.Nodes.Length);
+                                var core = new List<long>(way.Nodes.Length);
 
+                                using (var reader4 = command4.ExecuteReader())
+                                {
+                                    while (reader4.Read())
+                                        list.Add(new NodeItem
+                                        {
+                                            Id = reader4.GetInt64(0),
+                                            Latitude = reader4.GetFloat(1),
+                                            Longitude = reader4.GetFloat(2),
+                                        });
+                                }
                                 using (var reader3 = command3.ExecuteReader())
                                 {
                                     while (reader3.Read())
-                                        list.Add(new NodeItem
-                                        {
-                                            Id = reader3.GetInt64(0),
-                                            Latitude = reader3.GetFloat(1),
-                                            Longitude = reader3.GetFloat(2),
-                                            IsCore = reader3.GetBoolean(3)
-                                        });
+                                        core.Add(reader3.GetInt64(0));
                                 }
 
                                 var dictionary = list.ToDictionary(item => item.Id, item => item);
@@ -647,7 +662,7 @@ namespace Placium.Route
                                         intermediates.Add(coordinate);
                                         previousCoordinate = coordinate;
 
-                                        if (item.IsCore)
+                                        if (core.Contains(item.Id))
                                         {
                                             // node is part of the core.
                                             toNode = way.Nodes[i];
@@ -706,6 +721,7 @@ namespace Placium.Route
                             }
                         }
 
+                        osmConnection2.Close();
                         connection3.Close();
                     });
                 }
@@ -913,7 +929,6 @@ namespace Placium.Route
             public long Id { get; set; }
             public float Latitude { get; set; }
             public float Longitude { get; set; }
-            public bool IsCore { get; set; }
         }
     }
 }

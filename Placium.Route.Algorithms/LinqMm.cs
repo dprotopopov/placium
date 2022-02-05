@@ -51,7 +51,7 @@ namespace Placium.Route.Algorithms
                         AND n2.longitude<=n1.longitude+@size 
                         AND n2.latitude>=n1.latitude-@size 
                         AND n2.longitude>=n1.longitude-@size
-                        WHERE n2.guid=@guid AND n2.is_core)
+                        WHERE n2.guid=@guid)
                     SELECT n.id,n.latitude,n.longitude
                     FROM node n JOIN edge e ON n.id=e.from_node JOIN cte2 n2 ON n2.id=e.to_node
                     WHERE n.guid=@guid AND e.guid=@guid
@@ -64,7 +64,7 @@ namespace Placium.Route.Algorithms
                         AND n2.longitude<=n1.longitude+@size 
                         AND n2.latitude>=n1.latitude-@size 
                         AND n2.longitude>=n1.longitude-@size
-                        WHERE n2.guid=@guid AND n2.is_core)
+                        WHERE n2.guid=@guid)
                     SELECT e.id,e.from_node,e.to_node,
                     GREATEST((weight->@profile)::real,@minWeight),(direction->@profile)::smallint
                     FROM edge e JOIN cte2 n2 ON e.from_node=n2.id OR e.to_node=n2.id
@@ -75,7 +75,7 @@ namespace Placium.Route.Algorithms
                         AND n2.longitude<=n1.longitude+@size 
                         AND n2.latitude>=n1.latitude-@size 
                         AND n2.longitude>=n1.longitude-@size
-                        WHERE n2.guid=@guid AND n2.is_core)
+                        WHERE n2.guid=@guid)
                     SELECT r.id,r.from_edge,r.to_edge,r.via_node FROM restriction r 
                     JOIN edge e ON r.from_edge=e.id OR r.to_edge=e.id JOIN cte2 n2 ON e.from_node=n2.id OR e.to_node=n2.id
                     WHERE r.vehicle_type=@vehicleType AND r.guid=@guid AND e.guid=@guid
