@@ -80,7 +80,7 @@ namespace Placium.Route
                 await progressClient.Init(id, session);
 
                 using (var command = new NpgsqlCommand(string.Join(";",
-                    @"SELECT COUNT(*) FROM node n WHERE EXISTS (SELECT * FROM way WHERE ARRAY[n.id] <@ nodes)", @"SELECT
+                    @"SELECT COUNT(*) FROM node n", @"SELECT
 	                            id,
 	                            version,
 	                            latitude,
@@ -91,7 +91,7 @@ namespace Placium.Route
 	                            user_name,
 	                            visible,
 	                            tags
-                        FROM node n WHERE EXISTS (SELECT * FROM way WHERE ARRAY[n.id] <@ nodes)"), osmConnection))
+                        FROM node n"), osmConnection))
                 {
                     command.Prepare();
 

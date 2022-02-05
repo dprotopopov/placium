@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -10,8 +10,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="NetTopologySuite.IO.PostGis" Version="2.1.0" />
-		<PackageReference Include="Npgsql" Version="6.0.1" />
-		<PackageReference Include="Npgsql.NetTopologySuite" Version="6.0.1" />
+		<PackageReference Include="Npgsql" Version="6.0.3" />
+		<PackageReference Include="Npgsql.NetTopologySuite" Version="6.0.3" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,16 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <UserSecretsId>8cbf30f7-6a1a-4453-9561-429898a8f812</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <LangVersion>8</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;1998</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="8.0.27" />
+    <PackageReference Include="MySql.Data" Version="8.0.28" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AstraUtils\AstraUtils.csproj" />
