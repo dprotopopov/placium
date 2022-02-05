@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace Placium.Route.Algorithms
+namespace Placium.Route.Algorithms;
+
+public interface IDatabaseAlgorithm
 {
-    public interface IDatabaseAlgorithm
-    {
-        Guid Guid { get; }
-        string ConnectionString { get; }
-    }
+    Guid Guid { get; }
+    string ConnectionString { get; }
 }
