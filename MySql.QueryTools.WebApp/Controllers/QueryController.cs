@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using MySql.Data.MySqlClient;
@@ -9,27 +10,28 @@ namespace MySql.QueryTools.WebApp.Controllers
 {
     public class QueryController : Controller
     {
+        private readonly IConfiguration _configuration;
+
         public QueryController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        private readonly IConfiguration _configuration;
-
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             return View();
         }
 
         [HttpPost]
-        public IActionResult Index(QueryViewModel model)
+        public async Task<IActionResult> Index(QueryViewModel model)
         {
             try
             {
                 model.Items = new ArrayList();
                 model.Headers = new ArrayList();
 
-                using var connection = new MySqlConnection(_configuration.GetConnectionString("SphinxConnection"));
+                await using var connection =
+                    new MySqlConnection(_configuration.GetConnectionString("SphinxConnection"));
                 connection.Open();
                 using (var command = new MySqlCommand(model.Query, connection))
                 {

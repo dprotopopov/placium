@@ -8,7 +8,7 @@
 <div class="text-center">
     @using (Html.BeginForm("Index", "Query", FormMethod.Post))
     {
-        @Html.TextAreaFor(m => m.Query, new {style = "width: 100%; height:5em;"})
+        @Html.TextAreaFor(m => m.Query, new { style = "height:5em;  width: 100%;" })
         <p>
             <input type="submit"/>
         </p>
@@ -29,7 +29,7 @@
                 @foreach (var row in Model.Items)
                 {
                     <tr>
-                        @foreach (var value in (ArrayList) row)
+                        @foreach (var value in (ArrayList)row)
                         {
                             <td>@value</td>
                         }

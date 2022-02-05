@@ -8,8 +8,8 @@
 @using (Html.BeginForm())
 {
     @Html.ListBox("previous", Model.PreviousItems)
-    <br />
+    <br/>
     @Html.DropDownList("guid", Model.NextItems)
-    <br />
-    <input type="submit" value="Выбрать" class="btn btn-primary" />
+    <br/>
+    <input type="submit" value="Выбрать" class="btn btn-primary"/>
 }

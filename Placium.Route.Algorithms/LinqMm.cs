@@ -30,7 +30,7 @@ public class LinqMm : BasePathFinderAlgorithm
         var minWeight = MinFactor * 1;
         var size = 0.01f;
 
-        using var connection2 = new NpgsqlConnection(ConnectionString);
+        await using var connection2 = new NpgsqlConnection(ConnectionString);
         await connection2.OpenAsync();
 
 

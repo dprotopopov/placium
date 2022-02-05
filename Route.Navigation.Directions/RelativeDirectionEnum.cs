@@ -16,44 +16,50 @@
  *  limitations under the License.
  */
 
-namespace Route.Navigation.Directions
+namespace Route.Navigation.Directions;
+
+/// <summary>
+///     Relative direction enumeration.
+/// </summary>
+public enum RelativeDirectionEnum
 {
     /// <summary>
-    /// Relative direction enumeration.
+    ///     Left
     /// </summary>
-    public enum RelativeDirectionEnum
-    {
-        /// <summary>
-        /// Left
-        /// </summary>
-        Left,
-        /// <summary>
-        /// Sharpleft.
-        /// </summary>
-        SharpLeft,
-        /// <summary>
-        /// Slightlyleft.
-        /// </summary>
-        SlightlyLeft,
-        /// <summary>
-        /// Right.
-        /// </summary>
-        Right,
-        /// <summary>
-        /// Sharpright.
-        /// </summary>
-        SharpRight,
-        /// <summary>
-        /// Slightlyright.
-        /// </summary>
-        SlightlyRight,
-        /// <summary>
-        /// Straighton.
-        /// </summary>
-        StraightOn,
-        /// <summary>
-        /// Turnback.
-        /// </summary>
-        TurnBack
-    }
+    Left,
+
+    /// <summary>
+    ///     Sharpleft.
+    /// </summary>
+    SharpLeft,
+
+    /// <summary>
+    ///     Slightlyleft.
+    /// </summary>
+    SlightlyLeft,
+
+    /// <summary>
+    ///     Right.
+    /// </summary>
+    Right,
+
+    /// <summary>
+    ///     Sharpright.
+    /// </summary>
+    SharpRight,
+
+    /// <summary>
+    ///     Slightlyright.
+    /// </summary>
+    SlightlyRight,
+
+    /// <summary>
+    ///     Straighton.
+    /// </summary>
+    StraightOn,
+
+    /// <summary>
+    ///     Turnback.
+    /// </summary>
+    TurnBack
 }

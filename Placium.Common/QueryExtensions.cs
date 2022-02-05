@@ -3,131 +3,130 @@ using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 using Npgsql;
 
-namespace Placium.Common
+namespace Placium.Common;
+
+public static class QueryExtensions
 {
-    public static class QueryExtensions
+    public static int Fill(this List<string> list, string sql, NpgsqlConnection connection)
     {
-        public static int Fill(this List<string> list, string sql, NpgsqlConnection connection)
+        using (var command = new NpgsqlCommand(sql, connection))
         {
-            using (var command = new NpgsqlCommand(sql, connection))
-            {
-                command.Prepare();
+            command.Prepare();
 
-                using (var reader = command.ExecuteReader())
-                {
-                    return list.Fill(reader);
-                }
+            using (var reader = command.ExecuteReader())
+            {
+                return list.Fill(reader);
             }
         }
+    }
 
-        public static int Fill(this List<string> list, NpgsqlDataReader reader)
+    public static int Fill(this List<string> list, NpgsqlDataReader reader)
+    {
+        var count = 0;
+
+        while (reader.Read())
         {
-            var count = 0;
+            list.Add(reader.GetString(0));
+            count++;
+        }
 
-            while (reader.Read())
+        return count;
+    }
+
+
+    public static int FillAll(this List<long> list, string sql, Dictionary<string, object> dictionary,
+        MySqlConnection connection, int take = 100, int limit = 1000)
+    {
+        var total = 0;
+        for (var skip = 0;; skip += take)
+            try
             {
-                list.Add(reader.GetString(0));
-                count++;
+                dictionary["skip"] = skip;
+                dictionary["take"] = take;
+                var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection, limit);
+                total += count;
+                limit -= count;
+                if (count < take || limit == 0) return total;
             }
-
-            return count;
-        }
-
-
-        public static int FillAll(this List<long> list, string sql, Dictionary<string, object> dictionary,
-            MySqlConnection connection, int take = 100, int limit = 1000)
-        {
-            var total = 0;
-            for (var skip = 0;; skip += take)
-                try
-                {
-                    dictionary["skip"] = skip;
-                    dictionary["take"] = take;
-                    var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection, limit);
-                    total += count;
-                    limit -= count;
-                    if (count < take || limit == 0) return total;
-                }
-                catch (Exception)
-                {
-                    return total;
-                }
-        }
-
-        public static int FillAll(this List<string> list, string sql, Dictionary<string, object> dictionary,
-            MySqlConnection connection, int take = 100, int limit = 1000)
-        {
-            var total = 0;
-            for (var skip = 0;; skip += take)
-                try
-                {
-                    dictionary["skip"] = skip;
-                    dictionary["take"] = take;
-                    var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection, limit);
-                    total += count;
-                    limit -= count;
-                    if (count < take || limit == 0) return total;
-                }
-                catch (Exception)
-                {
-                    return total;
-                }
-        }
-
-        public static int Fill(this List<long> list, string sql, Dictionary<string, object> dictionary,
-            MySqlConnection connection, int limit)
-        {
-            connection.TryOpen();
-
-            using (var command = new MySqlCommand(sql, connection))
+            catch (Exception)
             {
-                foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
-
-                using (var reader = command.ExecuteReader())
-                {
-                    return list.Fill(reader, limit);
-                }
+                return total;
             }
-        }
+    }
 
-        public static int Fill(this List<string> list, string sql, Dictionary<string, object> dictionary,
-            MySqlConnection connection, int limit)
-        {
-            connection.TryOpen();
-
-            using (var command = new MySqlCommand(sql, connection))
+    public static int FillAll(this List<string> list, string sql, Dictionary<string, object> dictionary,
+        MySqlConnection connection, int take = 100, int limit = 1000)
+    {
+        var total = 0;
+        for (var skip = 0;; skip += take)
+            try
             {
-                foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
+                dictionary["skip"] = skip;
+                dictionary["take"] = take;
+                var count = list.Fill($"{sql} LIMIT @skip,@take", dictionary, connection, limit);
+                total += count;
+                limit -= count;
+                if (count < take || limit == 0) return total;
+            }
+            catch (Exception)
+            {
+                return total;
+            }
+    }
 
-                using (var reader = command.ExecuteReader())
-                {
-                    return list.Fill(reader, limit);
-                }
+    public static int Fill(this List<long> list, string sql, Dictionary<string, object> dictionary,
+        MySqlConnection connection, int limit)
+    {
+        connection.TryOpen();
+
+        using (var command = new MySqlCommand(sql, connection))
+        {
+            foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
+
+            using (var reader = command.ExecuteReader())
+            {
+                return list.Fill(reader, limit);
             }
         }
+    }
 
-        public static int Fill(this List<long> list, MySqlDataReader reader, int limit)
+    public static int Fill(this List<string> list, string sql, Dictionary<string, object> dictionary,
+        MySqlConnection connection, int limit)
+    {
+        connection.TryOpen();
+
+        using (var command = new MySqlCommand(sql, connection))
         {
-            var count = 0;
-            for (var i = 0; i < limit && reader.Read(); i++)
-            {
-                list.Add(reader.GetInt64(0));
-                count++;
-            }
+            foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
 
-            return count;
+            using (var reader = command.ExecuteReader())
+            {
+                return list.Fill(reader, limit);
+            }
+        }
+    }
+
+    public static int Fill(this List<long> list, MySqlDataReader reader, int limit)
+    {
+        var count = 0;
+        for (var i = 0; i < limit && reader.Read(); i++)
+        {
+            list.Add(reader.GetInt64(0));
+            count++;
         }
 
-        public static int Fill(this List<string> list, MySqlDataReader reader, int limit)
-        {
-            var count = 0;
-            for (var i = 0; i < limit && reader.Read(); i++)
-            {
-                list.Add(reader.GetString(0));
-                count++;
-            }
+        return count;
+    }
 
-            return count;
+    public static int Fill(this List<string> list, MySqlDataReader reader, int limit)
+    {
+        var count = 0;
+        for (var i = 0; i < limit && reader.Read(); i++)
+        {
+            list.Add(reader.GetString(0));
+            count++;
         }
+
+        return count;
     }
 }

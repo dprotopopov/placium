@@ -1,16 +1,11 @@
 ﻿using NpgsqlTypes;
 
-namespace Placium.Types
+namespace Placium.Types;
+
+public enum FiasServiceType
 {
-    public enum FiasServiceType
-    {
-        [PgName("addrob")]
-        Addrob,
-        [PgName("house")]
-        House,
-        [PgName("stead")]
-        Stead,
-        [PgName("room")]
-        Room,
-    }
+    [PgName("addrob")] Addrob,
+    [PgName("house")] House,
+    [PgName("stead")] Stead,
+    [PgName("room")] Room
 }

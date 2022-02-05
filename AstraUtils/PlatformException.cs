@@ -2,32 +2,34 @@
 using System.Runtime.InteropServices;
 using Tmds.Linux;
 
-namespace AstraUtils
+namespace AstraUtils;
+
+internal class PlatformException : Exception
 {
-    class PlatformException : Exception
+    public PlatformException(int errno) :
+        base(GetErrorMessage(errno))
     {
-        public PlatformException(int errno) :
-            base(GetErrorMessage(errno))
-        {
-            HResult = errno;
-        }
+        HResult = errno;
+    }
 
-        public PlatformException() :
-            this(LibC.errno)
-        { }
+    public PlatformException() :
+        this(LibC.errno)
+    {
+    }
 
-        private static unsafe string GetErrorMessage(int errno)
-        {
-            int bufferLength = 1024;
-            byte* buffer = stackalloc byte[bufferLength];
+    private static unsafe string GetErrorMessage(int errno)
+    {
+        var bufferLength = 1024;
+        var buffer = stackalloc byte[bufferLength];
 
-            int rv = LibC.strerror_r(errno, buffer, bufferLength);
+        var rv = LibC.strerror_r(errno, buffer, bufferLength);
 
 
+        return rv == 0 ? Marshal.PtrToStringAnsi((IntPtr)buffer) : $"errno {errno}";
+    }
 
-            return rv == 0 ? Marshal.PtrToStringAnsi((IntPtr)buffer) : $"errno {errno}";
-        }
-
-        public static void Throw() => throw new PlatformException();
+    public static void Throw()
+    {
+        throw new PlatformException();
     }
 }

@@ -28,8 +28,8 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         var minWeight = MinFactor * 1;
         var size = 0.01f;
 
-        using var connection = new SqliteConnection("Data source=:memory:");
-        using var connection2 = new NpgsqlConnection(ConnectionString);
+        await using var connection = new SqliteConnection("Data source=:memory:");
+        await using var connection2 = new NpgsqlConnection(ConnectionString);
         await connection.OpenAsync();
         await connection2.OpenAsync();
 

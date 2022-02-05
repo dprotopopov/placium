@@ -20,161 +20,135 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace Route.Algorithms.Collections
+namespace Route.Algorithms.Collections;
+
+/// <summary>
+///     Represents a sparse bitarray.
+/// </summary>
+public class SparseBitArray64 : IEnumerable<long>
 {
+    private readonly int _blockSize; // Holds the blocksize, or the size of the 'sub arrays'.
+    private readonly HugeDictionary<long, BitArray> _data; // holds the actual data blocks.
+
+    //private readonly BitArray32[] _data; // Holds the actual data blocks.
+
     /// <summary>
-    /// Represents a sparse bitarray.
+    ///     Creates a new sparse bitarray.
     /// </summary>
-    public class SparseBitArray64 : IEnumerable<long>
+    public SparseBitArray64(long size, int blockSize)
     {
-        private readonly int _blockSize; // Holds the blocksize, or the size of the 'sub arrays'.
-        private readonly long _length; // Holds the length of this array.
-        private readonly HugeDictionary<long, BitArray> _data; // holds the actual data blocks.
-        //private readonly BitArray32[] _data; // Holds the actual data blocks.
+        if (size % 64 != 0) throw new ArgumentOutOfRangeException("Size has to be divisible by 64.");
+        if (size % blockSize != 0) throw new ArgumentOutOfRangeException("Size has to be divisible by blocksize.");
 
-        /// <summary>
-        /// Creates a new sparse bitarray.
-        /// </summary>
-        public SparseBitArray64(long size, int blockSize)
+        Length = size;
+        _blockSize = blockSize;
+        _data = new HugeDictionary<long, BitArray>(); // BitArray32[_length / _blockSize];
+    }
+
+    /// <summary>
+    ///     Gets or sets the value at the given index.
+    /// </summary>
+    public bool this[long idx]
+    {
+        get
         {
-            if (size % 64 != 0) { throw new ArgumentOutOfRangeException("Size has to be divisible by 64."); }
-            if (size % blockSize != 0) { throw new ArgumentOutOfRangeException("Size has to be divisible by blocksize."); }
+            var blockId = (int)(idx / _blockSize);
+            BitArray block = null;
+            if (_data.TryGetValue(blockId, out block))
+            {
+                // the block actually exists.
+                var blockIdx = (int)(idx % _blockSize);
+                return _data[blockId][blockIdx];
+            }
 
-            _length = size;
-            _blockSize = blockSize;
-            _data = new HugeDictionary<long, BitArray>(); // BitArray32[_length / _blockSize];
+            return false;
+        }
+        set
+        {
+            var blockId = (int)(idx / _blockSize);
+            BitArray block = null;
+            if (!_data.TryGetValue(blockId, out block))
+            {
+                if (value)
+                {
+                    // only add new block if true.
+                    block = new BitArray(_blockSize);
+                    var blockIdx = (int)(idx % _blockSize);
+                    block[blockIdx] = true;
+                    _data[blockId] = block;
+                }
+            }
+            else
+            {
+                // set value at block.
+                var blockIdx = (int)(idx % _blockSize);
+                block[blockIdx] = value;
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Returns the length of this array.
+    /// </summary>
+    public long Length { get; }
+
+    /// <summary>
+    ///     Gets the enumerator.
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerator<long> GetEnumerator()
+    {
+        return new Enumerator(this);
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return new Enumerator(this);
+    }
+
+    private struct Enumerator : IEnumerator<long>
+    {
+        private readonly SparseBitArray64 _array;
+
+        public Enumerator(SparseBitArray64 array)
+        {
+            _array = array;
+            Current = -1;
         }
 
-        /// <summary>
-        /// Gets or sets the value at the given index.
-        /// </summary>
-        public bool this[long idx]
+        public long Current { get; private set; }
+
+        object IEnumerator.Current
         {
             get
             {
-                int blockId = (int)(idx / _blockSize);
-                BitArray block = null;
-                if (_data.TryGetValue(blockId, out block))
-                { // the block actually exists.
-                    int blockIdx = (int)(idx % _blockSize);
-                    return _data[blockId][blockIdx];
-                }
-                return false;
-            }
-            set
-            {
-                int blockId = (int)(idx / _blockSize);
-                BitArray block = null;
-                if (!_data.TryGetValue(blockId, out block))
-                {
-                    if (value)
-                    { // only add new block if true.
-                        block = new BitArray(_blockSize);
-                        int blockIdx = (int)(idx % _blockSize);
-                        block[blockIdx] = true;
-                        _data[blockId] = block;
-                    }
-                }
-                else
-                { // set value at block.
-                    int blockIdx = (int)(idx % _blockSize);
-                    block[blockIdx] = value;
-                }
+                if (Current < 0) throw new InvalidOperationException();
+                if (Current >= _array.Length) throw new InvalidOperationException();
+                return Current;
             }
         }
 
-        /// <summary>
-        /// Returns the length of this array.
-        /// </summary>
-        public long Length
+        public bool MoveNext()
         {
-            get
+            if (Current >= _array.Length) return false;
+
+            while (true)
             {
-                return _length;
+                Current++;
+                if (Current >= _array.Length) return false;
+                if (_array[Current]) break;
             }
+
+            return true;
         }
 
-        /// <summary>
-        /// Gets the enumerator.
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerator<long> GetEnumerator()
+        public void Reset()
         {
-            return new Enumerator(this);
+            Current = -1;
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        public void Dispose()
         {
-            return new Enumerator(this);
-        }
-
-        private struct Enumerator : IEnumerator<long>
-        {
-            private readonly SparseBitArray64 _array;
-            
-            public Enumerator(SparseBitArray64 array)
-            {
-                _array = array;
-                _current = -1;
-            }
-
-            private long _current;
-
-            public long Current
-            {
-                get
-                {
-                    return _current;
-                }
-            }
-
-            object IEnumerator.Current
-            {
-                get
-                {
-                    if (_current < 0)
-                    {
-                        throw new InvalidOperationException();
-                    }
-                    if (_current >= _array.Length)
-                    {
-                        throw new InvalidOperationException();
-                    }
-                    return _current;
-                }
-            }
-
-            public bool MoveNext()
-            {
-                if (_current >= _array.Length)
-                {
-                    return false;
-                }
-
-                while (true)
-                {
-                    _current++;
-                    if (_current >= _array.Length)
-                    {
-                        return false;
-                    }
-                    if (_array[_current])
-                    {
-                        break;
-                    }
-                }
-                return true;
-            }
-
-            public void Reset()
-            {
-                _current = -1;
-            }
-
-            public void Dispose()
-            {
-
-            }
         }
     }
 }

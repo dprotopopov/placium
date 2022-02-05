@@ -6,26 +6,25 @@ using Placium.Route;
 using Placium.Route.Osm.Vehicles;
 using Route.LocalGeo;
 
-namespace Placium.Seeker
+namespace Placium.Seeker;
+
+public class OsmRouteService : BaseApiService
 {
-    public class OsmRouteService : BaseApiService
+    public OsmRouteService(IConfiguration configuration) : base(configuration)
     {
-        public OsmRouteService(IConfiguration configuration) : base(configuration)
-        {
-        }
+    }
 
-        public async Task<string> CalculateAsync(Coordinate source, Coordinate target)
-        {
-            var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"), GetRouteConnectionString(),
-                new Car());
+    public async Task<string> CalculateAsync(Coordinate source, Coordinate target)
+    {
+        var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"), GetRouteConnectionString(),
+            new Car());
 
-            // create router.
-            var router = new Router(routerDb, "Car", 3.6f / 5f, 3.6f / 120f);
+        // create router.
+        var router = new Router(routerDb, "Car", 3.6f / 5f, 3.6f / 120f);
 
-            // calculate route.
-            var route = await router.CalculateAsync(source, target);
+        // calculate route.
+        var route = await router.CalculateAsync(source, target);
 
-            return route.ToGeoJson();
-        }
+        return route.ToGeoJson();
     }
 }

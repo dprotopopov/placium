@@ -1,14 +1,10 @@
 ﻿using NpgsqlTypes;
 
-namespace Placium.Types
+namespace Placium.Types;
+
+public enum OsmType
 {
-    public enum OsmType
-    {
-        [PgName("node")]
-        Node,
-        [PgName("way")]
-        Way,
-        [PgName("relation")]
-        Relation,
-    }
+    [PgName("node")] Node,
+    [PgName("way")] Way,
+    [PgName("relation")] Relation
 }

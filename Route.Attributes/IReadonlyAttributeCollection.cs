@@ -18,21 +18,20 @@
 
 using System.Collections.Generic;
 
-namespace Route.Attributes
+namespace Route.Attributes;
+
+/// <summary>
+///     Abstract representation of a readonly attribute collection.
+/// </summary>
+public interface IReadonlyAttributeCollection : IEnumerable<Attribute>
 {
     /// <summary>
-    /// Abstract representation of a readonly attribute collection.
+    ///     Gets the count.
     /// </summary>
-    public interface IReadonlyAttributeCollection : IEnumerable<Attribute>
-    {
-        /// <summary>
-        /// Gets the count.
-        /// </summary>
-        int Count { get; }
-        
-        /// <summary>
-        /// Tries to get the value for the given key.
-        /// </summary>
-        bool TryGetValue(string key, out string value);
-    }
+    int Count { get; }
+
+    /// <summary>
+    ///     Tries to get the value for the given key.
+    /// </summary>
+    bool TryGetValue(string key, out string value);
 }

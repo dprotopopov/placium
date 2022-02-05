@@ -1,15 +1,14 @@
 ﻿using System;
 
-namespace Placium.Models
-{
-    public abstract class Element
-    {
-        public Guid guid { get; set; }
-        public string title { get; set; }
+namespace Placium.Models;
 
-        public override string ToString()
-        {
-            return title; 
-        }
+public abstract class Element
+{
+    public Guid guid { get; set; }
+    public string title { get; set; }
+
+    public override string ToString()
+    {
+        return title;
     }
 }

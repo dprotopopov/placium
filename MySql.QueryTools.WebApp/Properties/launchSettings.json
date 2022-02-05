@@ -31,7 +31,8 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/mysql",
       "publishAllPorts": true,
       "useSSL": true,
-      "DockerfileRunArguments": "-e \"ConnectionStrings__SphinxConnection\"=\"Host=host.docker.internal;Port=9306;Command Timeout=0\""
+      "DockerfileRunArguments":
+        "-e \"ConnectionStrings__SphinxConnection\"=\"Host=host.docker.internal;Port=9306;Command Timeout=0\""
     }
   }
 }

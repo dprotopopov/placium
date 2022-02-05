@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 
-namespace AstraUtils.UnixSocket
-{
-    public class UnixSocketAuthenticationOptions : AuthenticationSchemeOptions
-    {
+namespace AstraUtils.UnixSocket;
 
-    }
+public class UnixSocketAuthenticationOptions : AuthenticationSchemeOptions
+{
 }

@@ -6,51 +6,50 @@ using AstraUtils.UnixSocket;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Placium.Common
+namespace Placium.Common;
+
+public static class WebHostBuilderExtensions
 {
-    public static class WebHostBuilderExtensions
+    public static void SetSocketPermissions(this IWebHost host)
     {
-        public static void SetSocketPermissions(this IWebHost host)
-        {
-            var paths = host.Services.GetRequiredService<SocketPathStore>().Paths;
-            foreach (var item in paths) AstraLinuxHelper.SetSocketPermissions(item);
-        }
+        var paths = host.Services.GetRequiredService<SocketPathStore>().Paths;
+        foreach (var item in paths) AstraLinuxHelper.SetSocketPermissions(item);
+    }
 
-        public static IWebHostBuilder UseUnixSocketCredential(this IWebHostBuilder builder)
+    public static IWebHostBuilder UseUnixSocketCredential(this IWebHostBuilder builder)
+    {
+        builder.ConfigureKestrel(k =>
         {
-            builder.ConfigureKestrel(k =>
+            k.ConfigureEndpointDefaults(x =>
             {
-                k.ConfigureEndpointDefaults(x =>
+                Console.WriteLine("Socket path: {0}", x.SocketPath);
+                if (x.SocketPath != null)
                 {
-                    Console.WriteLine("Socket path: {0}", x.SocketPath);
-                    if (x.SocketPath != null)
-                    {
-                        x.ApplicationServices.GetRequiredService<SocketPathStore>().Paths.Add(x.SocketPath);
+                    x.ApplicationServices.GetRequiredService<SocketPathStore>().Paths.Add(x.SocketPath);
 
-                        if (File.Exists(x.SocketPath))
-                            try
-                            {
-                                File.Delete(x.SocketPath);
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex);
-                            }
-                    }
+                    if (File.Exists(x.SocketPath))
+                        try
+                        {
+                            File.Delete(x.SocketPath);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex);
+                        }
+                }
 
-                    x.AddUnixSocketCredentialFeature();
-                });
+                x.AddUnixSocketCredentialFeature();
             });
+        });
 
-            builder.ConfigureServices((context, services) => { services.AddSingleton<SocketPathStore>(); });
+        builder.ConfigureServices((context, services) => { services.AddSingleton<SocketPathStore>(); });
 
 
-            return builder;
-        }
+        return builder;
+    }
 
-        private class SocketPathStore
-        {
-            public List<string> Paths { get; } = new List<string>();
-        }
+    private class SocketPathStore
+    {
+        public List<string> Paths { get; } = new();
     }
 }

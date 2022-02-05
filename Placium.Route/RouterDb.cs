@@ -35,8 +35,8 @@ public class RouterDb
     public async Task LoadFromOsmAsync(string osmConnectionString, IProgressClient progressClient, string session)
     {
         using var osmConnection = new NpgsqlConnection(osmConnectionString);
-        using var connection = new NpgsqlConnection(ConnectionString);
-        using var connection2 = new NpgsqlConnection(ConnectionString);
+        await using var connection = new NpgsqlConnection(ConnectionString);
+        await using var connection2 = new NpgsqlConnection(ConnectionString);
 
         await osmConnection.OpenAsync();
         await connection.OpenAsync();

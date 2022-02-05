@@ -1,8 +1,7 @@
-﻿namespace Placium.Models
+﻿namespace Placium.Models;
+
+public class Room : Element
 {
-    public class Room : Element
-    {
-        public string flatnumber { get; set; }
-        public string roomnumber { get; set; }
-    }
+    public string flatnumber { get; set; }
+    public string roomnumber { get; set; }
 }

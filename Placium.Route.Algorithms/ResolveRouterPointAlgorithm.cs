@@ -17,7 +17,7 @@ public class ResolveRouterPointAlgorithm : BaseResolveRouterPointAlgorithm
 
     public override async Task<RouterPoint> ResolveRouterPointAsync(Coordinate coordinate)
     {
-        using var connection = new NpgsqlConnection(ConnectionString);
+        await using var connection = new NpgsqlConnection(ConnectionString);
         await connection.OpenAsync();
         connection.ReloadTypes();
         connection.TypeMapper.MapComposite<RouteCoordinate>("coordinate");

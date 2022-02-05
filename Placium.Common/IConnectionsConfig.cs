@@ -1,7 +1,6 @@
-﻿namespace Placium.Common
+﻿namespace Placium.Common;
+
+public interface IConnectionsConfig
 {
-    public interface IConnectionsConfig
-    {
-        string GetConnectionString(string name);
-    }
+    string GetConnectionString(string name);
 }

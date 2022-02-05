@@ -1,22 +1,21 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace Placium.Common
+namespace Placium.Common;
+
+public class AppsettingsParallelConfig : IParallelConfig
 {
-    public class AppsettingsParallelConfig : IParallelConfig
+    private readonly IConfiguration _configuration;
+
+    public AppsettingsParallelConfig(IConfiguration configuration)
     {
-        private readonly IConfiguration _configuration;
+        _configuration = configuration;
+    }
 
-        public AppsettingsParallelConfig(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
-
-        public int GetNumberOfThreads()
-        {
-            var value = _configuration.GetSection($"{nameof(ParallelConfig)}:{nameof(ParallelConfig.NumberOfThreads)}")
-                .Value;
-            if (!int.TryParse(value, out var threads)) threads = 12;
-            return threads;
-        }
+    public int GetNumberOfThreads()
+    {
+        var value = _configuration.GetSection($"{nameof(ParallelConfig)}:{nameof(ParallelConfig.NumberOfThreads)}")
+            .Value;
+        if (!int.TryParse(value, out var threads)) threads = 12;
+        return threads;
     }
 }

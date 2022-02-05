@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Reminiscence" Version="1.3.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Route.Algorithms.Collections\Route.Algorithms.Collections.csproj" />
-    <ProjectReference Include="..\Route.Base\Route.Base.csproj" />
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Reminiscence" Version="1.3.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Route.Algorithms.Collections\Route.Algorithms.Collections.csproj" />
+		<ProjectReference Include="..\Route.Base\Route.Base.csproj" />
+	</ItemGroup>
 
 </Project>

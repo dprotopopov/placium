@@ -1,31 +1,29 @@
-﻿namespace Placium.Route.Profiles
+﻿namespace Placium.Route.Profiles;
+
+/// <summary>
+///     A factor returned by a routing profile to influence routing augmented with the speed.
+/// </summary>
+public struct FactorAndSpeed
 {
     /// <summary>
-    /// A factor returned by a routing profile to influence routing augmented with the speed.
+    ///     Gets or sets the actual factor.
     /// </summary>
-    public struct FactorAndSpeed
-    {
-        /// <summary>
-        /// Gets or sets the actual factor.
-        /// </summary>
-        public float Factor { get; set; }
+    public float Factor { get; set; }
 
-        /// <summary>
-        /// Gets or sets the speed (1/m/s).
-        /// </summary>
-        public float SpeedFactor { get; set; }
+    /// <summary>
+    ///     Gets or sets the speed (1/m/s).
+    /// </summary>
+    public float SpeedFactor { get; set; }
 
-        /// <summary>
-        /// Gets or sets the direction.
-        /// </summary>
-        /// 0=bidirectional, 1=forward, 2=backward.
-        /// 3=bidirectional, 4=forward, 5=backward but without stopping abilities.
-        public short Direction { get; set; }
+    /// <summary>
+    ///     Gets or sets the direction.
+    /// </summary>
+    /// 0=bidirectional, 1=forward, 2=backward.
+    /// 3=bidirectional, 4=forward, 5=backward but without stopping abilities.
+    public short Direction { get; set; }
 
-        /// <summary>
-        /// Gets or sets the constraint values.
-        /// </summary>
-        public float[] Constraints { get; set; }
-        
-    }
+    /// <summary>
+    ///     Gets or sets the constraint values.
+    /// </summary>
+    public float[] Constraints { get; set; }
 }

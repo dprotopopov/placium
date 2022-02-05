@@ -28,7 +28,7 @@ public class AStar : BasePathFinderAlgorithm
         var minWeight = MinFactor * 1;
         var size = 0.01f;
 
-        using var connection = new NpgsqlConnection(ConnectionString);
+        await using var connection = new NpgsqlConnection(ConnectionString);
         await connection.OpenAsync();
 
         using (var command =

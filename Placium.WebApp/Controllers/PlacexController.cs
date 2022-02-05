@@ -17,7 +17,7 @@ namespace Placium.WebApp.Controllers
             _placexService = placexService;
         }
 
-        public IActionResult ByName()
+        public async Task<IActionResult> ByName()
         {
             return View();
         }
@@ -38,7 +38,7 @@ namespace Placium.WebApp.Controllers
                 JsonConvert.SerializeObject(await _placexService.GetByNameAsync(pattern), serializerSettings));
         }
 
-        public IActionResult ByCoords()
+        public async Task<IActionResult> ByCoords()
         {
             return View();
         }

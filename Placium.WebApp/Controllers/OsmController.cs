@@ -18,7 +18,7 @@ namespace Placium.WebApp.Controllers
             _osmService = osmService;
         }
 
-        public IActionResult ById()
+        public async Task<IActionResult> ById()
         {
             return View();
         }
@@ -28,7 +28,7 @@ namespace Placium.WebApp.Controllers
         {
             long.TryParse(osm_id, out var id);
 
-            var type = (OsmType) Enum.Parse(typeof(OsmType), osm_type, true);
+            var type = (OsmType)Enum.Parse(typeof(OsmType), osm_type, true);
 
             var serializerSettings = new JsonSerializerSettings
             {

@@ -51,14 +51,13 @@ namespace Placium.WebApp.Controllers.Upload
         {
             try
             {
-                using (var stream =
-                    System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
+                await using var stream =
+                    System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName)));
+
+                await UploadService.InstallAsync(stream, new Dictionary<string, string>
                 {
-                    await UploadService.InstallAsync(stream, new Dictionary<string, string>
-                    {
-                        {"region", region}
-                    }, session);
-                }
+                    { "region", region }
+                }, session);
 
                 await ProgressHub.Clients.All.Complete(session);
 
@@ -90,14 +89,13 @@ namespace Placium.WebApp.Controllers.Upload
         {
             try
             {
-                using (var stream =
-                    System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName))))
+                await using var stream =
+                    System.IO.File.OpenRead(Path.Combine(UploadConfig.Path, Path.GetFileName(fileName)));
+
+                await UploadService.UpdateAsync(stream, new Dictionary<string, string>
                 {
-                    await UploadService.UpdateAsync(stream, new Dictionary<string, string>
-                    {
-                        {"region", region}
-                    }, session);
-                }
+                    { "region", region }
+                }, session);
 
                 await ProgressHub.Clients.All.Complete(session);
 
@@ -127,20 +125,19 @@ namespace Placium.WebApp.Controllers.Upload
         {
             try
             {
-                using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
+                await using var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
                     FileAccess.ReadWrite, FileShare.None,
-                    4096, FileOptions.DeleteOnClose))
+                    4096, FileOptions.DeleteOnClose);
+
+                using (var webClient = new WebClient())
                 {
-                    using (var webClient = new WebClient())
-                    {
-                        using var streamFile = webClient.OpenRead(url);
-                        await streamFile.CopyToAsync(tempFileStream);
-                    }
-
-                    tempFileStream.Position = 0;
-
-                    await UploadService.InstallAsync(tempFileStream, new Dictionary<string, string>(), session);
+                    using var streamFile = webClient.OpenRead(url);
+                    await streamFile.CopyToAsync(tempFileStream);
                 }
+
+                tempFileStream.Position = 0;
+
+                await UploadService.InstallAsync(tempFileStream, new Dictionary<string, string>(), session);
 
                 await ProgressHub.Clients.All.Complete(session);
 
@@ -170,20 +167,19 @@ namespace Placium.WebApp.Controllers.Upload
         {
             try
             {
-                using (var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
+                await using var tempFileStream = new FileStream(Path.GetTempFileName(), FileMode.Create,
                     FileAccess.ReadWrite, FileShare.None,
-                    4096, FileOptions.DeleteOnClose))
+                    4096, FileOptions.DeleteOnClose);
+
+                using (var webClient = new WebClient())
                 {
-                    using (var webClient = new WebClient())
-                    {
-                        using var streamFile = webClient.OpenRead(url);
-                        await streamFile.CopyToAsync(tempFileStream);
-                    }
-
-                    tempFileStream.Position = 0;
-
-                    await UploadService.UpdateAsync(tempFileStream, new Dictionary<string, string>(), session);
+                    using var streamFile = webClient.OpenRead(url);
+                    await streamFile.CopyToAsync(tempFileStream);
                 }
+
+                tempFileStream.Position = 0;
+
+                await UploadService.UpdateAsync(tempFileStream, new Dictionary<string, string>(), session);
 
                 await ProgressHub.Clients.All.Complete(session);
 

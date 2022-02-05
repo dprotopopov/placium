@@ -1,7 +1,6 @@
-﻿namespace Placium.Common
+﻿namespace Placium.Common;
+
+public interface IParallelConfig
 {
-    public interface IParallelConfig
-    {
-        int GetNumberOfThreads();
-    }
+    int GetNumberOfThreads();
 }

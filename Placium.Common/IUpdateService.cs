@@ -1,9 +1,8 @@
 ﻿using System.Threading.Tasks;
 
-namespace Placium.Common
+namespace Placium.Common;
+
+public interface IUpdateService
 {
-    public interface IUpdateService
-    {
-        Task UpdateAsync(string session, bool full);
-    }
+    Task UpdateAsync(string session, bool full);
 }

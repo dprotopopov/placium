@@ -18,100 +18,99 @@ using Updater.Addrx.Database;
 using Updater.Addrx.Sphinx;
 using Updater.Placex.Database;
 
-namespace placium
+namespace placium;
+
+internal class Program
 {
-    internal class Program
+    private static readonly Type[] Types =
     {
-        private static readonly Type[] Types =
+        typeof(FileFiasUploadService),
+        typeof(FileOsmUploadService),
+        typeof(DatabaseRouteUpdateService),
+        typeof(DatabasePlacexUpdateService),
+        typeof(DatabaseAddrxUpdateService),
+        typeof(SphinxAddrxUpdateService),
+        typeof(SphinxAddrobxUpdateService)
+    };
+
+    private static async Task Main(string[] args)
+    {
+        Console.WriteLine("Welcome to Placium!");
+
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        NtsGeometryServices.Instance = new NtsGeometryServices(
+            CoordinateArraySequenceFactory.Instance,
+            new PrecisionModel(),
+            4326, GeometryOverlay.NG,
+            new CoordinateEqualityComparer());
+
+        var builder = new ConfigurationBuilder();
+        builder.AddCommandLine(args);
+
+        var config = builder.Build();
+
+        var serviceProvider = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<IConfiguration>(config)
+            .AddSingleton<IConnectionsConfig, ArgsConnectionsConfig>()
+            .AddSingleton<IParallelConfig, ArgsParallelConfig>()
+            .AddSingleton<IProgressClient, ShellProgressClient>()
+            .AddSingleton<FileFiasUploadService>()
+            .AddSingleton<FileOsmUploadService>()
+            .AddSingleton<DatabaseRouteUpdateService>()
+            .AddSingleton<DatabasePlacexUpdateService>()
+            .AddSingleton<DatabaseAddrxUpdateService>()
+            .AddSingleton<SphinxAddrxUpdateService>()
+            .AddSingleton<SphinxAddrobxUpdateService>()
+            .BuildServiceProvider();
+
+        try
         {
-            typeof(FileFiasUploadService),
-            typeof(FileOsmUploadService),
-            typeof(DatabaseRouteUpdateService),
-            typeof(DatabasePlacexUpdateService),
-            typeof(DatabaseAddrxUpdateService),
-            typeof(SphinxAddrxUpdateService),
-            typeof(SphinxAddrobxUpdateService)
-        };
-
-        private static async Task Main(string[] args)
-        {
-            Console.WriteLine("Welcome to Placium!");
-
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-            NtsGeometryServices.Instance = new NtsGeometryServices(
-                CoordinateArraySequenceFactory.Instance,
-                new PrecisionModel(),
-                4326, GeometryOverlay.NG,
-                new CoordinateEqualityComparer());
-
-            var builder = new ConfigurationBuilder();
-            builder.AddCommandLine(args);
-
-            var config = builder.Build();
-
-            var serviceProvider = new ServiceCollection()
-                .AddLogging()
-                .AddSingleton<IConfiguration>(config)
-                .AddSingleton<IConnectionsConfig, ArgsConnectionsConfig>()
-                .AddSingleton<IParallelConfig, ArgsParallelConfig>()
-                .AddSingleton<IProgressClient, ShellProgressClient>()
-                .AddSingleton<FileFiasUploadService>()
-                .AddSingleton<FileOsmUploadService>()
-                .AddSingleton<DatabaseRouteUpdateService>()
-                .AddSingleton<DatabasePlacexUpdateService>()
-                .AddSingleton<DatabaseAddrxUpdateService>()
-                .AddSingleton<SphinxAddrxUpdateService>()
-                .AddSingleton<SphinxAddrobxUpdateService>()
-                .BuildServiceProvider();
-
-            try
+            var type = Types.FirstOrDefault(t => t.Name == config["service"]);
+            if (type == null) throw new Exception($"Unknown service '{config["service"]}'");
+            var service = serviceProvider.GetService(type);
+            switch (service)
             {
-                var type = Types.FirstOrDefault(t => t.Name == config["service"]);
-                if (type == null) throw new Exception($"Unknown service '{config["service"]}'");
-                var service = serviceProvider.GetService(type);
-                switch (service)
+                case IUploadService uploadService:
                 {
-                    case IUploadService uploadService:
+                    using var stream = File.OpenRead(config["file"]);
+                    switch (config["action"])
                     {
-                        using var stream = File.OpenRead(config["file"]);
-                        switch (config["action"])
-                        {
-                            case "install":
-                                await uploadService.InstallAsync(stream, new Dictionary<string, string>
-                                {
-                                    {"region", config["region"]}
-                                }, null);
-                                break;
-                            case "update":
-                                await uploadService.UpdateAsync(stream, new Dictionary<string, string>(), null);
-                                break;
-                            default:
-                                throw new Exception($"Unknown action '{config["action"]}");
-                        }
+                        case "install":
+                            await uploadService.InstallAsync(stream, new Dictionary<string, string>
+                            {
+                                { "region", config["region"] }
+                            }, null);
+                            break;
+                        case "update":
+                            await uploadService.UpdateAsync(stream, new Dictionary<string, string>(), null);
+                            break;
+                        default:
+                            throw new Exception($"Unknown action '{config["action"]}");
                     }
-                        break;
-                    case IUpdateService updateService:
-                        switch (config["action"])
-                        {
-                            case "update":
-                                await updateService.UpdateAsync(null, config["full"] == "yes");
-                                break;
-                            default:
-                                throw new Exception($"Unknown action '{config["action"]}");
-                        }
-
-                        break;
-                    default:
-                        throw new NotSupportedException();
                 }
+                    break;
+                case IUpdateService updateService:
+                    switch (config["action"])
+                    {
+                        case "update":
+                            await updateService.UpdateAsync(null, config["full"] == "yes");
+                            break;
+                        default:
+                            throw new Exception($"Unknown action '{config["action"]}");
+                    }
 
-                Console.WriteLine("Complete");
+                    break;
+                default:
+                    throw new NotSupportedException();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+
+            Console.WriteLine("Complete");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
         }
     }
 }
