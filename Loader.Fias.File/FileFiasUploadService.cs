@@ -192,11 +192,11 @@ public class FileFiasUploadService : BaseAppService, IUploadService
                                 {
                                     if (!TableIsExists(tableName, connection))
                                     {
-                                        using (var command = new NpgsqlCommand(
-                                                   $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
-                                                   , connection))
+                                        await using (var command = new NpgsqlCommand(
+                                                         $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
+                                                         , connection))
                                         {
-                                            command.Prepare();
+                                            await command.PrepareAsync();
 
                                             command.ExecuteNonQuery();
                                         }

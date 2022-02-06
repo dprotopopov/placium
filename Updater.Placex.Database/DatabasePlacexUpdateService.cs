@@ -213,7 +213,7 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
             command.Parameters.AddWithValue("keys", keys.ToArray());
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
             await using (var reader = command.ExecuteReader())
             {
@@ -338,14 +338,14 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
             await _progressClient.Finalize(id1, session);
         }
 
-        using (var command = new NpgsqlCommand(
-                   string.Join(";",
-                       @"INSERT INTO placex(osm_id,osm_type,tags,location)
+        await using (var command = new NpgsqlCommand(
+                         string.Join(";",
+                             @"INSERT INTO placex(osm_id,osm_type,tags,location)
                         SELECT osm_id,'way',tags,ST_MakeValid(location) FROM temp_placex_way
                         ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
-                       "DROP TABLE temp_placex_way"), connection2))
+                             "DROP TABLE temp_placex_way"), connection2))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
             command.ExecuteNonQuery();
         }
@@ -413,7 +413,7 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
             command.Parameters.AddWithValue("keys", keys.ToArray());
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
             await using (var reader = command.ExecuteReader())
             {

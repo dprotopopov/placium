@@ -37,7 +37,7 @@ public class RouterDb
 
     public async Task LoadFromOsmAsync(string osmConnectionString, IProgressClient progressClient, string session)
     {
-        using var osmConnection = new NpgsqlConnection(osmConnectionString);
+        await using var osmConnection = new NpgsqlConnection(osmConnectionString);
         await using var connection = new NpgsqlConnection(ConnectionString);
         await using var connection2 = new NpgsqlConnection(ConnectionString);
 
@@ -64,7 +64,7 @@ public class RouterDb
             void FoundRestriction(string vehicleType, long fromWay, long toWay, long viaNode,
                 TagsCollectionBase tags)
             {
-                if (vehicleType == null) vehicleType = string.Empty;
+                vehicleType ??= string.Empty;
 
                 var values = new[]
                 {

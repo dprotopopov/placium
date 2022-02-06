@@ -158,7 +158,7 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         commandBegin.Prepare();
         commandCommit.Prepare();
 
-        using var commandInsertIntoRestriction =
+        await using var commandInsertIntoRestriction =
             new SqliteCommand(@"INSERT INTO temp_restriction(id,from_edge,to_edge,via_node)
                 VALUES (@id,@fromEdge,@toEdge,@viaNode)
                 ON CONFLICT (from_edge,to_edge,via_node) DO NOTHING",

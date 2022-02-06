@@ -84,17 +84,17 @@ public class DatabaseAddrxUpdateService : BaseAppService, IUpdateService
 
         var total = 0L;
 
-        using (var command = new NpgsqlCommand(string.Join(";",
-                       "SELECT COUNT(*) FROM placex WHERE tags?|@keys AND record_number>@last_record_number",
-                       "SELECT id FROM placex WHERE tags?|@keys AND record_number>@last_record_number"),
-                   connection))
+        await using (var command = new NpgsqlCommand(string.Join(";",
+                             "SELECT COUNT(*) FROM placex WHERE tags?|@keys AND record_number>@last_record_number",
+                             "SELECT id FROM placex WHERE tags?|@keys AND record_number>@last_record_number"),
+                         connection))
         {
             command.Parameters.AddWithValue("keys", keys1.ToArray());
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using (var reader = command.ExecuteReader())
+            await using (var reader = command.ExecuteReader())
             {
                 if (reader.Read())
                     total = reader.GetInt64(0);
@@ -110,11 +110,10 @@ public class DatabaseAddrxUpdateService : BaseAppService, IUpdateService
                 Parallel.For(0, _parallelConfig.GetNumberOfThreads(),
                     i =>
                     {
-                        using (var connection2 = new NpgsqlConnection(GetOsmConnectionString()))
-                        {
-                            connection2.Open();
+                        using var connection2 = new NpgsqlConnection(GetOsmConnectionString());
+                        connection2.Open();
 
-                            using (var command2 = new NpgsqlCommand(@"INSERT INTO addrx(id,tags)
+                        using (var command2 = new NpgsqlCommand(@"INSERT INTO addrx(id,tags)
                                         SELECT id, hstore(array_agg(key), array_agg(val)) as tags
                                         FROM (SELECT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
                                         JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
@@ -130,41 +129,40 @@ public class DatabaseAddrxUpdateService : BaseAppService, IUpdateService
                                         WHERE c.id=ANY(@ids) AND p.tags->'type'='boundary' and p.tags->'admin_level'='5') as q
                                         WHERE key like 'addr%' GROUP BY id
                                         ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
-                                       connection2))
+                                   connection2))
+                        {
+                            command2.Parameters.AddWithValue("keys", keys.ToArray());
+                            command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+
+                            command2.Prepare();
+
+                            while (true)
                             {
-                                command2.Parameters.AddWithValue("keys", keys.ToArray());
-                                command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-
-                                command2.Prepare();
-
-                                while (true)
+                                List<long> list;
+                                lock (obj)
                                 {
-                                    List<long> list;
-                                    lock (obj)
-                                    {
-                                        if (reader_is_empty) break;
-                                        list = GetLongs(reader, take);
-                                        reader_is_empty = list.Count() < take;
-                                        if (!list.Any()) break;
-                                    }
+                                    if (reader_is_empty) break;
+                                    list = GetLongs(reader, take);
+                                    reader_is_empty = list.Count() < take;
+                                    if (!list.Any()) break;
+                                }
 
-                                    command2.Parameters["ids"].Value = list.ToArray();
+                                command2.Parameters["ids"].Value = list.ToArray();
 
-                                    command2.ExecuteNonQuery();
+                                command2.ExecuteNonQuery();
 
-                                    lock (obj)
-                                    {
-                                        current += list.Count();
+                                lock (obj)
+                                {
+                                    current += list.Count();
 
-                                        _progressClient.Progress(100f * current / total, id, session)
-                                            .GetAwaiter()
-                                            .GetResult();
-                                    }
+                                    _progressClient.Progress(100f * current / total, id, session)
+                                        .GetAwaiter()
+                                        .GetResult();
                                 }
                             }
-
-                            connection2.Close();
                         }
+
+                        connection2.Close();
                     });
             }
         }

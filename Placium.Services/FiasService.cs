@@ -213,7 +213,7 @@ public class FiasService : BaseApiService
 
                 command.Parameters["p"].Value = guid;
 
-                using var reader = command.ExecuteReader();
+                await using var reader = command.ExecuteReader();
                 if (reader.Read())
                 {
                     var offname = reader.SafeGetString(1);

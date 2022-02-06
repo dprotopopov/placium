@@ -85,13 +85,13 @@ public class SphinxAddrxUpdateService : BaseAppService, IUpdateService
         var sql =
             "SELECT addrx.id,addrx.tags,ST_X(ST_Centroid(placex.location))::real,ST_Y(ST_Centroid(placex.location))::real FROM addrx join placex on addrx.id=placex.id WHERE addrx.record_number>@last_record_number";
 
-        using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+        await using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             if (reader.Read())
                 total = reader.GetInt64(0);
 

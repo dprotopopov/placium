@@ -21,7 +21,7 @@ public class ResolveRouterPointAlgorithm : BaseResolveRouterPointAlgorithm
         await connection.OpenAsync();
         connection.ReloadTypes();
         connection.TypeMapper.MapComposite<RouteCoordinate>("coordinate");
-        using var command = new NpgsqlCommand(
+        await using var command = new NpgsqlCommand(
             @"SELECT id,from_node,to_node,coordinates,weight,direction,ST_X(point)::real,ST_Y(point)::real 
                     FROM (SELECT id,from_node,to_node,coordinates,(weight->@profile)::real AS weight,(direction->@profile)::smallint AS direction,
                     ST_ClosestPoint(location, ST_SetSRID( ST_Point( @lon, @lat ), 4326 )::geometry) AS point
@@ -32,9 +32,9 @@ public class ResolveRouterPointAlgorithm : BaseResolveRouterPointAlgorithm
         command.Parameters.AddWithValue("lon", coordinate.Longitude);
         command.Parameters.AddWithValue("profile", Profile);
         command.Parameters.AddWithValue("guid", Guid);
-        command.Prepare();
+        await command.PrepareAsync();
 
-        using var reader = await command.ExecuteReaderAsync();
+        await using var reader = await command.ExecuteReaderAsync();
         if (!reader.Read()) throw new NullReferenceException();
         var edgeId = reader.GetInt64(0);
         var fromNode = reader.GetInt64(1);
