@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using CsvHelper;
+using CsvHelper.Configuration;
+using CsvHelper.Configuration.Attributes;
 using NDbfReader;
 using Newtonsoft.Json;
 using Npgsql;
@@ -251,6 +254,11 @@ public static class PgExtensions
         return result;
     }
 
+    public static long[] ToNodes(this string s)
+    {
+        return JsonConvert.DeserializeObject<long[]>(s);
+    }
+
     public static TagsCollection ToTags(this Dictionary<string, string> dictionary)
     {
         var result = new TagsCollection();
@@ -275,6 +283,37 @@ public static class PgExtensions
                      new Dictionary<string, string>())
             .ToTags();
         return node;
+    }
+
+    public static Node Fill(this Node node, CsvReader reader)
+    {
+        var record = reader.GetRecord<NodeItem>();
+        node.Id = record.id;
+        node.Version = record.version;
+        node.Latitude = record.latitude;
+        node.Longitude = record.longitude;
+        node.ChangeSetId = record.change_set_id;
+        node.TimeStamp = record.time_stamp;
+        node.UserId = record.user_id;
+        node.UserName = record.user_name;
+        node.Visible = record.visible;
+        node.Tags = ("{" + record.tags.Replace("=>", ":") + "}").ToTags();
+        return node;
+    }
+
+    public static Way Fill(this Way way, CsvReader reader)
+    {
+        var record = reader.GetRecord<WayItem>();
+        way.Id = record.id;
+        way.Version = record.version;
+        way.ChangeSetId = record.change_set_id;
+        way.TimeStamp = record.time_stamp;
+        way.UserId = record.user_id;
+        way.UserName = record.user_name;
+        way.Visible = record.visible;
+        way.Tags = ("{" + record.tags.Replace("=>", ":") + "}").ToTags();
+        way.Nodes = record.nodes.Replace("{", "[").Replace("}", "]").ToNodes();
+        return way;
     }
 
     public static Way Fill(this Way way, NpgsqlDataReader reader, int offset = 0)
@@ -308,5 +347,86 @@ public static class PgExtensions
         relation.Members = (reader.SafeGetValue(offset + 8) as OsmRelationMember[] ?? new OsmRelationMember[0])
             .Select(x => new RelationMember(x.Id, x.Role, (OsmGeoType)x.Type)).ToArray();
         return relation;
+    }
+
+    public class NodeItem
+    {
+        [Index(0)] public long? id { get; set; }
+
+        [Index(1)] public int? version { get; set; }
+
+        [Index(2)] public double? latitude { get; set; }
+
+        [Index(3)] public double? longitude { get; set; }
+
+        [Index(4)] public long? change_set_id { get; set; }
+
+        [Index(5)] public DateTime? time_stamp { get; set; }
+
+        [Index(6)] public long? user_id { get; set; }
+
+        [Index(7)] public string user_name { get; set; }
+
+        [Index(8)] public bool? visible { get; set; }
+
+        [Index(9)] public string tags { get; set; }
+    }
+
+    public class WayItem
+    {
+        [Index(0)] public long? id { get; set; }
+
+        [Index(1)] public int? version { get; set; }
+
+        [Index(2)] public long? change_set_id { get; set; }
+
+        [Index(3)] public DateTime? time_stamp { get; set; }
+
+        [Index(4)] public long? user_id { get; set; }
+
+        [Index(5)] public string user_name { get; set; }
+
+        [Index(6)] public bool? visible { get; set; }
+
+        [Index(7)] public string tags { get; set; }
+
+        [Index(8)] public string nodes { get; set; }
+    }
+
+    public class NodeItemMap : ClassMap<NodeItem>
+    {
+        public NodeItemMap()
+        {
+            Map(m => m.id);
+            Map(m => m.version);
+            Map(m => m.latitude);
+            Map(m => m.longitude);
+            Map(m => m.change_set_id);
+            Map(m => m.time_stamp);
+            Map(m => m.user_id);
+            Map(m => m.user_name);
+            Map(m => m.visible)
+                .TypeConverterOption.BooleanValues(true, true, "true", "t")
+                .TypeConverterOption.BooleanValues(false, true, "false", "f");
+            Map(m => m.tags);
+        }
+    }
+
+    public class WayItemMap : ClassMap<WayItem>
+    {
+        public WayItemMap()
+        {
+            Map(m => m.id);
+            Map(m => m.version);
+            Map(m => m.change_set_id);
+            Map(m => m.time_stamp);
+            Map(m => m.user_id);
+            Map(m => m.user_name);
+            Map(m => m.visible)
+                .TypeConverterOption.BooleanValues(true, true, "true", "t")
+                .TypeConverterOption.BooleanValues(false, true, "false", "f");
+            Map(m => m.tags);
+            Map(m => m.nodes);
+        }
     }
 }

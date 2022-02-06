@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using CsvHelper;
+using CsvHelper.Configuration;
 using Npgsql;
 using NpgsqlTypes;
 using OsmSharp;
@@ -82,8 +85,24 @@ public class RouterDb
             using (var command0 = new NpgsqlCommand(string.Join(";",
                        @"ANALYZE node"), osmConnection))
             using (var command = new NpgsqlCommand(string.Join(";",
-                       @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'node'",
-                       @"SELECT
+                       @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'node'"), osmConnection))
+            {
+                command0.Prepare();
+                command.Prepare();
+
+                await command0.ExecuteNonQueryAsync();
+                var count = 0L;
+                await using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (reader.Read())
+                        count = reader.GetInt64(0);
+                }
+
+                var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = false
+                };
+                using (var reader = osmConnection.BeginTextExport(@"COPY node (
 	                            id,
 	                            version,
 	                            latitude,
@@ -94,34 +113,29 @@ public class RouterDb
 	                            user_name,
 	                            visible,
 	                            tags
-                        FROM node"), osmConnection))
-            {
-                command0.Prepare();
-                command.Prepare();
-
-                await command0.ExecuteNonQueryAsync();
-                using var reader = await command.ExecuteReaderAsync();
-                if (!reader.Read()) throw new NullReferenceException();
-                var count = reader.GetInt64(0);
-                await reader.NextResultAsync();
-                var current = 0L;
-                var objReader = new object();
-                var objFoundRestriction = new object();
-                var objProgress = new object();
-                var doIt = true;
-
-                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                    "Placium.Route.DropIndices.pgsql",
-                    connection);
-
-                Parallel.For(0, 6, i =>
+                ) TO STDOUT WITH (FORMAT CSV)"))
+                using (var csv = new CsvReader(reader, config))
                 {
-                    using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
-                    using var connection3 = new NpgsqlConnection(ConnectionString);
-                    osmConnection2.Open();
-                    connection3.Open();
+                    csv.Context.RegisterClassMap<PgExtensions.NodeItemMap>();
 
-                    using var command2 = new NpgsqlCommand(@"SELECT 
+                    var current = 0L;
+                    var objReader = new object();
+                    var objFoundRestriction = new object();
+                    var objProgress = new object();
+                    var doIt = true;
+
+                    await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                        "Placium.Route.DropIndices.pgsql",
+                        connection);
+
+                    Parallel.For(0, 6, i =>
+                    {
+                        using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
+                        using var connection3 = new NpgsqlConnection(ConnectionString);
+                        osmConnection2.Open();
+                        connection3.Open();
+
+                        using var command2 = new NpgsqlCommand(@"SELECT 
 	                            id,
 	                            version,
 	                            change_set_id,
@@ -133,123 +147,124 @@ public class RouterDb
 	                            nodes
                             FROM way WHERE @ids && nodes", osmConnection2);
 
-                    command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                        command2.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
-                    command2.Prepare();
+                        command2.Prepare();
 
-                    var take = 1000;
+                        var take = 1000;
 
-                    for (;;)
-                    {
-                        var nodes = new List<Node>(take);
-                        lock (objReader)
+                        for (;;)
                         {
-                            if (!doIt) break;
-                            for (var j = 0; j < take; j++)
+                            var nodes = new List<Node>(take);
+                            lock (objReader)
                             {
-                                doIt = reader.Read();
                                 if (!doIt) break;
-                                nodes.Add(new Node().Fill(reader));
-                            }
-
-                            if (!nodes.Any()) break;
-                        }
-
-                        command2.Parameters["ids"].Value = nodes.Select(x => x.Id.Value).ToArray();
-
-                        var ways = new List<Way>(take);
-                        using (var reader2 = command2.ExecuteReader())
-                        {
-                            while (reader2.Read())
-                            {
-                                var way = new Way().Fill(reader2);
-                                var wayTags = way.Tags;
-                                if (Vehicle.CanTraverse(wayTags)) ways.Add(way);
-                            }
-                        }
-
-                        using (var writer = connection3.BeginTextImport(
-                                   "COPY node (guid,id,latitude,longitude,tags) FROM STDIN WITH NULL AS ''"))
-                        {
-                            foreach (var node in nodes)
-                            {
-                                var list = ways.Where(x => x.Nodes.Contains(node.Id.Value)).ToList();
-                                if (list.Any())
+                                for (var j = 0; j < take; j++)
                                 {
-                                    var is_core = list.Any(way =>
-                                        node.Id == way.Nodes.First() || node.Id == way.Nodes.Last());
+                                    doIt = csv.Read();
+                                    if (!doIt) break;
+                                    nodes.Add(new Node().Fill(csv));
+                                }
 
-                                    var nodeTags = node.Tags;
-                                    if (nodeTags != null &&
-                                        (nodeTags.Contains("barrier", "bollard") ||
-                                         nodeTags.Contains("barrier", "fence") ||
-                                         nodeTags.Contains("barrier", "gate")))
+                                if (!nodes.Any()) break;
+                            }
+
+                            command2.Parameters["ids"].Value = nodes.Select(x => x.Id.Value).ToArray();
+
+                            var ways = new List<Way>(take);
+                            using (var reader2 = command2.ExecuteReader())
+                            {
+                                while (reader2.Read())
+                                {
+                                    var way = new Way().Fill(reader2);
+                                    var wayTags = way.Tags;
+                                    if (Vehicle.CanTraverse(wayTags)) ways.Add(way);
+                                }
+                            }
+
+                            using (var writer = connection3.BeginTextImport(
+                                       "COPY node (guid,id,latitude,longitude,tags) FROM STDIN WITH NULL AS ''"))
+                            {
+                                foreach (var node in nodes)
+                                {
+                                    var list = ways.Where(x => x.Nodes.Contains(node.Id.Value)).ToList();
+                                    if (list.Any())
                                     {
-                                        is_core = true;
-                                        lock (objFoundRestriction)
-                                        {
-                                            foreach (var way in list)
-                                                FoundRestriction("motorcar", way.Id.Value, way.Id.Value,
-                                                    node.Id.Value,
-                                                    nodeTags);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        var nodeRestriction = Vehicle.NodeRestriction(nodeTags);
-                                        if (nodeRestriction != null &&
-                                            !string.IsNullOrEmpty(nodeRestriction.Vehicle))
+                                        var is_core = list.Any(way =>
+                                            node.Id == way.Nodes.First() || node.Id == way.Nodes.Last());
+
+                                        var nodeTags = node.Tags;
+                                        if (nodeTags != null &&
+                                            (nodeTags.Contains("barrier", "bollard") ||
+                                             nodeTags.Contains("barrier", "fence") ||
+                                             nodeTags.Contains("barrier", "gate")))
                                         {
                                             is_core = true;
-
                                             lock (objFoundRestriction)
                                             {
                                                 foreach (var way in list)
-                                                    FoundRestriction(nodeRestriction.Vehicle, way.Id.Value,
-                                                        way.Id.Value,
+                                                    FoundRestriction("motorcar", way.Id.Value, way.Id.Value,
                                                         node.Id.Value,
                                                         nodeTags);
                                             }
                                         }
-                                    }
-
-                                    if (!is_core && nodeTags != null && nodeTags.Any() &&
-                                        Vehicle.NodeTagProcessor(nodeTags))
-                                        is_core = true;
-
-                                    if (is_core)
-                                    {
-                                        var values = new[]
+                                        else
                                         {
-                                            Guid.ToString(),
-                                            node.Id.ToString(),
-                                            node.Latitude.ValueAsText(),
-                                            node.Longitude.ValueAsText(),
-                                            $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
-                                        };
+                                            var nodeRestriction = Vehicle.NodeRestriction(nodeTags);
+                                            if (nodeRestriction != null &&
+                                                !string.IsNullOrEmpty(nodeRestriction.Vehicle))
+                                            {
+                                                is_core = true;
 
-                                        writer.WriteLine(string.Join("\t", values));
+                                                lock (objFoundRestriction)
+                                                {
+                                                    foreach (var way in list)
+                                                        FoundRestriction(nodeRestriction.Vehicle, way.Id.Value,
+                                                            way.Id.Value,
+                                                            node.Id.Value,
+                                                            nodeTags);
+                                                }
+                                            }
+                                        }
+
+                                        if (!is_core && nodeTags != null && nodeTags.Any() &&
+                                            Vehicle.NodeTagProcessor(nodeTags))
+                                            is_core = true;
+
+                                        if (is_core)
+                                        {
+                                            var values = new[]
+                                            {
+                                                Guid.ToString(),
+                                                node.Id.ToString(),
+                                                node.Latitude.ValueAsText(),
+                                                node.Longitude.ValueAsText(),
+                                                $"{string.Join(",", node.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}"
+                                            };
+
+                                            writer.WriteLine(string.Join("\t", values));
+                                        }
                                     }
                                 }
                             }
+
+                            lock (objProgress)
+                            {
+                                current += nodes.Count;
+                                progressClient.Progress(100f * current / count, id, session).GetAwaiter()
+                                    .GetResult();
+                            }
                         }
 
-                        lock (objProgress)
-                        {
-                            current += nodes.Count;
-                            progressClient.Progress(100f * current / count, id, session).GetAwaiter()
-                                .GetResult();
-                        }
-                    }
+                        osmConnection2.Close();
+                        connection3.Close();
+                    });
+                }
 
-                    osmConnection2.Close();
-                    connection3.Close();
-                });
+                await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
+                    "Placium.Route.CreateIndices.pgsql",
+                    connection);
             }
-
-            await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
-                "Placium.Route.CreateIndices.pgsql",
-                connection);
 
             await progressClient.Finalize(id, session);
 
@@ -553,8 +568,24 @@ public class RouterDb
             using (var command0 = new NpgsqlCommand(string.Join(";",
                        @"ANALYZE way"), osmConnection))
             using (var command = new NpgsqlCommand(string.Join(";",
-                       @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'way'",
-                       @"SELECT
+                       @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'way'"), osmConnection))
+            {
+                command0.Prepare();
+                command.Prepare();
+
+                await command0.ExecuteNonQueryAsync();
+                var count = 0L;
+                await using (var reader = await command.ExecuteReaderAsync())
+                {
+                    if (reader.Read())
+                        count = reader.GetInt64(0);
+                }
+
+                var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+                {
+                    HasHeaderRecord = false
+                };
+                using (var reader = osmConnection.BeginTextExport(@"COPY way (
                         id,
                         version,
                         change_set_id,
@@ -564,179 +595,174 @@ public class RouterDb
                         visible,
                         tags,
                         nodes
-                        FROM way"), osmConnection))
-            {
-                command0.Prepare();
-                command.Prepare();
-
-                await command0.ExecuteNonQueryAsync();
-                using var reader = await command.ExecuteReaderAsync();
-                if (!reader.Read()) throw new NullReferenceException();
-                var count = reader.GetInt64(0);
-                await reader.NextResultAsync();
-                var current = 0L;
-                var objReader = new object();
-                var objWriter = new object();
-                var objProgress = new object();
-                var doIt = true;
-
-                Parallel.For(0, 6, j =>
+                ) TO STDOUT WITH (FORMAT CSV)"))
+                using (var csv = new CsvReader(reader, config))
                 {
-                    using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
-                    using var connection3 = new NpgsqlConnection(ConnectionString);
-                    osmConnection2.Open();
-                    connection3.Open();
+                    csv.Context.RegisterClassMap<PgExtensions.WayItemMap>();
+                    var current = 0L;
+                    var objReader = new object();
+                    var objWriter = new object();
+                    var objProgress = new object();
+                    var doIt = true;
 
-                    using var command3 = new NpgsqlCommand(
-                        @"SELECT id FROM node WHERE id=ANY(@ids) AND guid=@guid",
-                        connection3);
-                    using var command4 = new NpgsqlCommand(
-                        @"SELECT id,latitude,longitude FROM node WHERE id=ANY(@ids)",
-                        osmConnection2);
-
-                    command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                    command3.Parameters.AddWithValue("guid", Guid);
-                    command3.Prepare();
-                    command4.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-                    command4.Prepare();
-
-                    var way = new Way();
-                    for (;;)
+                    Parallel.For(0, 6, j =>
                     {
-                        lock (objReader)
+                        using var osmConnection2 = new NpgsqlConnection(osmConnectionString);
+                        using var connection3 = new NpgsqlConnection(ConnectionString);
+                        osmConnection2.Open();
+                        connection3.Open();
+
+                        using var command3 = new NpgsqlCommand(
+                            @"SELECT id FROM node WHERE id=ANY(@ids) AND guid=@guid",
+                            connection3);
+                        using var command4 = new NpgsqlCommand(
+                            @"SELECT id,latitude,longitude FROM node WHERE id=ANY(@ids)",
+                            osmConnection2);
+
+                        command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                        command3.Parameters.AddWithValue("guid", Guid);
+                        command3.Prepare();
+                        command4.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                        command4.Prepare();
+
+                        var way = new Way();
+                        for (;;)
                         {
-                            if (!doIt) break;
-                            doIt = reader.Read();
-                            if (!doIt) break;
-                            way.Fill(reader);
-                        }
-
-                        var attributes = way.Tags;
-
-                        if (Vehicle.CanTraverse(attributes))
-                        {
-                            var factorAndSpeeds = Vehicle.FactorAndSpeeds(attributes);
-
-                            command3.Parameters["ids"].Value = way.Nodes;
-                            command4.Parameters["ids"].Value = way.Nodes;
-
-                            var list = new List<NodeItem>(way.Nodes.Length);
-                            var core = new List<long>(way.Nodes.Length);
-
-                            using (var reader4 = command4.ExecuteReader())
+                            lock (objReader)
                             {
-                                while (reader4.Read())
-                                    list.Add(new NodeItem
-                                    {
-                                        Id = reader4.GetInt64(0),
-                                        Latitude = reader4.GetFloat(1),
-                                        Longitude = reader4.GetFloat(2)
-                                    });
+                                if (!doIt) break;
+                                doIt = csv.Read();
+                                if (!doIt) break;
+                                way.Fill(csv);
                             }
 
-                            using (var reader3 = command3.ExecuteReader())
+                            var attributes = way.Tags;
+
+                            if (Vehicle.CanTraverse(attributes))
                             {
-                                while (reader3.Read())
-                                    core.Add(reader3.GetInt64(0));
-                            }
+                                var factorAndSpeeds = Vehicle.FactorAndSpeeds(attributes);
 
-                            var dictionary = list.ToDictionary(item => item.Id, item => item);
+                                command3.Parameters["ids"].Value = way.Nodes;
+                                command4.Parameters["ids"].Value = way.Nodes;
 
-                            // convert way into one or more edges.
-                            var i = 0;
+                                var list = new List<NodeItem>(way.Nodes.Length);
+                                var core = new List<long>(way.Nodes.Length);
 
-                            while (i < way.Nodes.Length - 1)
-                            {
-                                // build edge to add.
-                                var intermediates = new List<Coordinate>();
-                                var distance = 0.0f;
-                                if (!dictionary.TryGetValue(way.Nodes[i], out var item)) break;
-
-
-                                var previousCoordinate = new Coordinate(item.Latitude, item.Longitude);
-                                intermediates.Add(previousCoordinate);
-
-                                var fromNode = way.Nodes[i];
-                                i++;
-
-                                var toNode = (long?)null;
-                                for (;;)
+                                using (var reader4 = command4.ExecuteReader())
                                 {
-                                    if (i >= way.Nodes.Length ||
-                                        !dictionary.TryGetValue(way.Nodes[i], out item))
-                                        // an incomplete way, node not in source.
-                                        break;
+                                    while (reader4.Read())
+                                        list.Add(new NodeItem
+                                        {
+                                            Id = reader4.GetInt64(0),
+                                            Latitude = reader4.GetFloat(1),
+                                            Longitude = reader4.GetFloat(2)
+                                        });
+                                }
 
-                                    var coordinate = new Coordinate(item.Latitude, item.Longitude);
+                                using (var reader3 = command3.ExecuteReader())
+                                {
+                                    while (reader3.Read())
+                                        core.Add(reader3.GetInt64(0));
+                                }
 
-                                    distance += Coordinate.DistanceEstimateInMeter(
-                                        previousCoordinate, coordinate);
+                                var dictionary = list.ToDictionary(item => item.Id, item => item);
 
-                                    intermediates.Add(coordinate);
-                                    previousCoordinate = coordinate;
+                                // convert way into one or more edges.
+                                var i = 0;
 
-                                    if (core.Contains(item.Id))
+                                while (i < way.Nodes.Length - 1)
+                                {
+                                    // build edge to add.
+                                    var intermediates = new List<Coordinate>();
+                                    var distance = 0.0f;
+                                    if (!dictionary.TryGetValue(way.Nodes[i], out var item)) break;
+
+
+                                    var previousCoordinate = new Coordinate(item.Latitude, item.Longitude);
+                                    intermediates.Add(previousCoordinate);
+
+                                    var fromNode = way.Nodes[i];
+                                    i++;
+
+                                    var toNode = (long?)null;
+                                    for (;;)
                                     {
-                                        // node is part of the core.
-                                        toNode = way.Nodes[i];
-                                        break;
+                                        if (i >= way.Nodes.Length ||
+                                            !dictionary.TryGetValue(way.Nodes[i], out item))
+                                            // an incomplete way, node not in source.
+                                            break;
+
+                                        var coordinate = new Coordinate(item.Latitude, item.Longitude);
+
+                                        distance += Coordinate.DistanceEstimateInMeter(
+                                            previousCoordinate, coordinate);
+
+                                        intermediates.Add(coordinate);
+                                        previousCoordinate = coordinate;
+
+                                        if (core.Contains(item.Id))
+                                        {
+                                            // node is part of the core.
+                                            toNode = way.Nodes[i];
+                                            break;
+                                        }
+
+                                        i++;
                                     }
 
-                                    i++;
-                                }
+                                    if (toNode == null) break;
 
-                                if (toNode == null) break;
+                                    var direction = factorAndSpeeds.ToDictionary(x => x.Key, x => x.Value.Direction);
+                                    var weight = factorAndSpeeds.Where(x => x.Value.Factor > 0)
+                                        .ToDictionary(x => x.Key, x => distance * x.Value.Factor);
 
-                                var direction = factorAndSpeeds.ToDictionary(x => x.Key, x => x.Value.Direction);
-                                var weight = factorAndSpeeds.Where(x => x.Value.Factor > 0)
-                                    .ToDictionary(x => x.Key, x => distance * x.Value.Factor);
+                                    var fromCoords = intermediates.First();
+                                    var toCoords = intermediates.Last();
 
-                                var fromCoords = intermediates.First();
-                                var toCoords = intermediates.Last();
-
-                                var values = new[]
-                                {
-                                    Guid.ToString(),
-                                    fromNode.ToString(),
-                                    toNode.ToString(),
-                                    way.Id.ToString(),
-                                    fromCoords.Latitude.ValueAsText(),
-                                    fromCoords.Longitude.ValueAsText(),
-                                    toCoords.Latitude.ValueAsText(),
-                                    toCoords.Longitude.ValueAsText(),
-                                    distance.ValueAsText(),
-                                    $"{{{string.Join(",", intermediates.Select(t => $"\\\"({t.Latitude.ValueAsText()},{t.Longitude.ValueAsText()})\\\""))}}}",
-                                    intermediates.Count switch
+                                    var values = new[]
                                     {
-                                        0 => "SRID=4326;POINT EMPTY",
-                                        1 =>
-                                            $"SRID=4326;POINT({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})",
-                                        _ =>
-                                            $"SRID=4326;LINESTRING({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})"
-                                    },
-                                    $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
-                                    $"{string.Join(",", direction.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ToString()}\""))}",
-                                    $"{string.Join(",", weight.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ValueAsText()}\""))}"
-                                };
+                                        Guid.ToString(),
+                                        fromNode.ToString(),
+                                        toNode.ToString(),
+                                        way.Id.ToString(),
+                                        fromCoords.Latitude.ValueAsText(),
+                                        fromCoords.Longitude.ValueAsText(),
+                                        toCoords.Latitude.ValueAsText(),
+                                        toCoords.Longitude.ValueAsText(),
+                                        distance.ValueAsText(),
+                                        $"{{{string.Join(",", intermediates.Select(t => $"\\\"({t.Latitude.ValueAsText()},{t.Longitude.ValueAsText()})\\\""))}}}",
+                                        intermediates.Count switch
+                                        {
+                                            0 => "SRID=4326;POINT EMPTY",
+                                            1 =>
+                                                $"SRID=4326;POINT({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})",
+                                            _ =>
+                                                $"SRID=4326;LINESTRING({string.Join(",", intermediates.Select(t => $"{t.Longitude.ValueAsText()} {t.Latitude.ValueAsText()}"))})"
+                                        },
+                                        $"{string.Join(",", way.Tags.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.TextEscape(2)}\""))}",
+                                        $"{string.Join(",", direction.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ToString()}\""))}",
+                                        $"{string.Join(",", weight.Select(t => $"\"{t.Key.TextEscape(2)}\"=>\"{t.Value.ValueAsText()}\""))}"
+                                    };
 
-                                lock (objWriter)
-                                {
-                                    writer.WriteLine(string.Join("\t", values));
+                                    lock (objWriter)
+                                    {
+                                        writer.WriteLine(string.Join("\t", values));
+                                    }
                                 }
+                            }
+
+                            lock (objProgress)
+                            {
+                                if (current++ % 1000 == 0)
+                                    progressClient.Progress(100f * current / count, id, session).GetAwaiter()
+                                        .GetResult();
                             }
                         }
 
-                        lock (objProgress)
-                        {
-                            if (current++ % 1000 == 0)
-                                progressClient.Progress(100f * current / count, id, session).GetAwaiter()
-                                    .GetResult();
-                        }
-                    }
-
-                    osmConnection2.Close();
-                    connection3.Close();
-                });
+                        osmConnection2.Close();
+                        connection3.Close();
+                    });
+                }
             }
 
             await progressClient.Finalize(id, session);
