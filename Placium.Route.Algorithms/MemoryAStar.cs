@@ -63,20 +63,20 @@ public class MemoryAStar : BasePathFinderAlgorithm
                 $$
                     DECLARE
                         dist float = 0;
-                        thi1 float;
-                        thi2 float;
-                        dthi float;
-                        lamda float;
+                        phi1 float;
+                        phi2 float;
+                        delta_phi float;
+                        lambda float;
                         a float;
                     BEGIN
                         IF lat1 = lat2 AND lon1 = lon2
                             THEN RETURN dist;
                         ELSE
-                            thi1 = pi() * lat1 / 180;
-                            thi2 = pi() * lat2 / 180;
-                            dthi = pi() * (lat2 - lat1) / 180;
-                            lamda = pi() * (lon2 - lon1) / 180;
-                            a = pow(sin(dthi/2),2) + cos(thi1) * cos(thi2) * pow(sin(lamda/2),2);
+                            phi1 = pi() * lat1 / 180;
+                            phi2 = pi() * lat2 / 180;
+                            delta_phi = pi() * (lat2 - lat1) / 180;
+                            lambda = pi() * (lon2 - lon1) / 180;
+                            a = pow(sin(delta_phi/2),2) + cos(phi1) * cos(phi2) * pow(sin(lambda/2),2);
                             dist = 2 * 6371000 * atan2(sqrt(a),sqrt(1-a));
                             RETURN dist;
                         END IF;
@@ -162,7 +162,7 @@ public class MemoryAStar : BasePathFinderAlgorithm
         commandInsertIntoRestriction.Parameters.Add("viaNode", SqliteType.Integer);
         commandInsertIntoRestriction.Prepare();
 
-        await using var commandSelectFromPrefedched = new SqliteCommand(
+        await using var commandSelectFromPrefetch = new SqliteCommand(
             @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
                 cte1 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude<=n.latitude+@size),
                 cte2 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude<=n.longitude+@size),
@@ -171,18 +171,18 @@ public class MemoryAStar : BasePathFinderAlgorithm
                 SELECT EXISTS (SELECT 1 FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)",
             connection);
 
-        commandSelectFromPrefedched.Parameters.Add("node", SqliteType.Integer);
-        commandSelectFromPrefedched.Parameters.AddWithValue("size", size);
-        commandSelectFromPrefedched.Prepare();
+        commandSelectFromPrefetch.Parameters.Add("node", SqliteType.Integer);
+        commandSelectFromPrefetch.Parameters.AddWithValue("size", size);
+        commandSelectFromPrefetch.Prepare();
 
-        await using var commandInsertIntoPrefedched = new SqliteCommand(
+        await using var commandInsertIntoPrefetch = new SqliteCommand(
             @"INSERT INTO temp_prefetch (id,latitude,longitude) VALUES (@id,@latitude,@longitude) ON CONFLICT DO NOTHING",
             connection);
 
-        commandInsertIntoPrefedched.Parameters.Add("id", SqliteType.Integer);
-        commandInsertIntoPrefedched.Parameters.Add("latitude", SqliteType.Real);
-        commandInsertIntoPrefedched.Parameters.Add("longitude", SqliteType.Real);
-        commandInsertIntoPrefedched.Prepare();
+        commandInsertIntoPrefetch.Parameters.Add("id", SqliteType.Integer);
+        commandInsertIntoPrefetch.Parameters.Add("latitude", SqliteType.Real);
+        commandInsertIntoPrefetch.Parameters.Add("longitude", SqliteType.Real);
+        commandInsertIntoPrefetch.Prepare();
 
         await using var commandInsertIntoNode = new SqliteCommand(
             @"INSERT INTO temp_node (id,latitude,longitude,from_weight) 
@@ -263,9 +263,9 @@ public class MemoryAStar : BasePathFinderAlgorithm
 
         void LoadEdgesAndNodes(long node)
         {
-            commandSelectFromPrefedched.Parameters["node"].Value = node;
+            commandSelectFromPrefetch.Parameters["node"].Value = node;
 
-            if ((long)commandSelectFromPrefedched.ExecuteScalar()! != 0)
+            if ((long)commandSelectFromPrefetch.ExecuteScalar()! != 0)
                 return;
 
             commandSelectFromNode.Parameters["node"].Value = node;
@@ -276,11 +276,11 @@ public class MemoryAStar : BasePathFinderAlgorithm
             {
                 while (reader.Read())
                 {
-                    commandInsertIntoPrefedched.Parameters["id"].Value = reader.GetInt64(0);
-                    commandInsertIntoPrefedched.Parameters["latitude"].Value = reader.GetFloat(1);
-                    commandInsertIntoPrefedched.Parameters["longitude"].Value = reader.GetFloat(2);
+                    commandInsertIntoPrefetch.Parameters["id"].Value = reader.GetInt64(0);
+                    commandInsertIntoPrefetch.Parameters["latitude"].Value = reader.GetFloat(1);
+                    commandInsertIntoPrefetch.Parameters["longitude"].Value = reader.GetFloat(2);
 
-                    commandInsertIntoPrefedched.ExecuteNonQuery();
+                    commandInsertIntoPrefetch.ExecuteNonQuery();
                 }
 
                 reader.NextResult();

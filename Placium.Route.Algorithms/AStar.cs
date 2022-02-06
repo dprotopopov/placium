@@ -40,20 +40,20 @@ public class AStar : BasePathFinderAlgorithm
                 $$
                     DECLARE
                         dist float = 0;
-                        thi1 float;
-                        thi2 float;
-                        dthi float;
-                        lamda float;
+                        phi1 float;
+                        phi2 float;
+                        delta_phi float;
+                        lambda float;
                         a float;
                     BEGIN
                         IF lat1 = lat2 AND lon1 = lon2
                             THEN RETURN dist;
                         ELSE
-                            thi1 = pi() * lat1 / 180;
-                            thi2 = pi() * lat2 / 180;
-                            dthi = pi() * (lat2 - lat1) / 180;
-                            lamda = pi() * (lon2 - lon1) / 180;
-                            a = pow(sin(dthi/2),2) + cos(thi1) * cos(thi2) * pow(sin(lamda/2),2);
+                            phi1 = pi() * lat1 / 180;
+                            phi2 = pi() * lat2 / 180;
+                            delta_phi = pi() * (lat2 - lat1) / 180;
+                            lambda = pi() * (lon2 - lon1) / 180;
+                            a = pow(sin(delta_phi/2),2) + cos(phi1) * cos(phi2) * pow(sin(lambda/2),2);
                             dist = 2 * 6371000 * atan2(sqrt(a),sqrt(1-a));
                             RETURN dist;
                         END IF;
@@ -118,7 +118,7 @@ public class AStar : BasePathFinderAlgorithm
         await commandCommit.PrepareAsync();
 
 
-        await using var commandSelectFromPrefedched = new NpgsqlCommand(
+        await using var commandSelectFromPrefetch = new NpgsqlCommand(
             @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
                 cte1 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude<=n.latitude+@size),
                 cte2 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude<=n.longitude+@size),
@@ -127,9 +127,9 @@ public class AStar : BasePathFinderAlgorithm
                 SELECT EXISTS (SELECT 1 FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)",
             connection);
 
-        commandSelectFromPrefedched.Parameters.Add("node", NpgsqlDbType.Bigint);
-        commandSelectFromPrefedched.Parameters.AddWithValue("size", size);
-        commandSelectFromPrefedched.Prepare();
+        commandSelectFromPrefetch.Parameters.Add("node", NpgsqlDbType.Bigint);
+        commandSelectFromPrefetch.Parameters.AddWithValue("size", size);
+        commandSelectFromPrefetch.Prepare();
 
         await using var commandSelectFromNode =
             new NpgsqlCommand(string.Join(";",
@@ -196,9 +196,9 @@ public class AStar : BasePathFinderAlgorithm
 
         void LoadEdgesAndNodes(long node)
         {
-            commandSelectFromPrefedched.Parameters["node"].Value = node;
+            commandSelectFromPrefetch.Parameters["node"].Value = node;
 
-            if ((long)commandSelectFromPrefedched.ExecuteScalar()! != 0)
+            if ((long)commandSelectFromPrefetch.ExecuteScalar()! != 0)
                 return;
 
             commandSelectFromNode.Parameters["node"].Value = node;
