@@ -7,7 +7,7 @@ namespace Placium.Route.Algorithms;
 
 public abstract class BaseResolveRouterPointAlgorithm : BaseDatabaseAlgorithm
 {
-    public BaseResolveRouterPointAlgorithm(Guid guid, string connectionString, string profile) : base(guid,
+    protected BaseResolveRouterPointAlgorithm(Guid guid, string connectionString, string profile) : base(guid,
         connectionString,
         profile)
     {

@@ -36,9 +36,9 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         await connection2.OpenAsync();
 
 
-        using (var command =
-               new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
-                   @"CREATE TEMP TABLE temp_prefetched (
+        await using (var command =
+                     new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
+                         @"CREATE TEMP TABLE temp_prefetch (
 	                id INTEGER PRIMARY KEY NOT NULL, 
 	                latitude REAL NOT NULL, 
 	                longitude REAL NOT NULL
@@ -78,28 +78,28 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         }
 
 
-        using (var command =
-               new SqliteCommand(string.Join(";",
-                       @"CREATE INDEX temp_prefetched_latitude_idx ON temp_prefetched (latitude)",
-                       @"CREATE INDEX temp_prefetched_longitude_idx ON temp_prefetched (longitude)",
-                       @"CREATE INDEX temp_node_latitude_idx ON temp_node (latitude)",
-                       @"CREATE INDEX temp_node_longitude_idx ON temp_node (longitude)",
-                       @"CREATE INDEX temp_dijkstra1_in_queue_idx ON temp_dijkstra1 (in_queue)",
-                       @"CREATE INDEX temp_dijkstra1_weight_idx ON temp_dijkstra1 (weight)",
-                       @"CREATE INDEX temp_dijkstra2_in_queue_idx ON temp_dijkstra2 (in_queue)",
-                       @"CREATE INDEX temp_dijkstra2_weight_idx ON temp_dijkstra2 (weight)",
-                       @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
-                       @"CREATE UNIQUE INDEX temp_restriction_from_edge_to_edge_via_node_idx ON temp_restriction (from_edge,to_edge,via_node)"),
-                   connection))
+        await using (var command =
+                     new SqliteCommand(string.Join(";",
+                             @"CREATE INDEX temp_prefetch_latitude_idx ON temp_prefetch (latitude)",
+                             @"CREATE INDEX temp_prefetch_longitude_idx ON temp_prefetch (longitude)",
+                             @"CREATE INDEX temp_node_latitude_idx ON temp_node (latitude)",
+                             @"CREATE INDEX temp_node_longitude_idx ON temp_node (longitude)",
+                             @"CREATE INDEX temp_dijkstra1_in_queue_idx ON temp_dijkstra1 (in_queue)",
+                             @"CREATE INDEX temp_dijkstra1_weight_idx ON temp_dijkstra1 (weight)",
+                             @"CREATE INDEX temp_dijkstra2_in_queue_idx ON temp_dijkstra2 (in_queue)",
+                             @"CREATE INDEX temp_dijkstra2_weight_idx ON temp_dijkstra2 (weight)",
+                             @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
+                             @"CREATE UNIQUE INDEX temp_restriction_from_edge_to_edge_via_node_idx ON temp_restriction (from_edge,to_edge,via_node)"),
+                         connection))
         {
             command.Prepare();
             await command.ExecuteNonQueryAsync();
         }
 
-        using var commandBegin =
+        await using var commandBegin =
             new SqliteCommand(@"BEGIN TRANSACTION",
                 connection);
-        using var commandCommit =
+        await using var commandCommit =
             new SqliteCommand(@"COMMIT",
                 connection);
 
@@ -107,7 +107,7 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         commandCommit.Prepare();
 
 
-        using var commandInsertIntoRestriction =
+        await using var commandInsertIntoRestriction =
             new SqliteCommand(@"INSERT INTO temp_restriction(id,from_edge,to_edge,via_node)
                 VALUES (@id,@fromEdge,@toEdge,@viaNode)
                 ON CONFLICT (from_edge,to_edge,via_node) DO NOTHING",
@@ -119,12 +119,12 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         commandInsertIntoRestriction.Parameters.Add("viaNode", SqliteType.Integer);
         commandInsertIntoRestriction.Prepare();
 
-        using var commandSelectFromPrefedched = new SqliteCommand(
+        await using var commandSelectFromPrefedched = new SqliteCommand(
             @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
-                cte1 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude<=n.latitude+@size),
-                cte2 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude<=n.longitude+@size),
-                cte3 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude>=n.latitude-@size),
-                cte4 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude>=n.longitude-@size)
+                cte1 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude<=n.latitude+@size),
+                cte2 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude<=n.longitude+@size),
+                cte3 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude>=n.latitude-@size),
+                cte4 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude>=n.longitude-@size)
                 SELECT EXISTS (SELECT 1 FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)",
             connection);
 
@@ -132,8 +132,8 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         commandSelectFromPrefedched.Parameters.AddWithValue("size", size);
         commandSelectFromPrefedched.Prepare();
 
-        using var commandInsertIntoPrefedched = new SqliteCommand(
-            @"INSERT INTO temp_prefetched (id,latitude,longitude) VALUES (@id,@latitude,@longitude) ON CONFLICT DO NOTHING",
+        await using var commandInsertIntoPrefedched = new SqliteCommand(
+            @"INSERT INTO temp_prefetch (id,latitude,longitude) VALUES (@id,@latitude,@longitude) ON CONFLICT DO NOTHING",
             connection);
 
         commandInsertIntoPrefedched.Parameters.Add("id", SqliteType.Integer);
@@ -141,18 +141,18 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         commandInsertIntoPrefedched.Parameters.Add("longitude", SqliteType.Real);
         commandInsertIntoPrefedched.Prepare();
 
-        using var commandInsertIntoNode = new SqliteCommand(
+        await using var commandInsertIntoNode = new SqliteCommand(
             @"INSERT INTO temp_node (id,latitude,longitude) 
                 VALUES (@id,@latitude,@longitude)
                 ON CONFLICT (id) DO NOTHING",
             connection);
-        using var commandInsertIntoEdge = new SqliteCommand(
+        await using var commandInsertIntoEdge = new SqliteCommand(
             @"INSERT INTO temp_edge (id,from_node,to_node,weight,direction)
                 VALUES (@id,@fromNode,@toNode,@weight,@direction)
                 ON CONFLICT (id) DO NOTHING",
             connection);
 
-        using var commandSelectFromNode =
+        await using var commandSelectFromNode =
             new NpgsqlCommand(string.Join(";",
                     @"SELECT id,latitude,longitude FROM node WHERE id=@node",
                     @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
@@ -218,7 +218,7 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         {
             commandSelectFromPrefedched.Parameters["node"].Value = node;
 
-            if ((long)commandSelectFromPrefedched.ExecuteScalar() != 0)
+            if ((long)commandSelectFromPrefedched.ExecuteScalar()! != 0)
                 return;
 
             commandSelectFromNode.Parameters["node"].Value = node;
@@ -276,8 +276,8 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
             commandCommit.ExecuteNonQuery();
         }
 
-        using (var command =
-               new SqliteCommand(@"REPLACE INTO temp_dijkstra1 (
+        await using (var command =
+                     new SqliteCommand(@"REPLACE INTO temp_dijkstra1 (
 	                node,
 	                weight,
 	                edge,
@@ -308,8 +308,8 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
             }
         }
 
-        using (var command =
-               new SqliteCommand(@"REPLACE INTO temp_dijkstra2 (
+        await using (var command =
+                     new SqliteCommand(@"REPLACE INTO temp_dijkstra2 (
 	                node,
 	                weight,
 	                edge,
@@ -344,16 +344,16 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         var node = 0L;
         float? weight = null;
 
-        using (var command =
-               new SqliteCommand(string.Join(";",
-                       @"SELECT t1.node,t1.weight+t2.weight FROM temp_dijkstra1 t1 JOIN temp_dijkstra2 t2 ON t1.node=t2.node
+        await using (var command =
+                     new SqliteCommand(string.Join(";",
+                             @"SELECT t1.node,t1.weight+t2.weight FROM temp_dijkstra1 t1 JOIN temp_dijkstra2 t2 ON t1.node=t2.node
                         WHERE NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=t1.node AND from_edge=t1.edge AND to_edge=t2.edge)
                         ORDER BY t1.weight+t2.weight LIMIT 1",
-                       @"SELECT node,weight FROM temp_dijkstra1 WHERE in_queue ORDER BY weight LIMIT 1",
-                       @"SELECT node,weight FROM temp_dijkstra2 WHERE in_queue ORDER BY weight LIMIT 1"),
-                   connection))
-        using (var commandStep1 =
-               new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra1 (
+                             @"SELECT node,weight FROM temp_dijkstra1 WHERE in_queue ORDER BY weight LIMIT 1",
+                             @"SELECT node,weight FROM temp_dijkstra2 WHERE in_queue ORDER BY weight LIMIT 1"),
+                         connection))
+        await using (var commandStep1 =
+                     new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra1 (
 	                    node,
 	                    weight,
 	                    edge,
@@ -383,10 +383,10 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
 	                    edge=EXCLUDED.edge,
                         in_queue=EXCLUDED.in_queue
                         WHERE temp_dijkstra1.weight>EXCLUDED.weight",
-                   @"UPDATE temp_dijkstra1 SET in_queue=0 WHERE node=@node",
-                   @"DELETE FROM temp_dijkstra1 WHERE weight>@maxWeight"), connection))
-        using (var commandStep2 =
-               new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra2 (
+                         @"UPDATE temp_dijkstra1 SET in_queue=0 WHERE node=@node",
+                         @"DELETE FROM temp_dijkstra1 WHERE weight>@maxWeight"), connection))
+        await using (var commandStep2 =
+                     new SqliteCommand(string.Join(";", @"INSERT INTO temp_dijkstra2 (
 	                    node,
 	                    weight,
 	                    edge,
@@ -416,8 +416,8 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
 	                    edge=EXCLUDED.edge,
                         in_queue=EXCLUDED.in_queue
                         WHERE temp_dijkstra2.weight>EXCLUDED.weight",
-                   @"UPDATE temp_dijkstra2 SET in_queue=0 WHERE node=@node",
-                   @"DELETE FROM temp_dijkstra2 WHERE weight>@maxWeight"), connection))
+                         @"UPDATE temp_dijkstra2 SET in_queue=0 WHERE node=@node",
+                         @"DELETE FROM temp_dijkstra2 WHERE weight>@maxWeight"), connection))
         {
             commandStep1.Parameters.Add("maxWeight", SqliteType.Real);
             commandStep1.Parameters.Add("node", SqliteType.Integer);
@@ -434,7 +434,7 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
                 var weight1 = 0f;
                 var weight2 = 0f;
 
-                using (var reader = command.ExecuteReader())
+                await using (var reader = await command.ExecuteReaderAsync())
                 {
                     if (reader.Read())
                     {
@@ -485,8 +485,8 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
 
         var list = new List<long>();
 
-        using (var command =
-               new SqliteCommand(@"SELECT e.from_node,e.id 
+        await using (var command =
+                     new SqliteCommand(@"SELECT e.from_node,e.id 
                     FROM temp_dijkstra1 t JOIN temp_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
@@ -498,7 +498,7 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
             for (var node1 = node;;)
             {
                 command.Parameters["node"].Value = node1;
-                using var reader = await command.ExecuteReaderAsync();
+                await using var reader = await command.ExecuteReaderAsync();
 
                 if (!reader.Read()) break;
 
@@ -509,8 +509,8 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
 
         list.Reverse();
 
-        using (var command =
-               new SqliteCommand(@"SELECT e.from_node,e.id 
+        await using (var command =
+                     new SqliteCommand(@"SELECT e.from_node,e.id 
                     FROM temp_dijkstra2 t JOIN temp_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
@@ -523,7 +523,7 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
             for (var node2 = node;;)
             {
                 command.Parameters["node"].Value = node2;
-                using var reader = await command.ExecuteReaderAsync();
+                await using var reader = await command.ExecuteReaderAsync();
 
                 if (!reader.Read()) break;
 

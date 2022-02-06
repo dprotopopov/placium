@@ -91,46 +91,46 @@ public class FileFiasUploadService : BaseAppService, IUploadService
 
                         if (!string.IsNullOrEmpty(key))
 
-                            using (var stream = entry.Open())
+                        {
+                            await using var stream = entry.Open();
+                            using var table = await Table.OpenAsync(stream, HeaderLoader.Default);
+                            var reader = table.OpenReader(_encoding);
+                            var columns = table.Columns;
+
+                            var names = columns.Select(x => x.Name.ToLower()).ToList();
+
+                            TextWriter writer = null;
+                            var buildIndices = false;
+
+                            while (reader.Read())
                             {
-                                using var table = Table.Open(stream, HeaderLoader.Default);
-                                var reader = table.OpenReader(_encoding);
-                                var columns = table.Columns;
-
-                                var names = columns.Select(x => x.Name.ToLower()).ToList();
-
-                                TextWriter writer = null;
-                                var buildIndices = false;
-
-                                while (reader.Read())
+                                if (writer == null)
                                 {
-                                    if (writer == null)
+                                    await using (var command = new NpgsqlCommand(string.Join(";",
+                                                         $"DROP TABLE IF EXISTS {tableName}",
+                                                         $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
+                                                     , connection))
                                     {
-                                        using (var command = new NpgsqlCommand(string.Join(";",
-                                                       $"DROP TABLE IF EXISTS {tableName}",
-                                                       $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
-                                                   , connection))
-                                        {
-                                            command.Prepare();
+                                        await command.PrepareAsync();
 
-                                            command.ExecuteNonQuery();
-                                        }
-
-                                        writer = connection.BeginTextImport(
-                                            $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
-
-                                        buildIndices = true;
+                                        command.ExecuteNonQuery();
                                     }
 
-                                    var values = columns.Select(x => x.ValueAsText(reader)).ToList();
-                                    writer.WriteLine(string.Join("\t", values));
+                                    writer = await connection.BeginTextImportAsync(
+                                        $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
+
+                                    buildIndices = true;
                                 }
 
-                                writer?.Dispose();
-
-                                if (buildIndices)
-                                    BuildIndices(new[] { tableName }, connection);
+                                var values = columns.Select(x => x.ValueAsText(reader)).ToList();
+                                writer.WriteLine(string.Join("\t", values));
                             }
+
+                            writer?.Dispose();
+
+                            if (buildIndices)
+                                BuildIndices(new[] { tableName }, connection);
+                        }
                     }
                 }
 
@@ -173,78 +173,78 @@ public class FileFiasUploadService : BaseAppService, IUploadService
                         var key = FindKey(tableName);
 
                         if (!string.IsNullOrEmpty(key))
-                            using (var stream = entry.Open())
+                        {
+                            await using var stream = entry.Open();
+                            using var table = await Table.OpenAsync(stream, HeaderLoader.Default);
+                            var reader = table.OpenReader(_encoding);
+                            var columns = table.Columns;
+
+
+                            var names = columns.Select(x => x.Name.ToLower()).ToList();
+
+                            TextWriter writer = null;
+                            var buildIndices = false;
+                            var insertFromTemp = false;
+
+                            while (reader.Read())
                             {
-                                using var table = Table.Open(stream, HeaderLoader.Default);
-                                var reader = table.OpenReader(_encoding);
-                                var columns = table.Columns;
-
-
-                                var names = columns.Select(x => x.Name.ToLower()).ToList();
-
-                                TextWriter writer = null;
-                                var buildIndices = false;
-                                var insertFromTemp = false;
-
-                                while (reader.Read())
+                                if (writer == null)
                                 {
-                                    if (writer == null)
+                                    if (!TableIsExists(tableName, connection))
                                     {
-                                        if (!TableIsExists(tableName, connection))
+                                        using (var command = new NpgsqlCommand(
+                                                   $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
+                                                   , connection))
                                         {
-                                            using (var command = new NpgsqlCommand(
-                                                       $"CREATE TABLE {tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))});"
-                                                       , connection))
-                                            {
-                                                command.Prepare();
+                                            command.Prepare();
 
-                                                command.ExecuteNonQuery();
-                                            }
-
-                                            writer = connection.BeginTextImport(
-                                                $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
-
-                                            buildIndices = true;
+                                            command.ExecuteNonQuery();
                                         }
-                                        else
-                                        {
-                                            using (var command = new NpgsqlCommand(string.Join(";",
-                                                           $"DROP TABLE IF EXISTS temp_{tableName}",
-                                                           $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
-                                                       , connection))
-                                            {
-                                                command.Prepare();
 
-                                                command.ExecuteNonQuery();
-                                            }
+                                        writer = await connection.BeginTextImportAsync(
+                                            $"COPY {tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
 
-                                            writer = connection.BeginTextImport(
-                                                $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
-
-                                            insertFromTemp = true;
-                                        }
+                                        buildIndices = true;
                                     }
+                                    else
+                                    {
+                                        await using (var command = new NpgsqlCommand(string.Join(";",
+                                                             $"DROP TABLE IF EXISTS temp_{tableName}",
+                                                             $"CREATE TEMP TABLE temp_{tableName} ({string.Join(",", columns.Select(x => $"{x.Name} {x.TypeAsText()}"))})")
+                                                         , connection))
+                                        {
+                                            await command.PrepareAsync();
 
-                                    var values = columns.Select(x => x.ValueAsText(reader)).ToList();
-                                    writer.WriteLine(string.Join("\t", values));
+                                            command.ExecuteNonQuery();
+                                        }
+
+                                        writer = await connection.BeginTextImportAsync(
+                                            $"COPY temp_{tableName} ({string.Join(",", names)}) FROM STDIN WITH NULL AS ''");
+
+                                        insertFromTemp = true;
+                                    }
                                 }
 
-                                writer?.Dispose();
-
-                                if (insertFromTemp)
-                                    using (var command = new NpgsqlCommand(string.Join(";",
-                                                   $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq')",
-                                                   $"DROP TABLE temp_{tableName}")
-                                               , connection))
-                                    {
-                                        command.Prepare();
-
-                                        command.ExecuteNonQuery();
-                                    }
-
-                                if (buildIndices)
-                                    BuildIndices(new[] { tableName }, connection);
+                                var values = columns.Select(x => x.ValueAsText(reader)).ToList();
+                                writer.WriteLine(string.Join("\t", values));
                             }
+
+                            writer?.Dispose();
+
+                            if (insertFromTemp)
+                            {
+                                await using var command = new NpgsqlCommand(string.Join(";",
+                                        $"INSERT INTO {tableName} ({string.Join(",", names)}) SELECT {string.Join(",", names)} FROM temp_{tableName} ON CONFLICT ({key}) DO UPDATE SET {string.Join(",", names.Select(x => $"{x}=EXCLUDED.{x}"))}, record_number=nextval('record_number_seq')",
+                                        $"DROP TABLE temp_{tableName}")
+                                    , connection);
+                                await command.PrepareAsync();
+
+                                command.ExecuteNonQuery();
+                            }
+
+                            if (buildIndices)
+                                BuildIndices(new[] { tableName }, connection);
+                        }
                     }
                 }
 
@@ -253,7 +253,7 @@ public class FileFiasUploadService : BaseAppService, IUploadService
             }
         }
 
-        foreach (var pair in _deleted) ExcludeDeleted(pair.Key, pair.Value, connection);
+        foreach (var (key, value) in _deleted) ExcludeDeleted(key, value, connection);
 
         await _progressClient.Finalize(id, session);
 
@@ -298,9 +298,9 @@ public class FileFiasUploadService : BaseAppService, IUploadService
 
     private string FindKey(string tableName)
     {
-        foreach (var mask in _masks)
-            if (mask.Key.IsMatch(tableName))
-                return mask.Value;
+        foreach (var (key, value) in _masks)
+            if (key.IsMatch(tableName))
+                return value;
         return null;
     }
 

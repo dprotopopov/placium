@@ -9,7 +9,7 @@ namespace Placium.Route.Algorithms;
 
 public abstract class BaseDatabaseAlgorithm : IDatabaseAlgorithm
 {
-    public BaseDatabaseAlgorithm(Guid guid, string connectionString, string profile)
+    protected BaseDatabaseAlgorithm(Guid guid, string connectionString, string profile)
     {
         Guid = guid;
         ConnectionString = connectionString;
@@ -23,10 +23,10 @@ public abstract class BaseDatabaseAlgorithm : IDatabaseAlgorithm
 
     protected async Task ExecuteResourceAsync(Assembly assembly, string resource, NpgsqlConnection connection)
     {
-        using var stream = assembly.GetManifestResourceStream(resource);
+        await using var stream = assembly.GetManifestResourceStream(resource);
         using var sr = new StreamReader(stream, Encoding.UTF8);
-        using var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection);
-        command.Prepare();
+        await using var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection);
+        await command.PrepareAsync();
         command.ExecuteNonQuery();
     }
 }

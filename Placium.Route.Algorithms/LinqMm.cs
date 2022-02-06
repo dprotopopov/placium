@@ -34,7 +34,7 @@ public class LinqMm : BasePathFinderAlgorithm
         await connection2.OpenAsync();
 
 
-        var tempPrefetched = new ConcurrentDictionary<long, TempPrefetched>();
+        var tempPrefetch = new ConcurrentDictionary<long, TempPrefetch>();
         var tempNode = new ConcurrentDictionary<long, TempNode>();
         var tempEdge = new ConcurrentDictionary<long, TempEdge>();
         var tempDijkstra1 = new ConcurrentDictionary<long, TempDijkstra>();
@@ -42,7 +42,7 @@ public class LinqMm : BasePathFinderAlgorithm
         var tempRestriction = new ConcurrentDictionary<long, TempRestriction>();
 
 
-        using var commandSelectFromNode =
+        await using var commandSelectFromNode =
             new NpgsqlCommand(string.Join(";",
                     @"SELECT id,latitude,longitude FROM node WHERE id=@node",
                     @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
@@ -91,11 +91,11 @@ public class LinqMm : BasePathFinderAlgorithm
         commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
         commandSelectFromNode.Parameters.AddWithValue("size", size);
         commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
-        commandSelectFromNode.Prepare();
+        await commandSelectFromNode.PrepareAsync();
 
         void LoadEdgesAndNodes(long node)
         {
-            if (tempNode.TryGetValue(node, out var item1) && tempPrefetched.Any(x =>
+            if (tempNode.TryGetValue(node, out var item1) && tempPrefetch.Any(x =>
                     x.Value.Latitude <= item1.Latitude + size &&
                     x.Value.Latitude >= item1.Latitude - size &&
                     x.Value.Longitude <= item1.Longitude + size &&
@@ -108,11 +108,11 @@ public class LinqMm : BasePathFinderAlgorithm
             {
                 while (reader.Read())
                 {
-                    var item = new TempPrefetched();
+                    var item = new TempPrefetch();
                     item.Id = reader.GetInt64(0);
                     item.Latitude = reader.GetFloat(1);
                     item.Longitude = reader.GetFloat(2);
-                    tempPrefetched.TryAdd(item.Id, item);
+                    tempPrefetch.TryAdd(item.Id, item);
                 }
 
                 reader.NextResult();
@@ -411,7 +411,7 @@ public class LinqMm : BasePathFinderAlgorithm
         };
     }
 
-    public class TempPrefetched
+    public class TempPrefetch
     {
         public long Id { get; set; }
         public float Latitude { get; set; }

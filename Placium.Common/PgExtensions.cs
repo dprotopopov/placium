@@ -248,9 +248,9 @@ public static class PgExtensions
     {
         var result = new TagsCollection();
         var dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(s);
-        if (dictionary != null)
-            foreach (var pair in dictionary)
-                result.AddOrReplace(pair.Key, pair.Value);
+        if (dictionary == null) return result;
+        foreach (var (key, value) in dictionary)
+            result.AddOrReplace(key, value);
         return result;
     }
 

@@ -97,7 +97,7 @@ public class FileOsmUploadService : BaseAppService, IUploadService
                         {
                             lastType = ElementType.Node;
                             writer?.Dispose();
-                            writer = connection.BeginTextImport(
+                            writer = await connection.BeginTextImportAsync(
                                 $"COPY node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
                         }
 
@@ -125,7 +125,7 @@ public class FileOsmUploadService : BaseAppService, IUploadService
                         {
                             lastType = ElementType.Way;
                             writer?.Dispose();
-                            writer = connection.BeginTextImport(
+                            writer = await connection.BeginTextImportAsync(
                                 $"COPY way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
                         }
 
@@ -152,7 +152,7 @@ public class FileOsmUploadService : BaseAppService, IUploadService
                         {
                             lastType = ElementType.Relation;
                             writer?.Dispose();
-                            writer = connection.BeginTextImport(
+                            writer = await connection.BeginTextImportAsync(
                                 $"COPY relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
                         }
 
@@ -219,7 +219,7 @@ public class FileOsmUploadService : BaseAppService, IUploadService
                         {
                             lastType = ElementType.Node;
                             writer?.Dispose();
-                            writer = connection.BeginTextImport(
+                            writer = await connection.BeginTextImportAsync(
                                 $"COPY temp_node ({string.Join(",", _nodeKeys)}) FROM STDIN WITH NULL AS ''");
                         }
 
@@ -247,7 +247,7 @@ public class FileOsmUploadService : BaseAppService, IUploadService
                         {
                             lastType = ElementType.Way;
                             writer?.Dispose();
-                            writer = connection.BeginTextImport(
+                            writer = await connection.BeginTextImportAsync(
                                 $"COPY temp_way ({string.Join(",", _wayKeys)}) FROM STDIN WITH NULL AS ''");
                         }
 
@@ -274,7 +274,7 @@ public class FileOsmUploadService : BaseAppService, IUploadService
                         {
                             lastType = ElementType.Relation;
                             writer?.Dispose();
-                            writer = connection.BeginTextImport(
+                            writer = await connection.BeginTextImportAsync(
                                 $"COPY temp_relation ({string.Join(",", _relationKeys)}) FROM STDIN WITH NULL AS ''");
                         }
 

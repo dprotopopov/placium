@@ -9,15 +9,10 @@ public static class QueryExtensions
 {
     public static int Fill(this List<string> list, string sql, NpgsqlConnection connection)
     {
-        using (var command = new NpgsqlCommand(sql, connection))
-        {
-            command.Prepare();
-
-            using (var reader = command.ExecuteReader())
-            {
-                return list.Fill(reader);
-            }
-        }
+        using var command = new NpgsqlCommand(sql, connection);
+        command.Prepare();
+        using var reader = command.ExecuteReader();
+        return list.Fill(reader);
     }
 
     public static int Fill(this List<string> list, NpgsqlDataReader reader)
@@ -78,32 +73,20 @@ public static class QueryExtensions
         MySqlConnection connection, int limit)
     {
         connection.TryOpen();
-
-        using (var command = new MySqlCommand(sql, connection))
-        {
-            foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
-
-            using (var reader = command.ExecuteReader())
-            {
-                return list.Fill(reader, limit);
-            }
-        }
+        using var command = new MySqlCommand(sql, connection);
+        foreach (var (key, value) in dictionary) command.Parameters.AddWithValue(key, value);
+        using var reader = command.ExecuteReader();
+        return Fill(list, reader, limit);
     }
 
     public static int Fill(this List<string> list, string sql, Dictionary<string, object> dictionary,
         MySqlConnection connection, int limit)
     {
         connection.TryOpen();
-
-        using (var command = new MySqlCommand(sql, connection))
-        {
-            foreach (var pair in dictionary) command.Parameters.AddWithValue(pair.Key, pair.Value);
-
-            using (var reader = command.ExecuteReader())
-            {
-                return list.Fill(reader, limit);
-            }
-        }
+        using var command = new MySqlCommand(sql, connection);
+        foreach (var (key, value) in dictionary) command.Parameters.AddWithValue(key, value);
+        using var reader = command.ExecuteReader();
+        return Fill(list, reader, limit);
     }
 
     public static int Fill(this List<long> list, MySqlDataReader reader, int limit)

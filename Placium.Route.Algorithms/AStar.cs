@@ -31,9 +31,9 @@ public class AStar : BasePathFinderAlgorithm
         await using var connection = new NpgsqlConnection(ConnectionString);
         await connection.OpenAsync();
 
-        using (var command =
-               new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
-                   @"create or replace function distanceInMeters(lat1 real, lon1 real, lat2 real, lon2 real)
+        await using (var command =
+                     new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
+                         @"create or replace function distanceInMeters(lat1 real, lon1 real, lat2 real, lon2 real)
                 returns real
                 language plpgsql
                 as
@@ -58,7 +58,7 @@ public class AStar : BasePathFinderAlgorithm
                             RETURN dist;
                         END IF;
                     END
-                $$", @"CREATE TEMP TABLE temp_prefetched (
+                $$", @"CREATE TEMP TABLE temp_prefetch (
 	                id BIGINT PRIMARY KEY NOT NULL, 
 	                latitude REAL NOT NULL, 
 	                longitude REAL NOT NULL
@@ -88,42 +88,42 @@ public class AStar : BasePathFinderAlgorithm
 	                via_node BIGINT NOT NULL
                 )"), connection))
         {
-            command.Prepare();
+            await command.PrepareAsync();
             await command.ExecuteNonQueryAsync();
         }
 
 
-        using (var command =
-               new NpgsqlCommand(string.Join(";",
-                       @"CREATE INDEX temp_prefetched_latitude_idx ON temp_prefetched (latitude)",
-                       @"CREATE INDEX temp_prefetched_longitude_idx ON temp_prefetched (longitude)",
-                       @"CREATE INDEX temp_node_latitude_idx ON temp_node (latitude)",
-                       @"CREATE INDEX temp_node_longitude_idx ON temp_node (longitude)",
-                       @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
-                       @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
-                       @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
-                       @"CREATE UNIQUE INDEX temp_restriction_from_edge_to_edge_via_node_idx ON temp_restriction (from_edge,to_edge,via_node)"),
-                   connection))
+        await using (var command =
+                     new NpgsqlCommand(string.Join(";",
+                             @"CREATE INDEX temp_prefetch_latitude_idx ON temp_prefetch (latitude)",
+                             @"CREATE INDEX temp_prefetch_longitude_idx ON temp_prefetch (longitude)",
+                             @"CREATE INDEX temp_node_latitude_idx ON temp_node (latitude)",
+                             @"CREATE INDEX temp_node_longitude_idx ON temp_node (longitude)",
+                             @"CREATE INDEX temp_dijkstra_in_queue_idx ON temp_dijkstra (in_queue)",
+                             @"CREATE INDEX temp_dijkstra_weight_idx ON temp_dijkstra (weight)",
+                             @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
+                             @"CREATE UNIQUE INDEX temp_restriction_from_edge_to_edge_via_node_idx ON temp_restriction (from_edge,to_edge,via_node)"),
+                         connection))
         {
-            command.Prepare();
+            await command.PrepareAsync();
             await command.ExecuteNonQueryAsync();
         }
 
-        using var commandBegin =
+        await using var commandBegin =
             new NpgsqlCommand(@"BEGIN", connection);
-        using var commandCommit =
+        await using var commandCommit =
             new NpgsqlCommand(@"COMMIT", connection);
 
-        commandBegin.Prepare();
-        commandCommit.Prepare();
+        await commandBegin.PrepareAsync();
+        await commandCommit.PrepareAsync();
 
 
-        using var commandSelectFromPrefedched = new NpgsqlCommand(
+        await using var commandSelectFromPrefedched = new NpgsqlCommand(
             @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
-                cte1 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude<=n.latitude+@size),
-                cte2 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude<=n.longitude+@size),
-                cte3 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude>=n.latitude-@size),
-                cte4 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude>=n.longitude-@size)
+                cte1 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude<=n.latitude+@size),
+                cte2 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude<=n.longitude+@size),
+                cte3 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude>=n.latitude-@size),
+                cte4 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude>=n.longitude-@size)
                 SELECT EXISTS (SELECT 1 FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)",
             connection);
 
@@ -131,9 +131,9 @@ public class AStar : BasePathFinderAlgorithm
         commandSelectFromPrefedched.Parameters.AddWithValue("size", size);
         commandSelectFromPrefedched.Prepare();
 
-        using var commandSelectFromNode =
+        await using var commandSelectFromNode =
             new NpgsqlCommand(string.Join(";",
-                    @"INSERT INTO temp_prefetched (id,latitude,longitude)
+                    @"INSERT INTO temp_prefetch (id,latitude,longitude)
                     SELECT id,latitude,longitude FROM node WHERE id=@node
                     ON CONFLICT DO NOTHING",
                     @"INSERT INTO temp_node (id,latitude,longitude,from_weight)
@@ -192,13 +192,13 @@ public class AStar : BasePathFinderAlgorithm
         commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
         commandSelectFromNode.Parameters.AddWithValue("size", size);
         commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
-        commandSelectFromNode.Prepare();
+        await commandSelectFromNode.PrepareAsync();
 
         void LoadEdgesAndNodes(long node)
         {
             commandSelectFromPrefedched.Parameters["node"].Value = node;
 
-            if ((long)commandSelectFromPrefedched.ExecuteScalar() != 0)
+            if ((long)commandSelectFromPrefedched.ExecuteScalar()! != 0)
                 return;
 
             commandSelectFromNode.Parameters["node"].Value = node;
@@ -210,8 +210,8 @@ public class AStar : BasePathFinderAlgorithm
             commandCommit.ExecuteNonQuery();
         }
 
-        using (var command =
-               new NpgsqlCommand(@"INSERT INTO temp_dijkstra (
+        await using (var command =
+                     new NpgsqlCommand(@"INSERT INTO temp_dijkstra (
 	                node,
 	                weight,
                     g,
@@ -233,7 +233,7 @@ public class AStar : BasePathFinderAlgorithm
             command.Parameters.AddWithValue("latitude", source.Coordinate.Latitude);
             command.Parameters.AddWithValue("longitude", source.Coordinate.Longitude);
             command.Parameters.AddWithValue("factor", MinFactor);
-            command.Prepare();
+            await command.PrepareAsync();
 
             if (new[] { 0, 1, 3, 4 }.Contains(target.Direction))
             {
@@ -265,14 +265,14 @@ public class AStar : BasePathFinderAlgorithm
         if (new[] { 0, 2, 3, 5 }.Contains(target.Direction)) sources.Add(source.FromNode);
 
 
-        using (var command =
-               new NpgsqlCommand(
-                   string.Join(";",
-                       @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
-                       @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
-                   connection))
-        using (var command2 =
-               new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_dijkstra (
+        await using (var command =
+                     new NpgsqlCommand(
+                         string.Join(";",
+                             @"SELECT node,weight,NOT in_queue FROM temp_dijkstra WHERE node=ANY(@sources) ORDER BY weight LIMIT 1",
+                             @"SELECT node FROM temp_dijkstra WHERE in_queue ORDER BY weight LIMIT 1"),
+                         connection))
+        await using (var command2 =
+                     new NpgsqlCommand(string.Join(";", @"INSERT INTO temp_dijkstra (
 	                    node,
 	                    weight,
 	                    g,
@@ -305,19 +305,19 @@ public class AStar : BasePathFinderAlgorithm
 	                    edge=EXCLUDED.edge,
                         in_queue=EXCLUDED.in_queue
                         WHERE temp_dijkstra.weight>EXCLUDED.weight",
-                   @"UPDATE temp_dijkstra SET in_queue=false WHERE node=@node",
-                   @"DELETE FROM temp_dijkstra WHERE weight>@maxWeight"), connection))
+                         @"UPDATE temp_dijkstra SET in_queue=false WHERE node=@node",
+                         @"DELETE FROM temp_dijkstra WHERE weight>@maxWeight"), connection))
         {
             command.Parameters.AddWithValue("sources", sources.ToArray());
             command2.Parameters.Add("maxWeight", NpgsqlDbType.Real);
             command2.Parameters.Add("node", NpgsqlDbType.Bigint);
-            command.Prepare();
-            command2.Prepare();
+            await command.PrepareAsync();
+            await command2.PrepareAsync();
 
             for (;; steps++)
             {
                 var node1 = 0L;
-                using (var reader = command.ExecuteReader())
+                await using (var reader = command.ExecuteReader())
                 {
                     if (reader.Read())
                     {
@@ -347,8 +347,8 @@ public class AStar : BasePathFinderAlgorithm
         }
 
 
-        using (var command =
-               new NpgsqlCommand(@"SELECT e.from_node,e.id 
+        await using (var command =
+                     new NpgsqlCommand(@"SELECT e.from_node,e.id 
                     FROM temp_dijkstra t JOIN temp_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
@@ -356,12 +356,12 @@ public class AStar : BasePathFinderAlgorithm
                     WHERE t.node=@node AND e.from_node=t.node", connection))
         {
             command.Parameters.Add("node", NpgsqlDbType.Bigint);
-            command.Prepare();
+            await command.PrepareAsync();
             var list = new List<long>();
             for (;;)
             {
                 command.Parameters["node"].Value = node;
-                using var reader = await command.ExecuteReaderAsync();
+                await using var reader = await command.ExecuteReaderAsync();
 
                 if (!reader.Read()) break;
 

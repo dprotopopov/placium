@@ -82,11 +82,11 @@ public class BaseAppService
 
     protected async Task ExecuteResourceAsync(Assembly assembly, string resource, NpgsqlConnection connection)
     {
-        using var stream = assembly.GetManifestResourceStream(resource);
+        await using var stream = assembly.GetManifestResourceStream(resource);
         using var sr = new StreamReader(stream, Encoding.UTF8);
-        using var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection);
+        await using var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection);
 
-        command.Prepare();
+        await command.PrepareAsync();
 
         command.ExecuteNonQuery();
     }
@@ -99,7 +99,7 @@ public class BaseAppService
 
         command.Prepare();
 
-        return (bool)command.ExecuteScalar();
+        return (bool)command.ExecuteScalar()!;
     }
 
     protected long GetNextLastRecordNumber(NpgsqlConnection connection)
@@ -110,7 +110,7 @@ public class BaseAppService
 
         command.Prepare();
 
-        return (long)command.ExecuteScalar();
+        return (long)command.ExecuteScalar()!;
     }
 
     protected long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)

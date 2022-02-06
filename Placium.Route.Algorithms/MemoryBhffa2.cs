@@ -38,23 +38,23 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
             "distanceInMeters",
             (double lat1, double lon1, double lat2, double lon2) =>
             {
-                const double R = 6371000; // metres
+                const double r = 6371000; // metres
                 var φ1 = lat1 * Math.PI / 180; // φ, λ in radians
                 var φ2 = lat2 * Math.PI / 180;
-                var Δφ = (lat2 - lat1) * Math.PI / 180;
-                var Δλ = (lon2 - lon1) * Math.PI / 180;
+                var δφ = (lat2 - lat1) * Math.PI / 180;
+                var δλ = (lon2 - lon1) * Math.PI / 180;
 
-                var a = Math.Pow(Math.Sin(Δφ / 2), 2) +
+                var a = Math.Pow(Math.Sin(δφ / 2), 2) +
                         Math.Cos(φ1) * Math.Cos(φ2) *
-                        Math.Pow(Math.Sin(Δλ / 2), 2);
+                        Math.Pow(Math.Sin(δλ / 2), 2);
                 var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
-                return R * c; // in metres
+                return r * c; // in metres
             });
 
-        using (var command =
-               new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
-                   @"create or replace function distanceInMeters(lat1 real, lon1 real, lat2 real, lon2 real)
+        await using (var command =
+                     new NpgsqlCommand(string.Join(";", @"CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public",
+                         @"create or replace function distanceInMeters(lat1 real, lon1 real, lat2 real, lon2 real)
                 returns real
                 language plpgsql
                 as
@@ -81,13 +81,13 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
                     END
                 $$"), connection2))
         {
-            command.Prepare();
+            await command.PrepareAsync();
             await command.ExecuteNonQueryAsync();
         }
 
-        using (var command =
-               new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
-                   @"CREATE TEMP TABLE temp_prefetched (
+        await using (var command =
+                     new SqliteCommand(string.Join(";", "PRAGMA synchronous = OFF",
+                         @"CREATE TEMP TABLE temp_prefetch (
 	                id INTEGER PRIMARY KEY NOT NULL, 
 	                latitude REAL NOT NULL, 
 	                longitude REAL NOT NULL
@@ -135,24 +135,24 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
             await command.ExecuteNonQueryAsync();
         }
 
-        using (var command =
-               new SqliteCommand(string.Join(";",
-                       @"CREATE INDEX temp_prefetched_latitude_idx ON temp_prefetched (latitude)",
-                       @"CREATE INDEX temp_prefetched_longitude_idx ON temp_prefetched (longitude)",
-                       @"CREATE INDEX temp_bhffa2_in_queue_idx ON temp_bhffa2 (in_queue)",
-                       @"CREATE INDEX temp_bhffa2_weight_idx ON temp_bhffa2 (weight)",
-                       @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
-                       @"CREATE UNIQUE INDEX temp_restriction_from_edge_to_edge_via_node_idx ON temp_restriction (from_edge,to_edge,via_node)"),
-                   connection))
+        await using (var command =
+                     new SqliteCommand(string.Join(";",
+                             @"CREATE INDEX temp_prefetch_latitude_idx ON temp_prefetch (latitude)",
+                             @"CREATE INDEX temp_prefetch_longitude_idx ON temp_prefetch (longitude)",
+                             @"CREATE INDEX temp_bhffa2_in_queue_idx ON temp_bhffa2 (in_queue)",
+                             @"CREATE INDEX temp_bhffa2_weight_idx ON temp_bhffa2 (weight)",
+                             @"CREATE INDEX temp_edge_from_node_to_node_idx ON temp_edge (from_node,to_node)",
+                             @"CREATE UNIQUE INDEX temp_restriction_from_edge_to_edge_via_node_idx ON temp_restriction (from_edge,to_edge,via_node)"),
+                         connection))
         {
             command.Prepare();
             await command.ExecuteNonQueryAsync();
         }
 
-        using var commandBegin =
+        await using var commandBegin =
             new SqliteCommand(@"BEGIN TRANSACTION",
                 connection);
-        using var commandCommit =
+        await using var commandCommit =
             new SqliteCommand(@"COMMIT",
                 connection);
         commandBegin.Prepare();
@@ -170,12 +170,12 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         commandInsertIntoRestriction.Parameters.Add("viaNode", SqliteType.Integer);
         commandInsertIntoRestriction.Prepare();
 
-        using var commandSelectFromPrefedched = new SqliteCommand(
+        await using var commandSelectFromPrefedched = new SqliteCommand(
             @"WITH cte AS (SELECT id,latitude,longitude FROM temp_node WHERE id=@node),
-                cte1 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude<=n.latitude+@size),
-                cte2 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude<=n.longitude+@size),
-                cte3 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.latitude>=n.latitude-@size),
-                cte4 AS (SELECT p.id FROM temp_prefetched p JOIN cte n ON p.longitude>=n.longitude-@size)
+                cte1 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude<=n.latitude+@size),
+                cte2 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude<=n.longitude+@size),
+                cte3 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.latitude>=n.latitude-@size),
+                cte4 AS (SELECT p.id FROM temp_prefetch p JOIN cte n ON p.longitude>=n.longitude-@size)
                 SELECT EXISTS (SELECT 1 FROM cte1 JOIN cte2 ON cte1.id=cte2.id JOIN cte3 ON cte1.id=cte3.id JOIN cte4 ON cte1.id=cte4.id)",
             connection);
 
@@ -183,8 +183,8 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         commandSelectFromPrefedched.Parameters.AddWithValue("size", size);
         commandSelectFromPrefedched.Prepare();
 
-        using var commandInsertIntoPrefedched = new SqliteCommand(
-            @"INSERT INTO temp_prefetched (id,latitude,longitude) VALUES (@id,@latitude,@longitude) ON CONFLICT DO NOTHING",
+        await using var commandInsertIntoPrefedched = new SqliteCommand(
+            @"INSERT INTO temp_prefetch (id,latitude,longitude) VALUES (@id,@latitude,@longitude) ON CONFLICT DO NOTHING",
             connection);
 
         commandInsertIntoPrefedched.Parameters.Add("id", SqliteType.Integer);
@@ -192,18 +192,18 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         commandInsertIntoPrefedched.Parameters.Add("longitude", SqliteType.Real);
         commandInsertIntoPrefedched.Prepare();
 
-        using var commandInsertIntoNode = new SqliteCommand(
+        await using var commandInsertIntoNode = new SqliteCommand(
             @"INSERT INTO temp_node (id,latitude,longitude) 
                 VALUES (@id,@latitude,@longitude)
                 ON CONFLICT (id) DO NOTHING",
             connection);
-        using var commandInsertIntoEdge = new SqliteCommand(
+        await using var commandInsertIntoEdge = new SqliteCommand(
             @"INSERT INTO temp_edge (id,from_node,to_node,weight,direction)
                 VALUES (@id,@fromNode,@toNode,@weight,@direction)
                 ON CONFLICT (id) DO NOTHING",
             connection);
 
-        using var commandSelectFromNode =
+        await using var commandSelectFromNode =
             new NpgsqlCommand(string.Join(";",
                     @"SELECT id,latitude,longitude FROM node WHERE id=@node",
                     @"WITH cte AS (SELECT id,latitude,longitude FROM node WHERE id=@node AND guid=@guid),
@@ -263,13 +263,13 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
         commandSelectFromNode.Parameters.AddWithValue("size", size);
         commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
-        commandSelectFromNode.Prepare();
+        await commandSelectFromNode.PrepareAsync();
 
         void LoadEdgesAndNodes(long node)
         {
             commandSelectFromPrefedched.Parameters["node"].Value = node;
 
-            if ((long)commandSelectFromPrefedched.ExecuteScalar() != 0)
+            if ((long)commandSelectFromPrefedched.ExecuteScalar()! != 0)
                 return;
 
             commandSelectFromNode.Parameters["node"].Value = node;
@@ -327,8 +327,8 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
             commandCommit.ExecuteNonQuery();
         }
 
-        using (var command =
-               new SqliteCommand(@"REPLACE INTO temp_dijkstra1 (
+        await using (var command =
+                     new SqliteCommand(@"REPLACE INTO temp_dijkstra1 (
 	                node,
                     weight1
                 )
@@ -383,15 +383,15 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
             }
         }
 
-        using (var command =
-               new SqliteCommand(
-                   string.Join(";", @"INSERT INTO temp_bhffa2 (x,y,weight,weight1,weight2,weight3,in_queue)
+        await using (var command =
+                     new SqliteCommand(
+                         string.Join(";", @"INSERT INTO temp_bhffa2 (x,y,weight,weight1,weight2,weight3,in_queue)
                     WITH cte AS (SELECT t1.node AS x,t2.node AS y,t1.weight1,t2.weight2,
                     @factor*distanceInMeters(n1.latitude,n1.longitude,n2.latitude,n2.longitude) AS weight3
                     FROM temp_dijkstra1 t1 JOIN temp_node n1 ON t1.node=n1.id,temp_dijkstra2 t2 JOIN temp_node n2 ON t2.node=n2.id)
                     SELECT x,y,weight1+weight2+weight3,weight1,weight2,weight3,1 AS in_queue FROM cte WHERE true
                     ON CONFLICT (x,y) DO NOTHING"),
-                   connection))
+                         connection))
         {
             command.Parameters.AddWithValue("factor", MinFactor);
             command.Prepare();
@@ -408,24 +408,24 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         long? edge = null;
         float? weight = null;
 
-        using (var commandSelectFromQueue =
-               new SqliteCommand(
-                   string.Join(";",
-                       @"SELECT x,y,weight1,weight2 FROM temp_bhffa2 WHERE in_queue AND weight1+weight2<=@maxWeight ORDER BY weight LIMIT 1"),
-                   connection))
-        using (var commandRemoveFromQueue =
-               new SqliteCommand(string.Join(";", @"UPDATE temp_bhffa2 SET in_queue=0 WHERE x=@x AND y=@y"),
-                   connection))
-        using (var commandIfNodeIsSolution =
-               new SqliteCommand(
-                   string.Join(";", @"SELECT COUNT(*)
+        await using (var commandSelectFromQueue =
+                     new SqliteCommand(
+                         string.Join(";",
+                             @"SELECT x,y,weight1,weight2 FROM temp_bhffa2 WHERE in_queue AND weight1+weight2<=@maxWeight ORDER BY weight LIMIT 1"),
+                         connection))
+        await using (var commandRemoveFromQueue =
+                     new SqliteCommand(string.Join(";", @"UPDATE temp_bhffa2 SET in_queue=0 WHERE x=@x AND y=@y"),
+                         connection))
+        await using (var commandIfNodeIsSolution =
+                     new SqliteCommand(
+                         string.Join(";", @"SELECT COUNT(*)
 		                    FROM temp_dijkstra1 t1 JOIN temp_dijkstra2 t2 ON t1.node=t2.node
                             WHERE t1.node=@x
                             AND NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=@x AND from_edge=t1.edge AND to_edge=t2.edge)"),
-                   connection))
-        using (var commandIfEdgeIsSolution =
-               new SqliteCommand(
-                   string.Join(";", @"WITH cte AS (
+                         connection))
+        await using (var commandIfEdgeIsSolution =
+                     new SqliteCommand(
+                         string.Join(";", @"WITH cte AS (
                             SELECT id,weight FROM temp_edge WHERE (direction=0 OR direction=1 OR direction=3 OR direction=4)
                             AND from_node=@x AND to_node=@y
                             UNION ALL SELECT id,weight FROM temp_edge WHERE (direction=0 OR direction=2 OR direction=3 OR direction=5)
@@ -435,10 +435,10 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
                             AND NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=@x AND from_edge=t1.edge AND to_edge=cte.id)
                             AND NOT EXISTS (SELECT * FROM temp_restriction WHERE via_node=@y AND from_edge=cte.id AND to_edge=t2.edge)
                             ORDER BY weight LIMIT 1"),
-                   connection))
-        using (var commandStep =
-               new SqliteCommand(string.Join(";",
-                   @"INSERT INTO temp_dijkstra1 (
+                         connection))
+        await using (var commandStep =
+                     new SqliteCommand(string.Join(";",
+                         @"INSERT INTO temp_dijkstra1 (
 	                    node,
 	                    weight1,
 	                    edge
@@ -491,7 +491,7 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
 	                    weight2=EXCLUDED.weight2,
 	                    edge=EXCLUDED.edge
                     WHERE temp_dijkstra2.weight2>EXCLUDED.weight2",
-                   @"INSERT INTO temp_bhffa2 (x,y,weight,weight1,weight2,weight3,in_queue)
+                         @"INSERT INTO temp_bhffa2 (x,y,weight,weight1,weight2,weight3,in_queue)
                     WITH cte1 AS
                     (
 	                    SELECT DISTINCT node FROM (
@@ -526,9 +526,9 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
 	                    weight3=EXCLUDED.weight3,
 	                    in_queue=EXCLUDED.in_queue
                     WHERE temp_bhffa2.weight1>EXCLUDED.weight1 OR temp_bhffa2.weight2>EXCLUDED.weight2",
-                   @"DELETE FROM temp_bhffa2 WHERE weight1+weight2>@maxWeight",
-                   @"DELETE FROM temp_dijkstra1 WHERE weight1>@maxWeight",
-                   @"DELETE FROM temp_dijkstra2 WHERE weight2>@maxWeight"), connection))
+                         @"DELETE FROM temp_bhffa2 WHERE weight1+weight2>@maxWeight",
+                         @"DELETE FROM temp_dijkstra1 WHERE weight1>@maxWeight",
+                         @"DELETE FROM temp_dijkstra2 WHERE weight2>@maxWeight"), connection))
         {
             commandSelectFromQueue.Parameters.Add("maxWeight", SqliteType.Real);
             commandRemoveFromQueue.Parameters.Add("x", SqliteType.Integer);
@@ -548,7 +548,7 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
             for (;; steps++)
             {
                 commandSelectFromQueue.Parameters["maxWeight"].Value = maxWeight;
-                using (var reader = commandSelectFromQueue.ExecuteReader())
+                await using (var reader = await commandSelectFromQueue.ExecuteReaderAsync())
                 {
                     if (!reader.Read()) break;
                     x = reader.GetInt64(0);
@@ -565,7 +565,7 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
                 {
                     LoadEdgesAndNodes(x);
                     commandIfNodeIsSolution.Parameters["x"].Value = x;
-                    var count = (long)commandIfNodeIsSolution.ExecuteScalar();
+                    var count = (long)commandIfNodeIsSolution.ExecuteScalar()!;
                     if (count > 0)
                     {
                         x1 = x;
@@ -581,16 +581,14 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
                     LoadEdgesAndNodes(y);
                     commandIfEdgeIsSolution.Parameters["x"].Value = x;
                     commandIfEdgeIsSolution.Parameters["y"].Value = y;
-                    using (var reader = commandIfEdgeIsSolution.ExecuteReader())
+                    await using var reader = await commandIfEdgeIsSolution.ExecuteReaderAsync();
+                    if (reader.Read())
                     {
-                        if (reader.Read())
-                        {
-                            x1 = x;
-                            y1 = y;
-                            edge = reader.GetInt64(0);
-                            weight = maxWeight = weight1 + weight2 + reader.GetFloat(1);
-                            break;
-                        }
+                        x1 = x;
+                        y1 = y;
+                        edge = reader.GetInt64(0);
+                        weight = maxWeight = weight1 + weight2 + reader.GetFloat(1);
+                        break;
                     }
                 }
 
@@ -605,8 +603,8 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
         }
 
         var list = new List<long>();
-        using (var command =
-               new SqliteCommand(@"SELECT e.from_node,e.id 
+        await using (var command =
+                     new SqliteCommand(@"SELECT e.from_node,e.id 
                     FROM temp_dijkstra1 t JOIN temp_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
@@ -618,7 +616,7 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
             for (var node1 = x1;;)
             {
                 command.Parameters["node"].Value = node1;
-                using var reader = await command.ExecuteReaderAsync();
+                await using var reader = await command.ExecuteReaderAsync();
 
                 if (!reader.Read()) break;
 
@@ -631,8 +629,8 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
 
         if (edge != null) list.Add(edge.Value);
 
-        using (var command =
-               new SqliteCommand(@"SELECT e.from_node,e.id 
+        await using (var command =
+                     new SqliteCommand(@"SELECT e.from_node,e.id 
                     FROM temp_dijkstra2 t JOIN temp_edge e ON t.edge=e.id
                     WHERE t.node=@node AND e.to_node=t.node
                     UNION ALL SELECT e.to_node,e.id 
@@ -644,7 +642,7 @@ public class MemoryBhffa2 : BasePathFinderAlgorithm
             for (var node2 = y1;;)
             {
                 command.Parameters["node"].Value = node2;
-                using var reader = await command.ExecuteReaderAsync();
+                await using var reader = await command.ExecuteReaderAsync();
 
                 if (!reader.Read()) break;
 

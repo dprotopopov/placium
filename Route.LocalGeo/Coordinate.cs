@@ -97,12 +97,12 @@ public struct Coordinate
     {
         var φ1 = lat1 * Math.PI / 180; // φ, λ in radians
         var φ2 = lat2 * Math.PI / 180;
-        var Δφ = (lat2 - lat1) * Math.PI / 180;
-        var Δλ = (lon2 - lon1) * Math.PI / 180;
+        var δφ = (lat2 - lat1) * Math.PI / 180;
+        var δλ = (lon2 - lon1) * Math.PI / 180;
 
-        var a = Math.Pow(Math.Sin(Δφ / 2), 2) +
+        var a = Math.Pow(Math.Sin(δφ / 2), 2) +
                 Math.Cos(φ1) * Math.Cos(φ2) *
-                Math.Pow(Math.Sin(Δλ / 2), 2);
+                Math.Pow(Math.Sin(δλ / 2), 2);
         var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
 
         return (float)(RadiusOfEarth * c); // in metres
@@ -185,9 +185,8 @@ public struct Coordinate
     /// </summary>
     public override string ToString()
     {
-        if (Elevation.HasValue)
-            return string.Format("{0},{1}@{2}m", Latitude.ToInvariantString(), Longitude.ToInvariantString(),
-                Elevation.Value.ToInvariantString());
-        return string.Format("{0},{1}", Latitude.ToInvariantString(), Longitude.ToInvariantString());
+        return Elevation.HasValue
+            ? $"{Latitude.ToInvariantString()},{Longitude.ToInvariantString()}@{Elevation.Value.ToInvariantString()}m"
+            : $"{Latitude.ToInvariantString()},{Longitude.ToInvariantString()}";
     }
 }
