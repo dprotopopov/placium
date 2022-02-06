@@ -212,7 +212,7 @@ public class MemoryBidirectionalDijkstra : BasePathFinderAlgorithm
         commandSelectFromNode.Parameters.AddWithValue("guid", Guid);
         commandSelectFromNode.Parameters.AddWithValue("size", size);
         commandSelectFromNode.Parameters.Add("node", NpgsqlDbType.Bigint);
-        commandSelectFromNode.Prepare();
+        await commandSelectFromNode.PrepareAsync();
 
         void LoadEdgesAndNodes(long node)
         {

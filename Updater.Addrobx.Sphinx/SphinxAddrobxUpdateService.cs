@@ -598,9 +598,9 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             while (reader.Read()) total += reader.GetInt64(0);
 
             var take = 100;
