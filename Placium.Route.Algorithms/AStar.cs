@@ -129,7 +129,7 @@ public class AStar : BasePathFinderAlgorithm
 
         commandSelectFromPrefetch.Parameters.Add("node", NpgsqlDbType.Bigint);
         commandSelectFromPrefetch.Parameters.AddWithValue("size", size);
-        commandSelectFromPrefetch.Prepare();
+        await commandSelectFromPrefetch.PrepareAsync();
 
         await using var commandSelectFromNode =
             new NpgsqlCommand(string.Join(";",
