@@ -55,57 +55,55 @@ public class OsmService : BaseApiService
 
     public async Task<OsmGeo> GetByIdAsync(long osm_id, OsmType type)
     {
-        using (var connection = new NpgsqlConnection(GetOsmConnectionString()))
+        await using var connection = new NpgsqlConnection(GetOsmConnectionString());
+        await connection.OpenAsync();
+
+        connection.ReloadTypes();
+        connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
+        connection.TypeMapper.MapEnum<OsmType>("osm_type");
+        connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+
+        switch (type)
         {
-            await connection.OpenAsync();
+            case OsmType.Node:
+                await using (var command = new NpgsqlCommand(_selectNodeById, connection))
+                {
+                    command.Parameters.AddWithValue("p", osm_id);
 
-            connection.ReloadTypes();
-            connection.TypeMapper.MapComposite<OsmRelationMember>("relation_member");
-            connection.TypeMapper.MapEnum<OsmType>("osm_type");
-            connection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+                    await command.PrepareAsync();
 
-            switch (type)
-            {
-                case OsmType.Node:
-                    using (var command = new NpgsqlCommand(_selectNodeById, connection))
-                    {
-                        command.Parameters.AddWithValue("p", osm_id);
+                    await using var reader = command.ExecuteReader();
+                    if (reader.Read())
+                        return new Node().Fill(reader);
+                }
 
-                        command.Prepare();
+                break;
+            case OsmType.Way:
+                await using (var command = new NpgsqlCommand(_selectWayById, connection))
+                {
+                    command.Parameters.AddWithValue("p", osm_id);
 
-                        using var reader = command.ExecuteReader();
-                        if (reader.Read())
-                            return new Node().Fill(reader);
-                    }
+                    await command.PrepareAsync();
 
-                    break;
-                case OsmType.Way:
-                    using (var command = new NpgsqlCommand(_selectWayById, connection))
-                    {
-                        command.Parameters.AddWithValue("p", osm_id);
+                    await using var reader = command.ExecuteReader();
+                    if (reader.Read())
+                        return new Way().Fill(reader);
+                }
 
-                        command.Prepare();
+                break;
+            case OsmType.Relation:
+                await using (var command = new NpgsqlCommand(_selectRelationById, connection))
+                {
+                    command.Parameters.AddWithValue("p", osm_id);
 
-                        using var reader = command.ExecuteReader();
-                        if (reader.Read())
-                            return new Way().Fill(reader);
-                    }
+                    await command.PrepareAsync();
 
-                    break;
-                case OsmType.Relation:
-                    using (var command = new NpgsqlCommand(_selectRelationById, connection))
-                    {
-                        command.Parameters.AddWithValue("p", osm_id);
+                    await using var reader = command.ExecuteReader();
+                    if (reader.Read())
+                        return new Relation().Fill(reader);
+                }
 
-                        command.Prepare();
-
-                        using var reader = command.ExecuteReader();
-                        if (reader.Read())
-                            return new Relation().Fill(reader);
-                    }
-
-                    break;
-            }
+                break;
         }
 
         return null;

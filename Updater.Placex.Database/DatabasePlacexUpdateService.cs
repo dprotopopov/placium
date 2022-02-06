@@ -32,19 +32,19 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
     public async Task UpdateAsync(string session, bool full)
     {
         if (full)
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
-            {
-                await npgsqlConnection.OpenAsync();
+        {
+            await using var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString());
+            await npgsqlConnection.OpenAsync();
 
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+            npgsqlConnection.ReloadTypes();
+            npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Node, 0);
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Way, 0);
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Relation, 0);
+            SetLastRecordNumber(npgsqlConnection, OsmServiceType.Node, 0);
+            SetLastRecordNumber(npgsqlConnection, OsmServiceType.Way, 0);
+            SetLastRecordNumber(npgsqlConnection, OsmServiceType.Relation, 0);
 
-                await npgsqlConnection.CloseAsync();
-            }
+            await npgsqlConnection.CloseAsync();
+        }
 
         await UpdateNodeAsync(session, full);
         await UpdateWayAsync(session, full);
@@ -75,44 +75,42 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
 
         var keys = new List<string> { "name" };
 
-        using (var command = new NpgsqlCommand(
-                   "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM node WHERE record_number>@last_record_number) AS keys WHERE key LIKE 'addr%'"
-                   , connection))
+        await using (var command = new NpgsqlCommand(
+                         "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM node WHERE record_number>@last_record_number) AS keys WHERE key LIKE 'addr%'"
+                         , connection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using (var reader = command.ExecuteReader())
-            {
-                keys.Fill(reader);
-            }
+            await using var reader = command.ExecuteReader();
+            keys.Fill(reader);
         }
 
-        using (var command =
-               new NpgsqlCommand(
-                   string.Join(";", "DROP TABLE IF EXISTS temp_placex_node",
-                       "CREATE TEMP TABLE temp_placex_node (osm_id BIGINT,tags hstore,location GEOMETRY)"),
-                   connection2))
+        await using (var command =
+                     new NpgsqlCommand(
+                         string.Join(";", "DROP TABLE IF EXISTS temp_placex_node",
+                             "CREATE TEMP TABLE temp_placex_node (osm_id BIGINT,tags hstore,location GEOMETRY)"),
+                         connection2))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
             command.ExecuteNonQuery();
         }
 
-        using (var writer = connection2.BeginTextImport(
-                   "COPY temp_placex_node (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
-        using (var command = new NpgsqlCommand(string.Join(";",
-                       "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number",
-                       "SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|@keys AND record_number>@last_record_number"),
-                   connection))
+        await using (var writer = await connection2.BeginTextImportAsync(
+                         "COPY temp_placex_node (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
+        await using (var command = new NpgsqlCommand(string.Join(";",
+                             "SELECT COUNT(*) FROM node WHERE tags?|@keys AND record_number>@last_record_number",
+                             "SELECT id,cast(tags as text),longitude,latitude FROM node WHERE tags?|@keys AND record_number>@last_record_number"),
+                         connection))
         {
             command.Parameters.AddWithValue("keys", keys.ToArray());
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using (var reader = command.ExecuteReader())
+            await using (var reader = command.ExecuteReader())
             {
                 if (reader.Read())
                     total = reader.GetInt64(0);
@@ -140,14 +138,14 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
             await _progressClient.Finalize(id, session);
         }
 
-        using (var command = new NpgsqlCommand(
-                   string.Join(";",
-                       @"INSERT INTO placex(osm_id,osm_type,tags,location)
+        await using (var command = new NpgsqlCommand(
+                         string.Join(";",
+                             @"INSERT INTO placex(osm_id,osm_type,tags,location)
                         SELECT osm_id,'node',tags,ST_MakeValid(location) FROM temp_placex_node
                         ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
-                       "DROP TABLE temp_placex_node"), connection2))
+                             "DROP TABLE temp_placex_node"), connection2))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
             command.ExecuteNonQuery();
         }
@@ -182,44 +180,42 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
 
         var keys = new List<string> { "name" };
 
-        using (var command = new NpgsqlCommand(
-                   "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM way WHERE record_number>@last_record_number) AS keys WHERE key LIKE 'addr%'"
-                   , connection))
+        await using (var command = new NpgsqlCommand(
+                         "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM way WHERE record_number>@last_record_number) AS keys WHERE key LIKE 'addr%'"
+                         , connection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using (var reader = command.ExecuteReader())
-            {
-                keys.Fill(reader);
-            }
+            await using var reader = command.ExecuteReader();
+            keys.Fill(reader);
         }
 
-        using (var command =
-               new NpgsqlCommand(
-                   string.Join(";", "DROP TABLE IF EXISTS temp_placex_way",
-                       "CREATE TEMP TABLE temp_placex_way (osm_id BIGINT,tags hstore,location GEOMETRY)"),
-                   connection2))
+        await using (var command =
+                     new NpgsqlCommand(
+                         string.Join(";", "DROP TABLE IF EXISTS temp_placex_way",
+                             "CREATE TEMP TABLE temp_placex_way (osm_id BIGINT,tags hstore,location GEOMETRY)"),
+                         connection2))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
             command.ExecuteNonQuery();
         }
 
-        using (var writer = connection2.BeginTextImport(
-                   "COPY temp_placex_way (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
-        using (var command = new NpgsqlCommand(string.Join(";",
-                       "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number",
-                       "SELECT id,cast(tags as text),nodes,tags?|ARRAY['area','building'] FROM way WHERE tags?|@keys AND record_number>@last_record_number")
-                   , connection))
+        await using (var writer = await connection2.BeginTextImportAsync(
+                         "COPY temp_placex_way (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
+        await using (var command = new NpgsqlCommand(string.Join(";",
+                             "SELECT COUNT(*) FROM way WHERE tags?|@keys AND record_number>@last_record_number",
+                             "SELECT id,cast(tags as text),nodes,tags?|ARRAY['area','building'] FROM way WHERE tags?|@keys AND record_number>@last_record_number")
+                         , connection))
         {
             command.Parameters.AddWithValue("keys", keys.ToArray());
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
             command.Prepare();
 
-            using (var reader = command.ExecuteReader())
+            await using (var reader = command.ExecuteReader())
             {
                 if (reader.Read())
                     total = reader.GetInt64(0);
@@ -232,112 +228,110 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
                 Parallel.For(0, _parallelConfig.GetNumberOfThreads(),
                     i =>
                     {
-                        using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
+                        using var connection3 = new NpgsqlConnection(GetOsmConnectionString());
+                        connection3.Open();
+
+                        using (var command3 = new NpgsqlCommand(
+                                   "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
+                                   , connection3))
                         {
-                            connection3.Open();
+                            command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
-                            using (var command3 = new NpgsqlCommand(
-                                       "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
-                                       , connection3))
+                            command3.Prepare();
+
+                            for (;;)
                             {
-                                command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                                long id0;
+                                string tags;
+                                long[] nodes;
+                                bool area;
 
-                                command3.Prepare();
-
-                                for (;;)
+                                lock (obj)
                                 {
-                                    long id0;
-                                    string tags;
-                                    long[] nodes;
-                                    bool area;
+                                    if (reader_is_empty) break;
+                                    reader_is_empty = !reader.Read();
+                                    if (reader_is_empty) break;
+                                    id0 = reader.GetInt64(0);
+                                    tags = reader.GetString(1);
+                                    nodes = (long[])reader.GetValue(2);
+                                    area = reader.GetBoolean(3);
+                                }
 
-                                    lock (obj)
+                                if (nodes.Any())
+                                {
+                                    var dic = new Dictionary<long, Point>(nodes.Length);
+
+                                    command3.Parameters["ids"].Value = nodes;
+
+                                    using (var reader3 = command3.ExecuteReader())
                                     {
-                                        if (reader_is_empty) break;
-                                        reader_is_empty = !reader.Read();
-                                        if (reader_is_empty) break;
-                                        id0 = reader.GetInt64(0);
-                                        tags = reader.GetString(1);
-                                        nodes = (long[])reader.GetValue(2);
-                                        area = reader.GetBoolean(3);
+                                        while (reader3.Read())
+                                            dic.Add(reader3.GetInt64(0), new Point
+                                            {
+                                                longitude = reader3.GetFloat(1),
+                                                latitude = reader3.GetFloat(2)
+                                            });
                                     }
 
-                                    if (nodes.Any())
+                                    var cleanNodes = nodes.Where(id => dic.ContainsKey(id)).ToArray();
+
+                                    if (cleanNodes.Any())
                                     {
-                                        var dic = new Dictionary<long, Point>(nodes.Length);
+                                        var sb = new StringBuilder("SRID=4326;");
+                                        sb.Append(
+                                            cleanNodes.Length > 1
+                                                ? area && cleanNodes.Length > 2 ? "POLYGON" : "LINESTRING"
+                                                : "POINT");
+                                        sb.Append(cleanNodes.Length > 1
+                                            ? area && cleanNodes.Length > 2 ? "((" : "("
+                                            : "(");
+                                        sb.Append(string.Join(",",
+                                            nodes.Where(id => dic.ContainsKey(id)).Select(id =>
+                                                $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
 
-                                        command3.Parameters["ids"].Value = nodes;
 
-                                        using (var reader3 = command3.ExecuteReader())
+                                        if (area && cleanNodes.Length > 2 &&
+                                            (cleanNodes.Length < 4 ||
+                                             cleanNodes.First() != cleanNodes.Last()))
                                         {
-                                            while (reader3.Read())
-                                                dic.Add(reader3.GetInt64(0), new Point
-                                                {
-                                                    longitude = reader3.GetFloat(1),
-                                                    latitude = reader3.GetFloat(2)
-                                                });
-                                        }
-
-                                        var cleanNodes = nodes.Where(id => dic.ContainsKey(id)).ToArray();
-
-                                        if (cleanNodes.Any())
-                                        {
-                                            var sb = new StringBuilder("SRID=4326;");
+                                            var id = cleanNodes.First();
                                             sb.Append(
-                                                cleanNodes.Length > 1
-                                                    ? area && cleanNodes.Length > 2 ? "POLYGON" : "LINESTRING"
-                                                    : "POINT");
-                                            sb.Append(cleanNodes.Length > 1
-                                                ? area && cleanNodes.Length > 2 ? "((" : "("
-                                                : "(");
-                                            sb.Append(string.Join(",",
-                                                nodes.Where(id => dic.ContainsKey(id)).Select(id =>
-                                                    $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
-
-
-                                            if (area && cleanNodes.Length > 2 &&
-                                                (cleanNodes.Length < 4 ||
-                                                 cleanNodes.First() != cleanNodes.Last()))
-                                            {
-                                                var id = cleanNodes.First();
-                                                sb.Append(
-                                                    $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
-                                            }
-
-                                            sb.Append(cleanNodes.Length > 1
-                                                ? area && cleanNodes.Length > 2 ? "))" : ")"
-                                                : ")");
-
-
-                                            var values = new List<string>
-                                            {
-                                                id0.ToString(),
-                                                tags.TextEscape(),
-                                                sb.ToString()
-                                            };
-
-                                            lock (obj)
-                                            {
-                                                writer.WriteLine(string.Join("\t", values));
-                                            }
+                                                $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
                                         }
-                                    }
 
-                                    lock (obj)
-                                    {
-                                        current++;
+                                        sb.Append(cleanNodes.Length > 1
+                                            ? area && cleanNodes.Length > 2 ? "))" : ")"
+                                            : ")");
 
-                                        if (current % 1000 == 0)
-                                            _progressClient.Progress(100f * current / total, id1,
-                                                    session)
-                                                .GetAwaiter()
-                                                .GetResult();
+
+                                        var values = new List<string>
+                                        {
+                                            id0.ToString(),
+                                            tags.TextEscape(),
+                                            sb.ToString()
+                                        };
+
+                                        lock (obj)
+                                        {
+                                            writer.WriteLine(string.Join("\t", values));
+                                        }
                                     }
                                 }
-                            }
 
-                            connection3.Close();
+                                lock (obj)
+                                {
+                                    current++;
+
+                                    if (current % 1000 == 0)
+                                        _progressClient.Progress(100f * current / total, id1,
+                                                session)
+                                            .GetAwaiter()
+                                            .GetResult();
+                                }
+                            }
                         }
+
+                        connection3.Close();
                     });
             }
 
@@ -386,44 +380,42 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
 
         var keys = new List<string> { "name" };
 
-        using (var command = new NpgsqlCommand(
-                   "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM relation WHERE record_number>@last_record_number) AS keys WHERE key LIKE 'addr%'"
-                   , connection))
+        await using (var command = new NpgsqlCommand(
+                         "SELECT key FROM (SELECT DISTINCT unnest(akeys(tags)) AS key FROM relation WHERE record_number>@last_record_number) AS keys WHERE key LIKE 'addr%'"
+                         , connection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using (var reader = command.ExecuteReader())
-            {
-                keys.Fill(reader);
-            }
+            await using var reader = command.ExecuteReader();
+            keys.Fill(reader);
         }
 
-        using (var command =
-               new NpgsqlCommand(
-                   string.Join(";", "DROP TABLE IF EXISTS temp_placex_relation",
-                       "CREATE TEMP TABLE temp_placex_relation (osm_id BIGINT,tags hstore,location GEOMETRY)"),
-                   connection2))
+        await using (var command =
+                     new NpgsqlCommand(
+                         string.Join(";", "DROP TABLE IF EXISTS temp_placex_relation",
+                             "CREATE TEMP TABLE temp_placex_relation (osm_id BIGINT,tags hstore,location GEOMETRY)"),
+                         connection2))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
             command.ExecuteNonQuery();
         }
 
-        using (var writer = connection2.BeginTextImport(
-                   "COPY temp_placex_relation (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
-        using (var command = new NpgsqlCommand(string.Join(";",
-                       "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND record_number>@last_record_number"
-                       , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND record_number>@last_record_number")
-                   , connection))
+        await using (var writer = await connection2.BeginTextImportAsync(
+                         "COPY temp_placex_relation (osm_id,tags,location) FROM STDIN WITH NULL AS ''"))
+        await using (var command = new NpgsqlCommand(string.Join(";",
+                             "SELECT COUNT(*) FROM relation WHERE tags?|@keys AND record_number>@last_record_number"
+                             , "SELECT id,cast(tags as text),members FROM relation WHERE tags?|@keys AND record_number>@last_record_number")
+                         , connection))
         {
             command.Parameters.AddWithValue("keys", keys.ToArray());
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
             command.Prepare();
 
-            using (var reader = command.ExecuteReader())
+            await using (var reader = command.ExecuteReader())
             {
                 if (reader.Read())
                     total = reader.GetInt64(0);
@@ -435,116 +427,114 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
                 Parallel.For(0, _parallelConfig.GetNumberOfThreads(),
                     i =>
                     {
-                        using (var connection3 = new NpgsqlConnection(GetOsmConnectionString()))
-                        using (var connection4 = new NpgsqlConnection(GetOsmConnectionString()))
+                        using var connection3 = new NpgsqlConnection(GetOsmConnectionString());
+                        using var connection4 = new NpgsqlConnection(GetOsmConnectionString());
+                        connection3.Open();
+                        connection4.Open();
+
+                        using (var command3 = new NpgsqlCommand(
+                                   "SELECT id,nodes FROM way WHERE id=ANY(@ids)"
+                                   , connection3))
+                        using (var command4 = new NpgsqlCommand(
+                                   "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
+                                   , connection4))
                         {
-                            connection3.Open();
-                            connection4.Open();
+                            command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
 
-                            using (var command3 = new NpgsqlCommand(
-                                       "SELECT id,nodes FROM way WHERE id=ANY(@ids)"
-                                       , connection3))
-                            using (var command4 = new NpgsqlCommand(
-                                       "SELECT id,longitude,latitude FROM node WHERE id=ANY(@ids)"
-                                       , connection4))
+                            command3.Prepare();
+
+                            command4.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+
+                            command4.Prepare();
+
+                            for (;;)
                             {
-                                command3.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
+                                long id0;
+                                string tags;
+                                OsmRelationMember[] members;
 
-                                command3.Prepare();
-
-                                command4.Parameters.Add("ids", NpgsqlDbType.Array | NpgsqlDbType.Bigint);
-
-                                command4.Prepare();
-
-                                for (;;)
+                                lock (obj)
                                 {
-                                    long id0;
-                                    string tags;
-                                    OsmRelationMember[] members;
+                                    if (reader_is_empty) break;
+                                    reader_is_empty = !reader.Read();
+                                    if (reader_is_empty) break;
+                                    id0 = reader.GetInt64(0);
+                                    tags = reader.GetString(1);
+                                    members = (OsmRelationMember[])reader.GetValue(2);
+                                }
 
-                                    lock (obj)
+                                if (members.Any())
+                                {
+                                    var cleanMember = members.Where(x => x.Type == 1)
+                                        .ToArray();
+                                    if (cleanMember.Any())
                                     {
-                                        if (reader_is_empty) break;
-                                        reader_is_empty = !reader.Read();
-                                        if (reader_is_empty) break;
-                                        id0 = reader.GetInt64(0);
-                                        tags = reader.GetString(1);
-                                        members = (OsmRelationMember[])reader.GetValue(2);
-                                    }
+                                        var g = _geometryFactory.CreateEmpty(Dimension.Surface);
 
-                                    if (members.Any())
-                                    {
-                                        var cleanMember = members.Where(x => x.Type == 1)
-                                            .ToArray();
-                                        if (cleanMember.Any())
-                                        {
-                                            var g = _geometryFactory.CreateEmpty(Dimension.Surface);
-
-                                            var role = cleanMember.First().Role;
-                                            var currentMembers = new List<OsmRelationMember>
-                                                { cleanMember.First() };
-                                            for (var index = 1; index <= cleanMember.Length; index++)
-                                                if (index == cleanMember.Length ||
-                                                    cleanMember[index].Role != role)
+                                        var role = cleanMember.First().Role;
+                                        var currentMembers = new List<OsmRelationMember>
+                                            { cleanMember.First() };
+                                        for (var index = 1; index <= cleanMember.Length; index++)
+                                            if (index == cleanMember.Length ||
+                                                cleanMember[index].Role != role)
+                                            {
+                                                if (ProcessMembers(currentMembers, command3,
+                                                        command4, out var g1))
                                                 {
-                                                    if (ProcessMembers(currentMembers, command3,
-                                                            command4, out var g1))
+                                                    switch (role)
                                                     {
-                                                        switch (role)
-                                                        {
-                                                            case "outer":
-                                                                g = g.Union(g1);
-                                                                break;
-                                                            case "inner":
-                                                                g = g.Difference(g1);
-                                                                break;
-                                                        }
-
-                                                        if (!g.IsValid) g = g.Buffer(0);
+                                                        case "outer":
+                                                            g = g.Union(g1);
+                                                            break;
+                                                        case "inner":
+                                                            g = g.Difference(g1);
+                                                            break;
                                                     }
 
-                                                    if (index == cleanMember.Length) break;
-
-                                                    role = cleanMember[index].Role;
-                                                    currentMembers = new List<OsmRelationMember>
-                                                        { cleanMember[index] };
-                                                }
-                                                else
-                                                {
-                                                    currentMembers.Add(cleanMember[index]);
+                                                    if (!g.IsValid) g = g.Buffer(0);
                                                 }
 
+                                                if (index == cleanMember.Length) break;
 
-                                            var values = new List<string>
-                                            {
-                                                id0.ToString(),
-                                                tags.TextEscape(),
-                                                "SRID=4326;" + _wktWriter.Write(g)
-                                            };
-
-                                            lock (obj)
-                                            {
-                                                writer.WriteLine(string.Join("\t", values));
+                                                role = cleanMember[index].Role;
+                                                currentMembers = new List<OsmRelationMember>
+                                                    { cleanMember[index] };
                                             }
+                                            else
+                                            {
+                                                currentMembers.Add(cleanMember[index]);
+                                            }
+
+
+                                        var values = new List<string>
+                                        {
+                                            id0.ToString(),
+                                            tags.TextEscape(),
+                                            "SRID=4326;" + _wktWriter.Write(g)
+                                        };
+
+                                        lock (obj)
+                                        {
+                                            writer.WriteLine(string.Join("\t", values));
                                         }
                                     }
+                                }
 
-                                    lock (obj)
-                                    {
-                                        current++;
+                                lock (obj)
+                                {
+                                    current++;
 
-                                        if (current % 1000 == 0)
-                                            _progressClient.Progress(100f * current / total, id1,
-                                                    session)
-                                                .GetAwaiter()
-                                                .GetResult();
-                                    }
+                                    if (current % 1000 == 0)
+                                        _progressClient.Progress(100f * current / total, id1,
+                                                session)
+                                            .GetAwaiter()
+                                            .GetResult();
                                 }
                             }
-
-                            connection4.Close();
-                            connection3.Close();
                         }
+
+                        connection4.Close();
+                        connection3.Close();
                     });
             }
 
@@ -552,14 +542,14 @@ public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
         }
 
 
-        using (var command = new NpgsqlCommand(
-                   string.Join(";",
-                       @"INSERT INTO placex(osm_id,osm_type,tags,location)
+        await using (var command = new NpgsqlCommand(
+                         string.Join(";",
+                             @"INSERT INTO placex(osm_id,osm_type,tags,location)
                         SELECT osm_id,'relation',tags,ST_MakeValid(location) FROM temp_placex_relation
                         ON CONFLICT (osm_id,osm_type) DO UPDATE SET location=EXCLUDED.location,tags=EXCLUDED.tags,record_number=EXCLUDED.record_number",
-                       "DROP TABLE temp_placex_relation"), connection2))
+                             "DROP TABLE temp_placex_relation"), connection2))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
             command.ExecuteNonQuery();
         }

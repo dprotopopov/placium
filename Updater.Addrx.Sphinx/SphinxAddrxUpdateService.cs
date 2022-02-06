@@ -24,7 +24,7 @@ public class SphinxAddrxUpdateService : BaseAppService, IUpdateService
 
     public async Task UpdateAsync(string session, bool full)
     {
-        using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+        await using (var connection = new MySqlConnection(GetSphinxConnectionString()))
         {
             if (full)
                 TryExecuteNonQueries(new[]
@@ -45,17 +45,17 @@ public class SphinxAddrxUpdateService : BaseAppService, IUpdateService
         }
 
         if (full)
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
-            {
-                await npgsqlConnection.OpenAsync();
+        {
+            await using var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString());
+            await npgsqlConnection.OpenAsync();
 
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+            npgsqlConnection.ReloadTypes();
+            npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, 0);
+            SetLastRecordNumber(npgsqlConnection, OsmServiceType.Addrx, 0);
 
-                await npgsqlConnection.CloseAsync();
-            }
+            await npgsqlConnection.CloseAsync();
+        }
 
         await UpdateAddrxAsync(session, full);
     }

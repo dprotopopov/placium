@@ -30,7 +30,7 @@ public static class JsonTools
     /// </summary>
     public static string Escape(string s)
     {
-        if (s == null || s.Length == 0) return "";
+        if (string.IsNullOrEmpty(s)) return "";
 
         var c = '\0';
         int i;

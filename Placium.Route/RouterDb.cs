@@ -57,9 +57,9 @@ public class RouterDb
         await ExecuteResourceAsync(Assembly.GetExecutingAssembly(),
             "Placium.Route.CreateTempTables2.pgsql",
             connection2);
-        using (var writer2 = connection2.BeginTextImport(
-                   "COPY temp_restriction (guid,vehicle_type,from_way,to_way,via_node,tags) FROM STDIN WITH NULL AS ''")
-              )
+        await using (var writer2 = await connection2.BeginTextImportAsync(
+                         "COPY temp_restriction (guid,vehicle_type,from_way,to_way,via_node,tags) FROM STDIN WITH NULL AS ''")
+                    )
         {
             void FoundRestriction(string vehicleType, long fromWay, long toWay, long viaNode,
                 TagsCollectionBase tags)
@@ -82,13 +82,14 @@ public class RouterDb
             id = Guid.NewGuid().ToString();
             await progressClient.Init(id, session);
 
-            using (var command0 = new NpgsqlCommand(string.Join(";",
-                       @"ANALYZE node"), osmConnection))
-            using (var command = new NpgsqlCommand(string.Join(";",
-                       @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'node'"), osmConnection))
+            await using (var command0 = new NpgsqlCommand(string.Join(";",
+                             @"ANALYZE node"), osmConnection))
+            await using (var command = new NpgsqlCommand(string.Join(";",
+                                 @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'node'"),
+                             osmConnection))
             {
-                command0.Prepare();
-                command.Prepare();
+                await command0.PrepareAsync();
+                await command.PrepareAsync();
 
                 await command0.ExecuteNonQueryAsync();
                 var count = 0L;
@@ -102,7 +103,7 @@ public class RouterDb
                 {
                     HasHeaderRecord = false
                 };
-                using (var reader = osmConnection.BeginTextExport(@"COPY node (
+                using (var reader = await osmConnection.BeginTextExportAsync(@"COPY node (
 	                            id,
 	                            version,
 	                            latitude,
@@ -272,7 +273,7 @@ public class RouterDb
             id = Guid.NewGuid().ToString();
             await progressClient.Init(id, session);
 
-            using (var command = new NpgsqlCommand(string.Join("; ", @"SELECT COUNT(*) 
+            await using (var command = new NpgsqlCommand(string.Join("; ", @"SELECT COUNT(*) 
                             FROM relation r,unnest(r.members) m WHERE m.role='via'", @"SELECT
 	                            r.id,
 	                            r.version,
@@ -298,9 +299,9 @@ public class RouterDb
                                 ARRAY[m.id]
                             FROM relation r,unnest(r.members) m WHERE m.type=1 AND m.role='via'"), osmConnection))
             {
-                command.Prepare();
+                await command.PrepareAsync();
 
-                using var reader = await command.ExecuteReaderAsync();
+                await using var reader = await command.ExecuteReaderAsync();
                 if (!reader.Read()) throw new NullReferenceException();
                 var count = reader.GetInt64(0);
                 var current = 0L;
@@ -346,7 +347,7 @@ public class RouterDb
                 connection);
 
 
-            using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) 
+            await using (var command = new NpgsqlCommand(string.Join(";", @"SELECT COUNT(*) 
                             FROM way w1 JOIN way w2 ON w1.nodes&&w2.nodes WHERE w1.id<w2.id", @"SELECT
 	                            w1.id,
 	                            w1.version,
@@ -368,7 +369,7 @@ public class RouterDb
 	                            w2.nodes
                             FROM way w1 JOIN way w2 ON w1.nodes&&w2.nodes WHERE w1.id<w2.id"), osmConnection))
             {
-                command.Prepare();
+                await command.PrepareAsync();
 
                 var vehicleType = string.Empty;
                 if (string.IsNullOrWhiteSpace(vehicleType)) vehicleType = "motorcar";
@@ -376,7 +377,7 @@ public class RouterDb
                 var type = "restriction";
                 if (!string.IsNullOrWhiteSpace(vehicleType)) type = type + ":" + vehicleType;
 
-                using var reader = await command.ExecuteReaderAsync();
+                await using var reader = await command.ExecuteReaderAsync();
                 if (!reader.Read()) throw new NullReferenceException();
                 var count = reader.GetInt64(0);
                 await reader.NextResultAsync();
@@ -557,21 +558,22 @@ public class RouterDb
             id = Guid.NewGuid().ToString();
             await progressClient.Init(id, session);
 
-            using (var writer = connection.BeginTextImport(
-                       @"COPY temp_edge (guid,from_node,to_node,way,
+            await using (var writer = await connection.BeginTextImportAsync(
+                             @"COPY temp_edge (guid,from_node,to_node,way,
 	                    from_latitude, 
 	                    from_longitude, 
 	                    to_latitude, 
 	                    to_longitude,
                         distance,coordinates,location,tags,direction,weight) FROM STDIN WITH NULL AS ''")
-                  )
-            using (var command0 = new NpgsqlCommand(string.Join(";",
-                       @"ANALYZE way"), osmConnection))
-            using (var command = new NpgsqlCommand(string.Join(";",
-                       @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'way'"), osmConnection))
+                        )
+            await using (var command0 = new NpgsqlCommand(string.Join(";",
+                             @"ANALYZE way"), osmConnection))
+            await using (var command = new NpgsqlCommand(string.Join(";",
+                                 @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'way'"),
+                             osmConnection))
             {
-                command0.Prepare();
-                command.Prepare();
+                await command0.PrepareAsync();
+                await command.PrepareAsync();
 
                 await command0.ExecuteNonQueryAsync();
                 var count = 0L;
@@ -585,7 +587,7 @@ public class RouterDb
                 {
                     HasHeaderRecord = false
                 };
-                using (var reader = osmConnection.BeginTextExport(@"COPY way (
+                using (var reader = await osmConnection.BeginTextExportAsync(@"COPY way (
                         id,
                         version,
                         change_set_id,
@@ -772,13 +774,13 @@ public class RouterDb
         id = Guid.NewGuid().ToString();
         await progressClient.Init(id, session);
 
-        using (var command0 = new NpgsqlCommand(string.Join(";",
-                   @"ANALYZE temp_edge"), connection))
-        using (var command1 = new NpgsqlCommand(string.Join(";",
-                   @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'temp_edge'",
-                   @"CREATE INDEX ON temp_edge (guid,from_node,to_node,way)"), connection))
-        using (var command2 = new NpgsqlCommand(string.Join(";",
-                   @"INSERT INTO edge(
+        await using (var command0 = new NpgsqlCommand(string.Join(";",
+                         @"ANALYZE temp_edge"), connection))
+        await using (var command1 = new NpgsqlCommand(string.Join(";",
+                         @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'temp_edge'",
+                         @"CREATE INDEX ON temp_edge (guid,from_node,to_node,way)"), connection))
+        await using (var command2 = new NpgsqlCommand(string.Join(";",
+                         @"INSERT INTO edge(
 	                    guid,
 	                    from_node,
 	                    to_node,
@@ -815,20 +817,20 @@ public class RouterDb
 	                    ARRAY[from_node,to_node]
                     FROM cte WHERE rn=1
                     ON CONFLICT (guid,from_node,to_node,way) DO NOTHING"), connection))
-        using (var command3 = new NpgsqlCommand(string.Join(";",
-                   @"DROP TABLE temp_edge"), connection))
+        await using (var command3 = new NpgsqlCommand(string.Join(";",
+                         @"DROP TABLE temp_edge"), connection))
         {
-            command0.Prepare();
-            command1.Prepare();
+            await command0.PrepareAsync();
+            await command1.PrepareAsync();
             command2.Parameters.Add("skip", NpgsqlDbType.Bigint);
             command2.Parameters.Add("limit", NpgsqlDbType.Bigint);
-            command2.Prepare();
-            command3.Prepare();
+            await command2.PrepareAsync();
+            await command3.PrepareAsync();
 
             await command0.ExecuteNonQueryAsync();
 
             var count = 0L;
-            using (var reader = command1.ExecuteReader())
+            await using (var reader = command1.ExecuteReader())
             {
                 if (reader.Read())
                     count = reader.GetInt64(0);
@@ -853,14 +855,14 @@ public class RouterDb
         id = Guid.NewGuid().ToString();
         await progressClient.Init(id, session);
 
-        using (var command0 = new NpgsqlCommand(string.Join(";",
-                       @"ANALYZE temp_restriction"),
-                   connection2))
-        using (var command1 = new NpgsqlCommand(string.Join(";",
-                       @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'temp_restriction'"),
-                   connection2))
-        using (var command2 = new NpgsqlCommand(string.Join(";",
-                   @"INSERT INTO temp_restriction2 (
+        await using (var command0 = new NpgsqlCommand(string.Join(";",
+                             @"ANALYZE temp_restriction"),
+                         connection2))
+        await using (var command1 = new NpgsqlCommand(string.Join(";",
+                             @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'temp_restriction'"),
+                         connection2))
+        await using (var command2 = new NpgsqlCommand(string.Join(";",
+                         @"INSERT INTO temp_restriction2 (
 	                            guid,
 	                            vehicle_type,
 	                            from_edge,
@@ -878,13 +880,14 @@ public class RouterDb
                             WHERE ef.guid=t.guid AND et.guid=t.guid
                             AND (ef.from_node=t.via_node OR ef.to_node=t.via_node)
                             AND (et.from_node=t.via_node OR et.to_node=t.via_node)"), connection2))
-        using (var command3 = new NpgsqlCommand(string.Join(";",
-                   @"ANALYZE temp_restriction2"), connection2))
-        using (var command4 = new NpgsqlCommand(string.Join(";",
-                   @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'temp_restriction2'",
-                   @"CREATE INDEX ON temp_restriction2 (guid,vehicle_type,from_edge,to_edge,via_node)"), connection2))
-        using (var command5 = new NpgsqlCommand(string.Join(";",
-                   @"INSERT INTO restriction(
+        await using (var command3 = new NpgsqlCommand(string.Join(";",
+                         @"ANALYZE temp_restriction2"), connection2))
+        await using (var command4 = new NpgsqlCommand(string.Join(";",
+                             @"SELECT reltuples::bigint AS estimate FROM pg_class WHERE relname = 'temp_restriction2'",
+                             @"CREATE INDEX ON temp_restriction2 (guid,vehicle_type,from_edge,to_edge,via_node)"),
+                         connection2))
+        await using (var command5 = new NpgsqlCommand(string.Join(";",
+                         @"INSERT INTO restriction(
 	                guid,
 	                vehicle_type,
 	                from_edge,
@@ -903,26 +906,26 @@ public class RouterDb
 	                tags
                 FROM cte WHERE rn=1
                 ON CONFLICT (guid,vehicle_type,from_edge,to_edge,via_node) DO NOTHING"), connection2))
-        using (var command6 = new NpgsqlCommand(string.Join(";",
-                   @"DROP TABLE temp_restriction2",
-                   @"DROP TABLE temp_restriction"), connection2))
+        await using (var command6 = new NpgsqlCommand(string.Join(";",
+                         @"DROP TABLE temp_restriction2",
+                         @"DROP TABLE temp_restriction"), connection2))
         {
-            command0.Prepare();
-            command1.Prepare();
+            await command0.PrepareAsync();
+            await command1.PrepareAsync();
             command2.Parameters.Add("skip", NpgsqlDbType.Bigint);
             command2.Parameters.Add("limit", NpgsqlDbType.Bigint);
-            command2.Prepare();
-            command3.Prepare();
-            command4.Prepare();
+            await command2.PrepareAsync();
+            await command3.PrepareAsync();
+            await command4.PrepareAsync();
             command5.Parameters.Add("skip", NpgsqlDbType.Bigint);
             command5.Parameters.Add("limit", NpgsqlDbType.Bigint);
-            command5.Prepare();
-            command6.Prepare();
+            await command5.PrepareAsync();
+            await command6.PrepareAsync();
 
             await command0.ExecuteNonQueryAsync();
 
             var count = 0L;
-            using (var reader = command1.ExecuteReader())
+            await using (var reader = command1.ExecuteReader())
             {
                 if (reader.Read())
                     count = reader.GetInt64(0);
@@ -945,7 +948,7 @@ public class RouterDb
 
             await command3.ExecuteNonQueryAsync();
 
-            using (var reader = command4.ExecuteReader())
+            await using (var reader = command4.ExecuteReader())
             {
                 if (reader.Read())
                     count = reader.GetInt64(0);
@@ -973,10 +976,10 @@ public class RouterDb
 
     private async Task ExecuteResourceAsync(Assembly assembly, string resource, NpgsqlConnection connection)
     {
-        using var stream = assembly.GetManifestResourceStream(resource);
+        await using var stream = assembly.GetManifestResourceStream(resource);
         using var sr = new StreamReader(stream, Encoding.UTF8);
-        using var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection);
-        command.Prepare();
+        await using var command = new NpgsqlCommand(await sr.ReadToEndAsync(), connection);
+        await command.PrepareAsync();
         command.ExecuteNonQuery();
     }
 

@@ -175,10 +175,7 @@ public class BaseAppService
 
         using var reader = command.ExecuteReader();
 
-        if (reader.Read())
-            return reader.GetInt64(0);
-
-        return 0;
+        return reader.Read() ? reader.GetInt64(0) : 0;
     }
 
     protected int ExecuteNonQueryWithRepeatOnError(string sql, MySqlConnection connection)

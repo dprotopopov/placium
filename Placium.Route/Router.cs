@@ -62,15 +62,15 @@ public class Router
         await connection.OpenAsync();
         connection.TypeMapper.MapComposite<RouteCoordinate>("coordinate");
 
-        using (var command =
-               new NpgsqlCommand(
-                   @"SELECT id,from_node,to_node,coordinates,tags FROM edge WHERE guid=@guid AND id=ANY(@ids)",
-                   connection))
+        await using (var command =
+                     new NpgsqlCommand(
+                         @"SELECT id,from_node,to_node,coordinates,tags FROM edge WHERE guid=@guid AND id=ANY(@ids)",
+                         connection))
         {
             command.Parameters.AddWithValue("guid", Db.Guid);
             command.Parameters.AddWithValue("ids", edges.ToArray());
-            command.Prepare();
-            using var reader = await command.ExecuteReaderAsync();
+            await command.PrepareAsync();
+            await using var reader = await command.ExecuteReaderAsync();
             while (reader.Read())
             {
                 var edgeId = reader.GetInt64(0);

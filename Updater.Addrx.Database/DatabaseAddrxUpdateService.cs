@@ -25,17 +25,17 @@ public class DatabaseAddrxUpdateService : BaseAppService, IUpdateService
     public async Task UpdateAsync(string session, bool full)
     {
         if (full)
-            using (var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString()))
-            {
-                await npgsqlConnection.OpenAsync();
+        {
+            await using var npgsqlConnection = new NpgsqlConnection(GetOsmConnectionString());
+            await npgsqlConnection.OpenAsync();
 
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
+            npgsqlConnection.ReloadTypes();
+            npgsqlConnection.TypeMapper.MapEnum<OsmServiceType>("service_type");
 
-                SetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, 0);
+            SetLastRecordNumber(npgsqlConnection, OsmServiceType.Placex, 0);
 
-                await npgsqlConnection.CloseAsync();
-            }
+            await npgsqlConnection.CloseAsync();
+        }
 
         await UpdatePlacexAsync(session, full);
     }

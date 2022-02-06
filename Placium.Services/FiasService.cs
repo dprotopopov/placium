@@ -121,91 +121,91 @@ public class FiasService : BaseApiService
         var result = new List<object>();
 
         if (!string.IsNullOrEmpty(guid))
-            using (var command = new NpgsqlCommand(_parentRoomSql, connection))
+        {
+            await using var command = new NpgsqlCommand(_parentRoomSql, connection);
+            command.Parameters.AddWithValue("p", guid);
+
+            await command.PrepareAsync();
+
+            await using var reader = command.ExecuteReader();
+            if (reader.Read())
             {
-                command.Parameters.AddWithValue("p", guid);
-
-                command.Prepare();
-
-                using var reader = command.ExecuteReader();
-                if (reader.Read())
+                var flatnumber = reader.SafeGetString(1);
+                var roomnumber = reader.SafeGetString(2);
+                var list = new List<string>();
+                if (!string.IsNullOrEmpty(flatnumber)) list.Add($"Квартира {flatnumber}");
+                if (!string.IsNullOrEmpty(roomnumber)) list.Add($"Комната {roomnumber}");
+                result.Add(new Room
                 {
-                    var flatnumber = reader.SafeGetString(1);
-                    var roomnumber = reader.SafeGetString(2);
-                    var list = new List<string>();
-                    if (!string.IsNullOrEmpty(flatnumber)) list.Add($"Квартира {flatnumber}");
-                    if (!string.IsNullOrEmpty(roomnumber)) list.Add($"Комната {roomnumber}");
-                    result.Add(new Room
-                    {
-                        guid = Guid.Parse(guid),
-                        flatnumber = flatnumber,
-                        roomnumber = roomnumber,
-                        title = string.Join(", ", list)
-                    });
-                    guid = reader.SafeGetString(0);
-                }
+                    guid = Guid.Parse(guid),
+                    flatnumber = flatnumber,
+                    roomnumber = roomnumber,
+                    title = string.Join(", ", list)
+                });
+                guid = reader.SafeGetString(0);
             }
+        }
 
 
         if (!string.IsNullOrEmpty(guid))
-            using (var command = new NpgsqlCommand(_parentHouseSql, connection))
+        {
+            await using var command = new NpgsqlCommand(_parentHouseSql, connection);
+            command.Parameters.AddWithValue("p", guid);
+
+            await command.PrepareAsync();
+
+            await using var reader = command.ExecuteReader();
+            if (reader.Read())
             {
-                command.Parameters.AddWithValue("p", guid);
-
-                command.Prepare();
-
-                using var reader = command.ExecuteReader();
-                if (reader.Read())
+                var housenum = reader.SafeGetString(1);
+                var buildnum = reader.SafeGetString(2);
+                var strucnum = reader.SafeGetString(3);
+                var name = reader.SafeGetString(4);
+                var list = new List<string> { name };
+                if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
+                if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
+                if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
+                result.Add(new House
                 {
-                    var housenum = reader.SafeGetString(1);
-                    var buildnum = reader.SafeGetString(2);
-                    var strucnum = reader.SafeGetString(3);
-                    var name = reader.SafeGetString(4);
-                    var list = new List<string> { name };
-                    if (!string.IsNullOrEmpty(housenum)) list.Add($"{housenum}");
-                    if (!string.IsNullOrEmpty(buildnum)) list.Add($"к{buildnum}");
-                    if (!string.IsNullOrEmpty(strucnum)) list.Add($"с{strucnum}");
-                    result.Add(new House
-                    {
-                        guid = Guid.Parse(guid),
-                        housenum = housenum,
-                        buildnum = buildnum,
-                        strucnum = strucnum,
-                        name = name,
-                        title = string.Join(" ", list)
-                    });
-                    guid = reader.SafeGetString(0);
-                }
+                    guid = Guid.Parse(guid),
+                    housenum = housenum,
+                    buildnum = buildnum,
+                    strucnum = strucnum,
+                    name = name,
+                    title = string.Join(" ", list)
+                });
+                guid = reader.SafeGetString(0);
             }
+        }
 
         if (!string.IsNullOrEmpty(guid))
-            using (var command = new NpgsqlCommand(_parentSteadSql, connection))
+        {
+            await using var command = new NpgsqlCommand(_parentSteadSql, connection);
+            command.Parameters.AddWithValue("p", guid);
+
+            await command.PrepareAsync();
+
+            using var reader = command.ExecuteReader();
+            if (reader.Read())
             {
-                command.Parameters.AddWithValue("p", guid);
-
-                command.Prepare();
-
-                using var reader = command.ExecuteReader();
-                if (reader.Read())
+                var number = reader.SafeGetString(1);
+                var list = new List<string>();
+                if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
+                result.Add(new Stead
                 {
-                    var number = reader.SafeGetString(1);
-                    var list = new List<string>();
-                    if (!string.IsNullOrEmpty(number)) list.Add($"уч. {number}");
-                    result.Add(new Stead
-                    {
-                        guid = Guid.Parse(guid),
-                        number = number,
-                        title = string.Join(", ", list)
-                    });
-                    guid = reader.SafeGetString(0);
-                }
+                    guid = Guid.Parse(guid),
+                    number = number,
+                    title = string.Join(", ", list)
+                });
+                guid = reader.SafeGetString(0);
             }
+        }
 
-        using (var command = new NpgsqlCommand(_parentAddrobSql, connection))
+        await using (var command = new NpgsqlCommand(_parentAddrobSql, connection))
         {
             command.Parameters.Add("p", NpgsqlDbType.Varchar);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
             for (var run = !string.IsNullOrEmpty(guid); run;)
             {
@@ -258,14 +258,14 @@ public class FiasService : BaseApiService
 
         var result = new List<object>();
 
-        using (var command = new NpgsqlCommand(string.Join(";",
-                   _childrenRoomSql, _childrenHouseSql, _childrenSteadSql, _childrenAddrobSql), connection))
+        await using (var command = new NpgsqlCommand(string.Join(";",
+                         _childrenRoomSql, _childrenHouseSql, _childrenSteadSql, _childrenAddrobSql), connection))
         {
             command.Parameters.AddWithValue("p", guid);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             while (reader.Read())
             {
                 var flatnumber = reader.SafeGetString(1);
@@ -361,12 +361,12 @@ public class FiasService : BaseApiService
 
         var result = new List<object>();
 
-        using (var command = new NpgsqlCommand(string.Join(";",
-                   _rootRoomSql, _rootHouseSql, _rootSteadSql, _rootAddrobSql), connection))
+        await using (var command = new NpgsqlCommand(string.Join(";",
+                         _rootRoomSql, _rootHouseSql, _rootSteadSql, _rootAddrobSql), connection))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             while (reader.Read())
             {
                 var flatnumber = reader.SafeGetString(1);

@@ -26,7 +26,7 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
 
     public async Task UpdateAsync(string session, bool full)
     {
-        using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+        await using (var connection = new MySqlConnection(GetSphinxConnectionString()))
         {
             if (full)
                 TryExecuteNonQueries(new[]
@@ -47,19 +47,19 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
         }
 
         if (full)
-            using (var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString()))
-            {
-                await npgsqlConnection.OpenAsync();
-                npgsqlConnection.ReloadTypes();
-                npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
+        {
+            await using var npgsqlConnection = new NpgsqlConnection(GetFiasConnectionString());
+            await npgsqlConnection.OpenAsync();
+            npgsqlConnection.ReloadTypes();
+            npgsqlConnection.TypeMapper.MapEnum<FiasServiceType>("service_type");
 
-                SetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob, 0);
-                SetLastRecordNumber(npgsqlConnection, FiasServiceType.House, 0);
-                SetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead, 0);
-                SetLastRecordNumber(npgsqlConnection, FiasServiceType.Room, 0);
+            SetLastRecordNumber(npgsqlConnection, FiasServiceType.Addrob, 0);
+            SetLastRecordNumber(npgsqlConnection, FiasServiceType.House, 0);
+            SetLastRecordNumber(npgsqlConnection, FiasServiceType.Stead, 0);
+            SetLastRecordNumber(npgsqlConnection, FiasServiceType.Room, 0);
 
-                await npgsqlConnection.CloseAsync();
-            }
+            await npgsqlConnection.CloseAsync();
+        }
 
         await UpdateAddrobAsync(session, full);
         await UpdateHouseAsync(session, full);
@@ -108,13 +108,13 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
                         WHERE {x}.livestatus=1 AND {x}.record_number>@last_record_number"));
 
-        using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+        await using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             while (reader.Read()) total += reader.GetInt64(0);
 
             var take = 100;
@@ -221,14 +221,14 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
         var list2 = new List<string>();
         var list = new List<string>();
 
-        using (var command = new NpgsqlCommand(
-                   string.Join(";", new[] { @"addrob\d+", @"house\d+" }.Select(x =>
-                       $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
-                   npgsqlConnection))
+        await using (var command = new NpgsqlCommand(
+                         string.Join(";", new[] { @"addrob\d+", @"house\d+" }.Select(x =>
+                             $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                         npgsqlConnection))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             list2.Fill(reader);
             reader.NextResult();
             list.Fill(reader);
@@ -251,13 +251,13 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
                         WHERE {x}.record_number>@last_record_number"));
 
-        using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+        await using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             while (reader.Read()) total += reader.GetInt64(0);
 
             var take = 100;
@@ -364,14 +364,14 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
         var list2 = new List<string>();
         var list = new List<string>();
 
-        using (var command = new NpgsqlCommand(
-                   string.Join(";", new[] { @"addrob\d+", @"house\d+", @"room\d+" }.Select(x =>
-                       $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
-                   npgsqlConnection))
+        await using (var command = new NpgsqlCommand(
+                         string.Join(";", new[] { @"addrob\d+", @"house\d+", @"room\d+" }.Select(x =>
+                             $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                         npgsqlConnection))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             list3.Fill(reader);
             reader.NextResult();
             list2.Fill(reader);
@@ -401,11 +401,11 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
                 $@"SELECT record_id,flatnumber,roomnumber,houseguid,roomguid,postalcode FROM {x}
                         WHERE record_number>@last_record_number AND livestatus=1"));
 
-        using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+        await using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
             using var reader = command.ExecuteReader();
             while (reader.Read()) total += reader.GetInt64(0);
@@ -567,14 +567,14 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
         var list2 = new List<string>();
         var list = new List<string>();
 
-        using (var command = new NpgsqlCommand(
-                   string.Join(";", new[] { @"addrob\d+", @"stead\d+" }.Select(x =>
-                       $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
-                   npgsqlConnection))
+        await using (var command = new NpgsqlCommand(
+                         string.Join(";", new[] { @"addrob\d+", @"stead\d+" }.Select(x =>
+                             $"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' and table_name similar to '{x}'")),
+                         npgsqlConnection))
         {
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             list2.Fill(reader);
             reader.NextResult();
             list.Fill(reader);
@@ -594,7 +594,7 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
             list.Select(x =>
                 $"SELECT record_id,number,parentguid,steadguid,postalcode FROM {x} WHERE record_number>@last_record_number AND livestatus=1"));
 
-        using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
+        await using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
         {
             command.Parameters.AddWithValue("last_record_number", last_record_number);
 
@@ -734,31 +734,29 @@ public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
 
         npgsqlCommand2.Parameters["guids"].Value = guids;
 
-        using (var reader2 = npgsqlCommand2.ExecuteReader())
+        using var reader2 = npgsqlCommand2.ExecuteReader();
+        while (reader2.Read())
         {
-            while (reader2.Read())
-            {
-                var offname = reader2.SafeGetString(1);
-                var formalname = reader2.SafeGetString(2);
-                var shortname = reader2.SafeGetString(3);
-                var socrname = reader2.SafeGetString(4);
-                var aolevel = reader2.GetInt32(5);
-                var parentguid = reader2.SafeGetString(6);
-                var postalcode = use_postalcode ? reader2.SafeGetString(7) : null;
-                var title = aolevel > 1
-                    ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
-                    : formal
-                        ? formalname
-                        : offname;
+            var offname = reader2.SafeGetString(1);
+            var formalname = reader2.SafeGetString(2);
+            var shortname = reader2.SafeGetString(3);
+            var socrname = reader2.SafeGetString(4);
+            var aolevel = reader2.GetInt32(5);
+            var parentguid = reader2.SafeGetString(6);
+            var postalcode = use_postalcode ? reader2.SafeGetString(7) : null;
+            var title = aolevel > 1
+                ? $"{(socr ? socrname : shortname)} {(formal ? formalname : offname)}"
+                : formal
+                    ? formalname
+                    : offname;
 
-                docs2.Add(new Doc2
-                {
-                    guid = reader2.SafeGetString(0),
-                    addrfull = title,
-                    parentguid = parentguid,
-                    postalcode = postalcode
-                });
-            }
+            docs2.Add(new Doc2
+            {
+                guid = reader2.SafeGetString(0),
+                addrfull = title,
+                parentguid = parentguid,
+                postalcode = postalcode
+            });
         }
 
         return docs2;

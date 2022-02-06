@@ -24,20 +24,20 @@ public class PlacexService : BaseApiService
 
         var result = new List<Placex>(limit);
 
-        using (var command =
-               new NpgsqlCommand(
-                   @"SELECT id,tags,location FROM placex
+        await using (var command =
+                     new NpgsqlCommand(
+                         @"SELECT id,tags,location FROM placex
                         WHERE tags->@key SIMILAR TO @pattern
                         LIMIT @limit",
-                   connection))
+                         connection))
         {
             command.Parameters.AddWithValue("pattern", pattern);
             command.Parameters.AddWithValue("key", key);
             command.Parameters.AddWithValue("limit", limit);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             while (reader.Read())
                 result.Add(new Placex
                 {
@@ -63,21 +63,21 @@ public class PlacexService : BaseApiService
 
         var result = new List<Placex>(limit);
 
-        using (var command =
-               new NpgsqlCommand(
-                   @"SELECT id,tags,location FROM placex WHERE tags?@key
+        await using (var command =
+                     new NpgsqlCommand(
+                         @"SELECT id,tags,location FROM placex WHERE tags?@key
                         ORDER BY ST_SetSRID(ST_Point(@longitude,@latitude),4326)<->location
                         LIMIT @limit",
-                   connection))
+                         connection))
         {
             command.Parameters.AddWithValue("longitude", (float)longitude);
             command.Parameters.AddWithValue("latitude", (float)latitude);
             command.Parameters.AddWithValue("key", key);
             command.Parameters.AddWithValue("limit", limit);
 
-            command.Prepare();
+            await command.PrepareAsync();
 
-            using var reader = command.ExecuteReader();
+            await using var reader = command.ExecuteReader();
             while (reader.Read())
                 result.Add(new Placex
                 {
