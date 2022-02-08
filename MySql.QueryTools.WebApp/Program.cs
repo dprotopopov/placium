@@ -23,7 +23,6 @@ namespace MySql.QueryTools.WebApp
                 {
                     logging.ClearProviders();
                     logging.AddSimpleConsole(options => options.IncludeScopes = true);
-                    logging.AddEventLog();
                 })
                 .UseUnixSocketCredential()
                 .UseIISIntegration()

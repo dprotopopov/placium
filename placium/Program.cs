@@ -56,7 +56,6 @@ internal class Program
             {
                 logging.ClearProviders();
                 logging.AddSimpleConsole(options => options.IncludeScopes = true);
-                logging.AddEventLog();
             })
             .AddSingleton<IConfiguration>(config)
             .AddSingleton<IConnectionsConfig, ArgsConnectionsConfig>()

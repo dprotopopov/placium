@@ -42,7 +42,6 @@ namespace Placium.WebApi
                 {
                     logging.ClearProviders();
                     logging.AddSimpleConsole(options => options.IncludeScopes = true);
-                    logging.AddEventLog();
                 })
                 .UseUnixSocketCredential()
                 .UseIISIntegration()
