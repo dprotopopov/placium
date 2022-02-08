@@ -8,6 +8,7 @@ using Loader.Fias.File;
 using Loader.Osm.File;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Implementation;
@@ -51,7 +52,12 @@ internal class Program
         var config = builder.Build();
 
         var serviceProvider = new ServiceCollection()
-            .AddLogging()
+            .AddLogging(logging =>
+            {
+                logging.ClearProviders();
+                logging.AddSimpleConsole(options => options.IncludeScopes = true);
+                logging.AddEventLog();
+            })
             .AddSingleton<IConfiguration>(config)
             .AddSingleton<IConnectionsConfig, ArgsConnectionsConfig>()
             .AddSingleton<IParallelConfig, ArgsParallelConfig>()
@@ -74,7 +80,7 @@ internal class Program
             {
                 case IUploadService uploadService:
                 {
-                    using var stream = File.OpenRead(config["file"]);
+                    await using var stream = File.OpenRead(config["file"]);
                     switch (config["action"])
                     {
                         case "install":

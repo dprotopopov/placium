@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace MySql.QueryTools.WebApp
 {
@@ -18,6 +19,12 @@ namespace MySql.QueryTools.WebApp
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
             return WebHost.CreateDefaultBuilder(args)
+                .ConfigureLogging((_, logging) =>
+                {
+                    logging.ClearProviders();
+                    logging.AddSimpleConsole(options => options.IncludeScopes = true);
+                    logging.AddEventLog();
+                })
                 .UseUnixSocketCredential()
                 .UseIISIntegration()
                 .UseStartup<Startup>();
