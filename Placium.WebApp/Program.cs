@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Implementation;
+using NLog.Web;
 using OsmSharp.Logging;
 using Placium.Common;
 
@@ -38,11 +39,8 @@ namespace Placium.WebApp
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
             return WebHost.CreateDefaultBuilder(args)
-                .ConfigureLogging((_, logging) =>
-                {
-                    logging.ClearProviders();
-                    logging.AddSimpleConsole(options => options.IncludeScopes = true);
-                })
+                .ConfigureLogging((_, logging) => { logging.ClearProviders(); })
+                .UseNLog()
                 .UseUnixSocketCredential()
                 .UseIISIntegration()
                 .UseStartup<Startup>();

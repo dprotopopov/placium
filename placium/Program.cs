@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.Geometries.Implementation;
+using NLog.Extensions.Logging;
 using Placium.Common;
 using Placium.Route;
 using Updater.Addrobx.Sphinx;
@@ -55,7 +56,7 @@ internal class Program
             .AddLogging(logging =>
             {
                 logging.ClearProviders();
-                logging.AddSimpleConsole(options => options.IncludeScopes = true);
+                logging.AddNLog(config);
             })
             .AddSingleton<IConfiguration>(config)
             .AddSingleton<IConnectionsConfig, ArgsConnectionsConfig>()
