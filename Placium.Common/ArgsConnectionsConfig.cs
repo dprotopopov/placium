@@ -1,18 +1,19 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace Placium.Common;
-
-public class ArgsConnectionsConfig : IConnectionsConfig
+namespace Placium.Common
 {
-    private readonly IConfiguration _configuration;
-
-    public ArgsConnectionsConfig(IConfiguration configuration)
+    public class ArgsConnectionsConfig : IConnectionsConfig
     {
-        _configuration = configuration;
-    }
+        private readonly IConfiguration _configuration;
 
-    public string GetConnectionString(string name)
-    {
-        return _configuration[name];
+        public ArgsConnectionsConfig(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
+        public string GetConnectionString(string name)
+        {
+            return _configuration[name];
+        }
     }
 }

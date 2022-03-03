@@ -1,33 +1,34 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace Placium.Common;
-
-public class BaseApiService
+namespace Placium.Common
 {
-    private readonly IConfiguration _configuration;
-
-    public BaseApiService(IConfiguration configuration)
+    public class BaseApiService
     {
-        _configuration = configuration;
-    }
+        private readonly IConfiguration _configuration;
 
-    protected string GetSphinxConnectionString()
-    {
-        return _configuration.GetConnectionString("SphinxConnection");
-    }
+        public BaseApiService(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
-    protected string GetFiasConnectionString()
-    {
-        return _configuration.GetConnectionString("FiasConnection");
-    }
+        protected string GetSphinxConnectionString()
+        {
+            return _configuration.GetConnectionString("SphinxConnection");
+        }
 
-    protected string GetOsmConnectionString()
-    {
-        return _configuration.GetConnectionString("OsmConnection");
-    }
+        protected string GetFiasConnectionString()
+        {
+            return _configuration.GetConnectionString("FiasConnection");
+        }
 
-    protected string GetRouteConnectionString()
-    {
-        return _configuration.GetConnectionString("RouteConnection");
+        protected string GetOsmConnectionString()
+        {
+            return _configuration.GetConnectionString("OsmConnection");
+        }
+
+        protected string GetRouteConnectionString()
+        {
+            return _configuration.GetConnectionString("RouteConnection");
+        }
     }
 }

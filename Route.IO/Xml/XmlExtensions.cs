@@ -27,214 +27,215 @@ using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace Route.IO.Xml;
-
-/// <summary>
-///     Contains extension methods for xml readers and writers.
-/// </summary>
-public static class XmlExtensions
+namespace Route.IO.Xml
 {
-    private const string DATE_FORMAT = "yyyy-MM-ddTHH:mm:ssZ";
-
     /// <summary>
-    ///     Writes a datetime as an attribute.
+    ///     Contains extension methods for xml readers and writers.
     /// </summary>
-    public static void WriteAttribute(this XmlWriter writer, string name, DateTime? value)
+    public static class XmlExtensions
     {
-        if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToString(DATE_FORMAT));
-    }
+        private const string DATE_FORMAT = "yyyy-MM-ddTHH:mm:ssZ";
 
-    /// <summary>
-    ///     Writes an Int64 as an attribute.
-    /// </summary>
-    public static void WriteAttribute(this XmlWriter writer, string name, long? value)
-    {
-        if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
-    }
-
-    /// <summary>
-    ///     Writes an Int32 as an attribute.
-    /// </summary>
-    public static void WriteAttribute(this XmlWriter writer, string name, int? value)
-    {
-        if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
-    }
-
-    /// <summary>
-    ///     Writes a single as an attribute.
-    /// </summary>
-    public static void WriteAttribute(this XmlWriter writer, string name, float? value)
-    {
-        if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
-    }
-
-    /// <summary>
-    ///     Writes a double as an attribute.
-    /// </summary>
-    public static void WriteAttribute(this XmlWriter writer, string name, double? value)
-    {
-        if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
-    }
-
-    /// <summary>
-    ///     Writes a string as an attribute.
-    /// </summary>
-    public static void WriteAttribute(this XmlWriter writer, string name, string value)
-    {
-        if (value != null) writer.WriteAttributeString(name, value);
-    }
-
-    /// <summary>
-    ///     Writes a bool as an attribute.
-    /// </summary>
-    public static void WriteAttribute(this XmlWriter writer, string name, bool? value)
-    {
-        if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString().ToLowerInvariant());
-    }
-
-    /// <summary>
-    ///     Writes an xml serializable object as an element.
-    /// </summary>
-    public static void WriteElement(this XmlWriter writer, string name, IXmlSerializable xmlSerializable)
-    {
-        if (xmlSerializable != null)
+        /// <summary>
+        ///     Writes a datetime as an attribute.
+        /// </summary>
+        public static void WriteAttribute(this XmlWriter writer, string name, DateTime? value)
         {
-            writer.WriteStartElement(name);
-            xmlSerializable.WriteXml(writer);
-            writer.WriteEndElement();
+            if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToString(DATE_FORMAT));
         }
-    }
 
-    /// <summary>
-    ///     Writes an xml serializable object as an element.
-    /// </summary>
-    public static void WriteElements(this XmlWriter writer, string name, IXmlSerializable[] xmlSerializables)
-    {
-        if (xmlSerializables != null)
-            for (var i = 0; i < xmlSerializables.Length; i++)
+        /// <summary>
+        ///     Writes an Int64 as an attribute.
+        /// </summary>
+        public static void WriteAttribute(this XmlWriter writer, string name, long? value)
+        {
+            if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
+        }
+
+        /// <summary>
+        ///     Writes an Int32 as an attribute.
+        /// </summary>
+        public static void WriteAttribute(this XmlWriter writer, string name, int? value)
+        {
+            if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
+        }
+
+        /// <summary>
+        ///     Writes a single as an attribute.
+        /// </summary>
+        public static void WriteAttribute(this XmlWriter writer, string name, float? value)
+        {
+            if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
+        }
+
+        /// <summary>
+        ///     Writes a double as an attribute.
+        /// </summary>
+        public static void WriteAttribute(this XmlWriter writer, string name, double? value)
+        {
+            if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString());
+        }
+
+        /// <summary>
+        ///     Writes a string as an attribute.
+        /// </summary>
+        public static void WriteAttribute(this XmlWriter writer, string name, string value)
+        {
+            if (value != null) writer.WriteAttributeString(name, value);
+        }
+
+        /// <summary>
+        ///     Writes a bool as an attribute.
+        /// </summary>
+        public static void WriteAttribute(this XmlWriter writer, string name, bool? value)
+        {
+            if (value.HasValue) writer.WriteAttributeString(name, value.Value.ToInvariantString().ToLowerInvariant());
+        }
+
+        /// <summary>
+        ///     Writes an xml serializable object as an element.
+        /// </summary>
+        public static void WriteElement(this XmlWriter writer, string name, IXmlSerializable xmlSerializable)
+        {
+            if (xmlSerializable != null)
             {
-                var xmlSerializable = xmlSerializables[i];
-
                 writer.WriteStartElement(name);
                 xmlSerializable.WriteXml(writer);
                 writer.WriteEndElement();
             }
-    }
-
-    /// <summary>
-    ///     Reads a double attribute.
-    /// </summary>
-    public static double? GetAttributeDouble(this XmlReader reader, string name)
-    {
-        var valueString = reader.GetAttribute(name);
-        if (!string.IsNullOrWhiteSpace(valueString) &&
-            double.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
-            return value;
-        return null;
-    }
-
-    /// <summary>
-    ///     Reads a single attribute.
-    /// </summary>
-    public static float? GetAttributeSingle(this XmlReader reader, string name)
-    {
-        var valueString = reader.GetAttribute(name);
-        if (!string.IsNullOrWhiteSpace(valueString) &&
-            float.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
-            return value;
-        return null;
-    }
-
-    /// <summary>
-    ///     Gets elements using the given actions.
-    /// </summary>
-    public static void GetElements(this XmlReader reader, params Tuple<string, Action>[] getElements)
-    {
-        var getElementsDictionary = new Dictionary<string, Action>();
-        foreach (var element in getElements) getElementsDictionary.Add(element.Item1, element.Item2);
-        GetElements(reader, getElementsDictionary);
-    }
-
-    /// <summary>
-    ///     Gets elements using the given actions.
-    /// </summary>
-    public static void GetElements(this XmlReader reader, Dictionary<string, Action> getElements)
-    {
-        while (reader.Read() &&
-               reader.MoveToContent() != XmlNodeType.None)
-        {
-            if (!getElements.TryGetValue(reader.Name, out var action)) break;
-            action();
         }
-    }
 
-    /// <summary>
-    ///     Reads an Int64 attribute.
-    /// </summary>
-    public static long? GetAttributeInt64(this XmlReader reader, string name)
-    {
-        var valueString = reader.GetAttribute(name);
-        if (!string.IsNullOrWhiteSpace(valueString) &&
-            long.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
-            return value;
-        return null;
-    }
+        /// <summary>
+        ///     Writes an xml serializable object as an element.
+        /// </summary>
+        public static void WriteElements(this XmlWriter writer, string name, IXmlSerializable[] xmlSerializables)
+        {
+            if (xmlSerializables != null)
+                for (var i = 0; i < xmlSerializables.Length; i++)
+                {
+                    var xmlSerializable = xmlSerializables[i];
 
-    /// <summary>
-    ///     Reads an Int32 attribute.
-    /// </summary>
-    public static int? GetAttributeInt32(this XmlReader reader, string name)
-    {
-        var valueString = reader.GetAttribute(name);
-        if (!string.IsNullOrWhiteSpace(valueString) &&
-            int.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
-            return value;
-        return null;
-    }
+                    writer.WriteStartElement(name);
+                    xmlSerializable.WriteXml(writer);
+                    writer.WriteEndElement();
+                }
+        }
 
-    /// <summary>
-    ///     Reads a boolean attribute.
-    /// </summary>
-    public static bool? GetAttributeBool(this XmlReader reader, string name)
-    {
-        var valueString = reader.GetAttribute(name);
-        if (!string.IsNullOrWhiteSpace(valueString) &&
-            bool.TryParse(valueString, out var value))
-            return value;
-        return null;
-    }
+        /// <summary>
+        ///     Reads a double attribute.
+        /// </summary>
+        public static double? GetAttributeDouble(this XmlReader reader, string name)
+        {
+            var valueString = reader.GetAttribute(name);
+            if (!string.IsNullOrWhiteSpace(valueString) &&
+                double.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+                return value;
+            return null;
+        }
 
-    /// <summary>
-    ///     Reads a datetime attribute.
-    /// </summary>
-    public static DateTime? GetAttributeDateTime(this XmlReader reader, string name)
-    {
-        var valueString = reader.GetAttribute(name);
-        if (!string.IsNullOrWhiteSpace(valueString) &&
-            DateTime.TryParse(valueString, out var value))
-            return value;
-        return null;
-    }
+        /// <summary>
+        ///     Reads a single attribute.
+        /// </summary>
+        public static float? GetAttributeSingle(this XmlReader reader, string name)
+        {
+            var valueString = reader.GetAttribute(name);
+            if (!string.IsNullOrWhiteSpace(valueString) &&
+                float.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+                return value;
+            return null;
+        }
 
-    /// <summary>
-    ///     Serializes to xml with default settings for OSM-related entities.
-    /// </summary>
-    public static string SerializeToXml<T>(this T value)
-    {
-        var serializer = new XmlSerializer(typeof(T));
+        /// <summary>
+        ///     Gets elements using the given actions.
+        /// </summary>
+        public static void GetElements(this XmlReader reader, params Tuple<string, Action>[] getElements)
+        {
+            var getElementsDictionary = new Dictionary<string, Action>();
+            foreach (var element in getElements) getElementsDictionary.Add(element.Item1, element.Item2);
+            GetElements(reader, getElementsDictionary);
+        }
 
-        var settings = new XmlWriterSettings();
-        settings.OmitXmlDeclaration = true;
-        settings.Indent = false;
-        settings.NewLineChars = string.Empty;
-        var emptyNamespace = new XmlSerializerNamespaces();
-        emptyNamespace.Add(string.Empty, string.Empty);
+        /// <summary>
+        ///     Gets elements using the given actions.
+        /// </summary>
+        public static void GetElements(this XmlReader reader, Dictionary<string, Action> getElements)
+        {
+            while (reader.Read() &&
+                   reader.MoveToContent() != XmlNodeType.None)
+            {
+                if (!getElements.TryGetValue(reader.Name, out var action)) break;
+                action();
+            }
+        }
 
-        using var resultStream = new MemoryStream();
-        using var stringWriter = XmlWriter.Create(resultStream, settings);
-        serializer.Serialize(stringWriter, value, emptyNamespace);
-        resultStream.Seek(0, SeekOrigin.Begin);
-        var streamReader = new StreamReader(resultStream);
-        return streamReader.ReadToEnd();
+        /// <summary>
+        ///     Reads an Int64 attribute.
+        /// </summary>
+        public static long? GetAttributeInt64(this XmlReader reader, string name)
+        {
+            var valueString = reader.GetAttribute(name);
+            if (!string.IsNullOrWhiteSpace(valueString) &&
+                long.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+                return value;
+            return null;
+        }
+
+        /// <summary>
+        ///     Reads an Int32 attribute.
+        /// </summary>
+        public static int? GetAttributeInt32(this XmlReader reader, string name)
+        {
+            var valueString = reader.GetAttribute(name);
+            if (!string.IsNullOrWhiteSpace(valueString) &&
+                int.TryParse(valueString, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+                return value;
+            return null;
+        }
+
+        /// <summary>
+        ///     Reads a boolean attribute.
+        /// </summary>
+        public static bool? GetAttributeBool(this XmlReader reader, string name)
+        {
+            var valueString = reader.GetAttribute(name);
+            if (!string.IsNullOrWhiteSpace(valueString) &&
+                bool.TryParse(valueString, out var value))
+                return value;
+            return null;
+        }
+
+        /// <summary>
+        ///     Reads a datetime attribute.
+        /// </summary>
+        public static DateTime? GetAttributeDateTime(this XmlReader reader, string name)
+        {
+            var valueString = reader.GetAttribute(name);
+            if (!string.IsNullOrWhiteSpace(valueString) &&
+                DateTime.TryParse(valueString, out var value))
+                return value;
+            return null;
+        }
+
+        /// <summary>
+        ///     Serializes to xml with default settings for OSM-related entities.
+        /// </summary>
+        public static string SerializeToXml<T>(this T value)
+        {
+            var serializer = new XmlSerializer(typeof(T));
+
+            var settings = new XmlWriterSettings();
+            settings.OmitXmlDeclaration = true;
+            settings.Indent = false;
+            settings.NewLineChars = string.Empty;
+            var emptyNamespace = new XmlSerializerNamespaces();
+            emptyNamespace.Add(string.Empty, string.Empty);
+
+            using var resultStream = new MemoryStream();
+            using var stringWriter = XmlWriter.Create(resultStream, settings);
+            serializer.Serialize(stringWriter, value, emptyNamespace);
+            resultStream.Seek(0, SeekOrigin.Begin);
+            var streamReader = new StreamReader(resultStream);
+            return streamReader.ReadToEnd();
+        }
     }
 }

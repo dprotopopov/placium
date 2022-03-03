@@ -18,170 +18,171 @@
 
 using System.Collections.Concurrent;
 
-namespace Route.Algorithms.Collections;
-
-/// <summary>
-///     Generic LRU cache implementation.
-/// </summary>
-/// <typeparam name="TKey">The key type.</typeparam>
-/// <typeparam name="TValue">The value type.</typeparam>
-public class LRUCache<TKey, TValue>
+namespace Route.Algorithms.Collections
 {
     /// <summary>
-    ///     A delegate to use for when an item is pushed out of the cache.
+    ///     Generic LRU cache implementation.
     /// </summary>
-    /// <param name="item"></param>
-    public delegate void OnRemoveDelegate(TValue item);
-
-    private readonly ConcurrentDictionary<TKey, CacheEntry> _data;
-
-    private long _id;
-    private long _lastId;
-
-    /// <summary>
-    ///     Called when an item is pushed out of the cache.
-    /// </summary>
-    public OnRemoveDelegate OnRemove;
-
-    /// <summary>
-    ///     Initializes this cache.
-    /// </summary>
-    /// <param name="capacity"></param>
-    public LRUCache(int capacity)
+    /// <typeparam name="TKey">The key type.</typeparam>
+    /// <typeparam name="TValue">The value type.</typeparam>
+    public class LRUCache<TKey, TValue>
     {
-        _id = long.MinValue;
-        _lastId = _id;
-        _data = new ConcurrentDictionary<TKey, CacheEntry>();
+        /// <summary>
+        ///     A delegate to use for when an item is pushed out of the cache.
+        /// </summary>
+        /// <param name="item"></param>
+        public delegate void OnRemoveDelegate(TValue item);
 
-        Capacity = capacity;
-    }
+        private readonly ConcurrentDictionary<TKey, CacheEntry> _data;
 
-    /// <summary>
-    ///     Capacity.
-    /// </summary>
-    public int Capacity { get; set; }
+        private long _id;
+        private long _lastId;
 
-    /// <summary>
-    ///     Returns the amount of entries in this cache.
-    /// </summary>
-    public int Count => _data.Count;
+        /// <summary>
+        ///     Called when an item is pushed out of the cache.
+        /// </summary>
+        public OnRemoveDelegate OnRemove;
 
-    /// <summary>
-    ///     Adds a new value for the given key.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    public void Add(TKey key, TValue value)
-    {
-        var entry = new CacheEntry
+        /// <summary>
+        ///     Initializes this cache.
+        /// </summary>
+        /// <param name="capacity"></param>
+        public LRUCache(int capacity)
         {
-            Id = _id,
-            Value = value
-        };
-        _id++;
-        _data[key] = entry;
+            _id = long.MinValue;
+            _lastId = _id;
+            _data = new ConcurrentDictionary<TKey, CacheEntry>();
 
-        ResizeCache();
-    }
-
-    /// <summary>
-    ///     Returns the value for this given key.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public bool TryGet(TKey key, out TValue value)
-    {
-        _id++;
-        if (_data.TryGetValue(key, out var entry))
-        {
-            entry.Id = _id;
-            value = entry.Value;
-            return true;
+            Capacity = capacity;
         }
 
-        value = default;
-        return false;
-    }
+        /// <summary>
+        ///     Capacity.
+        /// </summary>
+        public int Capacity { get; set; }
 
-    /// <summary>
-    ///     Returns the value for this given key but does not effect the cache.
-    /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    public bool TryPeek(TKey key, out TValue value)
-    {
-        if (_data.TryGetValue(key, out var entry))
+        /// <summary>
+        ///     Returns the amount of entries in this cache.
+        /// </summary>
+        public int Count => _data.Count;
+
+        /// <summary>
+        ///     Adds a new value for the given key.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public void Add(TKey key, TValue value)
         {
-            value = entry.Value;
-            return true;
-        }
-
-        value = default;
-        return false;
-    }
-
-    /// <summary>
-    ///     Clears this cache.
-    /// </summary>
-    public void Clear()
-    {
-        _data.Clear();
-        _lastId = _id;
-        _id = long.MinValue;
-    }
-
-    /// <summary>
-    ///     Removes the value for the given key.
-    /// </summary>
-    /// <param name="id"></param>
-    public void Remove(TKey id)
-    {
-        _data.TryRemove(id, out _);
-    }
-
-    /// <summary>
-    ///     Resizes the cache.
-    /// </summary>
-    private void ResizeCache()
-    {
-        while (_data.Count > Capacity)
-        {
-            // oops: too much data.
-            // remove the 'oldest' item.
-            var minKey = default(TKey);
-            var minId = long.MaxValue;
-            foreach (var pair in _data)
+            var entry = new CacheEntry
             {
-                if (pair.Value.Id >= minId) continue;
-                minId = pair.Value.Id;
-                minKey = pair.Key;
+                Id = _id,
+                Value = value
+            };
+            _id++;
+            _data[key] = entry;
+
+            ResizeCache();
+        }
+
+        /// <summary>
+        ///     Returns the value for this given key.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryGet(TKey key, out TValue value)
+        {
+            _id++;
+            if (_data.TryGetValue(key, out var entry))
+            {
+                entry.Id = _id;
+                value = entry.Value;
+                return true;
             }
 
-            // call the OnRemove delegate.
-            OnRemove?.Invoke(_data[minKey].Value);
-
-            _data.TryRemove(minKey, out _);
-
-            // update the 'last_id'
-            _lastId++;
+            value = default;
+            return false;
         }
-    }
-
-    /// <summary>
-    ///     An entry in this cache.
-    /// </summary>
-    private struct CacheEntry
-    {
-        /// <summary>
-        ///     The id of the object.
-        /// </summary>
-        public long Id { get; set; }
 
         /// <summary>
-        ///     The object being cached.
+        ///     Returns the value for this given key but does not effect the cache.
         /// </summary>
-        public TValue Value { get; set; }
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public bool TryPeek(TKey key, out TValue value)
+        {
+            if (_data.TryGetValue(key, out var entry))
+            {
+                value = entry.Value;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        /// <summary>
+        ///     Clears this cache.
+        /// </summary>
+        public void Clear()
+        {
+            _data.Clear();
+            _lastId = _id;
+            _id = long.MinValue;
+        }
+
+        /// <summary>
+        ///     Removes the value for the given key.
+        /// </summary>
+        /// <param name="id"></param>
+        public void Remove(TKey id)
+        {
+            _data.TryRemove(id, out _);
+        }
+
+        /// <summary>
+        ///     Resizes the cache.
+        /// </summary>
+        private void ResizeCache()
+        {
+            while (_data.Count > Capacity)
+            {
+                // oops: too much data.
+                // remove the 'oldest' item.
+                var minKey = default(TKey);
+                var minId = long.MaxValue;
+                foreach (var pair in _data)
+                {
+                    if (pair.Value.Id >= minId) continue;
+                    minId = pair.Value.Id;
+                    minKey = pair.Key;
+                }
+
+                // call the OnRemove delegate.
+                OnRemove?.Invoke(_data[minKey].Value);
+
+                _data.TryRemove(minKey, out _);
+
+                // update the 'last_id'
+                _lastId++;
+            }
+        }
+
+        /// <summary>
+        ///     An entry in this cache.
+        /// </summary>
+        private struct CacheEntry
+        {
+            /// <summary>
+            ///     The id of the object.
+            /// </summary>
+            public long Id { get; set; }
+
+            /// <summary>
+            ///     The object being cached.
+            /// </summary>
+            public TValue Value { get; set; }
+        }
     }
 }

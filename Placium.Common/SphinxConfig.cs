@@ -1,6 +1,7 @@
-﻿namespace Placium.Common;
-
-public class SphinxConfig
+﻿namespace Placium.Common
 {
-    public string Http { get; set; }
+    public class SphinxConfig
+    {
+        public string Http { get; set; }
+    }
 }

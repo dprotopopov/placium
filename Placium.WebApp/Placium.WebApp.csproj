@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
 		<UserSecretsId>34c66524-7327-4080-8adc-b087488c334c</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<StartupObject>Placium.WebApp.Program</StartupObject>
@@ -10,11 +10,16 @@
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<NoWarn>1701;1702;1998</NoWarn>
+		<LangVersion>8</LangVersion>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<LangVersion>8</LangVersion>
 	</PropertyGroup>
 
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.1.22" />
 		<PackageReference Include="Microsoft.AspNetCore.Server.IISIntegration" Version="2.2.1" />
 		<PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.4" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

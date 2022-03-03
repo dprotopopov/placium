@@ -1,6 +1,7 @@
-﻿namespace Placium.Common;
-
-public class UploadConfig
+﻿namespace Placium.Common
 {
-    public string Path { get; set; }
+    public class UploadConfig
+    {
+        public string Path { get; set; }
+    }
 }

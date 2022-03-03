@@ -16,30 +16,31 @@
  *  limitations under the License.
  */
 
-namespace Route.Attributes;
-
-/// <summary>
-///     Abstract representation of an attribute collection.
-/// </summary>
-public interface IAttributeCollection : IReadonlyAttributeCollection
+namespace Route.Attributes
 {
     /// <summary>
-    ///     Gets the readonly flag.
+    ///     Abstract representation of an attribute collection.
     /// </summary>
-    bool IsReadonly { get; }
+    public interface IAttributeCollection : IReadonlyAttributeCollection
+    {
+        /// <summary>
+        ///     Gets the readonly flag.
+        /// </summary>
+        bool IsReadonly { get; }
 
-    /// <summary>
-    ///     Adds or replaces an attribute.
-    /// </summary>
-    void AddOrReplace(string key, string value);
+        /// <summary>
+        ///     Adds or replaces an attribute.
+        /// </summary>
+        void AddOrReplace(string key, string value);
 
-    /// <summary>
-    ///     Removes the attribute with the given key.
-    /// </summary>
-    bool RemoveKey(string key);
+        /// <summary>
+        ///     Removes the attribute with the given key.
+        /// </summary>
+        bool RemoveKey(string key);
 
-    /// <summary>
-    ///     Clears all attributes.
-    /// </summary>
-    void Clear();
+        /// <summary>
+        ///     Clears all attributes.
+        /// </summary>
+        void Clear();
+    }
 }

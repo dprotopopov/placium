@@ -1,16 +1,17 @@
 ﻿using Reminiscence.Arrays;
 
-namespace Route;
-
-/// <summary>
-///     Implementation of <see cref="IArrayFactory" /> which uses the default
-///     array types implemented and exposed in Reminiscence.
-/// </summary>
-public sealed class DefaultArrayFactory : IArrayFactory
+namespace Route
 {
-    /// <inheritdoc />
-    public ArrayBase<T> CreateMemoryBackedArray<T>(long size)
+    /// <summary>
+    ///     Implementation of <see cref="IArrayFactory" /> which uses the default
+    ///     array types implemented and exposed in Reminiscence.
+    /// </summary>
+    public sealed class DefaultArrayFactory : IArrayFactory
     {
-        return new MemoryArray<T>(size);
+        /// <inheritdoc />
+        public ArrayBase<T> CreateMemoryBackedArray<T>(long size)
+        {
+            return new MemoryArray<T>(size);
+        }
     }
 }

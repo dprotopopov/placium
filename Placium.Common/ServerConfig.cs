@@ -1,6 +1,7 @@
-﻿namespace Placium.Common;
-
-public class ServerConfig
+﻿namespace Placium.Common
 {
-    public string PathBase { get; set; }
+    public class ServerConfig
+    {
+        public string PathBase { get; set; }
+    }
 }

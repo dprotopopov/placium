@@ -1,6 +1,7 @@
-﻿namespace Placium.Models;
-
-public class Stead : Element
+﻿namespace Placium.Models
 {
-    public string number { get; set; }
+    public class Stead : Element
+    {
+        public string number { get; set; }
+    }
 }

@@ -1,44 +1,45 @@
 ﻿using System;
 using MySql.Data.MySqlClient;
 
-namespace Placium.Common;
-
-public static class MySqlExtensions
+namespace Placium.Common
 {
-    public static void TryOpen(this MySqlConnection connection)
+    public static class MySqlExtensions
     {
-        try
+        public static void TryOpen(this MySqlConnection connection)
         {
-            connection.Open();
-        }
-        catch (Exception)
-        {
-        }
-    }
-
-    public static void TryClose(this MySqlConnection connection)
-    {
-        try
-        {
-            connection.Close();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"error execute mysql command ({ex.Message}).");
-        }
-    }
-
-    public static int TryExecuteNonQuery(this MySqlCommand command)
-    {
-        try
-        {
-            return command.ExecuteNonQuery();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"error execute mysql command ({ex.Message}).");
+            try
+            {
+                connection.Open();
+            }
+            catch (Exception)
+            {
+            }
         }
 
-        return 0;
+        public static void TryClose(this MySqlConnection connection)
+        {
+            try
+            {
+                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"error execute mysql command ({ex.Message}).");
+            }
+        }
+
+        public static int TryExecuteNonQuery(this MySqlCommand command)
+        {
+            try
+            {
+                return command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"error execute mysql command ({ex.Message}).");
+            }
+
+            return 0;
+        }
     }
 }

@@ -1,49 +1,50 @@
 ﻿using System.Net.Sockets;
 using Tmds.Linux;
 
-namespace AstraUtils;
-
-public static class SocketExtensions
+namespace AstraUtils
 {
-    private static int GetSocketHandler(this Socket socket)
+    public static class SocketExtensions
     {
-        return socket.Handle.ToInt32();
-    }
-
-    public static unsafe int SetRawSocketOptions<T>(this Socket socket, int level, int optname, in T options)
-        where T : unmanaged
-    {
-        fixed (void* p = &options)
+        private static int GetSocketHandler(this Socket socket)
         {
-            var res = LibC.setsockopt(socket.GetSocketHandler(), level, optname, p, sizeof(T));
-
-            if (res != 0)
-                PlatformException.Throw();
-
-
-            return res;
+            return socket.Handle.ToInt32();
         }
-    }
 
-
-    public static unsafe int GetRawSocketOptions<T>(this Socket socket, int level, int optname, out T options)
-        where T : unmanaged
-    {
-        fixed (void* p = &options)
+        public static unsafe int SetRawSocketOptions<T>(this Socket socket, int level, int optname, in T options)
+            where T : unmanaged
         {
-            var len = (socklen_t)sizeof(T);
+            fixed (void* p = &options)
+            {
+                var res = LibC.setsockopt(socket.GetSocketHandler(), level, optname, p, sizeof(T));
 
-            var res = LibC.getsockopt(socket.GetSocketHandler(), level, optname, p, &len);
+                if (res != 0)
+                    PlatformException.Throw();
 
-            if (res != 0)
-                PlatformException.Throw();
 
-            return res;
+                return res;
+            }
         }
-    }
 
-    public static void GetPeerCred(this Socket socket, out ucred options)
-    {
-        socket.GetRawSocketOptions(LibC.SOL_SOCKET, LibC.SO_PEERCRED, out options);
+
+        public static unsafe int GetRawSocketOptions<T>(this Socket socket, int level, int optname, out T options)
+            where T : unmanaged
+        {
+            fixed (void* p = &options)
+            {
+                var len = (socklen_t)sizeof(T);
+
+                var res = LibC.getsockopt(socket.GetSocketHandler(), level, optname, p, &len);
+
+                if (res != 0)
+                    PlatformException.Throw();
+
+                return res;
+            }
+        }
+
+        public static void GetPeerCred(this Socket socket, out ucred options)
+        {
+            socket.GetRawSocketOptions(LibC.SOL_SOCKET, LibC.SO_PEERCRED, out options);
+        }
     }
 }

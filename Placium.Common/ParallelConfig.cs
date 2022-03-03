@@ -1,6 +1,7 @@
-﻿namespace Placium.Common;
-
-public class ParallelConfig
+﻿namespace Placium.Common
 {
-    public int NumberOfThreads { get; set; }
+    public class ParallelConfig
+    {
+        public int NumberOfThreads { get; set; }
+    }
 }

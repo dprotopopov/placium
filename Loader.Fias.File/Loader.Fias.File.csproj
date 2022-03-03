@@ -1,27 +1,32 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <NoWarn>1701;1702;1998</NoWarn>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<NoWarn>1701;1702;1998</NoWarn>
+		<LangVersion>8</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="CreateSequence.pgsql" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<LangVersion>8</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="CreateSequence.pgsql" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="CreateSequence.pgsql" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NDbfReader" Version="2.4.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="CreateSequence.pgsql" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="NDbfReader" Version="2.4.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
+	</ItemGroup>
 
 </Project>

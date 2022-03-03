@@ -1,19 +1,20 @@
 ﻿using System.Text;
 using Tmds.Linux;
 
-namespace AstraUtils.UnixSocket;
-
-public static class SocketFilePermissionsHelper
+namespace AstraUtils.UnixSocket
 {
-    public static int SetSocketPermissions(string socketFilePath)
+    public static class SocketFilePermissionsHelper
     {
-        var filepath = Encoding.UTF8.GetBytes(socketFilePath);
-
-        unsafe
+        public static int SetSocketPermissions(string socketFilePath)
         {
-            fixed (byte* a = filepath)
+            var filepath = Encoding.UTF8.GetBytes(socketFilePath);
+
+            unsafe
             {
-                return LibC.chmod(a, LibC.S_IWGRP | LibC.S_IRGRP | LibC.S_IRUSR | LibC.S_IWUSR);
+                fixed (byte* a = filepath)
+                {
+                    return LibC.chmod(a, LibC.S_IWGRP | LibC.S_IRGRP | LibC.S_IRUSR | LibC.S_IWUSR);
+                }
             }
         }
     }

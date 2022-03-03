@@ -1,46 +1,51 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <NoWarn>1701;1702;1998</NoWarn>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<NoWarn>1701;1702;1998</NoWarn>
+		<LangVersion>8</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="nlog.config" />
-  </ItemGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<LangVersion>8</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="nlog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="nlog.config" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="6.0.0" />
-    <PackageReference Include="NLog.Extensions.Logging" Version="1.7.4" />
+	<ItemGroup>
+		<Content Include="nlog.config">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="6.0.0" />
+		<PackageReference Include="NLog.Extensions.Logging" Version="1.7.4" />
 		<PackageReference Include="NLog" Version="4.7.13" />
-	      </ItemGroup>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Loader.Fias.File\Loader.Fias.File.csproj" />
-    <ProjectReference Include="..\Loader.Osm.File\Loader.Osm.File.csproj" />
-    <ProjectReference Include="..\Placium.Route\Placium.Route.csproj" />
-    <ProjectReference Include="..\Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj" />
-    <ProjectReference Include="..\Updater.Addrx.Database\Updater.Addrx.Database.csproj" />
-    <ProjectReference Include="..\Updater.Placex.Database\Updater.Placex.Database.csproj" />
-    <ProjectReference Include="..\Updater.Addrx.Sphinx\Updater.Addrx.Sphinx.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Loader.Fias.File\Loader.Fias.File.csproj" />
+		<ProjectReference Include="..\Loader.Osm.File\Loader.Osm.File.csproj" />
+		<ProjectReference Include="..\Placium.Route\Placium.Route.csproj" />
+		<ProjectReference Include="..\Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj" />
+		<ProjectReference Include="..\Updater.Addrx.Database\Updater.Addrx.Database.csproj" />
+		<ProjectReference Include="..\Updater.Placex.Database\Updater.Placex.Database.csproj" />
+		<ProjectReference Include="..\Updater.Addrx.Sphinx\Updater.Addrx.Sphinx.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="example.bat">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="example.bat">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>
