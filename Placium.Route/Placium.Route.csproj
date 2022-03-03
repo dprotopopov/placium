@@ -1,63 +1,63 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <LangVersion>8</LangVersion>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+		<LangVersion>8</LangVersion>
+	</PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <LangVersion>8</LangVersion>
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<LangVersion>8</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="CreateIndices.pgsql" />
-    <None Remove="CreateTempTables.pgsql" />
-    <None Remove="CreateTempTables2.pgsql" />
-    <None Remove="DropIndices.pgsql" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="CreateIndices.pgsql" />
+		<None Remove="CreateTempTables.pgsql" />
+		<None Remove="CreateTempTables2.pgsql" />
+		<None Remove="DropIndices.pgsql" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="DropIndices.pgsql" />
-    <EmbeddedResource Include="CreateIndices.pgsql" />
-    <EmbeddedResource Include="CreateTempTables.pgsql" />
-    <EmbeddedResource Include="CreateTempTables2.pgsql" />
-    <EmbeddedResource Include="CreateTempTables3.pgsql" />
-    <EmbeddedResource Include="Osm\Vehicles\bicycle.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.bicycle.lua</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Osm\Vehicles\bigtruck.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.bigtruck.lua</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Osm\Vehicles\bus.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.bus.lua</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Osm\Vehicles\car.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.car.lua</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Osm\Vehicles\moped.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.moped.lua</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Osm\Vehicles\motorcycle.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.motorcycle.lua</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Osm\Vehicles\pedestrian.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.pedestrian.lua</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Osm\Vehicles\smalltruck.lua">
-      <LogicalName>Placium.Route.Osm.Vehicles.smalltruck.lua</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Include="DropIndices.pgsql" />
+		<EmbeddedResource Include="CreateIndices.pgsql" />
+		<EmbeddedResource Include="CreateTempTables.pgsql" />
+		<EmbeddedResource Include="CreateTempTables2.pgsql" />
+		<EmbeddedResource Include="CreateTempTables3.pgsql" />
+		<EmbeddedResource Include="Osm\Vehicles\bicycle.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.bicycle.lua</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Osm\Vehicles\bigtruck.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.bigtruck.lua</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Osm\Vehicles\bus.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.bus.lua</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Osm\Vehicles\car.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.car.lua</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Osm\Vehicles\moped.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.moped.lua</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Osm\Vehicles\motorcycle.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.motorcycle.lua</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Osm\Vehicles\pedestrian.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.pedestrian.lua</LogicalName>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Osm\Vehicles\smalltruck.lua">
+			<LogicalName>Placium.Route.Osm.Vehicles.smalltruck.lua</LogicalName>
+		</EmbeddedResource>
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="27.2.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CsvHelper" Version="27.2.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Placium.Route.Algorithms\Placium.Route.Algorithms.csproj" />
-    <ProjectReference Include="..\Route.Attributes\Route.Attributes.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Placium.Route.Algorithms\Placium.Route.Algorithms.csproj" />
+		<ProjectReference Include="..\Route.Attributes\Route.Attributes.csproj" />
+	</ItemGroup>
 
 </Project>
