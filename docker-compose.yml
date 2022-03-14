@@ -28,7 +28,7 @@ services:
       SphinxConfig__Http: "http://manticore-placium:9308"
       UploadConfig__Path: "/upload"
       ServerConfig__BasePath: "/placium"
-      ServerConfig__AddCors: false
+      ServerConfig__AddCors: 'false'
       ParallelConfig__NumberOfThreads: 12
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9966
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:9977
@@ -53,7 +53,7 @@ services:
       ConnectionStrings__RouteConnection: "Host=route-placium;Port=5432;Database=route_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
       ServerConfig__BasePath: "/placium"
-      ServerConfig__AddCors: false
+      ServerConfig__AddCors: 'false'
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
     networks:
@@ -155,7 +155,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
       ServerConfig__BasePath: "/mysql"
-      ServerConfig__AddCors: false
+      ServerConfig__AddCors: 'false'
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9090
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:9433
     networks:
