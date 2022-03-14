@@ -26,6 +26,16 @@ namespace MySql.QueryTools.WebApp
                 .PersistKeysToFileSystem(
                     new DirectoryInfo(Path.Combine(WebHostEnvironment.ContentRootPath, "ProtectionKeys")));
 
+            var config = Configuration.GetSection(nameof(ServerConfig)).Get<ServerConfig>();
+            if (config.AddCors)
+            {
+                services.AddCors(options => options.AddDefaultPolicy(
+                    builder => builder
+                        .SetIsOriginAllowed((x => true))
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()));
+            }
+
             services.AddControllersWithViews();
         }
 
