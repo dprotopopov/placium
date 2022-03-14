@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
 using Npgsql;
 using Placium.Common;
 using Placium.Types;
@@ -34,7 +35,7 @@ namespace Updater.Addrx.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text indexed stored,priority int,lon float,lat float,building int)"
+                    "CREATE TABLE addrx(title text indexed stored,priority int,lon float,lat float,building int,data json)"
                     + " phrase_boundary='U+2C'"
                     + " phrase_boundary_step='100'"
                     + " min_infix_len='1'"
@@ -107,10 +108,10 @@ namespace Updater.Addrx.Sphinx
                     if (docs.Any())
                     {
                         var sb = new StringBuilder(
-                            "REPLACE INTO addrx(id,title,priority,lon,lat,building) VALUES ");
+                            "REPLACE INTO addrx(id,title,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
                             docs.Select(x =>
-                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building})")));
+                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{JsonConvert.SerializeObject(x.data)}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }
@@ -191,7 +192,8 @@ namespace Updater.Addrx.Sphinx
                     priority = priority,
                     building = dictionary.ContainsKey("addr:housenumber") ? 1 : 0,
                     lon = reader.SafeGetFloat(2) ?? 0,
-                    lat = reader.SafeGetFloat(3) ?? 0
+                    lat = reader.SafeGetFloat(3) ?? 0,
+                    data = dictionary
                 };
 
                 result.Add(doc);

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Placium.Seeker
 {
@@ -33,5 +34,7 @@ namespace Placium.Seeker
         [JsonProperty("geolat")] public string GeoLat { get; set; }
 
         [JsonProperty("geolon")] public string GeoLon { get; set; }
+
+        [JsonProperty("data")] public Dictionary<string, string> Data { get; set; }
     }
 }

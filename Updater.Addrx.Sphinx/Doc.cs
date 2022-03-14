@@ -1,4 +1,6 @@
-﻿namespace Updater.Addrx.Sphinx
+﻿using System.Collections.Generic;
+
+namespace Updater.Addrx.Sphinx
 {
     public class Doc
     {
@@ -8,5 +10,6 @@
         public float lon { get; set; }
         public float lat { get; set; }
         public int building { get; set; }
+        public Dictionary<string, string> data { get; set; }
     }
 }
