@@ -111,7 +111,7 @@ namespace Updater.Addrx.Sphinx
                             "REPLACE INTO addrx(id,title,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
                             docs.Select(x =>
-                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{JsonConvert.SerializeObject(x.data)}')")));
+                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{JsonConvert.SerializeObject(x.data.ToDictionary(y => y.Key, y => y.Value.TextEscape()))}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }
