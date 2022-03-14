@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
-using Newtonsoft.Json;
 using Npgsql;
 using Placium.Common;
 using Placium.Types;
@@ -111,7 +110,7 @@ namespace Updater.Addrx.Sphinx
                             "REPLACE INTO addrx(id,title,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
                             docs.Select(x =>
-                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{JsonConvert.SerializeObject(x.data.ToDictionary(y => y.Key, y => y.Value.TextEscape()))}')")));
+                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }
