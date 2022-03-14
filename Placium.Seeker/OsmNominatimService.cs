@@ -26,7 +26,7 @@ namespace Placium.Seeker
 
                 await using var command =
                     new MySqlCommand(
-                        @"SELECT GEODIST(@lat,@lon,lat,lon) AS distance,title,lon,lat,data FROM addrx ORDER BY distance ASC LIMIT @skip,@take",
+                        @"SELECT GEODIST(@lat,@lon,lat,lon,{in=degrees,out=m}) AS distance,title,lon,lat,data FROM addrx ORDER BY distance ASC LIMIT @skip,@take",
                         mySqlConnection);
                 command.Parameters.AddWithValue("skip", skip);
                 command.Parameters.AddWithValue("take", take);
