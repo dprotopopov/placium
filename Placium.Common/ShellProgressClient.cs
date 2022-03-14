@@ -21,19 +21,22 @@ namespace Placium.Common
 
         public async Task Progress(float progress, string id, string session)
         {
-            _dictionary[id].Tick((int)(MaxTicks * progress / 100));
+            await Task.Run(() => _dictionary[id].Tick((int)(MaxTicks * progress / 100)));
         }
 
         public async Task Init(string id, string session)
         {
-            _dictionary.Add(id, new ProgressBar(MaxTicks, null, _options));
+            await Task.Run(() => _dictionary.Add(id, new ProgressBar(MaxTicks, null, _options)));
         }
 
         public async Task Finalize(string id, string session)
         {
-            _dictionary[id].Tick(MaxTicks);
-            _dictionary[id].Dispose();
-            _dictionary.Remove(id);
+            await Task.Run(() =>
+            {
+                _dictionary[id].Tick(MaxTicks);
+                _dictionary[id].Dispose();
+                _dictionary.Remove(id);
+            });
         }
     }
 }

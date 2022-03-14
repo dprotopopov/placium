@@ -34,7 +34,7 @@ namespace Placium.WebApp.Controllers.Update
             ViewBag.Label = info.Label;
             ViewBag.Session = GetSession();
 
-            return View("~/Views/_Update.cshtml");
+            return await Task.FromResult(View("~/Views/_Update.cshtml"));
         }
 
         [HttpPost]

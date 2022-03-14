@@ -20,7 +20,7 @@ namespace Placium.WebApp.Controllers
 
         public async Task<IActionResult> ById()
         {
-            return View();
+            return await Task.FromResult(View());
         }
 
         [HttpPost]

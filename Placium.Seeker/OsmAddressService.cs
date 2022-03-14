@@ -49,7 +49,7 @@ namespace Placium.Seeker
                         AddressString = addressString,
                         GeoLon = JsonConvert.ToString(geoLon),
                         GeoLat = JsonConvert.ToString(geoLat),
-                        Data = JsonConvert.DeserializeObject<Dictionary<string,string>>(data)
+                        Data = JsonConvert.DeserializeObject<Dictionary<string, string>>(data)
                     });
                 }
 

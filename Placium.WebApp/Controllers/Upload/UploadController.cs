@@ -38,7 +38,7 @@ namespace Placium.WebApp.Controllers.Upload
             ViewBag.Label = info.Label;
             ViewBag.Session = GetSession();
             ViewBag.Files = Directory.GetFiles(UploadConfig.Path).Select(x => Path.GetFileName(x)).ToArray();
-            return View("~/Views/_UploadFromDisk.cshtml");
+            return await Task.FromResult(View("~/Views/_UploadFromDisk.cshtml"));
         }
 
         protected abstract UploadFormInfo GetInstallFormInfo();
@@ -80,7 +80,7 @@ namespace Placium.WebApp.Controllers.Upload
             ViewBag.Label = info.Label;
             ViewBag.Session = GetSession();
             ViewBag.Files = Directory.GetFiles(UploadConfig.Path).Select(x => Path.GetFileName(x)).ToArray();
-            return View("~/Views/_UploadFromDisk.cshtml");
+            return await Task.FromResult(View("~/Views/_UploadFromDisk.cshtml"));
         }
 
         [HttpPost]
@@ -117,7 +117,7 @@ namespace Placium.WebApp.Controllers.Upload
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
             ViewBag.Session = GetSession();
-            return View("~/Views/_UploadFromWeb.cshtml");
+            return await Task.FromResult(View("~/Views/_UploadFromWeb.cshtml"));
         }
 
         [HttpPost]
@@ -159,7 +159,7 @@ namespace Placium.WebApp.Controllers.Upload
             ViewBag.Title = info.Title;
             ViewBag.Label = info.Label;
             ViewBag.Session = GetSession();
-            return View("~/Views/_UploadFromWeb.cshtml");
+            return await Task.FromResult(View("~/Views/_UploadFromWeb.cshtml"));
         }
 
         [HttpPost]

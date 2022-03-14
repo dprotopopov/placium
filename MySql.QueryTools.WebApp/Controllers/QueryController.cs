@@ -19,7 +19,7 @@ namespace MySql.QueryTools.WebApp.Controllers
 
         public async Task<IActionResult> Index()
         {
-            return View();
+            return await Task.FromResult(View());
         }
 
         [HttpPost]
@@ -33,7 +33,7 @@ namespace MySql.QueryTools.WebApp.Controllers
                 await using var connection =
                     new MySqlConnection(_configuration.GetConnectionString("SphinxConnection"));
                 connection.Open();
-                using (var command = new MySqlCommand(model.Query, connection))
+                await using (var command = new MySqlCommand(model.Query, connection))
                 {
                     using var reader = command.ExecuteReader();
                     var first = true;

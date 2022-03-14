@@ -48,13 +48,11 @@ namespace Placium.WebApi
 
             var config = Configuration.GetSection(nameof(ServerConfig)).Get<ServerConfig>();
             if (config.AddCors)
-            {
                 services.AddCors(options => options.AddDefaultPolicy(
                     builder => builder
-                        .SetIsOriginAllowed((x => true))
+                        .SetIsOriginAllowed(x => true)
                         .AllowAnyHeader()
                         .AllowAnyMethod()));
-            }
 
             services.AddControllers()
                 .AddNewtonsoftJson(options =>

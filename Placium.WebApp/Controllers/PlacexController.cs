@@ -19,7 +19,7 @@ namespace Placium.WebApp.Controllers
 
         public async Task<IActionResult> ByName()
         {
-            return View();
+            return await Task.FromResult(View());
         }
 
         [HttpPost]
@@ -40,7 +40,7 @@ namespace Placium.WebApp.Controllers
 
         public async Task<IActionResult> ByCoords()
         {
-            return View();
+            return await Task.FromResult(View());
         }
 
         [HttpPost]

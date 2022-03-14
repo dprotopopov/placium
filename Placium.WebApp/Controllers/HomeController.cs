@@ -17,18 +17,19 @@ namespace Placium.WebApp.Controllers
 
         public async Task<IActionResult> Index()
         {
-            return View();
+            return await Task.FromResult(View());
         }
 
         public async Task<IActionResult> Privacy()
         {
-            return View();
+            return await Task.FromResult(View());
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return await Task.FromResult(View(new ErrorViewModel
+                { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier }));
         }
     }
 }
