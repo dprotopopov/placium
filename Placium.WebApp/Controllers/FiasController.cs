@@ -51,7 +51,7 @@ namespace Placium.WebApp.Controllers
                     }).OrderBy(x => x.Text).ToList();
             }
 
-            return View(model);
+            return await Task.FromResult(View(model));
         }
     }
 }

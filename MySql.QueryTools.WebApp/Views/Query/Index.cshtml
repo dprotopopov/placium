@@ -6,9 +6,9 @@
 }
 
 <div class="text-center">
-    @using (Html.BeginForm("Index", "Query", FormMethod.Post))
+    @using (Html.BeginForm("Index", "Query", FormMethod.Get))
     {
-        @Html.TextAreaFor(m => m.Query, new { style = "height:5em;  width: 100%;" })
+        @Html.TextAreaFor(m => m.q, new { style = "height:5em;  width: 100%;" })
         <p>
             <input type="submit"/>
         </p>

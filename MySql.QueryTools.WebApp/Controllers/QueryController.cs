@@ -17,14 +17,16 @@ namespace MySql.QueryTools.WebApp.Controllers
             _configuration = configuration;
         }
 
-        public async Task<IActionResult> Index()
+        [HttpGet]
+        public async Task<IActionResult> Index(string q)
         {
-            return await Task.FromResult(View());
-        }
+            if (string.IsNullOrEmpty(q)) return await Task.FromResult(View());
 
-        [HttpPost]
-        public async Task<IActionResult> Index(QueryViewModel model)
-        {
+            var model = new QueryViewModel
+            {
+                q = q
+            };
+
             try
             {
                 model.Items = new ArrayList();
@@ -32,10 +34,10 @@ namespace MySql.QueryTools.WebApp.Controllers
 
                 await using var connection =
                     new MySqlConnection(_configuration.GetConnectionString("SphinxConnection"));
-                connection.Open();
-                await using (var command = new MySqlCommand(model.Query, connection))
+                await connection.OpenAsync();
+                await using (var command = new MySqlCommand(model.q, connection))
                 {
-                    using var reader = command.ExecuteReader();
+                    await using var reader = command.ExecuteReader();
                     var first = true;
                     while (reader.Read())
                     {
@@ -49,14 +51,14 @@ namespace MySql.QueryTools.WebApp.Controllers
                     }
                 }
 
-                connection.Close();
+                await connection.CloseAsync();
             }
             catch (Exception ex)
             {
                 model.Error = ex.Message;
             }
 
-            return View(model);
+            return await Task.FromResult(View(model));
         }
     }
 }
