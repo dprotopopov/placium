@@ -244,6 +244,9 @@ namespace Updater.Addrx.Sphinx
                 var skipVillage = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:village") &&
                                   dictionary["addr:city"] == dictionary["addr:village"];
 
+                var skipMunicipality = dictionary.ContainsKey("addr:district") && dictionary.ContainsKey("addr:municipality") &&
+                                       dictionary["addr:district"] == dictionary["addr:municipality"];
+
                 var skipBuilding = dictionary.ContainsKey("addr:building") && dictionary.ContainsKey("addr:man_made") &&
                                    dictionary["addr:building"] == dictionary["addr:man_made"];
 
@@ -253,6 +256,7 @@ namespace Updater.Addrx.Sphinx
                     if (dictionary.ContainsKey(key.Key) && (key.Key != "addr:city" || !skipCity) &&
                         (key.Key != "addr:town" || !skipTown) &&
                         (key.Key != "addr:village" || !skipVillage) &&
+                        (key.Key != "addr:municipality" || !skipMunicipality) &&
                         (key.Key != "addr:building" || !skipBuilding))
                         if (!string.IsNullOrEmpty(dictionary[key.Key]))
                             list.Add(string.Format(key.Value, dictionary[key.Key]));

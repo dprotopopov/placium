@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -38,21 +39,29 @@ namespace Placium.Seeker
                 while (limit > 0 && reader.Read())
                 {
                     count++;
-                    limit--;
                     var addressString = reader.GetString(1);
                     var geoLon = reader.GetFloat(2);
                     var geoLat = reader.GetFloat(3);
                     var data = reader.GetString(4);
-                    result.Add(new NominatimEntry
+                    if (result.All(x =>
+                            string.Compare(x.AddressString, addressString,
+                                StringComparison.InvariantCultureIgnoreCase) != 0))
                     {
-                        AddressString = addressString,
-                        GeoLon = JsonConvert.ToString(geoLon),
-                        GeoLat = JsonConvert.ToString(geoLat),
-                        Data = JsonConvert.DeserializeObject<Dictionary<string, string>>(data)
-                    });
+                        limit--;
+
+                        result.Add(new NominatimEntry
+                        {
+                            AddressString = addressString,
+                            GeoLon = JsonConvert.ToString(geoLon),
+                            GeoLat = JsonConvert.ToString(geoLat),
+                            Data = JsonConvert.DeserializeObject<Dictionary<string, string>>(data)
+                        });
+                    }
                 }
 
                 if (count < take) break;
+
+                skip += take;
             }
 
             return result;
@@ -77,7 +86,7 @@ namespace Placium.Seeker
 
                 await using var command =
                     new MySqlCommand(
-                        @"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) ORDER BY priority ASC LIMIT @skip,@take",
+                        @"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) ORDER BY priority ASC,title ASC LIMIT @skip,@take",
                         mySqlConnection);
                 command.Parameters.AddWithValue("skip", skip);
                 command.Parameters.AddWithValue("take", take);
@@ -88,21 +97,29 @@ namespace Placium.Seeker
                 while (limit > 0 && reader.Read())
                 {
                     count++;
-                    limit--;
                     var addressString = reader.GetString(0);
                     var geoLon = reader.GetFloat(1);
                     var geoLat = reader.GetFloat(2);
                     var data = reader.GetString(3);
-                    result.Add(new NominatimEntry
+                    if (result.All(x =>
+                            string.Compare(x.AddressString, addressString,
+                                StringComparison.InvariantCultureIgnoreCase) != 0))
                     {
-                        AddressString = addressString,
-                        GeoLon = JsonConvert.ToString(geoLon),
-                        GeoLat = JsonConvert.ToString(geoLat),
-                        Data = JsonConvert.DeserializeObject<Dictionary<string, string>>(data)
-                    });
+                        limit--;
+
+                        result.Add(new NominatimEntry
+                        {
+                            AddressString = addressString,
+                            GeoLon = JsonConvert.ToString(geoLon),
+                            GeoLat = JsonConvert.ToString(geoLat),
+                            Data = JsonConvert.DeserializeObject<Dictionary<string, string>>(data)
+                        });
+                    }
                 }
 
                 if (count < take) break;
+
+                skip += take;
             }
 
             return result;
