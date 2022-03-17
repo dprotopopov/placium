@@ -103,13 +103,19 @@ namespace Updater.Addrx.Sphinx
                 {
                     var docs = ReadDocs(reader, take);
 
+                    var filtered = docs.Where(x => x.building == 0
+                                                   || x.data.ContainsKey("addr:housenumber")
+                                                   || x.data.ContainsKey("addr:building")
+                                                   || x.data.ContainsKey("addr:man_made")
+                                                   || x.data.ContainsKey("addr:natural")
+                                                   || x.data.ContainsKey("addr:shop")).ToList();
 
-                    if (docs.Any())
+                    if (filtered.Any())
                     {
                         var sb = new StringBuilder(
                             "REPLACE INTO addrx(id,title,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
-                            docs.Select(x =>
+                            filtered.Select(x =>
                                 $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
@@ -135,25 +141,88 @@ namespace Updater.Addrx.Sphinx
         {
             var keys = new[]
             {
-                "addr:postcode",
-                "addr:region",
-                "addr:district",
-                "addr:city",
-                "addr:town",
-                "addr:village",
-                "addr:subdistrict",
-                "addr:suburb",
-                "addr:hamlet",
-                "addr:allotments",
-                "addr:isolated_dwelling",
-                "addr:neighbourhood",
-                "addr:locality",
-                "addr:place",
-                "addr:quarter",
-                "addr:island",
-                "addr:islet",
-                "addr:street",
-                "addr:housenumber"
+                new KeyValuePair<string, string>("addr:postcode", "{0}"),
+                new KeyValuePair<string, string>("addr:region", "{0}"),
+                new KeyValuePair<string, string>("addr:peninsula", "{0}"),
+                new KeyValuePair<string, string>("addr:district", "{0}"),
+                new KeyValuePair<string, string>("addr:city", "{0}"),
+                new KeyValuePair<string, string>("addr:town", "{0}"),
+                new KeyValuePair<string, string>("addr:village", "{0}"),
+                new KeyValuePair<string, string>("addr:municipality", "{0}"),
+                new KeyValuePair<string, string>("addr:subdistrict", "{0}"),
+                new KeyValuePair<string, string>("addr:landuse", "{0}"),
+                new KeyValuePair<string, string>("addr:suburb", "{0}"),
+                new KeyValuePair<string, string>("addr:hamlet", "{0}"),
+                new KeyValuePair<string, string>("addr:allotments", "{0}"),
+                new KeyValuePair<string, string>("addr:isolated_dwelling", "{0}"),
+                new KeyValuePair<string, string>("addr:neighbourhood", "{0}"),
+                new KeyValuePair<string, string>("addr:locality", "{0}"),
+                new KeyValuePair<string, string>("addr:place", "{0}"),
+                new KeyValuePair<string, string>("addr:quarter", "{0}"),
+                new KeyValuePair<string, string>("addr:island", "{0}"),
+                new KeyValuePair<string, string>("addr:islet", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:yes", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:motorway", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:service", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:track", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:trunk", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:primary", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:secondary", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:tertiary", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:unclassified", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:residential", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:footway", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:cycleway", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:path", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:road", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:living_street", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:pedestrian", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:construction", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:proposed", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:raceway", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:elevator", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:corridor", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:services", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:steps", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:motorway_link", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:service_link", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:track_link", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:trunk_link", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:primary_link", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:secondary_link", "{0}"),
+                new KeyValuePair<string, string>("addr:highway:tertiary_link", "{0}"),
+                new KeyValuePair<string, string>("addr:railway:rail", "ж/д {0}"),
+                new KeyValuePair<string, string>("addr:railway:tram", "т/п {0}"),
+                new KeyValuePair<string, string>("addr:railway:subway", "метро {0}"),
+                new KeyValuePair<string, string>("addr:railway:monorail", "монорельс {0}"),
+                new KeyValuePair<string, string>("addr:railway:funicular", "фуникулёр {0}"),
+                new KeyValuePair<string, string>("addr:railway:razed", "{0}"),
+                new KeyValuePair<string, string>("addr:railway:construction", "{0}"),
+                new KeyValuePair<string, string>("addr:railway:preserved", "{0}"),
+                new KeyValuePair<string, string>("addr:railway:proposed", "{0}"),
+                new KeyValuePair<string, string>("addr:railway:yard", "{0}"),
+                new KeyValuePair<string, string>("addr:railway:service_station", "{0}"),
+                new KeyValuePair<string, string>("addr:bridge", "мост {0}"),
+                new KeyValuePair<string, string>("addr:tunnel", "туннель {0}"),
+                new KeyValuePair<string, string>("addr:street", "{0}"),
+                new KeyValuePair<string, string>("addr:square", "{0}"),
+                new KeyValuePair<string, string>("addr:housenumber", "{0}"),
+                new KeyValuePair<string, string>("addr:building", "{0}"),
+                new KeyValuePair<string, string>("addr:station", "станция {0}"),
+                new KeyValuePair<string, string>("addr:platform", "платформа {0}"),
+                new KeyValuePair<string, string>("addr:highway:stop", "остановка {0}"),
+                new KeyValuePair<string, string>("addr:railway:stop", "остановка {0}"),
+                new KeyValuePair<string, string>("addr:highway:bus_stop", "остановка {0}"),
+                new KeyValuePair<string, string>("addr:railway:tram_stop", "остановка {0}"),
+                new KeyValuePair<string, string>("addr:railway:halt", "остановка по требованию {0}"),
+                new KeyValuePair<string, string>("addr:highway:halt", "остановка по требованию {0}"),
+                new KeyValuePair<string, string>("addr:railway:station", "станция {0}"),
+                new KeyValuePair<string, string>("addr:highway:station", "станция {0}"),
+                new KeyValuePair<string, string>("addr:railway:platform", "платформа {0}"),
+                new KeyValuePair<string, string>("addr:highway:platform", "платформа {0}"),
+                new KeyValuePair<string, string>("addr:man_made", "{0}"),
+                new KeyValuePair<string, string>("addr:natural", "{0}"),
+                new KeyValuePair<string, string>("addr:shop", "{0}")
             };
 
             var result = new List<Doc>(take);
@@ -162,7 +231,7 @@ namespace Updater.Addrx.Sphinx
                 var dictionary = reader.GetValue(1) as Dictionary<string, string> ?? new Dictionary<string, string>();
 
                 var priority = keys.Length;
-                for (; priority > 0 && !dictionary.ContainsKey(keys[priority - 1]); priority--) ;
+                for (; priority > 0 && !dictionary.ContainsKey(keys[priority - 1].Key); priority--) ;
 
                 var list = new List<string>(priority);
 
@@ -175,13 +244,18 @@ namespace Updater.Addrx.Sphinx
                 var skipVillage = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:village") &&
                                   dictionary["addr:city"] == dictionary["addr:village"];
 
+                var skipBuilding = dictionary.ContainsKey("addr:building") && dictionary.ContainsKey("addr:man_made") &&
+                                   dictionary["addr:building"] == dictionary["addr:man_made"];
+
                 for (var k = 0; k < priority; k++)
                 {
                     var key = keys[k];
-                    if (dictionary.ContainsKey(key) && (key != "addr:city" || !skipCity) &&
-                        (key != "addr:town" || !skipTown) &&
-                        (key != "addr:village" || !skipVillage))
-                        list.Add(dictionary[key]);
+                    if (dictionary.ContainsKey(key.Key) && (key.Key != "addr:city" || !skipCity) &&
+                        (key.Key != "addr:town" || !skipTown) &&
+                        (key.Key != "addr:village" || !skipVillage) &&
+                        (key.Key != "addr:building" || !skipBuilding))
+                        if (!string.IsNullOrEmpty(dictionary[key.Key]))
+                            list.Add(string.Format(key.Value, dictionary[key.Key]));
                 }
 
                 var doc = new Doc
@@ -189,7 +263,9 @@ namespace Updater.Addrx.Sphinx
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
                     priority = priority,
-                    building = dictionary.ContainsKey("addr:housenumber") ? 1 : 0,
+                    building = dictionary.ContainsKey("building")
+                        ? 1
+                        : 0,
                     lon = reader.SafeGetFloat(2) ?? 0,
                     lat = reader.SafeGetFloat(3) ?? 0,
                     data = dictionary

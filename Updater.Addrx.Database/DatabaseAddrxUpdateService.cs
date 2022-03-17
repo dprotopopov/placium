@@ -71,15 +71,19 @@ namespace Updater.Addrx.Database
 
             var keys1 = new[]
             {
-                "addr:region",
-                "addr:district",
-                "addr:city",
-                "addr:subdistrict",
-                "addr:suburb",
-                "addr:hamlet",
-                "addr:street",
-                "addr:housenumber",
-                "place"
+                "admin_level",
+                "place",
+                "landuse",
+                "highway",
+                "railway",
+                "bridge",
+                "tunnel",
+                "building",
+                "shop",
+                "station",
+                "platform",
+                "man_made",
+                "natural"
             };
 
             var total = 0L;
@@ -115,20 +119,45 @@ namespace Updater.Addrx.Database
 
                             using (var command2 = new NpgsqlCommand(@"INSERT INTO addrx(id,tags)
                                         SELECT id, hstore(array_agg(key), array_agg(val)) as tags
-                                        FROM (SELECT c.id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
+                                        FROM (SELECT c.id, unnest(akeys(c.tags)) as key, unnest(avals(c.tags)) as val FROM placex c WHERE c.id=ANY(@ids) UNION ALL
+                                        SELECT id,key,val FROM (SELECT c.id as id, unnest(akeys(p.tags)) as key, unnest(avals(p.tags)) as val FROM placex c
                                         JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
-                                        WHERE c.id=ANY(@ids) AND p.tags?|@keys UNION ALL
-                                        SELECT c.id, concat('addr:',p.tags->'place') as key, p.tags->'name' as val FROM placex c
+                                        WHERE c.id=ANY(@ids) AND p.tags?|@keys) as q1 WHERE key like 'addr%' UNION ALL " +
+                                                                    string.Join(" UNION ALL ", new[] { "place" }.Select(
+                                                                        x => $@"
+                                        SELECT c.id, concat('addr:',p.tags->'{x}') as key, CASE WHEN p.tags?'name' THEN p.tags->'name' ELSE p.tags->'ref' END as val FROM placex c
                                         JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
-                                        WHERE c.id=ANY(@ids) AND p.tags?'place' UNION ALL
-                                        SELECT c.id, 'addr:region' as key, p.tags->'name' as val FROM placex c
+                                        WHERE c.id=ANY(@ids) AND p.tags?'{x}' AND (p.tags?'name' OR p.tags?'ref')")) +
+                                                                    " UNION ALL " +
+                                                                    string.Join(" UNION ALL ",
+                                                                        new[] { "highway", "railway" }.Select(x => $@"
+                                        SELECT c.id, concat('addr:{x}:',p.tags->'{x}') as key, CASE WHEN p.tags?'name' THEN p.tags->'name' ELSE p.tags->'ref' END as val FROM placex c
                                         JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
-                                        WHERE c.id=ANY(@ids) AND p.tags->'type'='boundary' and p.tags->'admin_level'='4' UNION ALL
-                                        SELECT c.id, 'addr:district' as key, p.tags->'name' as val FROM placex c
+                                        WHERE c.id=ANY(@ids) AND p.tags?'{x}' AND (p.tags?'name' OR p.tags?'ref')")) +
+                                                                    " UNION ALL " +
+                                                                    string.Join(" UNION ALL ", new[]
+                                                                    {
+                                                                        "building", "man_made", "natural",
+                                                                        "landuse", "shop", "bridge", "tunnel",
+                                                                        "station", "platform"
+                                                                    }.Select(x => $@"
+                                        SELECT c.id, 'addr:{x}' as key, CASE WHEN p.tags?'name' THEN p.tags->'name' ELSE p.tags->'ref' END as val FROM placex c
                                         JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
-                                        WHERE c.id=ANY(@ids) AND p.tags->'type'='boundary' and p.tags->'admin_level'='5') as q
-                                        WHERE key like 'addr%' GROUP BY id
-                                        ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
+                                        WHERE c.id=ANY(@ids) AND p.tags?'{x}' AND (p.tags?'name' OR p.tags?'ref')")) +
+                                                                    " UNION ALL " +
+                                                                    string.Join(" UNION ALL ",
+                                                                        new Dictionary<string, string>
+                                                                        {
+                                                                            { "4", "region" },
+                                                                            { "5", "district" },
+                                                                            { "6", "municipality" },
+                                                                            { "8", "subdistrict" }
+                                                                        }.Select(x => $@"
+                                        SELECT c.id, 'addr:{x.Value}' as key, CASE WHEN p.tags?'name' THEN p.tags->'name' ELSE p.tags->'ref' END as val FROM placex c
+                                        JOIN placex p ON c.location@p.location AND ST_Within(c.location,p.location)
+                                        WHERE c.id=ANY(@ids) AND p.tags->'type'='boundary' AND p.tags->'admin_level'='{x.Key}' AND (p.tags?'name' OR p.tags?'ref')")) +
+                                                                    @") as q
+                                        GROUP BY id ON CONFLICT(id) DO UPDATE SET tags = EXCLUDED.tags,record_number = nextval('record_number_seq')",
                                        connection2))
                             {
                                 command2.Parameters.AddWithValue("keys", keys.ToArray());
