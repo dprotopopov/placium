@@ -235,36 +235,14 @@ namespace Updater.Addrx.Sphinx
 
                 var list = new List<string>(priority);
 
-                var skipCity = dictionary.ContainsKey("addr:region") && dictionary.ContainsKey("addr:city") &&
-                               dictionary["addr:region"] == dictionary["addr:city"];
+                foreach (var (key, format) in keys)
+                    if (dictionary.TryGetValue(key, out var s) && !string.IsNullOrEmpty(s))
+                    {
+                        var item = string.Format(format, s);
 
-                var skipTown = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:town") &&
-                               dictionary["addr:city"] == dictionary["addr:town"];
-
-                var skipVillage = dictionary.ContainsKey("addr:city") && dictionary.ContainsKey("addr:village") &&
-                                  dictionary["addr:city"] == dictionary["addr:village"];
-
-                var skipMunicipality = dictionary.ContainsKey("addr:district") && dictionary.ContainsKey("addr:municipality") &&
-                                       dictionary["addr:district"] == dictionary["addr:municipality"];
-
-                var skipSubdistrict = dictionary.ContainsKey("addr:subdistrict") && dictionary.ContainsKey("addr:municipality") &&
-                                      dictionary["addr:subdistrict"] == dictionary["addr:municipality"];
-
-                var skipBuilding = dictionary.ContainsKey("addr:building") && dictionary.ContainsKey("addr:man_made") &&
-                                   dictionary["addr:building"] == dictionary["addr:man_made"];
-
-                for (var k = 0; k < priority; k++)
-                {
-                    var key = keys[k];
-                    if (dictionary.ContainsKey(key.Key) && (key.Key != "addr:city" || !skipCity) &&
-                        (key.Key != "addr:town" || !skipTown) &&
-                        (key.Key != "addr:village" || !skipVillage) &&
-                        (key.Key != "addr:municipality" || !skipMunicipality) &&
-                        (key.Key != "addr:subdistrict" || !skipSubdistrict) &&
-                        (key.Key != "addr:building" || !skipBuilding))
-                        if (!string.IsNullOrEmpty(dictionary[key.Key]))
-                            list.Add(string.Format(key.Value, dictionary[key.Key]));
-                }
+                        if (!list.Contains(item, StringComparer.InvariantCultureIgnoreCase))
+                            list.Add(item);
+                    }
 
                 var doc = new Doc
                 {
