@@ -35,7 +35,7 @@ namespace placium
             typeof(SphinxAddrobxUpdateService)
         };
 
-        private static async Task Main(string[] args)
+        private static async Task<int> Main(string[] args)
         {
             Console.WriteLine("Welcome to Placium!");
 
@@ -113,10 +113,12 @@ namespace placium
                 }
 
                 Console.WriteLine("Complete");
+                return 0;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                return -1;
             }
         }
     }
