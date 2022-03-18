@@ -15,7 +15,8 @@ namespace Placium.Seeker
         {
         }
 
-        public async Task<IEnumerable<NominatimEntry>> GetByCoordsAsync(float lat, float lon, int limit = 20)
+        public async Task<IEnumerable<NominatimEntry>> GetByCoordsAsync(float lat, float lon, int limit = 20,
+            bool raw = false)
         {
             var result = new List<NominatimEntry>();
             await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
@@ -43,7 +44,7 @@ namespace Placium.Seeker
                     var geoLon = reader.GetFloat(2);
                     var geoLat = reader.GetFloat(3);
                     var data = reader.GetString(4);
-                    if (result.All(x =>
+                    if (raw || result.All(x =>
                             string.Compare(x.AddressString, addressString,
                                 StringComparison.InvariantCultureIgnoreCase) != 0))
                     {
@@ -67,7 +68,8 @@ namespace Placium.Seeker
             return result;
         }
 
-        public async Task<IEnumerable<NominatimEntry>> GetByNameAsync(string searchString, int limit = 20)
+        public async Task<IEnumerable<NominatimEntry>> GetByNameAsync(string searchString, int limit = 20,
+            bool raw = false)
         {
             var result = new List<NominatimEntry>();
 
@@ -101,7 +103,7 @@ namespace Placium.Seeker
                     var geoLon = reader.GetFloat(1);
                     var geoLat = reader.GetFloat(2);
                     var data = reader.GetString(3);
-                    if (result.All(x =>
+                    if (raw || result.All(x =>
                             string.Compare(x.AddressString, addressString,
                                 StringComparison.InvariantCultureIgnoreCase) != 0))
                     {

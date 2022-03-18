@@ -19,18 +19,18 @@ namespace Placium.WebApi.Controllers
         [HttpGet("search")]
         [ProducesResponseType(200, Type = typeof(List<NominatimEntry>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Search(string q, int limit = 20)
+        public async Task<IActionResult> Search(string q, int limit = 20, bool raw = false)
         {
-            return Ok(await _osmNominatimService.GetByNameAsync(q, limit));
+            return Ok(await _osmNominatimService.GetByNameAsync(q, limit, raw));
         }
 
         [Route("reverse")]
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(List<NominatimEntry>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Reverse(float lat, float lon, int limit = 20)
+        public async Task<IActionResult> Reverse(float lat, float lon, int limit = 20, bool raw = false)
         {
-            return Ok(await _osmNominatimService.GetByCoordsAsync(lat, lon, limit));
+            return Ok(await _osmNominatimService.GetByCoordsAsync(lat, lon, limit, raw));
         }
     }
 }
