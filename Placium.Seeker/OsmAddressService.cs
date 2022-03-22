@@ -25,7 +25,7 @@ namespace Placium.Seeker
         {
             try
             {
-                if (!coords.Valid) throw new ArgumentException();
+                if (!coords.Valid) throw new ArgumentException(nameof(coords));
 
                 var result = new List<AddressEntry>();
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());

@@ -26,7 +26,7 @@ namespace Placium.Seeker
         {
             try
             {
-                if (!Coordinate.Validate(lat, lon)) throw new ArgumentException();
+                if (!Coordinate.Validate(lat, lon)) throw new ArgumentException($"{nameof(lat)},{nameof(lon)}");
 
                 var result = new List<NominatimEntry>();
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
