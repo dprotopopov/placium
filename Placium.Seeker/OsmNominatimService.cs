@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Placium.Common;
+using Route.LocalGeo;
 
 namespace Placium.Seeker
 {
@@ -25,6 +26,8 @@ namespace Placium.Seeker
         {
             try
             {
+                if (!Coordinate.Validate(lat, lon)) throw new ArgumentException();
+
                 var result = new List<NominatimEntry>();
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
                 var skip = 0;

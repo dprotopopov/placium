@@ -22,6 +22,9 @@ namespace Placium.Seeker
         {
             try
             {
+                if (!source.Valid) throw new ArgumentException();
+                if (!target.Valid) throw new ArgumentException();
+
                 var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"),
                     GetRouteConnectionString(),
                     new Car());

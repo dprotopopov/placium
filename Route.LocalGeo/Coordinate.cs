@@ -157,6 +157,8 @@ namespace Route.LocalGeo
         /// <returns>True if both are in range.</returns>
         public static bool Validate(double lat, double lon)
         {
+            if (double.IsNaN(lat) || double.IsInfinity(lat)) return false;
+            if (double.IsNaN(lon) || double.IsInfinity(lon)) return false;
             if (lat < -90) return false;
             if (lat > 90) return false;
             if (lon < -180) return false;
