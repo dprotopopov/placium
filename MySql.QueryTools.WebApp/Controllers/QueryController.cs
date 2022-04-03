@@ -3,6 +3,7 @@ using System.Collections;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MySql.Data.MySqlClient;
 using MySql.QueryTools.WebApp.Models;
 
@@ -11,10 +12,12 @@ namespace MySql.QueryTools.WebApp.Controllers
     public class QueryController : Controller
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<QueryController> _logger;
 
-        public QueryController(IConfiguration configuration)
+        public QueryController(IConfiguration configuration, ILogger<QueryController> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -22,9 +25,11 @@ namespace MySql.QueryTools.WebApp.Controllers
         {
             if (string.IsNullOrEmpty(q)) return await Task.FromResult(View());
 
+            _logger.LogTrace($"Execute query '{q}'");
+
             var model = new QueryViewModel
             {
-                q = q
+                Query = q
             };
 
             try
@@ -35,7 +40,7 @@ namespace MySql.QueryTools.WebApp.Controllers
                 await using var connection =
                     new MySqlConnection(_configuration.GetConnectionString("SphinxConnection"));
                 await connection.OpenAsync();
-                await using (var command = new MySqlCommand(model.q, connection))
+                await using (var command = new MySqlCommand(model.Query, connection))
                 {
                     await using var reader = command.ExecuteReader();
                     var first = true;
@@ -52,10 +57,12 @@ namespace MySql.QueryTools.WebApp.Controllers
                 }
 
                 await connection.CloseAsync();
+                _logger.LogInformation($"Success execute query '{q}'. Returns {model.Items.Count} records.");
             }
             catch (Exception ex)
             {
                 model.Error = ex.Message;
+                _logger.LogError($"Error while execute query '{q}'. {ex.Message}");
             }
 
             return await Task.FromResult(View(model));

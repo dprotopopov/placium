@@ -15,16 +15,6 @@ namespace MySql.QueryTools.WebApp.Controllers
             _logger = logger;
         }
 
-        public async Task<IActionResult> Index()
-        {
-            return await Task.FromResult(View());
-        }
-
-        public async Task<IActionResult> Privacy()
-        {
-            return await Task.FromResult(View());
-        }
-
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> Error()
         {

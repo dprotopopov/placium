@@ -6,41 +6,64 @@
 }
 
 <div class="text-center">
-    @using (Html.BeginForm("Index", "Query", FormMethod.Get))
+    @using (Html.BeginForm("Index", "Query", FormMethod.Get, new { onsubmit = "return onSubmitHandler(this);" }))
     {
-        @Html.TextAreaFor(m => m.q, new { style = "height:5em;  width: 100%;" })
+        @Html.Hidden("q")
+        <pre id="editor" style="height: 5em;">@Model?.Query</pre>
+        <script src="~/lib/ace-builds-master/src/ace.js"></script>
+        <script src="~/lib/ace-builds-master/src/theme-github.js"></script>
+        <script src="~/lib/ace-builds-master/src/mode-sql.js"></script>
+        <script>
+            editor = ace.edit("editor");
+            editor.setTheme("ace/theme/github");
+            editor.session.setMode("ace/mode/sql");
+            document.getElementById("editor").style.fontSize = "1.25em";
+        </script>
         <p>
             <input type="submit"/>
         </p>
     }
+    <script>
+        function onSubmitHandler(form) {
+            document.getElementById("q").value = editor.getValue();
+            return true;
+        }
+    </script>
 
     @if (Model?.Items != null)
     {
-        <div style="max-height: calc(100vh - 15em); overflow: auto; width: 100%;">
-            <table border="1" cellpadding="0" cellspacing="0" style="min-width: 100%;">
-                <tbody>
-                <tr>
-                    @foreach (var value in Model.Headers)
-                    {
-                        <th>@value</th>
-                    }
-                </tr>
+        <div id="wrapper"></div>
+        <link href="~/lib/gridjs/dist/theme/mermaid.min.css" rel="stylesheet" />
+        <script src="~/lib/gridjs/dist/gridjs.umd.js"></script>
+        <script>
+            var columns = [];
 
-                @foreach (var row in Model.Items)
+            @foreach (var d in Model.Headers)
+            {
+                @:columns.push({ name: "@d", formatter: (cell) => gridjs.html(cell)});
+            }
+            var data = [];
+
+            @foreach (var r in Model.Items)
+            {
+                @:var row = [];
+
+                @foreach (var d in (ArrayList)r)
                 {
-                    <tr>
-                        @foreach (var value in (ArrayList)row)
-                        {
-                            <td>@value</td>
-                        }
-                    </tr>
+                    @:row.push("@d");
                 }
-                </tbody>
-            </table>
-        </div>
+                @:data.push(row);
+            }
+
+            new gridjs.Grid({
+                columns: columns,
+                data: data,
+                height: "calc(100vh - 25em)"
+            }).render(document.getElementById("wrapper"));
+        </script>
     }
 
-    <div style="height: 5em; overflow: auto; width: 100%;">
+    <div style="height: 2em; overflow: auto; width: 100%;">
         @Html.DisplayTextFor(m => m.Error)
     </div>
 </div>

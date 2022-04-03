@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "MySqlQueryTools": {
+    "QueryTools": {
       "commandName": "Project",
       "launchBrowser": true,
       "launchUrl": "mysql?q=show+tables",
