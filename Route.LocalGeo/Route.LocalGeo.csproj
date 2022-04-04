@@ -14,7 +14,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Route.IO\Route.IO.csproj" />
-		<ProjectReference Include="..\Route.Navigation.Directions\Route.Navigation.Directions.csproj" />
 	</ItemGroup>
 
 </Project>
