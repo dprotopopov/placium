@@ -12,7 +12,7 @@ namespace Placium.Common
         {
             return string.Join("<<",
                 list.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x =>
-                    $"({string.Join($" NEAR/{near} ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Yo().ToLower().Escape()}\""))})"));
+                    $"({string.Join($" NEAR/{near} ", _spaceRegex.Split(x.Trim()).Select(y => $"\"{y.Trim('*').Yo().ToLower().Escape()}*\""))})"));
         }
     }
 }
