@@ -209,6 +209,7 @@ namespace Updater.Addrx.Sphinx
                 new KeyValuePair<string, string>("addr:railway:tram_stop", "остановка {0}"),
                 new KeyValuePair<string, string>("addr:railway:halt", "остановка по требованию {0}"),
                 new KeyValuePair<string, string>("addr:highway:halt", "остановка по требованию {0}"),
+                new KeyValuePair<string, string>("addr:railway:subway_entrance", "станция {0}"),
                 new KeyValuePair<string, string>("addr:railway:station", "станция {0}"),
                 new KeyValuePair<string, string>("addr:highway:station", "станция {0}"),
                 new KeyValuePair<string, string>("addr:railway:platform", "платформа {0}"),
