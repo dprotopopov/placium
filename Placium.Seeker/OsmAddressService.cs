@@ -29,8 +29,11 @@ namespace Placium.Seeker
 
                 var level = custom ? 1 : 0;
 
-                var andFilter = !string.IsNullOrWhiteSpace(filter)
-                    ? $"AND ({filter})" : "";
+                var dicFilter = !string.IsNullOrWhiteSpace(filter)
+                    ? JsonConvert.DeserializeObject<Dictionary<string, string>>(filter)
+                    : null;
+                var andFilter = dicFilter != null && dicFilter.Any()
+                    ? $"AND ({string.Join(" AND ", dicFilter.Select(x=>$"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}"))})" : "";
 
                 var result = new List<AddressEntry>();
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
@@ -49,6 +52,9 @@ namespace Placium.Seeker
                     command.Parameters.AddWithValue("lat", coords.Latitude);
                     command.Parameters.AddWithValue("lon", coords.Longitude);
                     command.Parameters.AddWithValue("level", level);
+                    if (dicFilter != null)
+                        foreach (var (key, value) in dicFilter)
+                            command.Parameters.AddWithValue($"data_{key.Replace(":", "_")}", value);
 
                     await using var reader = command.ExecuteReader();
                     var count = 0;
@@ -101,8 +107,11 @@ namespace Placium.Seeker
                 var title = custom ? "custom_title" : "title";
                 var level = custom ? 1 : 0;
 
-                var andFilter = !string.IsNullOrWhiteSpace(filter)
-                    ?$"AND ({filter})" : "";
+                var dicFilter = !string.IsNullOrWhiteSpace(filter)
+                    ? JsonConvert.DeserializeObject<Dictionary<string, string>>(filter)
+                    : null;
+                var andFilter = dicFilter != null && dicFilter.Any()
+                    ? $"AND ({string.Join(" AND ", dicFilter.Select(x => $"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}"))})" : "";
 
                 var list = searchString.Split(",").ToList();
 
@@ -124,6 +133,9 @@ namespace Placium.Seeker
                     command.Parameters.AddWithValue("take", take);
                     command.Parameters.AddWithValue("match", match);
                     command.Parameters.AddWithValue("level", level);
+                    if (dicFilter != null)
+                        foreach (var (key, value) in dicFilter)
+                            command.Parameters.AddWithValue($"data_{key.Replace(":", "_")}", value);
 
                     await using var reader = command.ExecuteReader();
                     var count = 0;
