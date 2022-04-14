@@ -21,11 +21,13 @@ namespace Placium.Seeker
         }
 
         public async Task<IEnumerable<AddressEntry>> GetByCoordsAsync(Coordinate coords, int limit = 20,
-            bool raw = false)
+            bool raw = false, bool custom = false)
         {
             try
             {
                 if (!coords.Valid) throw new ArgumentException(nameof(coords));
+
+                var level = custom ? 1 : 0;
 
                 var result = new List<AddressEntry>();
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
@@ -37,12 +39,13 @@ namespace Placium.Seeker
 
                     await using var command =
                         new MySqlCommand(
-                            @"SELECT GEODIST(@lat,@lon,lat,lon,{in=degrees,out=meters}) AS distance,title,lon,lat,data FROM addrx ORDER BY distance ASC LIMIT @skip,@take",
+                            @"SELECT GEODIST(@lat,@lon,lat,lon,{in=degrees,out=meters}) AS distance,title,lon,lat,data FROM addrx WHERE custom_level>=@level ORDER BY distance ASC LIMIT @skip,@take",
                             mySqlConnection);
                     command.Parameters.AddWithValue("skip", skip);
                     command.Parameters.AddWithValue("take", take);
                     command.Parameters.AddWithValue("lat", coords.Latitude);
                     command.Parameters.AddWithValue("lon", coords.Longitude);
+                    command.Parameters.AddWithValue("level", level);
 
                     await using var reader = command.ExecuteReader();
                     var count = 0;
@@ -84,7 +87,7 @@ namespace Placium.Seeker
         }
 
         public async Task<IEnumerable<AddressEntry>> GetByNameAsync(string searchString, int limit = 20,
-            bool raw = false, int field = 0)
+            bool raw = false, bool custom = false)
         {
             try
             {
@@ -92,11 +95,8 @@ namespace Placium.Seeker
 
                 if (string.IsNullOrEmpty(searchString)) return result;
 
-                var title = field switch
-                {
-                    1 => "title1",
-                    _ => "title"
-                };
+                var title = custom ? "custom_title" : "title";
+                var level = custom ? 1 : 0;
 
                 var list = searchString.Split(",").ToList();
 
@@ -112,11 +112,12 @@ namespace Placium.Seeker
 
                     await using var command =
                             new MySqlCommand(
-                        $@"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) ORDER BY priority ASC,title ASC LIMIT @skip,@take",
+                        $@"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) AND custom_level>=@level ORDER BY priority ASC,title ASC LIMIT @skip,@take",
                             mySqlConnection);
                     command.Parameters.AddWithValue("skip", skip);
                     command.Parameters.AddWithValue("take", take);
                     command.Parameters.AddWithValue("match", match);
+                    command.Parameters.AddWithValue("level", level);
 
                     await using var reader = command.ExecuteReader();
                     var count = 0;

@@ -34,7 +34,7 @@ namespace Updater.Addrx.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text indexed stored,title1 text indexed stored,priority int,lon float,lat float,building int,data json)"
+                    "CREATE TABLE addrx(title text indexed stored,custom_title text indexed stored,custom_level int,priority int,lon float,lat float,building int,data json)"
                     + " phrase_boundary='U+2C'"
                     + " phrase_boundary_step='100'"
                     + " min_infix_len='1'"
@@ -103,22 +103,13 @@ namespace Updater.Addrx.Sphinx
                 {
                     var docs = ReadDocs(reader, take);
 
-                    var filtered = docs.Where(x => x.data.ContainsKey("highway")
-                                                   || x.data.ContainsKey("railway")
-                                                   || x.data.ContainsKey("building")
-                                                   || x.data.ContainsKey("addr:housenumber")
-                                                   || x.data.ContainsKey("addr:building")
-                                                   || x.data.ContainsKey("addr:man_made")
-                                                   || x.data.ContainsKey("addr:natural")
-                                                   || x.data.ContainsKey("addr:shop")).ToList();
-
-                    if (filtered.Any())
+                    if (docs.Any())
                     {
                         var sb = new StringBuilder(
-                            "REPLACE INTO addrx(id,title,title1,priority,lon,lat,building,data) VALUES ");
+                            "REPLACE INTO addrx(id,title,custom_title,custom_level,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
-                            filtered.Select(x =>
-                                $"({x.id},'{x.text.TextEscape()}','{x.text1.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
+                            docs.Select(x =>
+                                $"({x.id},'{x.text.TextEscape()}','{x.custom_text.TextEscape()}',{x.custom_level},{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }
@@ -248,16 +239,29 @@ namespace Updater.Addrx.Sphinx
                     }
 
                 var list1 = new List<string>();
-                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:street", out var street)) list1.Add(street);
-                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:square", out var square)) list1.Add(square);
-                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:housenumber", out var housenumber)) list1.Add(housenumber);
+                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:street", out var street))
+                    list1.Add(street);
+                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:square", out var square))
+                    list1.Add(square);
+                if (dictionary.ContainsKey("building") &&
+                    dictionary.TryGetValue("addr:housenumber", out var housenumber)) list1.Add(housenumber);
                 if (dictionary.TryGetValue("name", out var name)) list1.Add(name);
 
                 var doc = new Doc
                 {
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
-                    text1 = string.Join(", ", list1),
+                    custom_text = string.Join(", ", list1),
+                    custom_level = dictionary.ContainsKey("highway")
+                             || dictionary.ContainsKey("railway")
+                             || dictionary.ContainsKey("building")
+                             || dictionary.ContainsKey("addr:housenumber")
+                             || dictionary.ContainsKey("addr:building")
+                             || dictionary.ContainsKey("addr:man_made")
+                             || dictionary.ContainsKey("addr:natural")
+                             || dictionary.ContainsKey("addr:shop")
+                        ? 1
+                        : 0,
                     priority = priority,
                     building = dictionary.ContainsKey("building")
                         ? 1
