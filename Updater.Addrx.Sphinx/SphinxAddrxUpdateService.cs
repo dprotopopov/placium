@@ -34,7 +34,7 @@ namespace Updater.Addrx.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text indexed stored,priority int,lon float,lat float,building int,data json)"
+                    "CREATE TABLE addrx(title text indexed stored,title1 text indexed stored,priority int,lon float,lat float,building int,data json)"
                     + " phrase_boundary='U+2C'"
                     + " phrase_boundary_step='100'"
                     + " min_infix_len='1'"
@@ -103,7 +103,9 @@ namespace Updater.Addrx.Sphinx
                 {
                     var docs = ReadDocs(reader, take);
 
-                    var filtered = docs.Where(x => x.building == 0
+                    var filtered = docs.Where(x => x.data.ContainsKey("highway")
+                                                   || x.data.ContainsKey("railway")
+                                                   || x.data.ContainsKey("building")
                                                    || x.data.ContainsKey("addr:housenumber")
                                                    || x.data.ContainsKey("addr:building")
                                                    || x.data.ContainsKey("addr:man_made")
@@ -113,10 +115,10 @@ namespace Updater.Addrx.Sphinx
                     if (filtered.Any())
                     {
                         var sb = new StringBuilder(
-                            "REPLACE INTO addrx(id,title,priority,lon,lat,building,data) VALUES ");
+                            "REPLACE INTO addrx(id,title,title1,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
                             filtered.Select(x =>
-                                $"({x.id},'{x.text.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
+                                $"({x.id},'{x.text.TextEscape()}','{x.text1.TextEscape()}',{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }
@@ -225,6 +227,7 @@ namespace Updater.Addrx.Sphinx
                 new KeyValuePair<string, string>("addr:shop", "{0}")
             };
 
+
             var result = new List<Doc>(take);
             for (var i = 0; i < take && reader.Read(); i++)
             {
@@ -244,10 +247,17 @@ namespace Updater.Addrx.Sphinx
                             list.Add(item);
                     }
 
+                var list1 = new List<string>();
+                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:street", out var street)) list1.Add(street);
+                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:square", out var square)) list1.Add(square);
+                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:housenumber", out var housenumber)) list1.Add(housenumber);
+                if (dictionary.TryGetValue("name", out var name)) list1.Add(name);
+
                 var doc = new Doc
                 {
                     id = reader.GetInt64(0),
                     text = string.Join(", ", list),
+                    text1 = string.Join(", ", list1),
                     priority = priority,
                     building = dictionary.ContainsKey("building")
                         ? 1

@@ -85,7 +85,7 @@ namespace Placium.Seeker
         }
 
         public async Task<IEnumerable<NominatimEntry>> GetByNameAsync(string searchString, int limit = 20,
-            bool raw = false)
+            bool raw = false, int field = 0)
         {
             try
             {
@@ -93,9 +93,15 @@ namespace Placium.Seeker
 
                 if (string.IsNullOrEmpty(searchString)) return result;
 
+                var title = field switch
+                {
+                    1 => "title1",
+                    _ => "title"
+                };
+
                 var list = searchString.Split(",").ToList();
 
-                var match = list.ToMatch();
+                var match = $"@({title}) ({list.ToMatch()})";
 
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
                 var skip = 0;

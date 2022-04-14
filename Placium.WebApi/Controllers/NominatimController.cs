@@ -19,9 +19,9 @@ namespace Placium.WebApi.Controllers
         [HttpGet("search")]
         [ProducesResponseType(200, Type = typeof(List<NominatimEntry>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Search(string q, int limit = 20, bool raw = false)
+        public async Task<IActionResult> Search(string q, int limit = 20, bool raw = false, int field = 0)
         {
-            return Ok(await _osmNominatimService.GetByNameAsync(q, limit, raw));
+            return Ok(await _osmNominatimService.GetByNameAsync(q, limit, raw, field));
         }
 
         [Route("reverse")]

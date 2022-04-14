@@ -6,6 +6,7 @@ namespace Updater.Addrx.Sphinx
     {
         public long id { get; set; }
         public string text { get; set; }
+        public string text1 { get; set; }
         public int priority { get; set; }
         public float lon { get; set; }
         public float lat { get; set; }

@@ -84,7 +84,7 @@ namespace Placium.Seeker
         }
 
         public async Task<IEnumerable<AddressEntry>> GetByNameAsync(string searchString, int limit = 20,
-            bool raw = false)
+            bool raw = false, int field = 0)
         {
             try
             {
@@ -92,9 +92,15 @@ namespace Placium.Seeker
 
                 if (string.IsNullOrEmpty(searchString)) return result;
 
+                var title = field switch
+                {
+                    1 => "title1",
+                    _ => "title"
+                };
+
                 var list = searchString.Split(",").ToList();
 
-                var match = list.ToMatch();
+                var match = $"@({title}) ({list.ToMatch()})";
 
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
                 var skip = 0;
@@ -105,8 +111,8 @@ namespace Placium.Seeker
                     mySqlConnection.TryOpen();
 
                     await using var command =
-                        new MySqlCommand(
-                            @"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) ORDER BY priority ASC,title ASC LIMIT @skip,@take",
+                            new MySqlCommand(
+                        $@"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) ORDER BY priority ASC,title ASC LIMIT @skip,@take",
                             mySqlConnection);
                     command.Parameters.AddWithValue("skip", skip);
                     command.Parameters.AddWithValue("take", take);

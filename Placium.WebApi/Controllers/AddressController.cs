@@ -20,9 +20,9 @@ namespace Placium.WebApi.Controllers
         [HttpGet]
         [ProducesResponseType(200, Type = typeof(List<AddressEntry>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> Get(string searchString, int limit = 20, bool raw = false)
+        public async Task<IActionResult> Get(string searchString, int limit = 20, bool raw = false, int field = 0)
         {
-            return Ok(await _osmAddressService.GetByNameAsync(searchString, limit, raw));
+            return Ok(await _osmAddressService.GetByNameAsync(searchString, limit, raw, field));
         }
 
         [Route("by_coords")]
