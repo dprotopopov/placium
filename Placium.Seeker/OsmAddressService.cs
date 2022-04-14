@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -32,8 +33,12 @@ namespace Placium.Seeker
                 var dicFilter = !string.IsNullOrWhiteSpace(filter)
                     ? JsonConvert.DeserializeObject<Dictionary<string, string>>(filter)
                     : null;
-                var andFilter = dicFilter != null && dicFilter.Any()
-                    ? $"AND ({string.Join(" AND ", dicFilter.Select(x=>$"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}"))})" : "";
+
+                var sanitized = dicFilter?.Where(x => Regex.IsMatch(x.Key, @"^[A-Za-z0-9\.\:_\`]+$"))
+                    .ToDictionary(x => x.Key, x => x.Value);
+
+                var andFilter = sanitized != null && sanitized.Any()
+                    ? $"AND ({string.Join(" AND ", sanitized.Select(x=>$"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}"))})" : "";
 
                 var result = new List<AddressEntry>();
                 await using var mySqlConnection = new MySqlConnection(GetSphinxConnectionString());
@@ -52,8 +57,8 @@ namespace Placium.Seeker
                     command.Parameters.AddWithValue("lat", coords.Latitude);
                     command.Parameters.AddWithValue("lon", coords.Longitude);
                     command.Parameters.AddWithValue("level", level);
-                    if (dicFilter != null)
-                        foreach (var (key, value) in dicFilter)
+                    if (sanitized != null)
+                        foreach (var (key, value) in sanitized)
                             command.Parameters.AddWithValue($"data_{key.Replace(":", "_")}", value);
 
                     await using var reader = command.ExecuteReader();
@@ -110,8 +115,12 @@ namespace Placium.Seeker
                 var dicFilter = !string.IsNullOrWhiteSpace(filter)
                     ? JsonConvert.DeserializeObject<Dictionary<string, string>>(filter)
                     : null;
-                var andFilter = dicFilter != null && dicFilter.Any()
-                    ? $"AND ({string.Join(" AND ", dicFilter.Select(x => $"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}"))})" : "";
+
+                var sanitized = dicFilter?.Where(x => Regex.IsMatch(x.Key, @"^[A-Za-z0-9\.\:_\`]+$"))
+                    .ToDictionary(x => x.Key, x => x.Value);
+
+                var andFilter = sanitized != null && sanitized.Any()
+                    ? $"AND ({string.Join(" AND ", sanitized.Select(x => $"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}"))})" : "";
 
                 var list = searchString.Split(",").ToList();
 
@@ -133,8 +142,8 @@ namespace Placium.Seeker
                     command.Parameters.AddWithValue("take", take);
                     command.Parameters.AddWithValue("match", match);
                     command.Parameters.AddWithValue("level", level);
-                    if (dicFilter != null)
-                        foreach (var (key, value) in dicFilter)
+                    if (sanitized != null)
+                        foreach (var (key, value) in sanitized)
                             command.Parameters.AddWithValue($"data_{key.Replace(":", "_")}", value);
 
                     await using var reader = command.ExecuteReader();
