@@ -65,6 +65,14 @@ namespace Updater.Addrobx.Sphinx
             await UpdateHouseAsync(session, full);
             await UpdateSteadAsync(session, full);
             await UpdateRoomAsync(session, full);
+
+            await using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                TryExecuteNonQueries(new[]
+                {
+                    "FLUSH RTINDEX addrobx"
+                }, connection);
+            }
         }
 
         private async Task UpdateAddrobAsync(string session, bool full)

@@ -58,6 +58,14 @@ namespace Updater.Addrx.Sphinx
             }
 
             await UpdateAddrxAsync(session, full);
+
+            await using (var connection = new MySqlConnection(GetSphinxConnectionString()))
+            {
+                TryExecuteNonQueries(new[]
+                {
+                    "FLUSH RTINDEX addrx"
+                }, connection);
+            }
         }
 
 
@@ -254,13 +262,13 @@ namespace Updater.Addrx.Sphinx
                     text = string.Join(", ", list),
                     custom_text = string.Join(", ", list1),
                     custom_level = dictionary.ContainsKey("highway")
-                             || dictionary.ContainsKey("railway")
-                             || dictionary.ContainsKey("building")
-                             || dictionary.ContainsKey("addr:housenumber")
-                             || dictionary.ContainsKey("addr:building")
-                             || dictionary.ContainsKey("addr:man_made")
-                             || dictionary.ContainsKey("addr:natural")
-                             || dictionary.ContainsKey("addr:shop")
+                                   || dictionary.ContainsKey("railway")
+                                   || dictionary.ContainsKey("building")
+                                   || dictionary.ContainsKey("addr:housenumber")
+                                   || dictionary.ContainsKey("addr:building")
+                                   || dictionary.ContainsKey("addr:man_made")
+                                   || dictionary.ContainsKey("addr:natural")
+                                   || dictionary.ContainsKey("addr:shop")
                         ? 1
                         : 0,
                     priority = priority,
