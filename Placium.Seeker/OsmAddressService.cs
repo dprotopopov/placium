@@ -110,6 +110,7 @@ namespace Placium.Seeker
                 if (string.IsNullOrEmpty(searchString)) return result;
 
                 var title = custom ? "custom_title" : "title";
+                var sorting = custom ? "custom_sorting" : "sorting";
                 var level = custom ? 1 : 0;
 
                 var dicFilter = !string.IsNullOrWhiteSpace(filter)
@@ -136,7 +137,7 @@ namespace Placium.Seeker
 
                     await using var command =
                             new MySqlCommand(
-                        $@"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) AND custom_level>=@level {andFilter} ORDER BY priority ASC,title ASC LIMIT @skip,@take",
+                        $@"SELECT title,lon,lat,data FROM addrx WHERE MATCH(@match) AND custom_level>=@level {andFilter} ORDER BY priority ASC,{sorting} ASC LIMIT @skip,@take",
                             mySqlConnection);
                     command.Parameters.AddWithValue("skip", skip);
                     command.Parameters.AddWithValue("take", take);

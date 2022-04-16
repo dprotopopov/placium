@@ -34,7 +34,7 @@ namespace Updater.Addrx.Sphinx
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrx(title text indexed stored,custom_title text indexed stored,custom_level int,priority int,lon float,lat float,building int,data json)"
+                    "CREATE TABLE addrx(title text indexed stored,custom_title text indexed stored,sorting string,custom_sorting string,custom_level int,priority int,lon float,lat float,building int,data json)"
                     + " phrase_boundary='U+2C'"
                     + " phrase_boundary_step='100'"
                     + " min_infix_len='1'"
@@ -114,10 +114,10 @@ namespace Updater.Addrx.Sphinx
                     if (docs.Any())
                     {
                         var sb = new StringBuilder(
-                            "REPLACE INTO addrx(id,title,custom_title,custom_level,priority,lon,lat,building,data) VALUES ");
+                            "REPLACE INTO addrx(id,title,custom_title,sorting,custom_sorting,custom_level,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
                             docs.Select(x =>
-                                $"({x.id},'{x.text.TextEscape()}','{x.custom_text.TextEscape()}',{x.custom_level},{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
+                                $"({x.id},'{x.text.TextEscape()}','{x.custom_text.TextEscape()}','{x.text.ToSorting().TextEscape()}','{x.custom_text.ToSorting().TextEscape()}',{x.custom_level},{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }
