@@ -15,12 +15,12 @@ namespace Updater.Placex.Database
 {
     public class DatabasePlacexUpdateService : BaseAppService, IUpdateService
     {
-        private readonly GeometryFactory _geometryFactory = new GeometryFactory();
-        private readonly NumberFormatInfo _nfi = new NumberFormatInfo { NumberDecimalSeparator = "." };
+        private static readonly GeometryFactory GeometryFactory = new GeometryFactory();
+        private static readonly NumberFormatInfo Nfi = new NumberFormatInfo { NumberDecimalSeparator = "." };
+        private static readonly WKTReader WktReader = new WKTReader();
+        private static readonly WKTWriter WktWriter = new WKTWriter();
         private readonly IParallelConfig _parallelConfig;
         private readonly IProgressClient _progressClient;
-        private readonly WKTReader _wktReader = new WKTReader();
-        private readonly WKTWriter _wktWriter = new WKTWriter();
 
         public DatabasePlacexUpdateService(IProgressClient progressClient,
             IConnectionsConfig configuration, IParallelConfig parallelConfig) : base(configuration)
@@ -125,7 +125,7 @@ namespace Updater.Placex.Database
                         {
                             reader.GetInt64(0).ToString(),
                             reader.GetString(1).TextEscape(),
-                            $"SRID=4326;POINT({reader.GetFloat(2).ToString(_nfi)} {reader.GetFloat(3).ToString(_nfi)})"
+                            $"SRID=4326;POINT({reader.GetFloat(2).ToString(Nfi)} {reader.GetFloat(3).ToString(Nfi)})"
                         };
 
                         writer.WriteLine(string.Join("\t", values));
@@ -287,7 +287,7 @@ namespace Updater.Placex.Database
                                                 : "(");
                                             sb.Append(string.Join(",",
                                                 nodes.Where(id => dic.ContainsKey(id)).Select(id =>
-                                                    $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                                                    $"{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}")));
 
 
                                             if (area && cleanNodes.Length > 2 &&
@@ -296,7 +296,7 @@ namespace Updater.Placex.Database
                                             {
                                                 var id = cleanNodes.First();
                                                 sb.Append(
-                                                    $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                                                    $",{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}");
                                             }
 
                                             sb.Append(cleanNodes.Length > 1
@@ -469,7 +469,7 @@ namespace Updater.Placex.Database
                                             .ToArray();
                                         if (cleanMember.Any())
                                         {
-                                            var g = _geometryFactory.CreateEmpty(Dimension.Surface);
+                                            var g = GeometryFactory.CreateEmpty(Dimension.Surface);
 
                                             var role = cleanMember.First().Role;
                                             var currentMembers = new List<OsmRelationMember>
@@ -510,7 +510,7 @@ namespace Updater.Placex.Database
                                             {
                                                 id0.ToString(),
                                                 tags.TextEscape(),
-                                                "SRID=4326;" + _wktWriter.Write(g)
+                                                "SRID=4326;" + WktWriter.Write(g)
                                             };
 
                                             lock (obj)
@@ -563,7 +563,7 @@ namespace Updater.Placex.Database
         private bool ProcessMembers(List<OsmRelationMember> members, NpgsqlCommand command3,
             NpgsqlCommand command4, out Geometry g)
         {
-            g = _geometryFactory.CreateEmpty(Dimension.Surface);
+            g = GeometryFactory.CreateEmpty(Dimension.Surface);
 
             var ids = new List<long>();
             var ways = new List<long[]>();
@@ -627,17 +627,17 @@ namespace Updater.Placex.Database
                 sb.Append("((");
                 sb.Append(string.Join(",",
                     cleanNodes.Select(id =>
-                        $"{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}")));
+                        $"{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}")));
                 if (cleanNodes.First() != cleanNodes.Last())
                 {
                     var id = cleanNodes.First();
                     sb.Append(
-                        $",{dic[id].longitude.ToString(_nfi)} {dic[id].latitude.ToString(_nfi)}");
+                        $",{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}");
                 }
 
                 sb.Append("))");
 
-                var g1 = _wktReader.Read(sb.ToString());
+                var g1 = WktReader.Read(sb.ToString());
                 if (!g1.IsValid) g1 = g1.Buffer(0);
 
                 g = g.Union(g1);

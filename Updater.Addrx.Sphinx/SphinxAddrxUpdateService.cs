@@ -13,7 +13,7 @@ namespace Updater.Addrx.Sphinx
 {
     public class SphinxAddrxUpdateService : BaseAppService, IUpdateService
     {
-        private readonly NumberFormatInfo _nfi = new NumberFormatInfo { NumberDecimalSeparator = "." };
+        private static readonly NumberFormatInfo Nfi = new NumberFormatInfo { NumberDecimalSeparator = "." };
         private readonly IProgressClient _progressClient;
 
         public SphinxAddrxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration) : base(
@@ -117,7 +117,7 @@ namespace Updater.Addrx.Sphinx
                             "REPLACE INTO addrx(id,title,custom_title,sorting,custom_sorting,custom_level,priority,lon,lat,building,data) VALUES ");
                         sb.Append(string.Join(",",
                             docs.Select(x =>
-                                $"({x.id},'{x.text.TextEscape()}','{x.custom_text.TextEscape()}','{x.text.ToSorting().TextEscape()}','{x.custom_text.ToSorting().TextEscape()}',{x.custom_level},{x.priority},{x.lon.ToString(_nfi)},{x.lat.ToString(_nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
+                                $"({x.id},'{x.text.TextEscape()}','{x.custom_text.TextEscape()}','{x.text.ToSorting().TextEscape()}','{x.custom_text.ToSorting().TextEscape()}',{x.custom_level},{x.priority},{x.lon.ToString(Nfi)},{x.lat.ToString(Nfi)},{x.building},'{{{string.Join(",", x.data.Select(t => $"\"{t.Key.TextEscape(2)}\":\"{t.Value.TextEscape(2)}\""))}}}')")));
 
                         ExecuteNonQueryWithRepeatOnError(sb.ToString(), mySqlConnection);
                     }

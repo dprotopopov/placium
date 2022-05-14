@@ -9,7 +9,7 @@ namespace Placium.Common
     {
         private const int MaxTicks = 10000;
 
-        private static readonly ProgressBarOptions _options = new ProgressBarOptions
+        private static readonly ProgressBarOptions Options = new ProgressBarOptions
         {
             ForegroundColor = ConsoleColor.Yellow,
             ForegroundColorDone = ConsoleColor.DarkGreen,
@@ -26,7 +26,7 @@ namespace Placium.Common
 
         public async Task Init(string id, string session)
         {
-            await Task.Run(() => _dictionary.Add(id, new ProgressBar(MaxTicks, null, _options)));
+            await Task.Run(() => _dictionary.Add(id, new ProgressBar(MaxTicks, null, Options)));
         }
 
         public async Task Finalize(string id, string session)
