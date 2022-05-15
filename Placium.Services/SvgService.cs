@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -95,6 +96,8 @@ namespace Placium.Services
                 foreach (var item in result)
                 {
                     var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
+                    var key = Regex.Replace(title, @"\W+", "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
+                        .ToLower();
 
                     _logger.LogDebug($"Generate path begin {title} {item.location.GetType().Name}");
 
@@ -112,13 +115,21 @@ namespace Placium.Services
                     items.Add(new Item
                     {
                         Path = path,
-                        Title = title
+                        Title = title,
+                        Key = key
                     });
                 }
 
+                var merged = items.GroupBy(item => item.Key).Select(grouping => new Item()
+                {
+                    Key = grouping.Key,
+                    Title = grouping.First().Title,
+                    Path = string.Join(" ", grouping.Select(item => item.Path))
+                }).ToList();
+
                 return
                     $@"<svg width=""{width}"" height=""{height}"">
-{string.Join(Environment.NewLine, items.Select(i => $@"<path d=""{i.Path}"">
+{string.Join(Environment.NewLine, merged.Select(i => $@"<path d=""{i.Path}"">
 <title>{i.Title}</title>
 </path>"))}
 </svg>";
@@ -134,6 +145,7 @@ namespace Placium.Services
         {
             public string Path { get; set; }
             public string Title { get; set; }
+            public string Key { get; set; }
         }
     }
 }

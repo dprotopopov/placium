@@ -96,7 +96,7 @@ namespace Placium.Services
                     Width = width,
                     Height = height
                 };
-                map.Paths = new List<MapItem>(keys.Count);
+                var items = new List<MapItem>(keys.Count);
                 foreach (var item in result)
                 {
                     var envelope1 = item.location.EnvelopeInternal;
@@ -129,7 +129,7 @@ namespace Placium.Services
                         _ => string.Empty
                     };
 
-                    map.Paths.Add(new MapItem
+                    items.Add(new MapItem
                     {
                         Data = data,
                         EnglishName = title,
@@ -139,6 +139,18 @@ namespace Placium.Services
                         RectIso = rect
                     });
                 }
+                
+                var merged = items.GroupBy(item => item.Key).Select(grouping => new MapItem()
+                {
+                    Key = grouping.Key,
+                    EnglishName = grouping.First().EnglishName,
+                    ISOCode = grouping.First().ISOCode,
+                    Rect = grouping.First().Rect,
+                    RectIso = grouping.First().RectIso,
+                    Data = string.Join(" ", grouping.Select(item => item.Data))
+                }).ToList();
+                
+                map.Paths = merged;
 
                 return Pack(JsonConvert.SerializeObject(map));
             }
