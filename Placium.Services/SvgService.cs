@@ -36,7 +36,7 @@ namespace Placium.Services
                 x.StartsWith("W", StringComparison.InvariantCultureIgnoreCase) ? "way" :
                 x.StartsWith("N", StringComparison.InvariantCultureIgnoreCase) ? "node" :
                 throw new ArgumentException()).ToArray();
-            var ids = keys.Select(x => long.Parse(x.Substring(1))).ToArray();
+            var ids = keys.Select(x => long.Parse(x[1..])).ToArray();
 
             var result = new List<Placex>(keys.Count);
 

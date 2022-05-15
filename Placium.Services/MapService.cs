@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -40,7 +41,7 @@ namespace Placium.Services
                 x.StartsWith("W", StringComparison.InvariantCultureIgnoreCase) ? "way" :
                 x.StartsWith("N", StringComparison.InvariantCultureIgnoreCase) ? "node" :
                 throw new ArgumentException()).ToArray();
-            var ids = keys.Select(x => long.Parse(x.Substring(1))).ToArray();
+            var ids = keys.Select(x => long.Parse(x[1..])).ToArray();
 
             var result = new List<Placex>(keys.Count);
 
@@ -139,17 +140,17 @@ namespace Placium.Services
                         RectIso = rect
                     });
                 }
-                
-                var merged = items.GroupBy(item => item.Key).Select(grouping => new MapItem()
+
+                var merged = items.GroupBy(item => item.Key).Select(grouping => new MapItem
                 {
                     Key = grouping.Key,
                     EnglishName = grouping.First().EnglishName,
                     ISOCode = grouping.First().ISOCode,
-                    Rect = grouping.First().Rect,
-                    RectIso = grouping.First().RectIso,
+                    Rect = UnionRect(grouping.Select(x => x.Rect).ToList()),
+                    RectIso = UnionRect(grouping.Select(x => x.RectIso).ToList()),
                     Data = string.Join(" ", grouping.Select(item => item.Data))
                 }).ToList();
-                
+
                 map.Paths = merged;
 
                 return Pack(JsonConvert.SerializeObject(map));
@@ -159,6 +160,36 @@ namespace Placium.Services
                 _logger.LogError(ex, ex.FullMessage());
                 throw;
             }
+        }
+
+        public string UnionRect(IEnumerable<string> rects)
+        {
+            var first = true;
+            int[] united = null;
+            foreach (var rect in rects)
+            {
+                var arr = JsonConvert.DeserializeObject<int[]>($"[{rect}]");
+
+                Debug.Assert(arr is { Length: 4 });
+
+                if (first)
+                {
+                    united = new[] { arr[0], arr[1], arr[0] + arr[2], arr[1] + arr[3] };
+                }
+                else
+                {
+                    united[0] = Math.Min(united[0], arr[0]);
+                    united[1] = Math.Min(united[1], arr[1]);
+                    united[2] = Math.Max(united[2], arr[0] + arr[2]);
+                    united[3] = Math.Max(united[3], arr[1] + arr[3]);
+                }
+
+                first = false;
+            }
+
+            Debug.Assert(united is { Length: 4 });
+
+            return $"{united[0]}, {united[1]}, {united[2] - united[0]}, {united[3] - united[1]}";
         }
 
         public static byte[] ConvertStringToByteArray(string str)
@@ -183,15 +214,16 @@ namespace Placium.Services
 
         public static string Unpack(string str)
         {
-            if (string.IsNullOrWhiteSpace(str)) return null;
-
-            return ConvertByteArrayToString(Unpack(Convert.FromBase64String(str)));
+            return string.IsNullOrWhiteSpace(str)
+                ? null
+                : ConvertByteArrayToString(Unpack(Convert.FromBase64String(str)));
         }
 
         public static string Pack(string str)
         {
-            if (string.IsNullOrWhiteSpace(str)) return null;
-            return Convert.ToBase64String(Pack(ConvertStringToByteArray(str)));
+            return string.IsNullOrWhiteSpace(str)
+                ? null
+                : Convert.ToBase64String(Pack(ConvertStringToByteArray(str)));
         }
 
         public static byte[] Unpack(byte[] bytes)
