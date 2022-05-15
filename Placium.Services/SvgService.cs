@@ -90,6 +90,8 @@ namespace Placium.Services
                 {
                     var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
 
+                    _logger.LogDebug($"Generate path begin {title} {item.location.GetType().Name}");
+
                     var path = item.location switch
                     {
                         Point point => point.ToPath(envelope, ratio, width, height),
@@ -98,6 +100,8 @@ namespace Placium.Services
                         GeometryCollection collection => collection.ToPath(envelope, ratio, width, height),
                         _ => string.Empty
                     };
+                    
+                    _logger.LogDebug($"Generate path complete {title} {item.location.GetType().Name}");
 
                     items.Add(new Item
                     {

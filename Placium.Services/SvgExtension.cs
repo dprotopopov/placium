@@ -37,7 +37,6 @@ namespace Placium.Services
 
         public static string ToPath(this Point point, Envelope envelope, double ratio, int width, int height)
         {
-            return string.Empty;
             var latitude = point.Y;
             var longitude = point.X;
             var diameterInMeters = 10d / ratio;
@@ -86,19 +85,20 @@ namespace Placium.Services
         {
             var paths = new List<string>();
 
-            foreach (var g in collection.Geometries)
-                switch (g)
-                {
-                    case Point point:
-                        paths.Add(point.ToPath(envelope, ratio, width, height));
-                        break;
-                    case LineString lineString:
-                        paths.Add(lineString.ToPath(envelope, ratio, width, height));
-                        break;
-                    case Polygon polygon:
-                        paths.Add(polygon.ToPath(envelope, ratio, width, height));
-                        break;
-                }
+            if (collection.Geometries != null)
+                foreach (var g in collection.Geometries)
+                    switch (g)
+                    {
+                        case Point point:
+                            paths.Add(point.ToPath(envelope, ratio, width, height));
+                            break;
+                        case LineString lineString:
+                            paths.Add(lineString.ToPath(envelope, ratio, width, height));
+                            break;
+                        case Polygon polygon:
+                            paths.Add(polygon.ToPath(envelope, ratio, width, height));
+                            break;
+                    }
 
             return string.Join(" ", paths);
         }
