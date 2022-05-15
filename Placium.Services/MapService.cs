@@ -20,7 +20,7 @@ namespace Placium.Services
     public class MapService : BaseApiService
     {
         private static readonly GeometryFactory GeometryFactory = new GeometryFactory();
-        private readonly ILogger _logger;
+        private readonly ILogger<MapService> _logger;
 
         public MapService(IConfiguration configuration, ILogger<MapService> logger) : base(configuration)
         {
@@ -85,8 +85,8 @@ namespace Placium.Services
             }
 
             var envelope = g.EnvelopeInternal;
-            var centerX = (envelope.MaxX + envelope.MinX) / 2.0;
-            var centerY = (envelope.MaxY + envelope.MinY) / 2.0;
+            var centerX = (envelope.MaxX + envelope.MinX) / 2d;
+            var centerY = (envelope.MaxY + envelope.MinY) / 2d;
 
             var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
                 (float)envelope.MaxX);
@@ -116,23 +116,25 @@ namespace Placium.Services
                 var maxY = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)envelope1.MaxY,
                     (float)centerX);
 
-                var left = (int)Math.Floor(width / 2.0 + (envelope1.MinX >= centerX ? minX : -minX) * ratio);
-                var right = (int)Math.Floor(width / 2.0 + (envelope1.MaxX >= centerX ? maxX : -maxX) * ratio);
-                var bottom = (int)Math.Ceiling(height / 2.0 - (envelope1.MinY >= centerY ? minY : -minY) * ratio);
-                var top = (int)Math.Ceiling(height / 2.0 - (envelope1.MaxY >= centerY ? maxY : -maxY) * ratio);
+                var left = (int)Math.Floor(width / 2d + (envelope1.MinX >= centerX ? minX : -minX) * ratio);
+                var right = (int)Math.Floor(width / 2d + (envelope1.MaxX >= centerX ? maxX : -maxX) * ratio);
+                var bottom = (int)Math.Ceiling(height / 2d - (envelope1.MinY >= centerY ? minY : -minY) * ratio);
+                var top = (int)Math.Ceiling(height / 2d - (envelope1.MaxY >= centerY ? maxY : -maxY) * ratio);
                 var rect = $"{left}, {top}, {right - left}, {bottom - top}";
 
                 var title = item.tags.TryGetValue("name", out var s) ? s : string.Empty;
                 var key = Regex.Replace(title, @"\W+", "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
                     .ToLower();
 
-                var data = item.location is LineString lineString
-                    ? lineString.ToPath(envelope, ratio, width, height)
-                    : item.location is Polygon polygon
-                        ? polygon.ToPath(envelope, ratio, width, height)
-                        : item.location is GeometryCollection collection
-                            ? collection.ToPath(envelope, ratio, width, height)
-                            : string.Empty;
+                var data = item.location is Point point
+                    ? point.ToPath(envelope, ratio, width, height)
+                    : item.location is LineString lineString
+                        ? lineString.ToPath(envelope, ratio, width, height)
+                        : item.location is Polygon polygon
+                            ? polygon.ToPath(envelope, ratio, width, height)
+                            : item.location is GeometryCollection collection
+                                ? collection.ToPath(envelope, ratio, width, height)
+                                : string.Empty;
 
                 map.Paths.Add(new MapItem
                 {

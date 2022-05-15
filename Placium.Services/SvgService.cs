@@ -14,8 +14,8 @@ namespace Placium.Services
 {
     public class SvgService : BaseApiService
     {
-        private readonly GeometryFactory _geometryFactory = new GeometryFactory();
-        private readonly ILogger _logger;
+        private static readonly GeometryFactory GeometryFactory = new GeometryFactory();
+        private readonly ILogger<SvgService> _logger;
 
         public SvgService(IConfiguration configuration, ILogger<SvgService> logger) : base(configuration)
         {
@@ -71,17 +71,16 @@ namespace Placium.Services
                 _logger.LogError(ex, ex.Message);
             }
 
-            var g = _geometryFactory.CreateEmpty(Dimension.Surface);
+            var g = GeometryFactory.CreateEmpty(Dimension.Surface);
             foreach (var item in result)
             {
                 var g1 = item.location;
-                item.location = g1 = g1.Buffer(0);
                 g = g.Union(g1);
             }
 
             var envelope = g.EnvelopeInternal;
-            var centerX = (envelope.MaxX + envelope.MinX) / 2.0;
-            var centerY = (envelope.MaxY + envelope.MinY) / 2.0;
+            var centerX = (envelope.MaxX + envelope.MinX) / 2d;
+            var centerY = (envelope.MaxY + envelope.MinY) / 2d;
 
             var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
                 (float)envelope.MaxX);
@@ -96,13 +95,15 @@ namespace Placium.Services
             {
                 var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
 
-                var path = item.location is LineString lineString
-                    ? lineString.ToPath(envelope, ratio, width, height)
-                    : item.location is Polygon polygon
-                        ? polygon.ToPath(envelope, ratio, width, height)
-                        : item.location is GeometryCollection collection
-                            ? collection.ToPath(envelope, ratio, width, height)
-                            : string.Empty;
+                var path = item.location is Point point
+                    ? point.ToPath(envelope, ratio, width, height)
+                    : item.location is LineString lineString
+                        ? lineString.ToPath(envelope, ratio, width, height)
+                        : item.location is Polygon polygon
+                            ? polygon.ToPath(envelope, ratio, width, height)
+                            : item.location is GeometryCollection collection
+                                ? collection.ToPath(envelope, ratio, width, height)
+                                : string.Empty;
 
                 items.Add(new Item
                 {

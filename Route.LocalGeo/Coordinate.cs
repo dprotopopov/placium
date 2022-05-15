@@ -9,7 +9,7 @@ namespace Route.LocalGeo
     /// </summary>
     public struct Coordinate
     {
-        private const double RadiusOfEarth = 6371000;
+        public const double RadiusOfEarth = 6371000;
 
         /// <summary>
         ///     Creates a new coordinate.
