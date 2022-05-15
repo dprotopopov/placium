@@ -75,8 +75,7 @@ namespace Placium.Services
                 foreach (var item in result)
                 {
                     var g1 = item.location;
-                    item.location = g1 = g1.Buffer(0);
-                    g = g.Union(g1);
+                    g = g.Union(g1.Buffer(0));
                 }
 
                 var envelope = g.EnvelopeInternal;

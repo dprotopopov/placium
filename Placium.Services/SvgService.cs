@@ -69,8 +69,14 @@ namespace Placium.Services
                 var g = GeometryFactory.CreateEmpty(Dimension.Surface);
                 foreach (var item in result)
                 {
+                    var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
+
+                    _logger.LogDebug($"Union begin {title} {item.location.GetType().Name}");
+
                     var g1 = item.location;
-                    g = g.Union(g1);
+                    g = g.Union(g1.Buffer(0));
+
+                    _logger.LogDebug($"Union complete {title} {item.location.GetType().Name}");
                 }
 
                 var envelope = g.EnvelopeInternal;
