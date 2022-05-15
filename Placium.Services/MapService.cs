@@ -70,84 +70,85 @@ namespace Placium.Services
                 }
 
                 await connection.CloseAsync();
+
+                var g = GeometryFactory.CreateEmpty(Dimension.Surface);
+                foreach (var item in result)
+                {
+                    var g1 = item.location;
+                    item.location = g1 = g1.Buffer(0);
+                    g = g.Union(g1);
+                }
+
+                var envelope = g.EnvelopeInternal;
+                var centerX = (envelope.MaxX + envelope.MinX) / 2d;
+                var centerY = (envelope.MaxY + envelope.MinY) / 2d;
+
+                var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
+                    (float)envelope.MaxX);
+                var y = Coordinate.DistanceEstimateInMeter((float)envelope.MinY, (float)centerX, (float)envelope.MaxY,
+                    (float)centerX);
+                var ratioX = width / x;
+                var ratioY = height / y;
+                var ratio = Math.Min(ratioX, ratioY);
+
+                var map = new Map
+                {
+                    Name = name,
+                    Width = width,
+                    Height = height
+                };
+                map.Paths = new List<MapItem>(keys.Count);
+                foreach (var item in result)
+                {
+                    var envelope1 = item.location.EnvelopeInternal;
+
+                    var minX = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)centerY,
+                        (float)envelope1.MinX);
+                    var maxX = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)centerY,
+                        (float)envelope1.MaxX);
+                    var minY = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)envelope1.MinY,
+                        (float)centerX);
+                    var maxY = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)envelope1.MaxY,
+                        (float)centerX);
+
+                    var left = (int)Math.Floor(width / 2d + (envelope1.MinX >= centerX ? minX : -minX) * ratio);
+                    var right = (int)Math.Floor(width / 2d + (envelope1.MaxX >= centerX ? maxX : -maxX) * ratio);
+                    var bottom = (int)Math.Ceiling(height / 2d - (envelope1.MinY >= centerY ? minY : -minY) * ratio);
+                    var top = (int)Math.Ceiling(height / 2d - (envelope1.MaxY >= centerY ? maxY : -maxY) * ratio);
+                    var rect = $"{left}, {top}, {right - left}, {bottom - top}";
+
+                    var title = item.tags.TryGetValue("name", out var s) ? s : string.Empty;
+                    var key = Regex.Replace(title, @"\W+", "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
+                        .ToLower();
+
+                    var data = item.location is Point point
+                        ? point.ToPath(envelope, ratio, width, height)
+                        : item.location is LineString lineString
+                            ? lineString.ToPath(envelope, ratio, width, height)
+                            : item.location is Polygon polygon
+                                ? polygon.ToPath(envelope, ratio, width, height)
+                                : item.location is GeometryCollection collection
+                                    ? collection.ToPath(envelope, ratio, width, height)
+                                    : string.Empty;
+
+                    map.Paths.Add(new MapItem
+                    {
+                        Data = data,
+                        EnglishName = title,
+                        Key = key,
+                        ISOCode = key,
+                        Rect = rect,
+                        RectIso = rect
+                    });
+                }
+
+                return Pack(JsonConvert.SerializeObject(map));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message);
+                throw;
             }
-
-            var g = GeometryFactory.CreateEmpty(Dimension.Surface);
-            foreach (var item in result)
-            {
-                var g1 = item.location;
-                item.location = g1 = g1.Buffer(0);
-                g = g.Union(g1);
-            }
-
-            var envelope = g.EnvelopeInternal;
-            var centerX = (envelope.MaxX + envelope.MinX) / 2d;
-            var centerY = (envelope.MaxY + envelope.MinY) / 2d;
-
-            var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
-                (float)envelope.MaxX);
-            var y = Coordinate.DistanceEstimateInMeter((float)envelope.MinY, (float)centerX, (float)envelope.MaxY,
-                (float)centerX);
-            var ratioX = width / x;
-            var ratioY = height / y;
-            var ratio = Math.Min(ratioX, ratioY);
-
-            var map = new Map
-            {
-                Name = name,
-                Width = width,
-                Height = height
-            };
-            map.Paths = new List<MapItem>(keys.Count);
-            foreach (var item in result)
-            {
-                var envelope1 = item.location.EnvelopeInternal;
-
-                var minX = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)centerY,
-                    (float)envelope1.MinX);
-                var maxX = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)centerY,
-                    (float)envelope1.MaxX);
-                var minY = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)envelope1.MinY,
-                    (float)centerX);
-                var maxY = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)envelope1.MaxY,
-                    (float)centerX);
-
-                var left = (int)Math.Floor(width / 2d + (envelope1.MinX >= centerX ? minX : -minX) * ratio);
-                var right = (int)Math.Floor(width / 2d + (envelope1.MaxX >= centerX ? maxX : -maxX) * ratio);
-                var bottom = (int)Math.Ceiling(height / 2d - (envelope1.MinY >= centerY ? minY : -minY) * ratio);
-                var top = (int)Math.Ceiling(height / 2d - (envelope1.MaxY >= centerY ? maxY : -maxY) * ratio);
-                var rect = $"{left}, {top}, {right - left}, {bottom - top}";
-
-                var title = item.tags.TryGetValue("name", out var s) ? s : string.Empty;
-                var key = Regex.Replace(title, @"\W+", "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
-                    .ToLower();
-
-                var data = item.location is Point point
-                    ? point.ToPath(envelope, ratio, width, height)
-                    : item.location is LineString lineString
-                        ? lineString.ToPath(envelope, ratio, width, height)
-                        : item.location is Polygon polygon
-                            ? polygon.ToPath(envelope, ratio, width, height)
-                            : item.location is GeometryCollection collection
-                                ? collection.ToPath(envelope, ratio, width, height)
-                                : string.Empty;
-
-                map.Paths.Add(new MapItem
-                {
-                    Data = data,
-                    EnglishName = title,
-                    Key = key,
-                    ISOCode = key,
-                    Rect = rect,
-                    RectIso = rect
-                });
-            }
-
-            return Pack(JsonConvert.SerializeObject(map));
         }
 
         public static byte[] ConvertStringToByteArray(string str)

@@ -65,59 +65,60 @@ namespace Placium.Services
                 }
 
                 await connection.CloseAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, ex.Message);
-            }
 
-            var g = GeometryFactory.CreateEmpty(Dimension.Surface);
-            foreach (var item in result)
-            {
-                var g1 = item.location;
-                g = g.Union(g1);
-            }
-
-            var envelope = g.EnvelopeInternal;
-            var centerX = (envelope.MaxX + envelope.MinX) / 2d;
-            var centerY = (envelope.MaxY + envelope.MinY) / 2d;
-
-            var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
-                (float)envelope.MaxX);
-            var y = Coordinate.DistanceEstimateInMeter((float)envelope.MinY, (float)centerX, (float)envelope.MaxY,
-                (float)centerX);
-            var ratioX = width / x;
-            var ratioY = height / y;
-            var ratio = Math.Min(ratioX, ratioY);
-
-            var items = new List<Item>(keys.Count);
-            foreach (var item in result)
-            {
-                var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
-
-                var path = item.location is Point point
-                    ? point.ToPath(envelope, ratio, width, height)
-                    : item.location is LineString lineString
-                        ? lineString.ToPath(envelope, ratio, width, height)
-                        : item.location is Polygon polygon
-                            ? polygon.ToPath(envelope, ratio, width, height)
-                            : item.location is GeometryCollection collection
-                                ? collection.ToPath(envelope, ratio, width, height)
-                                : string.Empty;
-
-                items.Add(new Item
+                var g = GeometryFactory.CreateEmpty(Dimension.Surface);
+                foreach (var item in result)
                 {
-                    Path = path,
-                    Title = title
-                });
-            }
+                    var g1 = item.location;
+                    g = g.Union(g1);
+                }
 
-            return
-                $@"<svg width=""{width}"" height=""{height}"">
+                var envelope = g.EnvelopeInternal;
+                var centerX = (envelope.MaxX + envelope.MinX) / 2d;
+                var centerY = (envelope.MaxY + envelope.MinY) / 2d;
+
+                var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
+                    (float)envelope.MaxX);
+                var y = Coordinate.DistanceEstimateInMeter((float)envelope.MinY, (float)centerX, (float)envelope.MaxY,
+                    (float)centerX);
+                var ratioX = width / x;
+                var ratioY = height / y;
+                var ratio = Math.Min(ratioX, ratioY);
+
+                var items = new List<Item>(keys.Count);
+                foreach (var item in result)
+                {
+                    var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
+
+                    var path = item.location is Point point
+                        ? point.ToPath(envelope, ratio, width, height)
+                        : item.location is LineString lineString
+                            ? lineString.ToPath(envelope, ratio, width, height)
+                            : item.location is Polygon polygon
+                                ? polygon.ToPath(envelope, ratio, width, height)
+                                : item.location is GeometryCollection collection
+                                    ? collection.ToPath(envelope, ratio, width, height)
+                                    : string.Empty;
+
+                    items.Add(new Item
+                    {
+                        Path = path,
+                        Title = title
+                    });
+                }
+
+                return
+                    $@"<svg width=""{width}"" height=""{height}"">
 {string.Join(Environment.NewLine, items.Select(i => $@"<path d=""{i.Path}"">
 <title>{i.Title}</title>
 </path>"))}
 </svg>";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, ex.Message);
+                throw;
+            }
         }
 
         public class Item

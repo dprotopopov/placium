@@ -48,7 +48,7 @@ namespace Placium.Services
                 // Length in meters of 1° of latitude = always 111.32 km
                 Height = diameterInMeters / 111320d,
                 // Length in meters of 1° of longitude = 40075 km * cos( latitude ) / 360
-                Width = diameterInMeters / (40075000d * Math.Cos(Math.PI * latitude / 180) / 360)
+                Width = diameterInMeters / (40075000d * Math.Cos(Math.PI * latitude / 180d) / 360d)
             };
 
             var circle = shapeFactory.CreateEllipse();
