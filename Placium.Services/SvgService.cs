@@ -90,15 +90,14 @@ namespace Placium.Services
                 {
                     var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
 
-                    var path = item.location is Point point
-                        ? point.ToPath(envelope, ratio, width, height)
-                        : item.location is LineString lineString
-                            ? lineString.ToPath(envelope, ratio, width, height)
-                            : item.location is Polygon polygon
-                                ? polygon.ToPath(envelope, ratio, width, height)
-                                : item.location is GeometryCollection collection
-                                    ? collection.ToPath(envelope, ratio, width, height)
-                                    : string.Empty;
+                    var path = item.location switch
+                    {
+                        Point point => point.ToPath(envelope, ratio, width, height),
+                        LineString lineString => lineString.ToPath(envelope, ratio, width, height),
+                        Polygon polygon => polygon.ToPath(envelope, ratio, width, height),
+                        GeometryCollection collection => collection.ToPath(envelope, ratio, width, height),
+                        _ => string.Empty
+                    };
 
                     items.Add(new Item
                     {

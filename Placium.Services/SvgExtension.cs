@@ -37,6 +37,7 @@ namespace Placium.Services
 
         public static string ToPath(this Point point, Envelope envelope, double ratio, int width, int height)
         {
+            return string.Empty;
             var latitude = point.Y;
             var longitude = point.X;
             var diameterInMeters = 10d / ratio;

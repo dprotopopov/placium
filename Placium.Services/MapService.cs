@@ -121,15 +121,14 @@ namespace Placium.Services
                     var key = Regex.Replace(title, @"\W+", "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
                         .ToLower();
 
-                    var data = item.location is Point point
-                        ? point.ToPath(envelope, ratio, width, height)
-                        : item.location is LineString lineString
-                            ? lineString.ToPath(envelope, ratio, width, height)
-                            : item.location is Polygon polygon
-                                ? polygon.ToPath(envelope, ratio, width, height)
-                                : item.location is GeometryCollection collection
-                                    ? collection.ToPath(envelope, ratio, width, height)
-                                    : string.Empty;
+                    var data = item.location switch
+                    {
+                        Point point => point.ToPath(envelope, ratio, width, height),
+                        LineString lineString => lineString.ToPath(envelope, ratio, width, height),
+                        Polygon polygon => polygon.ToPath(envelope, ratio, width, height),
+                        GeometryCollection collection => collection.ToPath(envelope, ratio, width, height),
+                        _ => string.Empty
+                    };
 
                     map.Paths.Add(new MapItem
                     {
