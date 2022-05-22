@@ -28,7 +28,7 @@ namespace Placium.Services
             _logger = logger;
         }
 
-        public async Task<string> GetMap(string name, List<string> keys, int width, int height)
+        public async Task<string> GetMap(string name, List<string> osmIds, int width, int height, bool json = false)
         {
             await using var connection = new NpgsqlConnection(GetOsmConnectionString());
             await connection.OpenAsync();
@@ -36,14 +36,14 @@ namespace Placium.Services
             connection.ReloadTypes();
             connection.TypeMapper.UseNetTopologySuite();
 
-            var types = keys.Select(x =>
+            var types = osmIds.Select(x =>
                 x.StartsWith("R", StringComparison.InvariantCultureIgnoreCase) ? "relation" :
                 x.StartsWith("W", StringComparison.InvariantCultureIgnoreCase) ? "way" :
                 x.StartsWith("N", StringComparison.InvariantCultureIgnoreCase) ? "node" :
                 throw new ArgumentException()).ToArray();
-            var ids = keys.Select(x => long.Parse(x[1..])).ToArray();
+            var ids = osmIds.Select(x => long.Parse(x[1..])).ToArray();
 
-            var result = new List<Placex>(keys.Count);
+            var result = new List<Placex>(osmIds.Count);
 
             try
             {
@@ -97,7 +97,7 @@ namespace Placium.Services
                     Width = width,
                     Height = height
                 };
-                var items = new List<MapItem>(keys.Count);
+                var items = new List<MapItem>(osmIds.Count);
                 foreach (var item in result)
                 {
                     var envelope1 = item.location.EnvelopeInternal;
@@ -153,7 +153,9 @@ namespace Placium.Services
 
                 map.Paths = merged;
 
-                return Pack(JsonConvert.SerializeObject(map));
+                var str = JsonConvert.SerializeObject(map, Formatting.Indented);
+                if(!json) str = Pack(str);
+                return str;
             }
             catch (Exception ex)
             {

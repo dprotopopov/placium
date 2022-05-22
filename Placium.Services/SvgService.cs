@@ -23,7 +23,7 @@ namespace Placium.Services
             _logger = logger;
         }
 
-        public async Task<string> GetSvg(List<string> keys, int width, int height)
+        public async Task<string> GetSvg(List<string> osmIds, int width, int height)
         {
             await using var connection = new NpgsqlConnection(GetOsmConnectionString());
             await connection.OpenAsync();
@@ -31,14 +31,14 @@ namespace Placium.Services
             connection.ReloadTypes();
             connection.TypeMapper.UseNetTopologySuite();
 
-            var types = keys.Select(x =>
+            var types = osmIds.Select(x =>
                 x.StartsWith("R", StringComparison.InvariantCultureIgnoreCase) ? "relation" :
                 x.StartsWith("W", StringComparison.InvariantCultureIgnoreCase) ? "way" :
                 x.StartsWith("N", StringComparison.InvariantCultureIgnoreCase) ? "node" :
                 throw new ArgumentException()).ToArray();
-            var ids = keys.Select(x => long.Parse(x[1..])).ToArray();
+            var ids = osmIds.Select(x => long.Parse(x[1..])).ToArray();
 
-            var result = new List<Placex>(keys.Count);
+            var result = new List<Placex>(osmIds.Count);
 
             try
             {
@@ -92,7 +92,7 @@ namespace Placium.Services
                 var ratioY = height / y;
                 var ratio = Math.Min(ratioX, ratioY);
 
-                var items = new List<Item>(keys.Count);
+                var items = new List<Item>(osmIds.Count);
                 foreach (var item in result)
                 {
                     var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
