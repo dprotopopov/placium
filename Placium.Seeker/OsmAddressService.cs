@@ -32,7 +32,7 @@ namespace Placium.Seeker
 
                 var deserialized = !string.IsNullOrWhiteSpace(filter)
                     ? JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(
-                        $"[{filter.Trim('[', ']')}]")
+                        $"[{filter.Trim(' ', '[', ']')}]")
                     : null;
 
                 var sanitized = deserialized?.Select(dictionary => dictionary
@@ -128,7 +128,7 @@ namespace Placium.Seeker
 
                 var deserialized = !string.IsNullOrWhiteSpace(filter)
                     ? JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(
-                        $"[{filter.Trim('[',']')}]")
+                        $"[{filter.Trim(' ', '[', ']')}]")
                     : null;
 
                 var sanitized = deserialized?.Select(dictionary => dictionary
@@ -161,7 +161,7 @@ namespace Placium.Seeker
                     command.Parameters.AddWithValue("take", take);
                     command.Parameters.AddWithValue("match", match);
                     command.Parameters.AddWithValue("level", level);
-                    
+
                     if (sanitized != null)
                     {
                         var index = 0;
