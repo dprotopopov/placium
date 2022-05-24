@@ -21,6 +21,20 @@ namespace Placium.Seeker
             _logger = logger;
         }
 
+        private static bool TryDeserializeObject<T>(string str, out T obj)
+        {
+            try
+            {
+                obj = JsonConvert.DeserializeObject<T>(str);
+                return true;
+            }
+            catch
+            {
+                obj = default;
+                return false;
+            }
+        }
+
         public async Task<IEnumerable<AddressEntry>> GetByCoordsAsync(Coordinate coords, int limit = 20,
             bool raw = false, bool custom = false, string filter = null)
         {
@@ -31,8 +45,9 @@ namespace Placium.Seeker
                 var level = custom ? 1 : 0;
 
                 var deserialized = !string.IsNullOrWhiteSpace(filter)
-                    ? JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(
-                        $"[{filter.Trim(' ', '[', ']')}]")
+                    ? TryDeserializeObject(filter, out List<Dictionary<string, string>> obj) ? obj
+                    : TryDeserializeObject($"[{filter}]", out List<Dictionary<string, string>> obj1) ? obj1
+                    : null
                     : null;
 
                 var sanitized = deserialized?.Select(dictionary => dictionary
@@ -127,8 +142,9 @@ namespace Placium.Seeker
                 var level = custom ? 1 : 0;
 
                 var deserialized = !string.IsNullOrWhiteSpace(filter)
-                    ? JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(
-                        $"[{filter.Trim(' ', '[', ']')}]")
+                    ? TryDeserializeObject(filter, out List<Dictionary<string, string>> obj) ? obj
+                    : TryDeserializeObject($"[{filter}]", out List<Dictionary<string, string>> obj1) ? obj1
+                    : null
                     : null;
 
                 var sanitized = deserialized?.Select(dictionary => dictionary
