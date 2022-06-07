@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using Npgsql;
@@ -14,6 +15,10 @@ namespace Updater.Addrx.Sphinx
     public class SphinxAddrxUpdateService : BaseAppService, IUpdateService
     {
         private static readonly NumberFormatInfo Nfi = new NumberFormatInfo { NumberDecimalSeparator = "." };
+
+        private static readonly Regex AddrNumber = new Regex(@"^addr(?<n>\d+)\:housenumber$",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
         private readonly IProgressClient _progressClient;
 
         public SphinxAddrxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration) : base(
@@ -256,11 +261,39 @@ namespace Updater.Addrx.Sphinx
                     dictionary.TryGetValue("addr:housenumber", out var housenumber)) list1.Add(housenumber);
                 if (dictionary.TryGetValue("name", out var name)) list1.Add(name);
 
+                var list2 = new List<string>();
+
+                dictionary.TryGetValue("addr:street", out street);
+                dictionary.TryGetValue("addr:square", out square);
+                dictionary.TryGetValue("addr:street", out housenumber);
+
+                foreach (var k in dictionary.Keys)
+                {
+                    var match = AddrNumber.Match(k);
+                    if (!match.Success) continue;
+
+                    var n = match.Groups["n"];
+
+                    var list4 = new List<string>();
+
+                    if (dictionary.TryGetValue($"addr{n}:street", out var streetN) ||
+                        dictionary.TryGetValue("addr:street", out streetN)) list4.Add(streetN);
+                    if (dictionary.TryGetValue($"addr{n}:square", out var squareN) ||
+                        dictionary.TryGetValue("addr:square", out squareN)) list4.Add(squareN);
+                    if (dictionary.TryGetValue($"addr{n}:housenumber", out var housenumberN) ||
+                        dictionary.TryGetValue("addr:housenumber", out housenumberN)) list4.Add(housenumberN);
+
+                    if (!(string.Compare(street, streetN, StringComparison.InvariantCultureIgnoreCase) == 0 &&
+                          string.Compare(square, squareN, StringComparison.InvariantCultureIgnoreCase) == 0 &&
+                          string.Compare(housenumber, housenumberN, StringComparison.InvariantCultureIgnoreCase) == 0))
+                        list2.Add(string.Join(", ", list4));
+                }
+
                 var doc = new Doc
                 {
                     id = reader.GetInt64(0),
-                    text = string.Join(", ", list),
-                    custom_text = string.Join(", ", list1),
+                    text = string.Join(", ", list) + string.Join("", list2.Select(x => $" / {x}")),
+                    custom_text = string.Join(", ", list1) + string.Join("", list2.Select(x => $" / {x}")),
                     custom_level = dictionary.ContainsKey("highway")
                                    || dictionary.ContainsKey("railway")
                                    || dictionary.ContainsKey("building")
