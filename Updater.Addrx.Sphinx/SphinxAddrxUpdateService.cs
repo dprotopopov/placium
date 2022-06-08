@@ -246,7 +246,6 @@ namespace Updater.Addrx.Sphinx
                 foreach (var (key, format) in keys)
                     if (dictionary.TryGetValue(key, out var s) && !string.IsNullOrEmpty(s))
                     {
-                        dictionary.TryAdd(key.Replace(":", "_"), s);
                         var item = string.Format(format, s);
                         if (!list.Contains(item, StringComparer.InvariantCultureIgnoreCase))
                             list.Add(item);

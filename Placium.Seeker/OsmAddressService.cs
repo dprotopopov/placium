@@ -57,7 +57,7 @@ namespace Placium.Seeker
                 var andFilter = sanitized != null && sanitized.Any()
                     ? " AND " + string.Join(" OR ",
                         sanitized.Select((item, index) =>
-                            $"({string.Join(" AND ", item.Select(x => $"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}_{index}"))})"))
+                            $"( {string.Join(" AND ", item.Select(x => $"data.`{x.Key}`=@data_{x.Key.Replace(":", "_")}_{index}"))} )"))
                     : "";
 
                 var result = new List<AddressEntry>();
@@ -154,7 +154,7 @@ namespace Placium.Seeker
                 var andFilter = sanitized != null && sanitized.Any()
                     ? " AND " + string.Join(" OR ",
                         sanitized.Select((item, index) =>
-                            $"({string.Join(" AND ", item.Select(x => $"data.{x.Key.Replace(":", "_")}=@data_{x.Key.Replace(":", "_")}_{index}"))})"))
+                            $"( {string.Join(" AND ", item.Select(x => $"data.`{x.Key}`=@data_{x.Key.Replace(":", "_")}_{index}"))} )"))
                     : "";
 
                 var list = searchString.Split(",").ToList();
