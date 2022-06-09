@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MySql.QueryTools.WebApp.Filters;
 
 namespace MySql.QueryTools.WebApp
 {
@@ -34,7 +35,7 @@ namespace MySql.QueryTools.WebApp
                         .AllowAnyHeader()
                         .AllowAnyMethod()));
 
-            services.AddControllersWithViews();
+            services.AddControllersWithViews(options => { options.Filters.Add(typeof(ExceptionFilter)); });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

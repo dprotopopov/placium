@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Placium.Common;
 using Placium.Seeker;
 using Placium.Services;
+using Placium.WebApi.Filters;
 
 namespace Placium.WebApi
 {
@@ -56,7 +57,7 @@ namespace Placium.WebApi
                         .AllowAnyHeader()
                         .AllowAnyMethod()));
 
-            services.AddControllers()
+            services.AddControllers(options => { options.Filters.Add(typeof(ExceptionFilter)); })
                 .AddNewtonsoftJson(options =>
                 {
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;

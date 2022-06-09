@@ -20,28 +20,20 @@ namespace Placium.Seeker
 
         public async Task<string> CalculateAsync(Coordinate source, Coordinate target)
         {
-            try
-            {
-                if (!source.Valid) throw new ArgumentException(nameof(source));
-                if (!target.Valid) throw new ArgumentException(nameof(target));
+            if (!source.Valid) throw new ArgumentException(nameof(source));
+            if (!target.Valid) throw new ArgumentException(nameof(target));
 
-                var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"),
-                    GetRouteConnectionString(),
-                    new Car());
+            var routerDb = new RouterDb(Guid.Parse("28662f4a-3d30-464e-9b64-c5e25457b2f1"),
+                GetRouteConnectionString(),
+                new Car());
 
-                // create router.
-                var router = new Router(routerDb, "Car", 3.6f / 5f, 3.6f / 120f);
+            // create router.
+            var router = new Router(routerDb, "Car", 3.6f / 5f, 3.6f / 120f);
 
-                // calculate route.
-                var route = await router.CalculateAsync(source, target);
+            // calculate route.
+            var route = await router.CalculateAsync(source, target);
 
-                return route.ToGeoJson();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                throw;
-            }
+            return route.ToGeoJson();
         }
     }
 }

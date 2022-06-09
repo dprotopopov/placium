@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using Placium.Common;
 using Placium.Route;
 using Placium.Services;
+using Placium.WebApp.Filters;
 using Updater.Addrobx.Sphinx;
 using Updater.Addrx.Database;
 using Updater.Addrx.Sphinx;
@@ -73,13 +74,14 @@ namespace Placium.WebApp
                         .AllowAnyHeader()
                         .AllowAnyMethod()));
 
-            services.AddControllersWithViews()
+            services.AddControllersWithViews(options => { options.Filters.Add(typeof(ExceptionFilter)); })
                 .AddNewtonsoftJson(options =>
                 {
                     options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
                     options.SerializerSettings.Converters.Add(new GeometryConverter());
                     options.SerializerSettings.Converters.Add(new CoordinateConverter());
                 });
+
             services.Configure<ForwardedHeadersOptions>(options =>
             {
                 options.ForwardedHeaders =
