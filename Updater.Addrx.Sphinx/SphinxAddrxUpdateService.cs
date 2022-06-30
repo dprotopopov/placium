@@ -232,6 +232,17 @@ namespace Updater.Addrx.Sphinx
                 new KeyValuePair<string, string>("addr:shop", "{0}")
             };
 
+            var keys1 = new[]
+            {
+                "addr:region",
+                "addr:city",
+                "addr:town",
+                "addr:village",
+                "addr:street",
+                "addr:square",
+                "addr:housenumber"
+            };
+
 
             var result = new List<Doc>(take);
             for (var i = 0; i < take && reader.Read(); i++)
@@ -252,19 +263,19 @@ namespace Updater.Addrx.Sphinx
                     }
 
                 var list1 = new List<string>();
-                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:street", out var street))
-                    list1.Add(street);
-                if (dictionary.ContainsKey("building") && dictionary.TryGetValue("addr:square", out var square))
-                    list1.Add(square);
-                if (dictionary.ContainsKey("building") &&
-                    dictionary.TryGetValue("addr:housenumber", out var housenumber)) list1.Add(housenumber);
+
+                if(dictionary.ContainsKey("building"))
+                    foreach (var key in keys1)
+                        if (dictionary.TryGetValue(key, out var value))
+                            list1.Add(value);
+                
                 if (dictionary.TryGetValue("name", out var name)) list1.Add(name);
 
                 var list2 = new List<string>();
 
-                dictionary.TryGetValue("addr:street", out street);
-                dictionary.TryGetValue("addr:square", out square);
-                dictionary.TryGetValue("addr:street", out housenumber);
+                dictionary.TryGetValue("addr:street", out var street);
+                dictionary.TryGetValue("addr:square", out var square);
+                dictionary.TryGetValue("addr:housenumber", out var housenumber);
 
                 foreach (var k in dictionary.Keys)
                 {
