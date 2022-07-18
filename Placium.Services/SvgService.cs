@@ -79,13 +79,15 @@ namespace Placium.Services
             }
 
             var envelope = g.EnvelopeInternal;
-            var centerX = (envelope.MaxX + envelope.MinX) / 2d;
-            var centerY = (envelope.MaxY + envelope.MinY) / 2d;
+            var maxX = envelope.MaxX >= 0 ? envelope.MaxX : 360d + envelope.MaxX;
+            var minX = envelope.MinX >= 0 ? envelope.MinX : 360d + envelope.MinX;
+            var maxY = envelope.MaxY;
+            var minY = envelope.MinY;
+            var centerX = (maxX + minX) / 2d;
+            var centerY = (maxY + minY) / 2d;
 
-            var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
-                (float)envelope.MaxX);
-            var y = Coordinate.DistanceEstimateInMeter((float)envelope.MinY, (float)centerX, (float)envelope.MaxY,
-                (float)centerX);
+            var x = Math.PI * Coordinate.RadiusOfEarth * (maxX - minX) / 180d * Math.Cos(Math.PI * centerY / 180d);
+            var y = Math.PI * Coordinate.RadiusOfEarth * (maxY - minY) / 180d;
             var ratioX = width / x;
             var ratioY = height / y;
             var ratio = Math.Min(ratioX, ratioY);
