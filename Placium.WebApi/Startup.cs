@@ -39,6 +39,7 @@ namespace Placium.WebApi
             services.AddSingleton<FiasService>();
             services.AddSingleton<SvgService>();
             services.AddSingleton<MapService>();
+            services.AddSingleton<SubAreaService>();
         }
 
         public void ConfigureServices(IServiceCollection services)

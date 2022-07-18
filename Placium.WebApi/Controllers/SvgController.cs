@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using NLog.LayoutRenderers;
 using Placium.Services;
 
 namespace Placium.WebApi.Controllers
