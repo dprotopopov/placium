@@ -12,14 +12,9 @@ namespace Placium.Services
     {
         private static readonly NumberFormatInfo Nfi = new NumberFormatInfo { NumberDecimalSeparator = "." };
 
-        public static string ToPath(this LineString lineString, Envelope envelope, double ratio, int width, int height)
+        public static string ToPath(this LineString lineString, double ratio, int width, int height, double centerX,
+            double centerY)
         {
-            var maxX = envelope.MaxX >= 0 ? envelope.MaxX : 360d + envelope.MaxX;
-            var minX = envelope.MinX >= 0 ? envelope.MinX : 360d + envelope.MinX;
-            var maxY = envelope.MaxY;
-            var minY = envelope.MinY;
-            var centerX = (maxX + minX) / 2d;
-            var centerY = (maxY + minY) / 2d;
             var sb = new StringBuilder();
 
             var first = true;
@@ -37,7 +32,8 @@ namespace Placium.Services
             return sb.ToString();
         }
 
-        public static string ToPath(this Point point, Envelope envelope, double ratio, int width, int height)
+        public static string ToPath(this Point point, double ratio, int width, int height, double centerX,
+            double centerY)
         {
             var latitude = point.Y;
             var longitude = point.X;
@@ -54,18 +50,13 @@ namespace Placium.Services
             };
 
             var circle = shapeFactory.CreateEllipse();
-            return circle.ToPath(envelope, ratio, width, height);
+            return circle.ToPath(ratio, width, height, centerX, centerY);
         }
 
-        public static string ToPath(this Polygon polygon, Envelope envelope, double ratio, int width, int height)
+        public static string ToPath(this Polygon polygon, double ratio, int width, int height, double centerX,
+            double centerY)
         {
-            var maxX = envelope.MaxX >= 0 ? envelope.MaxX : 360d + envelope.MaxX;
-            var minX = envelope.MinX >= 0 ? envelope.MinX : 360d + envelope.MinX;
-            var maxY = envelope.MaxY;
-            var minY = envelope.MinY;
-            var centerX = (maxX + minX) / 2d;
-            var centerY = (maxY + minY) / 2d;
-            var sb = new StringBuilder();
+             var sb = new StringBuilder();
 
             var first = true;
             foreach (var coordinate in polygon.Coordinates)
@@ -84,8 +75,8 @@ namespace Placium.Services
             return sb.ToString();
         }
 
-        public static string ToPath(this GeometryCollection collection, Envelope envelope, double ratio, int width,
-            int height)
+        public static string ToPath(this GeometryCollection collection, double ratio, int width,
+            int height, double centerX, double centerY)
         {
             var paths = new List<string>();
 
@@ -94,13 +85,13 @@ namespace Placium.Services
                     switch (g)
                     {
                         case Point point:
-                            paths.Add(point.ToPath(envelope, ratio, width, height));
+                            paths.Add(point.ToPath(ratio, width, height, centerX, centerY));
                             break;
                         case LineString lineString:
-                            paths.Add(lineString.ToPath(envelope, ratio, width, height));
+                            paths.Add(lineString.ToPath(ratio, width, height, centerX, centerY));
                             break;
                         case Polygon polygon:
-                            paths.Add(polygon.ToPath(envelope, ratio, width, height));
+                            paths.Add(polygon.ToPath(ratio, width, height, centerX, centerY));
                             break;
                     }
 

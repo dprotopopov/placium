@@ -78,11 +78,10 @@ namespace Placium.Services
                 _logger.LogDebug($"Union complete {title} {item.location.GetType().Name}");
             }
 
-            var envelope = g.EnvelopeInternal;
-            var maxX = envelope.MaxX >= 0 ? envelope.MaxX : 360d + envelope.MaxX;
-            var minX = envelope.MinX >= 0 ? envelope.MinX : 360d + envelope.MinX;
-            var maxY = envelope.MaxY;
-            var minY = envelope.MinY;
+            var maxX = g.Coordinates.Max(p => p.X);
+            var minX = g.Coordinates.Min(p => p.X);
+            var maxY = g.Coordinates.Max(p => p.Y);
+            var minY = g.Coordinates.Min(p => p.Y);
             var centerX = (maxX + minX) / 2d;
             var centerY = (maxY + minY) / 2d;
 
@@ -103,10 +102,10 @@ namespace Placium.Services
 
                 var path = item.location switch
                 {
-                    Point point => point.ToPath(envelope, ratio, width, height),
-                    LineString lineString => lineString.ToPath(envelope, ratio, width, height),
-                    Polygon polygon => polygon.ToPath(envelope, ratio, width, height),
-                    GeometryCollection collection => collection.ToPath(envelope, ratio, width, height),
+                    Point point => point.ToPath(ratio, width, height, centerX, centerY),
+                    LineString lineString => lineString.ToPath(ratio, width, height, centerX, centerY),
+                    Polygon polygon => polygon.ToPath(ratio, width, height, centerX, centerY),
+                    GeometryCollection collection => collection.ToPath(ratio, width, height, centerX, centerY),
                     _ => string.Empty
                 };
 

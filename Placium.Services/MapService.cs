@@ -79,14 +79,15 @@ namespace Placium.Services
                     g = g.Union(g1.Buffer(0));
                 }
 
-                var envelope = g.EnvelopeInternal;
-                var centerX = (envelope.MaxX + envelope.MinX) / 2d;
-                var centerY = (envelope.MaxY + envelope.MinY) / 2d;
+                var maxX = g.Coordinates.Max(p => p.X);
+                var minX = g.Coordinates.Min(p => p.X);
+                var maxY = g.Coordinates.Max(p => p.Y);
+                var minY = g.Coordinates.Min(p => p.Y);
+                var centerX = (maxX + minX) / 2d;
+                var centerY = (maxY + minY) / 2d;
 
-                var x = Coordinate.DistanceEstimateInMeter((float)centerY, (float)envelope.MinX, (float)centerY,
-                    (float)envelope.MaxX);
-                var y = Coordinate.DistanceEstimateInMeter((float)envelope.MinY, (float)centerX, (float)envelope.MaxY,
-                    (float)centerX);
+                var x = Math.PI * Coordinate.RadiusOfEarth * (maxX - minX) / 180d * Math.Cos(Math.PI * centerY / 180d);
+                var y = Math.PI * Coordinate.RadiusOfEarth * (maxY - minY) / 180d;
                 var ratioX = width / x;
                 var ratioY = height / y;
                 var ratio = Math.Min(ratioX, ratioY);
@@ -101,20 +102,23 @@ namespace Placium.Services
                 foreach (var item in result)
                 {
                     var envelope1 = item.location.EnvelopeInternal;
+                    var maxX1 = item.location.Coordinates.Max(p => p.X);
+                    var minX1 = item.location.Coordinates.Min(p => p.X);
+                    var maxY1 = item.location.Coordinates.Max(p => p.Y);
+                    var minY1 = item.location.Coordinates.Min(p => p.Y);
+                    var centerX1 = (maxX1 + minX1) / 2d;
+                    var centerY1 = (maxY1 + minY1) / 2d;
 
-                    var minX = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)centerY,
-                        (float)envelope1.MinX);
-                    var maxX = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)centerY,
-                        (float)envelope1.MaxX);
-                    var minY = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)envelope1.MinY,
-                        (float)centerX);
-                    var maxY = Coordinate.DistanceEstimateInMeter((float)centerY, (float)centerX, (float)envelope1.MaxY,
-                        (float)centerX);
+                    var x1 = Math.PI * Coordinate.RadiusOfEarth * (minX1 - centerX) / 180d * Math.Cos(Math.PI * centerY / 180d);
+                    var x2 = Math.PI * Coordinate.RadiusOfEarth * (maxX1 - centerX) / 180d * Math.Cos(Math.PI * centerY / 180d);
+                    var y1 = Math.PI * Coordinate.RadiusOfEarth * (minY1 - centerY) / 180d;
+                    var y2 = Math.PI * Coordinate.RadiusOfEarth * (maxY1 - centerY) / 180d;
 
-                    var left = (int)Math.Floor(width / 2d + (envelope1.MinX >= centerX ? minX : -minX) * ratio);
-                    var right = (int)Math.Floor(width / 2d + (envelope1.MaxX >= centerX ? maxX : -maxX) * ratio);
-                    var bottom = (int)Math.Ceiling(height / 2d - (envelope1.MinY >= centerY ? minY : -minY) * ratio);
-                    var top = (int)Math.Ceiling(height / 2d - (envelope1.MaxY >= centerY ? maxY : -maxY) * ratio);
+
+                    var left = (int)Math.Floor(width / 2d + x1 * ratio);
+                    var right = (int)Math.Floor(width / 2d + x2 * ratio);
+                    var bottom = (int)Math.Ceiling(height / 2d - y1 * ratio);
+                    var top = (int)Math.Ceiling(height / 2d - y2 * ratio);
                     var rect = $"{left}, {top}, {right - left}, {bottom - top}";
 
                     var title = item.tags.TryGetValue("name", out var s) ? s : string.Empty;
@@ -123,10 +127,10 @@ namespace Placium.Services
 
                     var data = item.location switch
                     {
-                        Point point => point.ToPath(envelope, ratio, width, height),
-                        LineString lineString => lineString.ToPath(envelope, ratio, width, height),
-                        Polygon polygon => polygon.ToPath(envelope, ratio, width, height),
-                        GeometryCollection collection => collection.ToPath(envelope, ratio, width, height),
+                        Point point => point.ToPath(ratio, width, height, centerX, centerY),
+                        LineString lineString => lineString.ToPath(ratio, width, height, centerX, centerY),
+                        Polygon polygon => polygon.ToPath(ratio, width, height, centerX, centerY),
+                        GeometryCollection collection => collection.ToPath(ratio, width, height, centerX, centerY),
                         _ => string.Empty
                     };
 
