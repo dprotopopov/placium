@@ -121,7 +121,7 @@ namespace Placium.Services
                     var top = (int)Math.Ceiling(height / 2d - y2 * ratio);
                     var rect = $"{left}, {top}, {right - left}, {bottom - top}";
 
-                    var title = item.tags.TryGetValue("name", out var s) ? s : string.Empty;
+                    var title = item.tags.TryGetValue("name:ru", out var s) || item.tags.TryGetValue("name", out s) ? s : string.Empty;
                     var key = Regex.Replace(title, @"\W+", "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
                         .ToLower();
 

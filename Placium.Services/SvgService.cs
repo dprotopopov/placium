@@ -68,7 +68,7 @@ namespace Placium.Services
             var g = GeometryFactory.CreateEmpty(Dimension.Surface);
             foreach (var item in result)
             {
-                var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
+                var title = item.tags.TryGetValue("name:ru", out var name) || item.tags.TryGetValue("name", out name) ? name : string.Empty;
 
                 _logger.LogDebug($"Union begin {title} {item.location.GetType().Name}");
 

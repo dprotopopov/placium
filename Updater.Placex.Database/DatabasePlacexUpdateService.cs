@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Npgsql;
@@ -19,14 +20,17 @@ namespace Updater.Placex.Database
         private static readonly NumberFormatInfo Nfi = new NumberFormatInfo { NumberDecimalSeparator = "." };
         private static readonly WKTReader WktReader = new WKTReader();
         private static readonly WKTWriter WktWriter = new WKTWriter();
+        private readonly ILogger<DatabasePlacexUpdateService> _logger;
         private readonly IParallelConfig _parallelConfig;
         private readonly IProgressClient _progressClient;
 
         public DatabasePlacexUpdateService(IProgressClient progressClient,
-            IConnectionsConfig configuration, IParallelConfig parallelConfig) : base(configuration)
+            IConnectionsConfig configuration, IParallelConfig parallelConfig,
+            ILogger<DatabasePlacexUpdateService> logger) : base(configuration)
         {
             _progressClient = progressClient;
             _parallelConfig = parallelConfig;
+            _logger = logger;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -276,46 +280,51 @@ namespace Updater.Placex.Database
                                         var cleanNodes = nodes.Where(id => dic.ContainsKey(id)).ToArray();
 
                                         if (cleanNodes.Any())
-                                        {
-                                            var sb = new StringBuilder("SRID=4326;");
-                                            sb.Append(
-                                                cleanNodes.Length > 1
-                                                    ? area && cleanNodes.Length > 2 ? "POLYGON" : "LINESTRING"
-                                                    : "POINT");
-                                            sb.Append(cleanNodes.Length > 1
-                                                ? area && cleanNodes.Length > 2 ? "((" : "("
-                                                : "(");
-                                            sb.Append(string.Join(",",
-                                                nodes.Where(id => dic.ContainsKey(id)).Select(id =>
-                                                    $"{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}")));
-
-
-                                            if (area && cleanNodes.Length > 2 &&
-                                                (cleanNodes.Length < 4 ||
-                                                 cleanNodes.First() != cleanNodes.Last()))
+                                            try
                                             {
-                                                var id = cleanNodes.First();
+                                                var sb = new StringBuilder("SRID=4326;");
                                                 sb.Append(
-                                                    $",{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}");
+                                                    cleanNodes.Length > 1
+                                                        ? area && cleanNodes.Length > 2 ? "POLYGON" : "LINESTRING"
+                                                        : "POINT");
+                                                sb.Append(cleanNodes.Length > 1
+                                                    ? area && cleanNodes.Length > 2 ? "((" : "("
+                                                    : "(");
+                                                sb.Append(string.Join(",",
+                                                    nodes.Where(id => dic.ContainsKey(id)).Select(id =>
+                                                        $"{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}")));
+
+
+                                                if (area && cleanNodes.Length > 2 &&
+                                                    (cleanNodes.Length < 4 ||
+                                                     cleanNodes.First() != cleanNodes.Last()))
+                                                {
+                                                    var id = cleanNodes.First();
+                                                    sb.Append(
+                                                        $",{dic[id].longitude.ToString(Nfi)} {dic[id].latitude.ToString(Nfi)}");
+                                                }
+
+                                                sb.Append(cleanNodes.Length > 1
+                                                    ? area && cleanNodes.Length > 2 ? "))" : ")"
+                                                    : ")");
+
+
+                                                var values = new List<string>
+                                                {
+                                                    id0.ToString(),
+                                                    tags.TextEscape(),
+                                                    sb.ToString()
+                                                };
+
+                                                lock (obj)
+                                                {
+                                                    writer.WriteLine(string.Join("\t", values));
+                                                }
                                             }
-
-                                            sb.Append(cleanNodes.Length > 1
-                                                ? area && cleanNodes.Length > 2 ? "))" : ")"
-                                                : ")");
-
-
-                                            var values = new List<string>
+                                            catch (Exception ex)
                                             {
-                                                id0.ToString(),
-                                                tags.TextEscape(),
-                                                sb.ToString()
-                                            };
-
-                                            lock (obj)
-                                            {
-                                                writer.WriteLine(string.Join("\t", values));
+                                                _logger.LogError(ex, $"Error processing W{id0}");
                                             }
-                                        }
                                     }
 
                                     lock (obj)
@@ -468,56 +477,61 @@ namespace Updater.Placex.Database
                                         var cleanMember = members.Where(x => x.Type == 1)
                                             .ToArray();
                                         if (cleanMember.Any())
-                                        {
-                                            var g = GeometryFactory.CreateEmpty(Dimension.Surface);
+                                            try
+                                            {
+                                                var g = GeometryFactory.CreateEmpty(Dimension.Surface);
 
-                                            var role = cleanMember.First().Role;
-                                            var currentMembers = new List<OsmRelationMember>
-                                                { cleanMember.First() };
-                                            for (var index = 1; index <= cleanMember.Length; index++)
-                                                if (index == cleanMember.Length ||
-                                                    cleanMember[index].Role != role)
-                                                {
-                                                    if (ProcessMembers(currentMembers, command3,
-                                                            command4, out var g1))
+                                                var role = cleanMember.First().Role;
+                                                var currentMembers = new List<OsmRelationMember>
+                                                    { cleanMember.First() };
+                                                for (var index = 1; index <= cleanMember.Length; index++)
+                                                    if (index == cleanMember.Length ||
+                                                        cleanMember[index].Role != role)
                                                     {
-                                                        switch (role)
+                                                        if (ProcessMembers(currentMembers, command3,
+                                                                command4, out var g1))
                                                         {
-                                                            case "outer":
-                                                                g = g.Union(g1);
-                                                                break;
-                                                            case "inner":
-                                                                g = g.Difference(g1);
-                                                                break;
+                                                            switch (role)
+                                                            {
+                                                                case "outer":
+                                                                    g = g.Union(g1);
+                                                                    break;
+                                                                case "inner":
+                                                                    g = g.Difference(g1);
+                                                                    break;
+                                                            }
+
+                                                            if (!g.IsValid) g = g.Buffer(0);
                                                         }
 
-                                                        if (!g.IsValid) g = g.Buffer(0);
+                                                        if (index == cleanMember.Length) break;
+
+                                                        role = cleanMember[index].Role;
+                                                        currentMembers = new List<OsmRelationMember>
+                                                            { cleanMember[index] };
+                                                    }
+                                                    else
+                                                    {
+                                                        currentMembers.Add(cleanMember[index]);
                                                     }
 
-                                                    if (index == cleanMember.Length) break;
 
-                                                    role = cleanMember[index].Role;
-                                                    currentMembers = new List<OsmRelationMember>
-                                                        { cleanMember[index] };
-                                                }
-                                                else
+                                                var values = new List<string>
                                                 {
-                                                    currentMembers.Add(cleanMember[index]);
+                                                    id0.ToString(),
+                                                    tags.TextEscape(),
+                                                    "SRID=4326;" + WktWriter.Write(g)
+                                                };
+
+                                                lock (obj)
+                                                {
+                                                    writer.WriteLine(string.Join("\t", values));
                                                 }
-
-
-                                            var values = new List<string>
-                                            {
-                                                id0.ToString(),
-                                                tags.TextEscape(),
-                                                "SRID=4326;" + WktWriter.Write(g)
-                                            };
-
-                                            lock (obj)
-                                            {
-                                                writer.WriteLine(string.Join("\t", values));
                                             }
-                                        }
+                                            catch (Exception ex)
+                                            {
+                                                _logger.LogError(ex, $"Error processing R{id0}");
+                                            }
                                     }
 
                                     lock (obj)
