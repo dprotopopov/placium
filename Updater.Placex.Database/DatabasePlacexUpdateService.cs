@@ -633,6 +633,7 @@ namespace Updater.Placex.Database
 
                 var cleanNodes = ring.Where(id => dic.ContainsKey(id))
                     .ToArray();
+                
                 if (cleanNodes.Length < 4) continue;
 
                 var sb = new StringBuilder("SRID=4326;");

@@ -94,7 +94,7 @@ namespace Placium.Services
             var items = new List<Item>(osmIds.Count);
             foreach (var item in result)
             {
-                var title = item.tags.TryGetValue("name", out var name) ? name : string.Empty;
+                var title = item.tags.TryGetValue("name:ru", out var name) || item.tags.TryGetValue("name", out name) ? name : string.Empty;
                 var key = Regex.Replace(title, @"\W+", "", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase)
                     .ToLower();
 
