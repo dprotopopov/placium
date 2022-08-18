@@ -34,6 +34,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Loader.Fias.File\Loader.Fias.File.csproj" />
+		<ProjectReference Include="..\Loader.Gar.File\Loader.Gar.File.csproj" />
 		<ProjectReference Include="..\Loader.Osm.File\Loader.Osm.File.csproj" />
 		<ProjectReference Include="..\Placium.Route\Placium.Route.csproj" />
 		<ProjectReference Include="..\Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj" />

@@ -29,6 +29,7 @@
 
 
 	<ItemGroup>
+		<ProjectReference Include="..\Loader.Gar.File\Loader.Gar.File.csproj" />
 		<ProjectReference Include="..\Placium.Common\Placium.Common.csproj" />
 		<ProjectReference Include="..\Loader.Fias.File\Loader.Fias.File.csproj" />
 		<ProjectReference Include="..\Loader.Osm.File\Loader.Osm.File.csproj" />

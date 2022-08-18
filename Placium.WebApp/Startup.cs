@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Loader.Fias.File;
+using Loader.Gar.File;
 using Loader.Osm.File;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
@@ -49,6 +50,7 @@ namespace Placium.WebApp
             services.AddSingleton<OsmService>();
             services.AddSingleton<FiasService>();
             services.AddSingleton<FileFiasUploadService>();
+            services.AddSingleton<FileGarUploadService>();
             services.AddSingleton<FileOsmUploadService>();
             services.AddSingleton<DatabaseRouteUpdateService>();
             services.AddSingleton<DatabasePlacexUpdateService>();

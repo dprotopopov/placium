@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Loader.Fias.File;
+using Loader.Gar.File;
 using Loader.Osm.File;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ namespace placium
         private static readonly Type[] Types =
         {
             typeof(FileFiasUploadService),
+            typeof(FileGarUploadService),
             typeof(FileOsmUploadService),
             typeof(DatabaseRouteUpdateService),
             typeof(DatabasePlacexUpdateService),
@@ -63,6 +65,7 @@ namespace placium
                 .AddSingleton<IParallelConfig, ArgsParallelConfig>()
                 .AddSingleton<IProgressClient, ShellProgressClient>()
                 .AddSingleton<FileFiasUploadService>()
+                .AddSingleton<FileGarUploadService>()
                 .AddSingleton<FileOsmUploadService>()
                 .AddSingleton<DatabaseRouteUpdateService>()
                 .AddSingleton<DatabasePlacexUpdateService>()
