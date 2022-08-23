@@ -48,6 +48,7 @@ namespace Placium.WebApp
 
             services.AddSingleton<PlacexService>();
             services.AddSingleton<OsmService>();
+            services.AddSingleton<GarService>();
             services.AddSingleton<FiasService>();
             services.AddSingleton<FileFiasUploadService>();
             services.AddSingleton<FileGarUploadService>();
