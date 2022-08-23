@@ -16,6 +16,11 @@ namespace Placium.Common
             return _configuration.GetConnectionString("SphinxConnection");
         }
 
+        protected string GetGarConnectionString()
+        {
+            return _configuration.GetConnectionString("GarConnection");
+        }
+
         protected string GetFiasConnectionString()
         {
             return _configuration.GetConnectionString("FiasConnection");

@@ -21,6 +21,7 @@ services:
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__GarConnection: "Host=gar-placium;Port=5432;Database=gar_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__RouteConnection: "Host=route-placium;Port=5432;Database=route_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
@@ -48,6 +49,7 @@ services:
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__GarConnection: "Host=gar-placium;Port=5432;Database=gar_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__FiasConnection: "Host=fias-placium;Port=5432;Database=fias_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__RouteConnection: "Host=route-placium;Port=5432;Database=route_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
@@ -56,6 +58,19 @@ services:
       ServerConfig__AddCors: 'false'
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
       Kestrel__Endpoints__Https__Url: http://0.0.0.0:5001
+    networks:
+      - placium
+
+  gar-placium:
+    image: "postgres"
+    shm_size: '4gb'
+    container_name: gar-placium
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: gar_db
+      PGDATA: /var/lib/postgresql/data
     networks:
       - placium
 
