@@ -79,7 +79,12 @@ namespace Loader.Gar.File
                         name.EndsWith("ID") ||
                         name.EndsWith("LEVEL") ||
                         name.EndsWith("CODE") ||
+                        name.EndsWith("TYPE") ||
+                        name.EndsWith("TYPE1") ||
+                        name.EndsWith("TYPE2") ||
                         name.EndsWith("NUM") ||
+                        name.EndsWith("NUM1") ||
+                        name.EndsWith("NUM2") ||
                         name.EndsWith("NUMBER") ||
                         name.EndsWith("STATUS") ||
                         name.EndsWith("DATE") ||
@@ -271,12 +276,21 @@ namespace Loader.Gar.File
                     else if (name.EndsWith("ID") ||
                         name.EndsWith("LEVEL") ||
                         name.EndsWith("CODE") ||
+                        name.EndsWith("TYPE") ||
+                        name.EndsWith("TYPE1") ||
+                        name.EndsWith("TYPE2") ||
                         name.EndsWith("NUM") ||
+                        name.EndsWith("NUM1") ||
+                        name.EndsWith("NUM2") ||
                         name.EndsWith("NUMBER") ||
                         name.EndsWith("STATUS") ||
                         name.EndsWith("DATE") ||
                         name.EndsWith("SCNAME") ||
-                        name.EndsWith("SHORTNAME"))
+                        name.EndsWith("SHORTNAME") ||
+                        property.PropertyType == typeof(bool) ||
+                        property.PropertyType == typeof(int) ||
+                        property.PropertyType == typeof(long) ||
+                        property.PropertyType == typeof(DateTime))
                         sqls2.Add($@"CREATE INDEX ON ""{tableName}"" (""{name}"")");
                 }
             }
