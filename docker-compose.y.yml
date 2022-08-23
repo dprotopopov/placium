@@ -13,6 +13,10 @@ services:
     volumes:
       - //y/placium/ProtectionKeys:/app/ProtectionKeys
 
+  gar-placium:
+    volumes:
+      - //y/placium/gar/data:/var/lib/postgresql/data
+
   fias-placium:
     volumes:
       - //y/placium/fias/data:/var/lib/postgresql/data
