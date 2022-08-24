@@ -55,64 +55,63 @@ namespace Placium.Services
             _parentRoomSql = string.Join("\nUNION ALL\n",
                 _listRoom.Select(x =>
                     $@"SELECT houseguid,flatnumber,roomnumber FROM {x}
-                        WHERE roomguid=@p AND livestatus=1"));
+                        WHERE roomguid=@p AND livestatus=@s"));
             _parentHouseSql = string.Join("\nUNION ALL\n",
                 _listHouse.Select(x =>
                     $@"SELECT aoguid,housenum,buildnum,strucnum,eststat.name FROM {x}
-                        JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
-                        WHERE houseguid=@p"));
+                        WHERE houseguid=@p AND startdate<=@n AND @n<enddate"));
             _parentSteadSql = string.Join("\nUNION ALL\n",
                 _listStead.Select(x =>
-                    $"SELECT parentguid,number FROM {x} WHERE steadguid=@p AND livestatus=1"));
+                    $"SELECT parentguid,number FROM {x} WHERE steadguid=@p AND livestatus=@s"));
             _parentAddrobSql = string.Join("\nUNION ALL\n",
                 _listAddrob.Select(x =>
                     $@"SELECT parentguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE aoguid=@p AND livestatus=1"));
+                        WHERE aoguid=@p AND livestatus=@s"));
 
             _childrenRoomSql = string.Join("\nUNION ALL\n",
                 _listRoom.Select(x =>
                     $@"SELECT roomguid,flatnumber,roomnumber FROM {x}
-                        WHERE houseguid=@p AND livestatus=1"));
+                        WHERE houseguid=@p AND livestatus=@s"));
             _childrenHouseSql = string.Join("\nUNION ALL\n",
                 _listHouse.Select(x =>
                     $@"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x}
-                        JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
-                        WHERE aoguid=@p"));
+                        WHERE aoguid=@p AND startdate<=@n AND @n<enddate"));
             _childrenSteadSql = string.Join("\nUNION ALL\n",
                 _listStead.Select(x =>
-                    $"SELECT steadguid,number FROM {x} WHERE parentguid=@p AND livestatus=1"));
+                    $"SELECT steadguid,number FROM {x} WHERE parentguid=@p AND livestatus=@s"));
             _childrenAddrobSql = string.Join("\nUNION ALL\n",
                 _listAddrob.Select(x =>
                     $@"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE parentguid=@p AND livestatus=1"));
+                        WHERE parentguid=@p AND livestatus=@s"));
 
             _rootRoomSql = string.Join("\nUNION ALL\n",
                 _listRoom.Select(x =>
                     $@"SELECT roomguid,flatnumber,roomnumber FROM {x}
-                        WHERE houseguid IS NULL AND livestatus=1"));
+                        WHERE houseguid IS NULL AND livestatus=@s"));
             _rootHouseSql = string.Join("\nUNION ALL\n",
                 _listHouse.Select(x =>
                     $@"SELECT houseguid,housenum,buildnum,strucnum,eststat.name FROM {x}
-                        JOIN (SELECT now() as n) as q ON startdate<=n AND n<enddate 
                         JOIN eststat ON {x}.eststatus=eststat.eststatid
-                        WHERE aoguid IS NULL"));
+                        WHERE aoguid IS NULL AND startdate<=@n AND @n<enddate"));
             _rootSteadSql = string.Join("\nUNION ALL\n",
                 _listStead.Select(x =>
                     $@"SELECT steadguid,number FROM {x}
-                        WHERE parentguid IS NULL AND livestatus=1"));
+                        WHERE parentguid IS NULL AND livestatus=@s"));
             _rootAddrobSql = string.Join("\nUNION ALL\n",
                 _listAddrob.Select(x =>
                     $@"SELECT aoguid,offname,formalname,shortname,socrbase.socrname,aolevel FROM {x}
                         JOIN socrbase ON {x}.shortname=socrbase.scname AND {x}.aolevel=socrbase.level
-                        WHERE parentguid IS NULL AND livestatus=1"));
+                        WHERE parentguid IS NULL AND livestatus=@s"));
         }
 
-        public async Task<List<object>> GetDetailsAsync(string guid, bool formal = false, bool socr = true)
+        public async Task<List<object>> GetDetailsAsync(string guid, bool formal = false, bool socr = true, DateTime? dateTime = null, int liveStatus = 1)
         {
+            if (dateTime == null) dateTime = DateTime.Now;
+
             await using var connection = new NpgsqlConnection(GetFiasConnectionString());
             await connection.OpenAsync();
 
@@ -124,6 +123,8 @@ namespace Placium.Services
             {
                 await using var command = new NpgsqlCommand(_parentRoomSql, connection);
                 command.Parameters.AddWithValue("p", guid);
+                command.Parameters.AddWithValue("n", dateTime);
+                command.Parameters.AddWithValue("s", liveStatus);
 
                 await command.PrepareAsync();
 
@@ -151,6 +152,8 @@ namespace Placium.Services
             {
                 await using var command = new NpgsqlCommand(_parentHouseSql, connection);
                 command.Parameters.AddWithValue("p", guid);
+                command.Parameters.AddWithValue("n", dateTime);
+                command.Parameters.AddWithValue("s", liveStatus);
 
                 await command.PrepareAsync();
 
@@ -182,6 +185,8 @@ namespace Placium.Services
             {
                 await using var command = new NpgsqlCommand(_parentSteadSql, connection);
                 command.Parameters.AddWithValue("p", guid);
+                command.Parameters.AddWithValue("n", dateTime);
+                command.Parameters.AddWithValue("s", liveStatus);
 
                 await command.PrepareAsync();
 
@@ -204,6 +209,8 @@ namespace Placium.Services
             await using (var command = new NpgsqlCommand(_parentAddrobSql, connection))
             {
                 command.Parameters.Add("p", NpgsqlDbType.Varchar);
+                command.Parameters.AddWithValue("n", dateTime);
+                command.Parameters.AddWithValue("s", liveStatus);
 
                 await command.PrepareAsync();
 
@@ -249,8 +256,10 @@ namespace Placium.Services
             return result;
         }
 
-        public async Task<List<object>> GetChildrenAsync(string guid, bool formal = false, bool socr = true)
+        public async Task<List<object>> GetChildrenAsync(string guid, bool formal = false, bool socr = true, DateTime? dateTime = null, int liveStatus = 1)
         {
+            if (dateTime == null) dateTime = DateTime.Now;
+
             await using var connection = new NpgsqlConnection(GetFiasConnectionString());
             await connection.OpenAsync();
 
@@ -262,6 +271,8 @@ namespace Placium.Services
                              _childrenRoomSql, _childrenHouseSql, _childrenSteadSql, _childrenAddrobSql), connection))
             {
                 command.Parameters.AddWithValue("p", guid);
+                command.Parameters.AddWithValue("n", dateTime);
+                command.Parameters.AddWithValue("s", liveStatus);
 
                 await command.PrepareAsync();
 
@@ -352,8 +363,10 @@ namespace Placium.Services
             return result;
         }
 
-        public async Task<List<object>> GetRootsAsync(bool formal = false, bool socr = true)
+        public async Task<List<object>> GetRootsAsync(bool formal = false, bool socr = true, DateTime? dateTime = null, int liveStatus = 1)
         {
+            if (dateTime == null) dateTime = DateTime.Now;
+
             await using var connection = new NpgsqlConnection(GetFiasConnectionString());
             await connection.OpenAsync();
 
@@ -364,6 +377,9 @@ namespace Placium.Services
             await using (var command = new NpgsqlCommand(string.Join(";",
                              _rootRoomSql, _rootHouseSql, _rootSteadSql, _rootAddrobSql), connection))
             {
+                command.Parameters.AddWithValue("n", dateTime);
+                command.Parameters.AddWithValue("s", liveStatus);
+
                 await command.PrepareAsync();
 
                 await using var reader = command.ExecuteReader();

@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Placium.Models;
 using Placium.Seeker;
 using Placium.Services;
 
@@ -21,37 +23,37 @@ namespace Placium.WebApi.Controllers
         }
 
         [HttpGet("{guid}/details")]
-        [ProducesResponseType(200, Type = typeof(List<object>))]
+        [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetDetails(string guid, bool formal = false, bool socr = true)
+        public async Task<IActionResult> GetDetails(string guid, bool formal = false, bool socr = true, DateTime? dateTime = null, int liveStatus = 1)
         {
-            return Ok(await _fiasService.GetDetailsAsync(guid, formal, socr));
+            return Ok(await _fiasService.GetDetailsAsync(guid, formal, socr, dateTime, liveStatus));
         }
 
         [HttpGet("{guid}/text")]
         [ProducesResponseType(200, Type = typeof(string))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetText(string guid, bool formal = false, bool socr = true)
+        public async Task<IActionResult> GetText(string guid, bool formal = false, bool socr = true, DateTime? dateTime = null, int liveStatus = 1)
         {
             return Ok(string.Join(", ",
-                (await _fiasService.GetDetailsAsync(guid, formal, socr)).Select(x => x.ToString())));
+                (await _fiasService.GetDetailsAsync(guid, formal, socr, dateTime, liveStatus)).Select(x => x.ToString())));
         }
 
         [HttpGet("{guid}/children")]
-        [ProducesResponseType(200, Type = typeof(List<object>))]
+        [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetChildren(string guid, bool formal = false, bool socr = true)
+        public async Task<IActionResult> GetChildren(string guid, bool formal = false, bool socr = true, DateTime? dateTime = null, int liveStatus = 1)
         {
-            return Ok(await _fiasService.GetChildrenAsync(guid, formal, socr));
+            return Ok(await _fiasService.GetChildrenAsync(guid, formal, socr, dateTime, liveStatus));
         }
 
 
         [HttpGet("roots")]
-        [ProducesResponseType(200, Type = typeof(List<object>))]
+        [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetRoots(bool formal = false, bool socr = true)
+        public async Task<IActionResult> GetRoots(bool formal = false, bool socr = true, DateTime? dateTime = null, int liveStatus = 1)
         {
-            return Ok(await _fiasService.GetRootsAsync(formal, socr));
+            return Ok(await _fiasService.GetRootsAsync(formal, socr, dateTime, liveStatus));
         }
 
         [HttpGet]

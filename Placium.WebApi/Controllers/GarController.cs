@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Placium.Models;
@@ -20,26 +21,26 @@ namespace Placium.WebApi.Controllers
         [HttpGet("{objectid}/details")]
         [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetDetails(long objectid)
+        public async Task<IActionResult> GetDetails(long objectid, DateTime? dateTime = null)
         {
-            return Ok(await _garService.GetDetailsAsync(objectid));
+            return Ok(await _garService.GetDetailsAsync(objectid, dateTime));
         }
 
         [HttpGet("{objectid}/children")]
         [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetChildren(long objectid)
+        public async Task<IActionResult> GetChildren(long objectid, DateTime? dateTime = null)
         {
-            return Ok(await _garService.GetChildrenAsync(objectid));
+            return Ok(await _garService.GetChildrenAsync(objectid, dateTime));
         }
 
 
         [HttpGet("roots")]
         [ProducesResponseType(200, Type = typeof(List<Element>))]
         [ProducesResponseType(404)]
-        public async Task<IActionResult> GetRoots()
+        public async Task<IActionResult> GetRoots(DateTime? dateTime = null)
         {
-            return Ok(await _garService.GetRootsAsync());
+            return Ok(await _garService.GetRootsAsync(dateTime));
         }
     }
 }
