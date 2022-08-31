@@ -54,7 +54,7 @@ namespace Loader.Gar.File
 
         private Dictionary<string, string> GetCreateTableSqls(bool temp = false)
         {
-            var list = new Dictionary<string, string>();
+            var dic = new Dictionary<string, string>();
             foreach (var (key, value) in _files)
             {
                 var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
@@ -109,9 +109,9 @@ namespace Loader.Gar.File
                 }
                 sb.Append(string.Join(",", columns));
                 sb.Append(")");
-                list.Add(tableName, sb.ToString());
+                dic.Add(tableName, sb.ToString());
             }
-            return list;
+            return dic;
         }
 
         public async Task InstallAsync(Stream uploadStream, Dictionary<string, string> options, string session)
@@ -133,34 +133,6 @@ namespace Loader.Gar.File
 
             ExecuteNonQueries(new[] { sqls.Values.ToArray() }, connection);
 
-            var copyCommands = new Dictionary<string, string>(_files.Count);
-            var connectionPool = new List<NpgsqlConnection>(_files.Count);
-            var writerPool = new Dictionary<string, TextWriter>(_files.Count);
-
-            foreach (var (key, value) in _files)
-            {
-                var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
-                var tableName = match.Groups[1].Value.ToUpper();
-                var properties = value.Item2.GetProperties();
-
-                var con = new NpgsqlConnection(GetGarConnectionString());
-                await con.OpenAsync();
-                connectionPool.Add(con);
-                var columns = new List<string>();
-                foreach (var property in properties)
-                {
-                    var name = property.Name;
-
-                    if (property.PropertyType == typeof(bool) && name.EndsWith("Specified")) continue;
-
-                    columns.Add($@"""{name}""");
-                }
-                var copyCommand = $@"COPY ""{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''";
-                copyCommands.Add(tableName, copyCommand);
-                var writer = await con.BeginTextImportAsync($@"COPY ""{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
-                writerPool.Add(tableName, writer);
-            }
-
             using (var archive = new ZipArchive(uploadStream))
             {
                 foreach (var entry in archive.Entries)
@@ -169,6 +141,7 @@ namespace Loader.Gar.File
                     {
                         Type type = null;
                         string tableName = null;
+                        TextWriter writer = null;
 
                         foreach (var (key, value) in _files)
                         {
@@ -177,11 +150,23 @@ namespace Loader.Gar.File
                             {
                                 type = value.Item2;
                                 tableName = match.Groups[1].Value.ToUpper();
+                                var properties = value.Item2.GetProperties();
+
+                                var columns = new List<string>();
+                                foreach (var property in properties)
+                                {
+                                    var name = property.Name;
+
+                                    if (property.PropertyType == typeof(bool) && name.EndsWith("Specified")) continue;
+
+                                    columns.Add($@"""{name}""");
+                                }
+                                writer = await connection.BeginTextImportAsync($@"COPY ""{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
                                 break;
                             }
                         }
 
-                        if (type != null && writerPool.TryGetValue(tableName, out var writer))
+                        if (type != null)
                         {
                             var properties = type.GetProperties();
 
@@ -247,15 +232,14 @@ namespace Loader.Gar.File
                                     lock (lockObj1) writer.WriteLine(string.Join("\t", values));
                                 }
                             });
+
+                            writer.Dispose();
                         }
                     }
 
                     await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id, session);
                 }
             }
-
-            foreach (var (key, value) in writerPool) value.Dispose();
-            foreach (var con in connectionPool) await con.CloseAsync();
 
             var sqls2 = new List<string>();
 
@@ -297,7 +281,7 @@ namespace Loader.Gar.File
 
             ExecuteNonQueries(new[] { sqls2.ToArray() }, connection);
 
-            BuildIndices(writerPool.Keys.ToArray(), connection);
+            BuildIndices(sqls.Keys.ToArray(), connection);
 
             await _progressClient.Finalize(id, session);
 
