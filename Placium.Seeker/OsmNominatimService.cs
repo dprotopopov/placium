@@ -44,6 +44,7 @@ namespace Placium.Seeker
                 command.Parameters.AddWithValue("take", take);
                 command.Parameters.AddWithValue("lat", lat);
                 command.Parameters.AddWithValue("lon", lon);
+                command.Parameters.AddWithValue("level", level);
 
                 await using var reader = command.ExecuteReader();
                 var count = 0;
