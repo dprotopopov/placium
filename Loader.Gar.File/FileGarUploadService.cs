@@ -125,13 +125,16 @@ namespace Loader.Gar.File
             await _progressClient.Init(id, session);
 
             DropTables(connection);
+            DropTempTables(connection);
 
             await ExecuteResourceAsync(Assembly.GetExecutingAssembly(), "Loader.Gar.File.CreateSequence.pgsql",
                 connection);
 
             var sqls = GetCreateTableSqls();
+            var sqlsTemp = GetCreateTableSqls(temp: true);
 
             ExecuteNonQueries(new[] { sqls.Values.ToArray() }, connection);
+            ExecuteNonQueries(new[] { sqlsTemp.Values.ToArray() }, connection);
 
             using (var archive = new ZipArchive(uploadStream))
             {
@@ -241,6 +244,45 @@ namespace Loader.Gar.File
                 }
             }
 
+            var sqls1 = new List<string>();
+            foreach (var (key, value) in _files)
+            {
+                var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
+                var tableName = match.Groups[1].Value.ToUpper();
+                var properties = value.Item2.GetProperties();
+
+                sqls1.Add($@"CREATE INDEX ON ""temp_{tableName}"" (""{value.Item1}"")");
+            }
+
+            ExecuteNonQueries(new[] { sqls1.ToArray() }, connection);
+
+            var sqlsCopy = new List<string>();
+
+            foreach (var (key, value) in _files)
+            {
+                var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
+                var tableName = match.Groups[1].Value.ToUpper();
+                var properties = value.Item2.GetProperties();
+
+                var columns = new List<string>();
+                foreach (var property in properties)
+                {
+                    var name = property.Name;
+
+                    if (property.PropertyType == typeof(bool) && name.EndsWith("Specified")) continue;
+
+                    columns.Add($@"""{name}""");
+                }
+                var sb = new StringBuilder();
+                sb.AppendLine($@"INSERT INTO ""{tableName}""({string.Join(",", columns)})");
+                sb.AppendLine($@"SELECT {string.Join(", ", columns)} FROM (SELECT {string.Join(", ", columns)}, ROW_NUMBER() OVER(PARTITION BY ""{value.Item1}"") as rn  FROM ""temp_{tableName}"") q WHERE rn=1");
+                sqlsCopy.Add(sb.ToString());
+            }
+
+            ExecuteNonQueries(new[] { sqlsCopy.ToArray() }, connection);
+
+            DropTempTables(connection);
+
             var sqls2 = new List<string>();
 
             foreach (var (key, value) in _files)
@@ -300,37 +342,9 @@ namespace Loader.Gar.File
 
             DropTempTables(connection);
 
-            var sqls = GetCreateTableSqls(temp: true);
+            var sqlsTemp = GetCreateTableSqls(temp: true);
 
-            ExecuteNonQueries(new[] { sqls.Values.ToArray() }, connection);
-
-            var copyCommands = new Dictionary<string, string>(_files.Count);
-            var connectionPool = new List<NpgsqlConnection>(_files.Count);
-            var writerPool = new Dictionary<string, TextWriter>(_files.Count);
-
-            foreach (var (key, value) in _files)
-            {
-                var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
-                var tableName = match.Groups[1].Value.ToUpper();
-                var properties = value.Item2.GetProperties();
-
-                var con = new NpgsqlConnection(GetGarConnectionString());
-                await con.OpenAsync();
-                connectionPool.Add(con);
-                var columns = new List<string>();
-                foreach (var property in properties)
-                {
-                    var name = property.Name;
-
-                    if (property.PropertyType == typeof(bool) && name.EndsWith("Specified")) continue;
-
-                    columns.Add($@"""{name}""");
-                }
-                var copyCommand = $@"COPY ""temp_{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''";
-                copyCommands.Add(tableName, copyCommand);
-                var writer = await con.BeginTextImportAsync($@"COPY ""temp_{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
-                writerPool.Add(tableName, writer);
-            }
+            ExecuteNonQueries(new[] { sqlsTemp.Values.ToArray() }, connection);
 
             using (var archive = new ZipArchive(uploadStream))
             {
@@ -340,6 +354,7 @@ namespace Loader.Gar.File
                     {
                         Type type = null;
                         string tableName = null;
+                        TextWriter writer = null;
 
                         foreach (var (key, value) in _files)
                         {
@@ -348,11 +363,23 @@ namespace Loader.Gar.File
                             {
                                 type = value.Item2;
                                 tableName = match.Groups[1].Value.ToUpper();
+                                var properties = value.Item2.GetProperties();
+
+                                var columns = new List<string>();
+                                foreach (var property in properties)
+                                {
+                                    var name = property.Name;
+
+                                    if (property.PropertyType == typeof(bool) && name.EndsWith("Specified")) continue;
+
+                                    columns.Add($@"""{name}""");
+                                }
+                                writer = await connection.BeginTextImportAsync($@"COPY ""temp_{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
                                 break;
                             }
                         }
 
-                        if (type != null && writerPool.TryGetValue(tableName, out var writer))
+                        if (type != null)
                         {
                             var properties = type.GetProperties();
 
@@ -419,16 +446,27 @@ namespace Loader.Gar.File
                                 }
                             });
                         }
+
+                        writer.Dispose();
                     }
 
                     await _progressClient.Progress(100f * uploadStream.Position / uploadStream.Length, id, session);
                 }
             }
 
-            foreach (var (key, value) in writerPool) value.Dispose();
-            foreach (var con in connectionPool) await con.CloseAsync();
+            var sqls1 = new List<string>();
+            foreach (var (key, value) in _files)
+            {
+                var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
+                var tableName = match.Groups[1].Value.ToUpper();
+                var properties = value.Item2.GetProperties();
 
-            var sqls2 = new List<string>();
+                sqls1.Add($@"CREATE INDEX ON ""temp_{tableName}"" (""{value.Item1}"")");
+            }
+
+            ExecuteNonQueries(new[] { sqls1.ToArray() }, connection);
+
+            var sqlsCopy = new List<string>();
 
             foreach (var (key, value) in _files)
             {
@@ -447,14 +485,14 @@ namespace Loader.Gar.File
                 }
                 var sb = new StringBuilder();
                 sb.AppendLine($@"INSERT INTO ""{tableName}""({string.Join(",", columns)})");
-                sb.AppendLine($@"SELECT {string.Join(", ", columns)} FROM ""temp_{tableName}""");
+                sb.AppendLine($@"SELECT {string.Join(", ", columns)} FROM (SELECT {string.Join(", ", columns)}, ROW_NUMBER() OVER(PARTITION BY ""{value.Item1}"") as rn  FROM ""temp_{tableName}"") q WHERE rn=1");
                 sb.AppendLine($@"ON CONFLICT (""{value.Item1}"") DO UPDATE SET");
-                columns.ForEach(x => { if (x != $@"""value.Item1""") sb.AppendLine($@"{x}=EXCLUDED.{x},"); });
+                columns.ForEach(x => { if (x != $@"""{value.Item1}""") sb.AppendLine($@"{x}=EXCLUDED.{x},"); });
                 sb.AppendLine($@"record_number=nextval('record_number_seq')");
-                sqls2.Add(sb.ToString());
+                sqlsCopy.Add(sb.ToString());
             }
 
-            ExecuteNonQueries(new[] { sqls2.ToArray() }, connection);
+            ExecuteNonQueries(new[] { sqlsCopy.ToArray() }, connection);
 
             DropTempTables(connection);
 
