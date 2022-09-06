@@ -798,7 +798,7 @@ namespace Placium.Route
 	                    weight,
 	                    nodes
                     ) WITH cte AS (
-	                    SELECT *,ROW_NUMBER() OVER (PARTITION BY guid,from_node,to_node,way) AS rn 
+	                    SELECT DISTINCT ON (guid,from_node,to_node,way) * 
                         FROM (SELECT * FROM temp_edge ORDER BY temp_id LIMIT @limit OFFSET @skip) q
                     ) SELECT 
 	                    guid,
@@ -816,7 +816,7 @@ namespace Placium.Route
 	                    direction,
 	                    weight,
 	                    ARRAY[from_node,to_node]
-                    FROM cte WHERE rn=1
+                    FROM cte
                     ON CONFLICT (guid,from_node,to_node,way) DO NOTHING"), connection))
             await using (var command3 = new NpgsqlCommand(string.Join(";",
                              @"DROP TABLE temp_edge"), connection))
@@ -896,7 +896,7 @@ namespace Placium.Route
 	                via_node,
 	                tags
                 ) WITH cte AS (
-	                SELECT *,ROW_NUMBER() OVER (PARTITION BY guid,vehicle_type,from_edge,to_edge,via_node) AS rn 
+	                SELECT DISTINCT ON (guid,vehicle_type,from_edge,to_edge,via_node) * 
                     FROM (SELECT * FROM temp_restriction2 ORDER BY temp_id LIMIT @limit OFFSET @skip) q
                 ) SELECT
 	                guid,
@@ -905,7 +905,7 @@ namespace Placium.Route
 	                to_edge,
 	                via_node,
 	                tags
-                FROM cte WHERE rn=1
+                FROM cte
                 ON CONFLICT (guid,vehicle_type,from_edge,to_edge,via_node) DO NOTHING"), connection2))
             await using (var command6 = new NpgsqlCommand(string.Join(";",
                              @"DROP TABLE temp_restriction2",
