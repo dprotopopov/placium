@@ -275,7 +275,7 @@ namespace Loader.Gar.File
                 }
                 var sb = new StringBuilder();
                 sb.AppendLine($@"INSERT INTO ""{tableName}""({string.Join(",", columns)})");
-                sb.AppendLine($@"SELECT {string.Join(", ", columns)} FROM (SELECT DISTINCT ON (""{value.Item1}"") {string.Join(", ", columns)} FROM ""temp_{tableName}"") q");
+                sb.AppendLine($@"SELECT DISTINCT ON (""{value.Item1}"") {string.Join(", ", columns)} FROM ""temp_{tableName}""");
                 sqlsCopy.Add(sb.ToString());
             }
 
@@ -485,7 +485,7 @@ namespace Loader.Gar.File
                 }
                 var sb = new StringBuilder();
                 sb.AppendLine($@"INSERT INTO ""{tableName}""({string.Join(",", columns)})");
-                sb.AppendLine($@"SELECT {string.Join(", ", columns)} FROM (SELECT DISTINCT ON (""{value.Item1}"") {string.Join(", ", columns)} FROM ""temp_{tableName}"") q");
+                sb.AppendLine($@"SELECT DISTINCT ON (""{value.Item1}"") {string.Join(", ", columns)} FROM ""temp_{tableName}""");
                 sb.AppendLine($@"ON CONFLICT (""{value.Item1}"") DO UPDATE SET");
                 columns.ForEach(x => { if (x != $@"""{value.Item1}""") sb.AppendLine($@"{x}=EXCLUDED.{x},"); });
                 sb.AppendLine($@"record_number=nextval('record_number_seq')");
