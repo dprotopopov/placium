@@ -164,7 +164,7 @@ namespace Loader.Gar.File
 
                                     columns.Add($@"""{name}""");
                                 }
-                                writer = await connection.BeginTextImportAsync($@"COPY ""{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
+                                writer = await connection.BeginTextImportAsync($@"COPY ""temp_{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
                                 break;
                             }
                         }
