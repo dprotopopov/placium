@@ -35,7 +35,7 @@ namespace Placium.Services
                         WHERE h.""OBJECTID""=@p AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
             _parentCarplaceSql = $@"SELECT h.""PARENTOBJID"",t.""NUMBER"",t.""OBJECTGUID"" FROM ""AS_CARPLACES"" t JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
                         WHERE h.""OBJECTID""=@p AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
-            _parentAddrobSql = $@"SELECT h.""PARENTOBJID"",t.""NAME"",t.""OBJECTGUID"" FROM ""AS_ADD_OBJ"" t JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+            _parentAddrobSql = $@"SELECT h.""PARENTOBJID"",t.""NAME"",t.""OBJECTGUID"" FROM ""AS_ADDR_OBJ"" t JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
                         WHERE h.""OBJECTID""=@p AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
 
             _childrenRoomSql = $@"SELECT t.""OBJECTID"",t.""NUMBER"",t.""OBJECTGUID"" FROM ""AS_ROOMS"" t JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
@@ -46,7 +46,7 @@ namespace Placium.Services
                         WHERE h.""PARENTOBJID""=@p AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
             _childrenCarplaceSql = @"SELECT t.""OBJECTID"",t.""NUMBER"",t.""OBJECTGUID"" FROM ""AS_CARPLACES"" t JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
                         WHERE h.""PARENTOBJID""=@p AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
-            _childrenAddrobSql = @"SELECT t.""OBJECTID"",t.""NAME"",t.""OBJECTGUID"" FROM ""AS_ADD_OBJ"" t JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+            _childrenAddrobSql = @"SELECT t.""OBJECTID"",t.""NAME"",t.""OBJECTGUID"" FROM ""AS_ADDR_OBJ"" t JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
                         WHERE h.""PARENTOBJID""=@p AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
 
             _rootRoomSql = $@"SELECT t.""OBJECTID"",t.""NUMBER"",t.""OBJECTGUID"" FROM ""AS_ROOMS"" t LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""PARENTOBJID""
@@ -57,7 +57,7 @@ namespace Placium.Services
                         WHERE h.""OBJECTID"" IS NULL AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
             _rootCarplaceSql = $@"SELECT t.""OBJECTID"",t.""NUMBER"",t.""OBJECTGUID"" FROM ""AS_CARPLACES"" t LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""PARENTOBJID""
                         WHERE h.""OBJECTID"" IS NULL AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
-            _rootAddrobSql = $@"SELECT t.""OBJECTID"",t.""NAME"",t.""OBJECTGUID"" FROM ""AS_ADD_OBJ"" t LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""PARENTOBJID""
+            _rootAddrobSql = $@"SELECT t.""OBJECTID"",t.""NAME"",t.""OBJECTGUID"" FROM ""AS_ADDR_OBJ"" t LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""PARENTOBJID""
                         WHERE h.""OBJECTID"" IS NULL AND t.""STARTDATE""<=@n AND @n<t.""ENDDATE""";
         }
 

@@ -22,9 +22,9 @@ namespace Loader.Gar.File
 
         private readonly Dictionary<string, Tuple<string, Type>> _files = new Dictionary<string, Tuple<string, Type>>()
         {
-            { @"^(AS_ADD_OBJ)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ADDR_OBJ_2_251_01_04_01_01.xsd.ADDRESSOBJECTSOBJECT)) },
-            { @"^(AS_ADD_OBJ_DIVISION)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ADDR_OBJ_DIVISION_2_251_19_04_01_01.xsd.ITEMSITEM)) },
-            { @"^(AS_ADD_OBJ_TYPES)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ADDR_OBJ_TYPES_2_251_03_04_01_01.xsd.ADDRESSOBJECTTYPESADDRESSOBJECTTYPE)) },
+            { @"^(AS_ADDR_OBJ)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ADDR_OBJ_2_251_01_04_01_01.xsd.ADDRESSOBJECTSOBJECT)) },
+            { @"^(AS_ADDR_OBJ_DIVISION)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ADDR_OBJ_DIVISION_2_251_19_04_01_01.xsd.ITEMSITEM)) },
+            { @"^(AS_ADDR_OBJ_TYPES)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ADDR_OBJ_TYPES_2_251_03_04_01_01.xsd.ADDRESSOBJECTTYPESADDRESSOBJECTTYPE)) },
             { @"^(AS_ADM_HIERARCHY)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ADM_HIERARCHY_2_251_04_04_01_01.xsd.ITEMSITEM)) },
             { @"^(AS_APARTMENT_TYPES)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_APARTMENT_TYPES_2_251_07_04_01_01.xsd.APARTMENTTYPESAPARTMENTTYPE)) },
             { @"^(AS_APARTMENTS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_APARTMENTS_2_251_05_04_01_01.xsd.APARTMENTSAPARTMENT)) },
@@ -38,12 +38,17 @@ namespace Loader.Gar.File
             { @"^(AS_NORMATIVE_DOCS_TYPES)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_NORMATIVE_DOCS_TYPES_2_251_16_04_01_01.xsd.NDOCTYPE)) },
             { @"^(AS_OBJECT_LEVELS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create(nameof(AS_OBJECT_LEVELS_2_251_12_04_01_01.xsd.OBJECTLEVELSOBJECTLEVEL.LEVEL),typeof(AS_OBJECT_LEVELS_2_251_12_04_01_01.xsd.OBJECTLEVELSOBJECTLEVEL)) },
             { @"^(AS_OPERATION_TYPES)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_OPERATION_TYPES_2_251_14_04_01_01.xsd.OPERATIONTYPESOPERATIONTYPE)) },
-            { @"^(AS_PARAM)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_2_251_02_04_01_01.xsd.PARAMSPARAM)) },
             { @"^(AS_PARAM_TYPES)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_TYPES_2_251_20_04_01_01.xsd.PARAMTYPESPARAMTYPE)) },
             { @"^(AS_REESTR_OBJECTS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create(nameof(AS_REESTR_OBJECTS_2_251_22_04_01_01.xsd.REESTR_OBJECTSOBJECT.OBJECTID),typeof(AS_REESTR_OBJECTS_2_251_22_04_01_01.xsd.REESTR_OBJECTSOBJECT)) },
             { @"^(AS_ROOM_TYPES)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ROOM_TYPES_2_251_17_04_01_01.xsd.ROOMTYPESROOMTYPE)) },
             { @"^(AS_ROOMS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_ROOMS_2_251_15_04_01_01.xsd.ROOMSROOM)) },
             { @"^(AS_STEADS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_STEADS_2_251_18_04_01_01.xsd.STEADSSTEAD)) },
+            { @"^(AS_ADDR_OBJ_PARAMS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_2_251_02_04_01_01.xsd.PARAMSPARAM)) },
+            { @"^(AS_APARTMENTS_PARAMS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_2_251_02_04_01_01.xsd.PARAMSPARAM)) },
+            { @"^(AS_HOUSES_PARAMS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_2_251_02_04_01_01.xsd.PARAMSPARAM)) },
+            { @"^(AS_STEADS_PARAMS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_2_251_02_04_01_01.xsd.PARAMSPARAM)) },
+            { @"^(AS_ROOMS_PARAMS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_2_251_02_04_01_01.xsd.PARAMSPARAM)) },
+            { @"^(AS_CARPLACES_PARAMS)_\d{8}_[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}\.XML$", Tuple.Create("ID",typeof(AS_PARAM_2_251_02_04_01_01.xsd.PARAMSPARAM)) },
         };
 
         public FileGarUploadService(IConnectionsConfig configuration, IProgressClient progressClient, IParallelConfig parallelConfig) : base(configuration)
