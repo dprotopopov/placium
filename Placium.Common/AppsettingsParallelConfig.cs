@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.Diagnostics;
 
 namespace Placium.Common
@@ -16,7 +17,7 @@ namespace Placium.Common
         {
             var value = _configuration.GetSection($"{nameof(ParallelConfig)}:{nameof(ParallelConfig.NumberOfThreads)}")
                 .Value;
-            Debug.WriteLine($"{nameof(ParallelConfig)}:{nameof(ParallelConfig.NumberOfThreads)} = {value}");
+            Console.WriteLine($"{nameof(ParallelConfig)}:{nameof(ParallelConfig.NumberOfThreads)} = {value}");
             if (!int.TryParse(value, out var threads)) threads = 12;
             return threads;
         }

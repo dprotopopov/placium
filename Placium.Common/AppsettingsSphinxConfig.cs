@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using System;
 using System.Diagnostics;
 using System.IO;
 
@@ -17,7 +18,7 @@ namespace Placium.Common
         {
             var folder = _configuration.GetSection($"{nameof(SphinxConfig)}:{nameof(SphinxConfig.WordformsFolder)}")
                 .Value;
-            Debug.WriteLine($"{nameof(SphinxConfig)}:{nameof(SphinxConfig.WordformsFolder)} = '{folder}'");
+            Console.WriteLine($"{nameof(SphinxConfig)}:{nameof(SphinxConfig.WordformsFolder)} = '{folder}'");
             return Path.Combine(folder, fileName);
         }
 
@@ -25,7 +26,7 @@ namespace Placium.Common
         {
             var http = _configuration.GetSection($"{nameof(SphinxConfig)}:{nameof(SphinxConfig.SphinxHttp)}")
                 .Value;
-            Debug.WriteLine($"{nameof(SphinxConfig)}:{ nameof(SphinxConfig.SphinxHttp)} = '{http}'");
+            Console.WriteLine($"{nameof(SphinxConfig)}:{ nameof(SphinxConfig.SphinxHttp)} = '{http}'");
             return http;
         }
     }
