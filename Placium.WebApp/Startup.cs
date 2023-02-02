@@ -38,6 +38,7 @@ namespace Placium.WebApp
         private void RegisterServices(IServiceCollection services)
         {
             services.AddSingleton<IConnectionsConfig, AppsettingsConnectionsConfig>();
+            services.AddSingleton<ISphinxConfig, AppsettingsSphinxConfig>();
             services.AddSingleton<IParallelConfig, AppsettingsParallelConfig>();
             services.AddSingleton<IProgressClient, SignalRProgressClient>();
 

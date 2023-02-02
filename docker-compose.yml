@@ -26,7 +26,8 @@ services:
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__RouteConnection: "Host=route-placium;Port=5432;Database=route_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
-      SphinxConfig__Http: "http://manticore-placium:9308"
+      SphinxConfig__SphinxHttp: "http://manticore-placium:9308"
+      SphinxConfig__WordformsFolder: "/wordforms"
       UploadConfig__Path: "/upload"
       ServerConfig__BasePath: "/placium"
       ServerConfig__AddCors: 'false'

@@ -3,14 +3,17 @@ services:
   webapp-placium:
     volumes:
       - //d/placium/upload:/upload/
+      - //d/placium/manticore/wordforms:/wordforms/
       - //d/placium/ProtectionKeys:/app/ProtectionKeys
 
   webapi-placium:
     volumes:
+      - //d/placium/manticore/wordforms:/wordforms/
       - //d/placium/ProtectionKeys:/app/ProtectionKeys
 
   mysqlquerytools-placium:
     volumes:
+      - //d/placium/manticore/wordforms:/wordforms/
       - //d/placium/ProtectionKeys:/app/ProtectionKeys
 
   gar-placium:
@@ -31,6 +34,7 @@ services:
 
   manticore-placium:
     volumes:
+      - //d/placium/manticore/wordforms:/wordforms/
       - //d/placium/manticore/run:/var/manticore/run
       - //d/placium/manticore/log:/var/manticore/log
       - //d/placium/manticore/data:/var/manticore/data

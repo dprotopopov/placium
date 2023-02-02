@@ -62,6 +62,7 @@ namespace placium
                 })
                 .AddSingleton<IConfiguration>(config)
                 .AddSingleton<IConnectionsConfig, ArgsConnectionsConfig>()
+                .AddSingleton<ISphinxConfig, ArgsSphinxConfig>()
                 .AddSingleton<IParallelConfig, ArgsParallelConfig>()
                 .AddSingleton<IProgressClient, ShellProgressClient>()
                 .AddSingleton<FileFiasUploadService>()

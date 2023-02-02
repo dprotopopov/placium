@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -20,11 +21,13 @@ namespace Updater.Addrx.Sphinx
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
         private readonly IProgressClient _progressClient;
+        private readonly ISphinxConfig _sphinxConfig;
 
-        public SphinxAddrxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration) : base(
+        public SphinxAddrxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration, ISphinxConfig sphinxConfig) : base(
             configuration)
         {
             _progressClient = progressClient;
+            _sphinxConfig = sphinxConfig;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -45,6 +48,8 @@ namespace Updater.Addrx.Sphinx
                     + " min_infix_len='1'"
                     + " expand_keywords='1'"
                     + " charset_table='0..9,A..Z->a..z,a..z,U+410..U+42F->U+430..U+44F,U+430..U+44F,U+401->U+0435,U+451->U+0435'"
+                    + " blend_chars = '., +, &->+'"
+                    + $" wordforms='{_sphinxConfig.GetWordformsPath("address.txt")}'"
                     + " morphology='stem_ru'"
                 }, connection);
             }

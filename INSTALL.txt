@@ -44,6 +44,7 @@ wget -c https://fias-file.nalog.ru/downloads/2021.04.02/fias_dbf.zip
 cd && git clone https://github.com/dprotopopov/placium.git
 cd && cp placium/nginx.conf /opt2/nginx/conf/
 cd && cp placium/manticore.conf /opt2/manticore/
+cd && cp placium/wordforms /opt2/manticore/
 cd && cd placium
 cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.y.yml build
 cd && cd placium && docker-compose -f docker-compose.yml -f docker-compose.y.yml up -d --remove-orphans
@@ -53,6 +54,7 @@ cd && cd placium && docker-compose down
 cd && git clone https://gitlab.pba.su/protopopovdy/placium.git
 cd && sudo cp placium/nginx.conf /opt2/nginx/conf/
 cd && sudo cp placium/manticore.conf /opt2/manticore/
+cd && sudo cp placium/wordforms /opt2/manticore/
 cd && cd placium
 cd && cd placium && sudo docker-compose build
 cd && cd placium && sudo docker-compose up -d --remove-orphans

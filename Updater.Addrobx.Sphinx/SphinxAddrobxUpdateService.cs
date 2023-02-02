@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,13 +16,15 @@ namespace Updater.Addrobx.Sphinx
     {
         private readonly IParallelConfig _parallelConfig;
         private readonly IProgressClient _progressClient;
+        private readonly ISphinxConfig _sphinxConfig;
 
         public SphinxAddrobxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration,
-            IParallelConfig parallelConfig) : base(
+            IParallelConfig parallelConfig, ISphinxConfig sphinxConfig) : base(
             configuration)
         {
             _progressClient = progressClient;
             _parallelConfig = parallelConfig;
+            _sphinxConfig = sphinxConfig;
         }
 
         public async Task UpdateAsync(string session, bool full)
@@ -42,6 +45,8 @@ namespace Updater.Addrobx.Sphinx
                     + " min_infix_len='1'"
                     + " expand_keywords='1'"
                     + " charset_table='0..9,A..Z->a..z,a..z,U+410..U+42F->U+430..U+44F,U+430..U+44F,U+401->U+0435,U+451->U+0435'"
+                    + " blend_chars = '., +, &->+'"
+                    + $" wordforms='{_sphinxConfig.GetWordformsPath("address.txt")}'"
                     + " morphology='stem_ru'"
                 }, connection);
             }
