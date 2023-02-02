@@ -55,6 +55,8 @@ services:
       ConnectionStrings__OsmConnection: "Host=osm-placium;Port=5432;Database=osm_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__RouteConnection: "Host=route-placium;Port=5432;Database=route_db;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Command Timeout=0"
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
+      SphinxConfig__SphinxHttp: "http://manticore-placium:9308"
+      SphinxConfig__WordformsFolder: "/wordforms"
       ServerConfig__BasePath: "/placium"
       ServerConfig__AddCors: 'false'
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:5000
@@ -170,6 +172,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__SphinxConnection: "Host=manticore-placium;Port=9306;Command Timeout=0"
+      SphinxConfig__SphinxHttp: "http://manticore-placium:9308"
+      SphinxConfig__WordformsFolder: "/wordforms"
       ServerConfig__BasePath: "/mysql"
       ServerConfig__AddCors: 'false'
       Kestrel__Endpoints__Http__Url: http://0.0.0.0:9090
