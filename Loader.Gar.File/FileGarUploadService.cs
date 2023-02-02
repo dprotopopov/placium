@@ -280,7 +280,7 @@ namespace Loader.Gar.File
                 }
                 var sb = new StringBuilder();
                 sb.AppendLine($@"INSERT INTO ""{tableName}""({string.Join(",", columns)})");
-                sb.AppendLine($@"SELECT DISTINCT ON (""{value.Item1}"") {string.Join(", ", columns)} FROM ""temp_{tableName}""");
+                sb.AppendLine($@"SELECT /* DISTINCT ON (""{value.Item1}"") */ {string.Join(", ", columns)} FROM ""temp_{tableName}""");
                 sqlsCopy.Add(sb.ToString());
             }
 
@@ -302,8 +302,11 @@ namespace Loader.Gar.File
 
                     if (property.PropertyType == typeof(bool) && name.EndsWith("Specified")) continue;
 
-                    if (name == value.Item1) 
-                        sqls2.Add($@"ALTER TABLE ""{tableName}"" ADD PRIMARY KEY (""{name}"")");
+                    if (name == value.Item1)
+                    {
+                        //sqls2.Add($@"ALTER TABLE ""{tableName}"" ADD PRIMARY KEY (""{name}"")");
+                        sqls2.Add($@"CREATE INDEX ON ""{tableName}"" (""{name}"")");
+                    }
                     else if (name.EndsWith("ID") ||
                         name.EndsWith("LEVEL") ||
                         name.EndsWith("CODE") ||
@@ -490,10 +493,10 @@ namespace Loader.Gar.File
                 }
                 var sb = new StringBuilder();
                 sb.AppendLine($@"INSERT INTO ""{tableName}""({string.Join(",", columns)})");
-                sb.AppendLine($@"SELECT DISTINCT ON (""{value.Item1}"") {string.Join(", ", columns)} FROM ""temp_{tableName}""");
-                sb.AppendLine($@"ON CONFLICT (""{value.Item1}"") DO UPDATE SET");
-                columns.ForEach(x => { if (x != $@"""{value.Item1}""") sb.AppendLine($@"{x}=EXCLUDED.{x},"); });
-                sb.AppendLine($@"record_number=nextval('record_number_seq')");
+                sb.AppendLine($@"SELECT /* DISTINCT ON (""{value.Item1}"") */ {string.Join(", ", columns)} FROM ""temp_{tableName}""");
+                //sb.AppendLine($@"ON CONFLICT (""{value.Item1}"") DO UPDATE SET");
+                //columns.ForEach(x => { if (x != $@"""{value.Item1}""") sb.AppendLine($@"{x}=EXCLUDED.{x},"); });
+                //sb.AppendLine($@"record_number=nextval('record_number_seq')");
                 sqlsCopy.Add(sb.ToString());
             }
 
