@@ -1,4 +1,4 @@
-﻿version: "3.9"
+version: "3.9"
 networks:
   placium:
     name: placium_dev
@@ -118,7 +118,7 @@ services:
 
   manticore-placium:
     container_name: manticore-placium
-    image: manticoresearch/manticore
+    image: manticoresearch/manticore:5.0.2-extra2
     restart: always
     expose:
       - "9306"
