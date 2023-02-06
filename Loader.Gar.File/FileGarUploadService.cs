@@ -136,10 +136,8 @@ namespace Loader.Gar.File
                 connection);
 
             var sqls = GetCreateTableSqls();
-            var sqlsTemp = GetCreateTableSqls(temp: true);
 
             ExecuteNonQueries(new[] { sqls.Values.ToArray() }, connection);
-            ExecuteNonQueries(new[] { sqlsTemp.Values.ToArray() }, connection);
 
             using (var archive = new ZipArchive(uploadStream))
             {
@@ -169,7 +167,7 @@ namespace Loader.Gar.File
 
                                     columns.Add($@"""{name}""");
                                 }
-                                writer = await connection.BeginTextImportAsync($@"COPY ""temp_{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
+                                writer = await connection.BeginTextImportAsync($@"COPY ""{tableName}"" ({string.Join(",", columns)}) FROM STDIN WITH NULL AS ''");
                                 break;
                             }
                         }
@@ -249,45 +247,6 @@ namespace Loader.Gar.File
                 }
             }
 
-            var sqls1 = new List<string>();
-            foreach (var (key, value) in _files)
-            {
-                var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
-                var tableName = match.Groups[1].Value.ToUpper();
-                var properties = value.Item2.GetProperties();
-
-                sqls1.Add($@"CREATE INDEX ON ""temp_{tableName}"" (""{value.Item1}"")");
-            }
-
-            ExecuteNonQueries(new[] { sqls1.ToArray() }, connection);
-
-            var sqlsCopy = new List<string>();
-
-            foreach (var (key, value) in _files)
-            {
-                var match = Regex.Match(key, @"\(([^\)]+)\)", RegexOptions.IgnoreCase);
-                var tableName = match.Groups[1].Value.ToUpper();
-                var properties = value.Item2.GetProperties();
-
-                var columns = new List<string>();
-                foreach (var property in properties)
-                {
-                    var name = property.Name;
-
-                    if (property.PropertyType == typeof(bool) && name.EndsWith("Specified")) continue;
-
-                    columns.Add($@"""{name}""");
-                }
-                var sb = new StringBuilder();
-                sb.AppendLine($@"INSERT INTO ""{tableName}""({string.Join(",", columns)})");
-                sb.AppendLine($@"SELECT /* DISTINCT ON (""{value.Item1}"") */ {string.Join(", ", columns)} FROM ""temp_{tableName}""");
-                sqlsCopy.Add(sb.ToString());
-            }
-
-            ExecuteNonQueries(new[] { sqlsCopy.ToArray() }, connection);
-
-            DropTempTables(connection);
-
             var sqls2 = new List<string>();
 
             foreach (var (key, value) in _files)
@@ -304,7 +263,6 @@ namespace Loader.Gar.File
 
                     if (name == value.Item1)
                     {
-                        //sqls2.Add($@"ALTER TABLE ""{tableName}"" ADD PRIMARY KEY (""{name}"")");
                         sqls2.Add($@"CREATE INDEX ON ""{tableName}"" (""{name}"")");
                     }
                     else if (name.EndsWith("ID") ||
