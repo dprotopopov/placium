@@ -99,8 +99,9 @@ namespace Updater.Garx.Sphinx
             var last_record_number = GetLastRecordNumber(npgsqlConnection, GarServiceType.Addrob, full);
             var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
-            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",t.""LEVEL"",h.""PARENTOBJID"" FROM ""AS_ADDR_OBJ"" t 
+            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_ADDR_OBJ"" t WHERE t.record_number>@last_record_number";
@@ -154,10 +155,13 @@ namespace Updater.Garx.Sphinx
                                         var parentid = reader.SafeGetInt64(4);
                                         var aolevel = reader.SafeGetString(5);
                                         var addrtype = reader.SafeGetString(6);
+                                        var list1 = new List<string> { };
+                                        if (!string.IsNullOrEmpty(addrtype)) list1.Add($"{addrtype}");
+                                        if (!string.IsNullOrEmpty(name)) list1.Add($"{name}");
                                         docs1.Add(new Doc1
                                         {
                                             id = reader.GetInt64(0),
-                                            addrfull = name,
+                                            addrfull = string.Join(" ", list1),
                                             objectid = objectid,
                                             objectguid = objectguid,
                                             parentid = parentid,
@@ -215,8 +219,9 @@ namespace Updater.Garx.Sphinx
             var last_record_number = GetLastRecordNumber(npgsqlConnection, GarServiceType.House, full);
             var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
-            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"" FROM ""AS_ADDR_OBJ"" t 
+            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_HOUSES"" t WHERE t.record_number>@last_record_number";
@@ -269,10 +274,13 @@ namespace Updater.Garx.Sphinx
                                         var housenum = reader.SafeGetString(3);
                                         var parentid = reader.SafeGetInt64(4);
                                         var housetype = reader.SafeGetString(5);
+                                        var list1 = new List<string> { };
+                                        if (!string.IsNullOrEmpty(housetype)) list1.Add($"{housetype}");
+                                        if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
                                         docs1.Add(new Doc1
                                         {
                                             id = reader.GetInt64(0),
-                                            addrfull = housenum,
+                                            addrfull = string.Join(" ", list1),
                                             objectid = objectid,
                                             objectguid = objectguid,
                                             parentid = parentid,
@@ -330,12 +338,14 @@ namespace Updater.Garx.Sphinx
             var last_record_number = GetLastRecordNumber(npgsqlConnection, GarServiceType.Room, full);
             var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
-            var sql3 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"" FROM ""AS_ADDR_OBJ"" t 
+            var sql3 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
-            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""HOUSENUM"",h.""PARENTOBJID"" FROM ""AS_HOUSES"" t 
+            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""HOUSENUM"",h.""PARENTOBJID"",ht.""NAME"" FROM ""AS_HOUSES"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+                        LEFT JOIN ""AS_HOUSE_TYPES"" ht ON t.""HOUSETYPE""=ht.""ID""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_ROOMS"" t WHERE t.record_number>@last_record_number";
@@ -428,11 +438,15 @@ namespace Updater.Garx.Sphinx
                                             var objectguid = reader2.SafeGetString(1);
                                             var housenum = reader2.SafeGetString(2);
                                             var parentid = reader2.SafeGetInt64(3);
+                                            var housetype = reader.SafeGetString(4);
+                                            var list1 = new List<string> { };
+                                            if (!string.IsNullOrEmpty(housetype)) list1.Add($"{housetype}");
+                                            if (!string.IsNullOrEmpty(housenum)) list1.Add($"{housenum}");
 
                                             docs2.Add(new Doc2
                                             {
                                                 objectid = reader2.GetInt64(0),
-                                                addrfull = housenum,
+                                                addrfull = string.Join(" ", list1),
                                                 parentid = parentid,
                                             });
                                         }
@@ -498,13 +512,14 @@ namespace Updater.Garx.Sphinx
             var last_record_number = GetLastRecordNumber(npgsqlConnection, GarServiceType.Stead, full);
             var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
-            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"" FROM ""AS_ADDR_OBJ"" t 
+            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_STEADS"" t WHERE t.record_number>@last_record_number";
 
-            var sql = $@"SELECT t.record_id,t.""OBJECTID"",t.""OBJECTGUID"",t.""HOUSENUM"",h.""PARENTOBJID"" FROM ""AS_STEADS"" t 
+            var sql = $@"SELECT t.record_id,t.""OBJECTID"",t.""OBJECTGUID"",t.""NUMBER"",h.""PARENTOBJID"" FROM ""AS_STEADS"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
                         WHERE t.record_number>@last_record_number";
 
@@ -548,12 +563,12 @@ namespace Updater.Garx.Sphinx
                                     {
                                         var objectid = reader.GetInt64(1);
                                         var objectguid = reader.SafeGetString(2);
-                                        var housenum = reader.SafeGetString(3);
+                                        var number = reader.SafeGetString(3);
                                         var parentid = reader.SafeGetInt64(4);
                                         docs1.Add(new Doc1
                                         {
                                             id = reader.GetInt64(0),
-                                            addrfull = housenum,
+                                            addrfull = number,
                                             objectid = objectid,
                                             objectguid = objectguid,
                                             parentid = parentid,
@@ -612,13 +627,14 @@ namespace Updater.Garx.Sphinx
             var last_record_number = GetLastRecordNumber(npgsqlConnection, GarServiceType.Carplace, full);
             var next_last_record_number = GetNextLastRecordNumber(npgsqlConnection);
 
-            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"" FROM ""AS_ADDR_OBJ"" t 
+            var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_CARPLACES"" t WHERE t.record_number>@last_record_number";
 
-            var sql = $@"SELECT t.record_id,t.""OBJECTID"",t.""OBJECTGUID"",t.""HOUSENUM"",h.""PARENTOBJID"" FROM ""AS_CARPLACES"" t 
+            var sql = $@"SELECT t.record_id,t.""OBJECTID"",t.""OBJECTGUID"",t.""NUMBER"",h.""PARENTOBJID"" FROM ""AS_CARPLACES"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
                         WHERE t.record_number>@last_record_number";
 
@@ -662,12 +678,12 @@ namespace Updater.Garx.Sphinx
                                     {
                                         var objectid = reader.GetInt64(1);
                                         var objectguid = reader.SafeGetString(2);
-                                        var housenum = reader.SafeGetString(3);
+                                        var number = reader.SafeGetString(3);
                                         var parentid = reader.SafeGetInt64(4);
                                         docs1.Add(new Doc1
                                         {
                                             id = reader.GetInt64(0),
-                                            addrfull = housenum,
+                                            addrfull = number,
                                             objectid = objectid,
                                             objectguid = objectguid,
                                             parentid = parentid,
@@ -777,16 +793,20 @@ namespace Updater.Garx.Sphinx
             using var reader2 = npgsqlCommand2.ExecuteReader();
             while (reader2.Read())
             {
-                var guid = reader2.SafeGetString(1);
+                var objectguid = reader2.SafeGetString(1);
                 var name = reader2.SafeGetString(2);
-                var aolevel = reader2.SafeGetString(3);
-                var parentid = reader2.SafeGetInt64(4);
-                var postalcode = use_postalcode ? reader2.SafeGetString(5) : null;
+                var parentid = reader2.SafeGetInt64(3);
+                var aolevel = reader2.SafeGetString(4);
+                var addrtype = reader2.SafeGetString(5);
+                var list1 = new List<string> { };
+                if (!string.IsNullOrEmpty(addrtype)) list1.Add($"{addrtype}");
+                if (!string.IsNullOrEmpty(name)) list1.Add($"{name}");
+                var postalcode = use_postalcode ? reader2.SafeGetString(6) : null;
 
                 docs2.Add(new Doc2
                 {
                     objectid = reader2.GetInt64(0),
-                    addrfull = name,
+                    addrfull = string.Join(" ", list1),
                     parentid = parentid,
                     postalcode = postalcode
                 });
