@@ -5,6 +5,10 @@ namespace Placium.Seeker
 {
     public class AddressEntry
     {
+        [JsonProperty("objectid")] public long? ObjectId { get; set; }
+
+        [JsonProperty("objectguid")] public string ObjectGuid { get; set; }
+
         [JsonProperty("address")] public string AddressString { get; set; }
 
         [JsonProperty("postalCode")] public string PostalCode { get; set; }

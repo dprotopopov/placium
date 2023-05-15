@@ -1,10 +1,10 @@
-﻿namespace Updater.Addrobx.Sphinx
+﻿namespace Updater.Garx.Sphinx
 {
     public class Doc2
     {
-        public string guid { get; set; }
+        public long objectid { get; set; }
         public string addrfull { get; set; }
-        public string parentguid { get; set; }
+        public long? parentid { get; set; }
         public string postalcode { get; set; }
     }
 }

@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Placium.Common;
-using Updater.Fiasx.Sphinx;
+using Updater.Garx.Sphinx;
 
 namespace Placium.WebApp.Controllers.Update
 {
-    public class SphinxFiasxUpdateController : UpdateController<SphinxFiasxUpdateService>
+    public class SphinxGarxUpdateController : UpdateController<SphinxGarxUpdateService>
     {
-        public SphinxFiasxUpdateController(IConfiguration configuration, SphinxFiasxUpdateService updateService,
+        public SphinxGarxUpdateController(IConfiguration configuration, SphinxGarxUpdateService updateService,
             IHubContext<ProgressHub, IProgressHubClient> progressHub) : base(configuration,
             updateService, progressHub)
         {
@@ -17,14 +17,14 @@ namespace Placium.WebApp.Controllers.Update
         {
             return new UpdateFormInfo
             {
-                Title = "Наполнение Sphinx (ФИАС)",
+                Title = "Наполнение Sphinx (ГАР)",
                 Label = "Добавление новых записей в Sphinx"
             };
         }
 
         protected override string GetSession()
         {
-            return nameof(SphinxFiasxUpdateController);
+            return nameof(SphinxGarxUpdateController);
         }
     }
 }

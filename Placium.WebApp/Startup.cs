@@ -17,9 +17,10 @@ using Placium.Common;
 using Placium.Route;
 using Placium.Services;
 using Placium.WebApp.Filters;
-using Updater.Addrobx.Sphinx;
+using Updater.Fiasx.Sphinx;
 using Updater.Addrx.Database;
 using Updater.Addrx.Sphinx;
+using Updater.Garx.Sphinx;
 using Updater.Placex.Database;
 
 namespace Placium.WebApp
@@ -58,7 +59,8 @@ namespace Placium.WebApp
             services.AddSingleton<DatabasePlacexUpdateService>();
             services.AddSingleton<DatabaseAddrxUpdateService>();
             services.AddSingleton<SphinxAddrxUpdateService>();
-            services.AddSingleton<SphinxAddrobxUpdateService>();
+            services.AddSingleton<SphinxFiasxUpdateService>();
+            services.AddSingleton<SphinxGarxUpdateService>();
             services.AddSingleton<ProgressHub>();
         }
 

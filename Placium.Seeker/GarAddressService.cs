@@ -8,11 +8,11 @@ using Placium.Common;
 
 namespace Placium.Seeker
 {
-    public class FiasAddressService : BaseApiService
+    public class GarAddressService : BaseApiService
     {
         private readonly ILogger _logger;
 
-        public FiasAddressService(IConfiguration configuration, ILogger<FiasAddressService> logger) : base(
+        public GarAddressService(IConfiguration configuration, ILogger<GarAddressService> logger) : base(
             configuration)
         {
             _logger = logger;
@@ -39,7 +39,7 @@ namespace Placium.Seeker
 
                 await using var command =
                     new MySqlCommand(
-                        @"SELECT title,guid FROM fiasx WHERE MATCH(@match) ORDER BY priority ASC LIMIT @skip,@take",
+                        @"SELECT title,objectid,objectguid FROM garx WHERE MATCH(@match) ORDER BY priority ASC LIMIT @skip,@take",
                         mySqlConnection);
                 command.Parameters.AddWithValue("skip", skip);
                 command.Parameters.AddWithValue("take", take);
@@ -52,10 +52,12 @@ namespace Placium.Seeker
                     count++;
                     limit--;
                     var addressString = reader.GetString(0);
-                    var guid = reader.GetString(1);
+                    var objectid = reader.GetInt64(1);
+                    var objectguid = reader.GetString(2);
                     result.Add(new AddressEntry
                     {
-                        ObjectGuid = guid,
+                        ObjectId = objectid,
+                        ObjectGuid = objectguid,
                         AddressString = addressString
                     });
                 }

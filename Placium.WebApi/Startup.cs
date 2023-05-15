@@ -34,6 +34,7 @@ namespace Placium.WebApi
             services.AddSingleton<OsmAddressService>();
             services.AddSingleton<OsmNominatimService>();
             services.AddSingleton<FiasAddressService>();
+            services.AddSingleton<GarAddressService>();
             services.AddSingleton<PlacexService>();
             services.AddSingleton<OsmService>();
             services.AddSingleton<GarService>();

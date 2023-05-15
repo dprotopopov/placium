@@ -10,15 +10,15 @@ using NpgsqlTypes;
 using Placium.Common;
 using Placium.Types;
 
-namespace Updater.Addrobx.Sphinx
+namespace Updater.Fiasx.Sphinx
 {
-    public class SphinxAddrobxUpdateService : BaseAppService, IUpdateService
+    public class SphinxFiasxUpdateService : BaseAppService, IUpdateService
     {
         private readonly IParallelConfig _parallelConfig;
         private readonly IProgressClient _progressClient;
         private readonly ISphinxConfig _sphinxConfig;
 
-        public SphinxAddrobxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration,
+        public SphinxFiasxUpdateService(IProgressClient progressClient, IConnectionsConfig configuration,
             IParallelConfig parallelConfig, ISphinxConfig sphinxConfig) : base(
             configuration)
         {
@@ -34,12 +34,12 @@ namespace Updater.Addrobx.Sphinx
                 if (full)
                     TryExecuteNonQueries(new[]
                     {
-                        "DROP TABLE addrobx"
+                        "DROP TABLE fiasx"
                     }, connection);
 
                 TryExecuteNonQueries(new[]
                 {
-                    "CREATE TABLE addrobx(title text indexed stored,guid string,priority int,building int)"
+                    "CREATE TABLE fiasx(title text indexed stored,guid string,priority int,building int)"
                     + " phrase_boundary='U+2C'"
                     + " phrase_boundary_step='100'"
                     + " min_infix_len='1'"
@@ -75,7 +75,7 @@ namespace Updater.Addrobx.Sphinx
             {
                 TryExecuteNonQueries(new[]
                 {
-                    "FLUSH RTINDEX addrobx"
+                    "FLUSH RTINDEX fiasx"
                 }, connection);
             }
         }
@@ -730,7 +730,7 @@ namespace Updater.Addrobx.Sphinx
                     doc1.addrfull = $"{doc1.postalcode}, {doc1.addrfull}";
 
             var sb = new StringBuilder(
-                "REPLACE INTO addrobx(id,title,guid,priority,building) VALUES ");
+                "REPLACE INTO fiasx(id,title,guid,priority,building) VALUES ");
             sb.Append(string.Join(",",
                 docs1.Select(x =>
                     $"({x.id},'{x.addrfull.TextEscape()}','{x.guid}',{x.addrfull.Split(",").Length},{x.building})")));

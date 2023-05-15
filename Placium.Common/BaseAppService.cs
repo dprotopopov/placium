@@ -118,7 +118,7 @@ namespace Placium.Common
             return (long)command.ExecuteScalar()!;
         }
 
-        protected long GetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type, bool full)
+        protected long GetLastRecordNumber<ServiceType>(NpgsqlConnection connection, ServiceType service_type, bool full)
         {
             if (full) return 0;
 
@@ -137,7 +137,7 @@ namespace Placium.Common
             return 0;
         }
 
-        protected void SetLastRecordNumber(NpgsqlConnection connection, OsmServiceType service_type,
+        protected void SetLastRecordNumber<ServiceType>(NpgsqlConnection connection, ServiceType service_type,
             long last_record_number)
         {
             using var command = new NpgsqlCommand(
@@ -150,37 +150,6 @@ namespace Placium.Common
             command.Prepare();
 
             command.ExecuteNonQuery();
-        }
-
-        protected void SetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type,
-            long last_record_number)
-        {
-            using var command = new NpgsqlCommand(
-                "INSERT INTO service_history(service_type,last_record_number) VALUES (@service_type, @last_record_number) ON CONFLICT (service_type) DO UPDATE SET last_record_number=EXCLUDED.last_record_number"
-                , connection);
-
-            command.Parameters.AddWithValue("service_type", service_type);
-            command.Parameters.AddWithValue("last_record_number", last_record_number);
-
-            command.Prepare();
-
-            command.ExecuteNonQuery();
-        }
-
-        protected long GetLastRecordNumber(NpgsqlConnection connection, FiasServiceType service_type, bool full)
-        {
-            if (full) return 0;
-
-            using var command = new NpgsqlCommand(
-                "SELECT last_record_number FROM service_history WHERE service_type=@service_type LIMIT 1"
-                , connection);
-            command.Parameters.AddWithValue("service_type", service_type);
-
-            command.Prepare();
-
-            using var reader = command.ExecuteReader();
-
-            return reader.Read() ? reader.GetInt64(0) : 0;
         }
 
         protected int ExecuteNonQueryWithRepeatOnError(string sql, MySqlConnection connection)

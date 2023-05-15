@@ -16,9 +16,10 @@ using NetTopologySuite.Geometries.Implementation;
 using NLog.Extensions.Logging;
 using Placium.Common;
 using Placium.Route;
-using Updater.Addrobx.Sphinx;
+using Updater.Fiasx.Sphinx;
 using Updater.Addrx.Database;
 using Updater.Addrx.Sphinx;
+using Updater.Garx.Sphinx;
 using Updater.Placex.Database;
 
 namespace placium
@@ -34,7 +35,8 @@ namespace placium
             typeof(DatabasePlacexUpdateService),
             typeof(DatabaseAddrxUpdateService),
             typeof(SphinxAddrxUpdateService),
-            typeof(SphinxAddrobxUpdateService)
+            typeof(SphinxFiasxUpdateService),
+            typeof(SphinxGarxUpdateService)
         };
 
         private static async Task<int> Main(string[] args)
@@ -72,7 +74,8 @@ namespace placium
                 .AddSingleton<DatabasePlacexUpdateService>()
                 .AddSingleton<DatabaseAddrxUpdateService>()
                 .AddSingleton<SphinxAddrxUpdateService>()
-                .AddSingleton<SphinxAddrobxUpdateService>()
+                .AddSingleton<SphinxFiasxUpdateService>()
+                .AddSingleton<SphinxGarxUpdateService>()
                 .BuildServiceProvider();
 
             try

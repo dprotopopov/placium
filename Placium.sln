@@ -44,7 +44,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "placium", "placium\placium.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AstraUtils", "AstraUtils\AstraUtils.csproj", "{08FEBBB5-D0BB-438C-80C0-3F4B75953C8B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Addrobx.Sphinx", "Updater.Addrobx.Sphinx\Updater.Addrobx.Sphinx.csproj", "{0206B60C-011C-4ED2-84C0-E9ED005C053C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Fiasx.Sphinx", "Updater.Fiasx.Sphinx\Updater.Fiasx.Sphinx.csproj", "{0206B60C-011C-4ED2-84C0-E9ED005C053C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MySql.QueryTools.WebApp", "MySql.QueryTools.WebApp\MySql.QueryTools.WebApp.csproj", "{5A2837E5-D502-486C-A477-194C4FBADCB7}"
 EndProject
@@ -66,9 +66,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Base", "Route.Base\Ro
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Route.Algorithms.Collections", "Route.Algorithms.Collections\Route.Algorithms.Collections.csproj", "{D441A361-3C6B-441C-BD31-EF1E1C1F4CA0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gar.Schemas", "Gar.Schemas\Gar.Schemas.csproj", "{45DA8756-C1B9-4D95-A812-DF609E30C792}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gar.Schemas", "Gar.Schemas\Gar.Schemas.csproj", "{45DA8756-C1B9-4D95-A812-DF609E30C792}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Loader.Gar.File", "Loader.Gar.File\Loader.Gar.File.csproj", "{C93E6B08-7115-40B6-B0FD-40D4BE0C27E4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Loader.Gar.File", "Loader.Gar.File\Loader.Gar.File.csproj", "{C93E6B08-7115-40B6-B0FD-40D4BE0C27E4}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Updater.Garx.Sphinx", "Updater.Garx.Sphinx\Updater.Garx.Sphinx.csproj", "{A922580E-CB37-417A-9716-888230EA0CEF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -184,6 +186,10 @@ Global
 		{C93E6B08-7115-40B6-B0FD-40D4BE0C27E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C93E6B08-7115-40B6-B0FD-40D4BE0C27E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C93E6B08-7115-40B6-B0FD-40D4BE0C27E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A922580E-CB37-417A-9716-888230EA0CEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A922580E-CB37-417A-9716-888230EA0CEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A922580E-CB37-417A-9716-888230EA0CEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A922580E-CB37-417A-9716-888230EA0CEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
