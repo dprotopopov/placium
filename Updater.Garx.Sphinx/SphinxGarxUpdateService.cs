@@ -152,7 +152,7 @@ namespace Updater.Garx.Sphinx
                                         var objectguid = reader.SafeGetString(2);
                                         var name = reader.SafeGetString(3);
                                         var parentid = reader.SafeGetInt64(4);
-                                        var aolevel = reader.GetInt32(5);
+                                        var aolevel = reader.SafeGetString(5);
                                         var addrtype = reader.SafeGetString(6);
                                         docs1.Add(new Doc1
                                         {
@@ -779,7 +779,7 @@ namespace Updater.Garx.Sphinx
             {
                 var guid = reader2.SafeGetString(1);
                 var name = reader2.SafeGetString(2);
-                var aolevel = reader2.GetInt32(3);
+                var aolevel = reader2.SafeGetString(3);
                 var parentid = reader2.SafeGetInt64(4);
                 var postalcode = use_postalcode ? reader2.SafeGetString(5) : null;
 
