@@ -101,14 +101,14 @@ namespace Updater.Garx.Sphinx
 
             var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
-                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""SHORTNAME"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_ADDR_OBJ"" t WHERE t.record_number>@last_record_number";
 
             var sql = $@"SELECT t.record_id,t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
-                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""SHORTNAME"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.record_number>@last_record_number";
 
             await using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -221,7 +221,7 @@ namespace Updater.Garx.Sphinx
 
             var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
-                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""SHORTNAME"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_HOUSES"" t WHERE t.record_number>@last_record_number";
@@ -340,7 +340,7 @@ namespace Updater.Garx.Sphinx
 
             var sql3 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
-                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""SHORTNAME"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""HOUSENUM"",h.""PARENTOBJID"",ht.""NAME"" FROM ""AS_HOUSES"" t 
@@ -514,7 +514,7 @@ namespace Updater.Garx.Sphinx
 
             var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
-                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""SHORTNAME"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_STEADS"" t WHERE t.record_number>@last_record_number";
@@ -629,7 +629,7 @@ namespace Updater.Garx.Sphinx
 
             var sql2 = $@"SELECT t.""OBJECTID"",t.""OBJECTGUID"",t.""NAME"",h.""PARENTOBJID"",t.""LEVEL"",at.""NAME"" FROM ""AS_ADDR_OBJ"" t 
                         LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
-                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""ID"" AND t.""LEVEL""=at.""LEVEL""
+                        LEFT JOIN ""AS_ADDR_OBJ_TYPES"" at ON t.""TYPENAME""=at.""SHORTNAME"" AND t.""LEVEL""=at.""LEVEL""
                         WHERE t.""OBJECTID""=ANY(@ids)";
 
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_CARPLACES"" t WHERE t.record_number>@last_record_number";
