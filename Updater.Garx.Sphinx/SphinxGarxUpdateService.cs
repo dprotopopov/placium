@@ -520,7 +520,7 @@ namespace Updater.Garx.Sphinx
             var sql1 = $@"SELECT COUNT(*) FROM ""AS_STEADS"" t WHERE t.record_number>@last_record_number";
 
             var sql = $@"SELECT t.record_id,t.""OBJECTID"",t.""OBJECTGUID"",t.""NUMBER"",h.""PARENTOBJID"" FROM ""AS_STEADS"" t 
-                        LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""
+                        LEFT JOIN ""AS_ADM_HIERARCHY"" h ON t.""OBJECTID""=h.""OBJECTID""::varchar(255)
                         WHERE t.record_number>@last_record_number";
 
             await using (var command = new NpgsqlCommand(string.Join(";", sql1, sql), npgsqlConnection))
@@ -561,7 +561,7 @@ namespace Updater.Garx.Sphinx
                                     if (reader_is_empty) break;
                                     for (var j = 0; j < take && reader.Read(); j++)
                                     {
-                                        var objectid = reader.GetInt64(1);
+                                        long.TryParse(reader.GetString(1), out var objectid);
                                         var objectguid = reader.SafeGetString(2);
                                         var number = reader.SafeGetString(3);
                                         var parentid = reader.SafeGetInt64(4);
